@@ -1,0 +1,289 @@
+erDiagram
+  USER {
+    bigint id PK
+    string carnet UK
+    string full_name
+    string email
+    string better_auth_user_id UK "external reference to Better Auth user"
+    datetime created_at
+    datetime updated_at
+  }
+
+  COUNTRY {
+    bigint id PK
+    string name
+    string iso2_code UK
+  }
+
+  UNIVERSITY {
+    bigint id PK
+    bigint country_id FK
+    string name
+    string short_name
+    datetime created_at
+    datetime updated_at
+  }
+
+  CAMPUS {
+    bigint id PK
+    bigint university_id FK
+    string code UK
+    string name
+    date opened_on
+    date closed_on
+    boolean is_active
+    datetime created_at
+    datetime updated_at
+  }
+
+  ACADEMIC_UNIT {
+    bigint id PK
+    bigint university_id FK
+    string code UK "e.g., IDE_DEPTO"
+    string name
+    boolean offers_careers
+    datetime created_at
+    datetime updated_at
+  }
+
+  CAREER_PROGRAM {
+    bigint id PK
+    bigint academic_unit_id FK
+    string code UK "from campus career listings"
+    string name
+    string academic_degree
+    datetime created_at
+    datetime updated_at
+  }
+
+  CAREER_CAMPUS {
+    bigint id PK
+    bigint career_program_id FK
+    bigint campus_id FK
+    datetime created_at
+  }
+
+  ACADEMIC_MODALITY {
+    bigint id PK
+    string code UK "IDE_MODALIDAD"
+    string name
+    int periods_per_year
+  }
+
+  ACADEMIC_TERM {
+    bigint id PK
+    bigint academic_modality_id FK
+    int year
+    int period_number
+    string external_key UK "e.g., 2026_S_1, VER-2025"
+    string display_name
+    date starts_on
+    date ends_on
+  }
+
+  STUDY_PLAN {
+    bigint id PK
+    bigint career_program_id FK
+    bigint academic_modality_id FK
+    int external_plan_id UK "id_curriculum/id_plan"
+    string name "dsc_curriculum"
+    string academic_degree
+    int first_level_number
+    datetime created_at
+    datetime updated_at
+  }
+
+  STUDY_PLAN_CAMPUS {
+    bigint id PK
+    bigint study_plan_id FK
+    bigint campus_id FK
+    date valid_from
+    date valid_to
+    datetime created_at
+  }
+
+  COURSE {
+    bigint id PK
+    bigint owning_academic_unit_id FK "course's school/department"
+    string code UK "IDE_MATERIA/id_course"
+    string name
+    int default_credits
+    int default_weekly_hours
+    datetime created_at
+    datetime updated_at
+  }
+
+  STUDY_PLAN_LEVEL {
+    bigint id PK
+    bigint study_plan_id FK
+    int level_number "explicit ordering; may start at 0"
+    string level_label "e.g., Semestre 1"
+    datetime created_at
+  }
+
+  STUDY_PLAN_LEVEL_COURSE {
+    bigint id PK
+    bigint study_plan_level_id FK
+    bigint course_id FK
+    int credits
+    int weekly_hours
+    int sort_order
+  }
+
+  COURSE_RELATION {
+    bigint id PK
+    bigint study_plan_id FK
+    bigint from_course_id FK
+    bigint to_course_id FK
+    string relation_type "PREREQUISITE|COREQUISITE|EQUIVALENT"
+  }
+
+  PROFESSOR {
+    bigint id PK
+    string full_name UK
+    datetime created_at
+  }
+
+  COURSE_OFFERING {
+    bigint id PK
+    bigint course_id FK
+    bigint campus_id FK
+    bigint academic_unit_id FK
+    bigint academic_term_id FK
+    string course_name_snapshot
+    int credits_snapshot
+    int weekly_hours_snapshot
+    string course_type "e.g., Curso Unico/Curso Comun/Electiva Unica"
+    datetime created_at
+  }
+
+  COURSE_OFFERING_GROUP {
+    bigint id PK
+    bigint course_offering_id FK
+    string group_code "IDE_GRUPO/NUM_GRUPO"
+    string group_type "Regular|Semipresencial|Virtual"
+    string classroom
+    int capacity
+    int reserved_seats
+    int enrolled_count
+    datetime created_at
+  }
+
+  COURSE_OFFERING_GROUP_PROFESSOR {
+    bigint id PK
+    bigint course_offering_group_id FK
+    bigint professor_id FK
+    datetime created_at
+  }
+
+  COURSE_OFFERING_MEETING {
+    bigint id PK
+    bigint course_offering_group_id FK
+    int weekday "1=Mon..7=Sun"
+    time starts_at
+    time ends_at
+    datetime created_at
+  }
+
+  COURSE_OFFERING_RESERVATION {
+    bigint id PK
+    bigint course_offering_group_id FK
+    bigint campus_id FK
+    bigint academic_unit_id FK
+    bigint study_plan_id FK
+    int reserved_seats
+  }
+
+  USER_STUDY_PLAN {
+    bigint id PK
+    bigint user_id FK
+    bigint study_plan_id FK
+    bigint campus_id FK
+    int entry_year "derived from carnet"
+    date started_on
+    date ended_on
+    boolean is_active
+    datetime created_at
+  }
+
+  STUDENT_COURSE_RECORD {
+    bigint id PK
+    bigint user_id FK
+    bigint study_plan_id FK
+    bigint course_id FK
+    bigint academic_term_id FK
+    string status "PASSED|FAILED|IN_PROGRESS|WITHDRAWN|APPROVED"
+    decimal grade
+    boolean approved
+    datetime recorded_at
+  }
+
+  SAVED_SCHEDULE {
+    bigint id PK
+    bigint user_id FK
+    string name
+    bigint academic_term_id FK
+    datetime created_at
+    datetime updated_at
+  }
+
+  SAVED_SCHEDULE_ITEM {
+    bigint id PK
+    bigint saved_schedule_id FK
+    bigint course_offering_group_id FK
+    datetime created_at
+  }
+
+  COUNTRY ||--o{ UNIVERSITY : contains
+  UNIVERSITY ||--o{ CAMPUS : has
+  UNIVERSITY ||--o{ ACADEMIC_UNIT : has
+
+  ACADEMIC_UNIT ||--o{ CAREER_PROGRAM : hosts
+  CAREER_PROGRAM ||--o{ STUDY_PLAN : has
+  CAREER_PROGRAM ||--o{ CAREER_CAMPUS : offered_in
+  CAMPUS ||--o{ CAREER_CAMPUS : offers
+
+  ACADEMIC_MODALITY ||--o{ ACADEMIC_TERM : defines
+  ACADEMIC_MODALITY ||--o{ STUDY_PLAN : uses
+
+  STUDY_PLAN ||--o{ STUDY_PLAN_LEVEL : has
+  STUDY_PLAN_LEVEL ||--o{ STUDY_PLAN_LEVEL_COURSE : contains
+  COURSE ||--o{ STUDY_PLAN_LEVEL_COURSE : scheduled_as
+
+  STUDY_PLAN ||--o{ COURSE_RELATION : constrains
+  COURSE ||--o{ COURSE_RELATION : from_course
+  COURSE ||--o{ COURSE_RELATION : to_course
+
+  STUDY_PLAN ||--o{ STUDY_PLAN_CAMPUS : available_in
+  CAMPUS ||--o{ STUDY_PLAN_CAMPUS : offers
+
+  ACADEMIC_UNIT ||--o{ COURSE : owns
+
+  COURSE ||--o{ COURSE_OFFERING : offered_as
+  CAMPUS ||--o{ COURSE_OFFERING : at
+  ACADEMIC_UNIT ||--o{ COURSE_OFFERING : by
+  ACADEMIC_TERM ||--o{ COURSE_OFFERING : during
+
+  COURSE_OFFERING ||--o{ COURSE_OFFERING_GROUP : has
+  COURSE_OFFERING_GROUP ||--o{ COURSE_OFFERING_MEETING : meets
+  COURSE_OFFERING_GROUP ||--o{ COURSE_OFFERING_GROUP_PROFESSOR : taught_by
+  PROFESSOR ||--o{ COURSE_OFFERING_GROUP_PROFESSOR : teaches
+
+  COURSE_OFFERING_GROUP ||--o{ COURSE_OFFERING_RESERVATION : reserves
+  CAMPUS ||--o{ COURSE_OFFERING_RESERVATION : reserved_for_campus
+  ACADEMIC_UNIT ||--o{ COURSE_OFFERING_RESERVATION : reserved_for_unit
+  STUDY_PLAN ||--o{ COURSE_OFFERING_RESERVATION : reserved_for_plan
+
+  USER ||--o{ USER_STUDY_PLAN : has
+  STUDY_PLAN ||--o{ USER_STUDY_PLAN : chosen
+  CAMPUS ||--o{ USER_STUDY_PLAN : home_campus
+
+  USER ||--o{ STUDENT_COURSE_RECORD : earned
+  STUDY_PLAN ||--o{ STUDENT_COURSE_RECORD : within
+  COURSE ||--o{ STUDENT_COURSE_RECORD : for
+  ACADEMIC_TERM ||--o{ STUDENT_COURSE_RECORD : in
+
+  USER ||--o{ SAVED_SCHEDULE : creates
+  ACADEMIC_TERM ||--o{ SAVED_SCHEDULE : for
+  SAVED_SCHEDULE ||--o{ SAVED_SCHEDULE_ITEM : includes
+  COURSE_OFFERING_GROUP ||--o{ SAVED_SCHEDULE_ITEM : selected
