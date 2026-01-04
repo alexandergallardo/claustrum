@@ -1,10 +1,7 @@
 erDiagram
   USER {
-    bigint id PK
+    uuid id PK
     string carnet UK
-    string full_name
-    string email
-    string better_auth_user_id UK "external reference to Better Auth user"
     datetime created_at
     datetime updated_at
   }
@@ -258,6 +255,16 @@ erDiagram
   CAMPUS ||--o{ STUDY_PLAN_CAMPUS : offers
 
   ACADEMIC_UNIT ||--o{ COURSE : owns
+
+  note for CAREER_CAMPUS "UNIQUE(career_program_id, campus_id)"
+  note for STUDY_PLAN "UNIQUE(career_program_id, external_plan_id)"
+  note for STUDY_PLAN_CAMPUS "UNIQUE(study_plan_id, campus_id)"
+  note for COURSE_RELATION "UNIQUE(study_plan_id, from_course_id, to_course_id, relation_type)"
+  note for COURSE_OFFERING "UNIQUE(course_id, campus_id, academic_unit_id, academic_term_id)"
+  note for COURSE_OFFERING_GROUP "UNIQUE(course_offering_id, group_code)"
+  note for COURSE_OFFERING_GROUP_PROFESSOR "UNIQUE(course_offering_group_id, professor_id)"
+  note for COURSE_OFFERING_MEETING "UNIQUE(course_offering_group_id, weekday, starts_at, ends_at)"
+  note for COURSE_OFFERING_RESERVATION "UNIQUE(course_offering_group_id, campus_id, academic_unit_id, study_plan_id)"
 
   COURSE ||--o{ COURSE_OFFERING : offered_as
   CAMPUS ||--o{ COURSE_OFFERING : at
