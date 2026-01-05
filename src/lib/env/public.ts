@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-declare global {
-  var CLOUDFLARE_ENV: Record<string, string> | undefined;
-}
-
 const publicEnvSchema = z.object({
   VITE_SUPABASE_URL: z.string().url(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
@@ -31,13 +27,7 @@ export function getPublicEnv(): z.infer<typeof publicEnvSchema> {
     throw new Error("Environment variables not available in this runtime");
   }
 
-  // For Cloudflare Workers, merge Cloudflare env vars with import.meta.env
-  const env = {
-    ...import.meta.env,
-    ...(typeof globalThis !== "undefined" && (globalThis as any).CLOUDFLARE_ENV),
-  };
-
-  const parsed = publicEnvSchema.safeParse(env);
+  const parsed = publicEnvSchema.safeParse(import.meta.env);
   if (!parsed.success) {
     throw new Error(
       formatZodError(
