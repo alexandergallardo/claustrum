@@ -37,16 +37,15 @@ type CampusRow = {
   name: string;
 };
 
-type CareerProgramRow = {
+type AcademicUnitRow = {
   id: number;
-  academic_unit_id: number;
   code: string;
   name: string;
 };
 
 type StudyPlanRow = {
   id: number;
-  career_program_id: number;
+  academic_unit_id: number;
   external_plan_id: number;
   name: string;
   academic_degree: string | null;
@@ -61,8 +60,6 @@ type UserProfileContextRow = {
   campus_name: string | null;
   academic_unit_id: number | null;
   academic_unit_name: string | null;
-  career_program_id: number | null;
-  career_program_name: string | null;
   study_plan_id: number | null;
   study_plan_name: string | null;
   entry_year: number | null;
@@ -76,7 +73,7 @@ type LoadState =
       profileContext: UserProfileContextRow | null;
       universities: UniversityRow[];
       campuses: CampusRow[];
-      careerPrograms: CareerProgramRow[];
+      academicUnits: AcademicUnitRow[];
       studyPlans: StudyPlanRow[];
     }
   | { status: "error"; message: string };
@@ -97,7 +94,7 @@ function ProfilePage() {
 
   const [universityIdDraft, setUniversityIdDraft] = useState<string>("");
   const [campusIdDraft, setCampusIdDraft] = useState<string>("");
-  const [careerProgramIdDraft, setCareerProgramIdDraft] = useState<string>("");
+  const [academicUnitIdDraft, setAcademicUnitIdDraft] = useState<string>("");
   const [studyPlanIdDraft, setStudyPlanIdDraft] = useState<string>("");
   const [carnetDraft, setCarnetDraft] = useState<string>("");
 
@@ -111,7 +108,7 @@ function ProfilePage() {
   const profileContext = state.status === "ready" ? state.profileContext : null;
   const universities = state.status === "ready" ? state.universities : [];
   const campuses = state.status === "ready" ? state.campuses : [];
-  const careerPrograms = state.status === "ready" ? state.careerPrograms : [];
+  const academicUnits = state.status === "ready" ? state.academicUnits : [];
   const studyPlans = state.status === "ready" ? state.studyPlans : [];
 
   const hasData = profileContext?.study_plan_id !== null;
@@ -127,20 +124,20 @@ function ProfilePage() {
     return (data ?? []) as CampusRow[];
   }
 
-  async function loadCareerPrograms(campusId: number, client: any): Promise<CareerProgramRow[]> {
+  async function loadAcademicUnits(campusId: number, client: any): Promise<AcademicUnitRow[]> {
     const { data, error } = await client
-      .rpc("get_career_programs_for_campus", { p_campus_id: campusId })
-      .select("id,academic_unit_id,code,name")
+      .rpc("get_academic_units_for_campus", { p_campus_id: campusId })
+      .select("id,code,name")
       .order("name", { ascending: true });
 
     if (error) throw error;
-    return (data ?? []) as CareerProgramRow[];
+    return (data ?? []) as AcademicUnitRow[];
   }
 
-  async function loadStudyPlans(careerProgramId: number, client: any): Promise<StudyPlanRow[]> {
+  async function loadStudyPlans(academicUnitId: number, client: any): Promise<StudyPlanRow[]> {
     const { data, error } = await client
-      .rpc("get_study_plans_for_career_program", { p_career_program_id: careerProgramId })
-      .select("id,career_program_id,external_plan_id,name,academic_degree");
+      .rpc("get_study_plans_for_academic_unit", { p_academic_unit_id: academicUnitId })
+      .select("id,academic_unit_id,external_plan_id,name,academic_degree");
 
     if (error) throw error;
     return (data ?? []) as StudyPlanRow[];
@@ -160,7 +157,7 @@ function ProfilePage() {
     if (!ctx) {
       setUniversityIdDraft("");
       setCampusIdDraft("");
-      setCareerProgramIdDraft("");
+      setAcademicUnitIdDraft("");
       setStudyPlanIdDraft("");
       setCarnetDraft("");
       return;
@@ -172,8 +169,8 @@ function ProfilePage() {
     if (ctx.campus_id !== null) setCampusIdDraft(String(ctx.campus_id));
     else setCampusIdDraft("");
 
-    if (ctx.career_program_id !== null) setCareerProgramIdDraft(String(ctx.career_program_id));
-    else setCareerProgramIdDraft("");
+    if (ctx.academic_unit_id !== null) setAcademicUnitIdDraft(String(ctx.academic_unit_id));
+    else setAcademicUnitIdDraft("");
 
     if (ctx.study_plan_id !== null) setStudyPlanIdDraft(String(ctx.study_plan_id));
     else setStudyPlanIdDraft("");
@@ -212,7 +209,7 @@ function ProfilePage() {
         profileContext: null,
         universities: nextUniversities,
         campuses: [],
-        careerPrograms: [],
+        academicUnits: [],
         studyPlans: [],
       });
       setDraftsFromContext(null);
@@ -223,7 +220,7 @@ function ProfilePage() {
 
     // Load cascading data based on profile context
     let nextCampuses: CampusRow[] = [];
-    let nextCareerPrograms: CareerProgramRow[] = [];
+    let nextAcademicUnits: AcademicUnitRow[] = [];
     let nextStudyPlans: StudyPlanRow[] = [];
 
     if (nextProfileContext?.university_id) {
@@ -231,11 +228,11 @@ function ProfilePage() {
     }
 
     if (nextProfileContext?.campus_id) {
-      nextCareerPrograms = await loadCareerPrograms(nextProfileContext.campus_id, client);
+      nextAcademicUnits = await loadAcademicUnits(nextProfileContext.campus_id, client);
     }
 
-    if (nextProfileContext?.career_program_id) {
-      nextStudyPlans = await loadStudyPlans(nextProfileContext.career_program_id, client);
+    if (nextProfileContext?.academic_unit_id) {
+      nextStudyPlans = await loadStudyPlans(nextProfileContext.academic_unit_id, client);
     }
 
     setState({
@@ -244,7 +241,7 @@ function ProfilePage() {
       profileContext: nextProfileContext,
       universities: nextUniversities,
       campuses: nextCampuses,
-      careerPrograms: nextCareerPrograms,
+      academicUnits: nextAcademicUnits,
       studyPlans: nextStudyPlans,
     });
 
@@ -337,7 +334,7 @@ function ProfilePage() {
     setFormError(null);
     setUniversityIdDraft(universityId);
     setCampusIdDraft("");
-    setCareerProgramIdDraft("");
+    setAcademicUnitIdDraft("");
     setStudyPlanIdDraft("");
 
     setLoadingCampuses(true);
@@ -346,7 +343,7 @@ function ProfilePage() {
       setState(prev => prev.status === "ready" ? {
         ...prev,
         campuses: nextCampuses,
-        careerPrograms: [],
+        academicUnits: [],
         studyPlans: [],
       } : prev);
     } catch (err) {
@@ -359,33 +356,33 @@ function ProfilePage() {
   function handleCampusChange(campusId: string) {
     setFormError(null);
     setCampusIdDraft(campusId);
-    setCareerProgramIdDraft("");
+    setAcademicUnitIdDraft("");
     setStudyPlanIdDraft("");
 
     setLoadingCareerPrograms(true);
-    loadCareerPrograms(Number(campusId), supabase!)
-      .then((nextCareerPrograms) => {
+    loadAcademicUnits(Number(campusId), supabase!)
+      .then((nextAcademicUnits) => {
         setState(prev => prev.status === "ready" ? {
           ...prev,
-          careerPrograms: nextCareerPrograms,
+          academicUnits: nextAcademicUnits,
           studyPlans: [],
         } : prev);
       })
       .catch(() => {
-        toast.error("Error al cargar carreras");
+        toast.error("Error al cargar escuelas");
       })
       .finally(() => {
         setLoadingCareerPrograms(false);
       });
   }
 
-  function handleCareerProgramChange(careerProgramId: string) {
+  function handleAcademicUnitChange(academicUnitId: string) {
     setFormError(null);
-    setCareerProgramIdDraft(careerProgramId);
+    setAcademicUnitIdDraft(academicUnitId);
     setStudyPlanIdDraft("");
 
     setLoadingStudyPlans(true);
-    loadStudyPlans(Number(careerProgramId), supabase!)
+    loadStudyPlans(Number(academicUnitId), supabase!)
       .then((nextStudyPlans) => {
         setState(prev => prev.status === "ready" ? {
           ...prev,
@@ -408,7 +405,7 @@ function ProfilePage() {
   const hasUnsavedChanges = isReady && authUser && profileContext && (
     (profileContext.university_id !== null && String(profileContext.university_id) !== universityIdDraft) ||
     (profileContext.campus_id !== null && String(profileContext.campus_id) !== campusIdDraft) ||
-    (profileContext.career_program_id !== null && String(profileContext.career_program_id) !== careerProgramIdDraft) ||
+    (profileContext.academic_unit_id !== null && String(profileContext.academic_unit_id) !== academicUnitIdDraft) ||
     (profileContext.study_plan_id !== null && String(profileContext.study_plan_id) !== studyPlanIdDraft) ||
     (profileContext.carnet !== null && profileContext.carnet !== carnetDraft) ||
     (profileContext.university_id === null && universityIdDraft !== "")
@@ -426,8 +423,8 @@ function ProfilePage() {
       return;
     }
 
-    if (!careerProgramIdDraft) {
-      setFormError("Selecciona una carrera.");
+    if (!academicUnitIdDraft) {
+      setFormError("Selecciona una escuela.");
       return;
     }
 
@@ -664,10 +661,10 @@ function ProfilePage() {
               </Field>
 
               <Field>
-                <FieldLabel>Carrera</FieldLabel>
+                <FieldLabel>Escuela</FieldLabel>
                 <Select
-                  value={careerProgramIdDraft}
-                  onValueChange={(v) => void handleCareerProgramChange(v)}
+                  value={academicUnitIdDraft}
+                  onValueChange={(v) => void handleAcademicUnitChange(v)}
                   disabled={!isEditing || !campusIdDraft}
                 >
                   <SelectTrigger>
@@ -677,13 +674,13 @@ function ProfilePage() {
                         Cargando...
                       </span>
                     ) : (
-                      <SelectValue placeholder="Selecciona tu carrera" />
+                      <SelectValue placeholder="Selecciona tu escuela" />
                     )}
                   </SelectTrigger>
                   <SelectContent>
-                    {careerPrograms.map((cp) => (
-                      <SelectItem key={cp.id} value={String(cp.id)}>
-                        {cp.name}
+                    {academicUnits.map((au) => (
+                      <SelectItem key={au.id} value={String(au.id)}>
+                        {au.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -695,7 +692,7 @@ function ProfilePage() {
                 <Select
                   value={studyPlanIdDraft}
                   onValueChange={(v) => void handleStudyPlanChange(v)}
-                  disabled={!isEditing || !careerProgramIdDraft}
+                  disabled={!isEditing || !academicUnitIdDraft}
                 >
                   <SelectTrigger>
                     {loadingStudyPlans ? (

@@ -173,65 +173,46 @@ COMMENT ON TABLE public.academic_term IS 'Academic period instance: year + modal
 -- PROGRAM / CURRICULUM TABLES
 -- ============================================================================
 
--- Career / program (carrera) attached to an academic unit
-CREATE TABLE IF NOT EXISTS public.career_program (
+-- Academic unit offered at campus (many-to-many)
+CREATE TABLE IF NOT EXISTS public.academic_unit_campus (
   id               BIGSERIAL PRIMARY KEY,
   academic_unit_id BIGINT NOT NULL,
-  code             TEXT NOT NULL UNIQUE,
-  name             TEXT NOT NULL,
-  academic_degree  TEXT,
+  campus_id        BIGINT NOT NULL,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-  CONSTRAINT career_program_academic_unit_id_fkey
+  CONSTRAINT academic_unit_campus_academic_unit_id_fkey
     FOREIGN KEY (academic_unit_id)
     REFERENCES public.academic_unit(id)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE
-);
-
-COMMENT ON TABLE public.career_program IS 'Degree program (carrera) for a given academic unit; sourced from curriculum endpoints.';
-
--- Program offered at campus (many-to-many)
-CREATE TABLE IF NOT EXISTS public.career_campus (
-  id                BIGSERIAL PRIMARY KEY,
-  career_program_id BIGINT NOT NULL,
-  campus_id         BIGINT NOT NULL,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT career_campus_career_program_id_fkey
-    FOREIGN KEY (career_program_id)
-    REFERENCES public.career_program(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
 
-  CONSTRAINT career_campus_campus_id_fkey
+  CONSTRAINT academic_unit_campus_campus_id_fkey
     FOREIGN KEY (campus_id)
     REFERENCES public.campus(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
 
-  CONSTRAINT career_campus_unique_program_campus
-    UNIQUE (career_program_id, campus_id)
+  CONSTRAINT academic_unit_campus_unique_unit_campus
+    UNIQUE (academic_unit_id, campus_id)
 );
 
-COMMENT ON TABLE public.career_campus IS 'Join table: which career programs are offered at which campuses.';
+COMMENT ON TABLE public.academic_unit_campus IS 'Join table: which academic units (schools/careers) are offered at which campuses.';
 
 -- Study plan / curriculum (plan de estudio)
 CREATE TABLE IF NOT EXISTS public.study_plan (
-  id                 BIGSERIAL PRIMARY KEY,
-  career_program_id  BIGINT NOT NULL,
+  id                   BIGSERIAL PRIMARY KEY,
+  academic_unit_id     BIGINT NOT NULL,
   academic_modality_id BIGINT NOT NULL,
-  external_plan_id   INTEGER NOT NULL,
-  name               TEXT NOT NULL,
-  academic_degree    TEXT,
-  first_level_number INTEGER NOT NULL DEFAULT 0,
-  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  external_plan_id     INTEGER NOT NULL,
+  name                 TEXT NOT NULL,
+  academic_degree      TEXT,
+  first_level_number   INTEGER NOT NULL DEFAULT 0,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-  CONSTRAINT study_plan_career_program_id_fkey
-    FOREIGN KEY (career_program_id)
-    REFERENCES public.career_program(id)
+  CONSTRAINT study_plan_academic_unit_id_fkey
+    FOREIGN KEY (academic_unit_id)
+    REFERENCES public.academic_unit(id)
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
 
@@ -241,11 +222,11 @@ CREATE TABLE IF NOT EXISTS public.study_plan (
     ON DELETE RESTRICT
     ON UPDATE CASCADE,
 
-  CONSTRAINT study_plan_unique_program_external
-    UNIQUE (career_program_id, external_plan_id)
+  CONSTRAINT study_plan_unique_unit_external
+    UNIQUE (academic_unit_id, external_plan_id)
 );
 
-COMMENT ON TABLE public.study_plan IS 'Curriculum/study plan version for a degree program; external_plan_id comes from upstream plan id.';
+COMMENT ON TABLE public.study_plan IS 'Curriculum/study plan version (Bachillerato, Licenciatura, etc.) for an academic unit; external_plan_id comes from upstream plan id.';
 
 -- Study plan valid at campus (many-to-many + optional validity dates)
 CREATE TABLE IF NOT EXISTS public.study_plan_campus (
@@ -280,27 +261,16 @@ COMMENT ON TABLE public.study_plan_campus IS 'Join table: where/when a study pla
 
 -- Canonical course catalog
 CREATE TABLE IF NOT EXISTS public.course (
-  id                    BIGSERIAL PRIMARY KEY,
-  -- NOTE:
-  -- We cannot reliably infer an owning school/academic unit from a course code (e.g. IC1212),
-  -- and many courses are shared across multiple study plans.
-  -- Therefore, owning_academic_unit_id is optional; the plan-level join tables define membership.
-  owning_academic_unit_id BIGINT,
-  code                  TEXT NOT NULL UNIQUE,
-  name                  TEXT NOT NULL,
-  default_credits       INTEGER NOT NULL DEFAULT 0,
-  default_weekly_hours  INTEGER NOT NULL DEFAULT 0,
-  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT course_owning_academic_unit_id_fkey
-    FOREIGN KEY (owning_academic_unit_id)
-    REFERENCES public.academic_unit(id)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE
+  id                   BIGSERIAL PRIMARY KEY,
+  code                 TEXT NOT NULL UNIQUE,
+  name                 TEXT NOT NULL,
+  default_credits      INTEGER NOT NULL DEFAULT 0,
+  default_weekly_hours INTEGER NOT NULL DEFAULT 0,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.course IS 'Canonical course catalog. `code` is the official course code (e.g., IC1802).';
+COMMENT ON TABLE public.course IS 'Canonical course catalog. `code` is the official course code (e.g., IC1802). Courses are shared across multiple study plans without a single owning unit.';
 
 -- Plan levels (e.g., Semestre 0, Semestre 1)
 CREATE TABLE IF NOT EXISTS public.study_plan_level (
@@ -786,14 +756,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_academic_term') THEN
     CREATE TRIGGER set_timestamp_academic_term
       BEFORE UPDATE ON public.academic_term
-      FOR EACH ROW
-      EXECUTE FUNCTION public.trigger_set_timestamp();
-  END IF;
-
-  -- career_program
-  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_career_program') THEN
-    CREATE TRIGGER set_timestamp_career_program
-      BEFORE UPDATE ON public.career_program
       FOR EACH ROW
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;

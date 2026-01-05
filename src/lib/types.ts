@@ -99,7 +99,7 @@ export interface UserStudyPlanContext {
   campusName: string
   universityId: number | null
   departmentId: number | null
-  careerProgramId: number | null
+  academicUnitId: number | null
 }
 
 export interface UserProfileContextRow {

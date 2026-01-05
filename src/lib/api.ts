@@ -43,27 +43,26 @@ export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {
     campusName: profile.campus_name!,
     universityId: profile.university_id,
     departmentId: profile.academic_unit_id,
-    careerProgramId: profile.career_program_id,
   }
 }
 
-export async function getCareerProgramsForCampus(campusId: number): Promise<CatalogCareerProgram[]> {
+export async function getAcademicUnitsForCampus(campusId: number): Promise<CatalogCareerProgram[]> {
   const { data, error } = await supabase
-    .rpc('get_career_programs_for_campus', { p_campus_id: campusId })
+    .rpc('get_academic_units_for_campus', { p_campus_id: campusId })
 
   if (error) throw error
 
   return (data ?? []).map((row: any) => ({
     id: row.id,
-    academicUnitId: row.academic_unit_id,
+    academicUnitId: row.id,
     code: row.code,
     name: row.name,
   }))
 }
 
-export async function getStudyPlansForCareerProgram(careerProgramId: number): Promise<CatalogStudyPlan[]> {
+export async function getStudyPlansForAcademicUnit(academicUnitId: number): Promise<CatalogStudyPlan[]> {
   const { data, error } = await supabase
-    .rpc('get_study_plans_for_career_program', { p_career_program_id: careerProgramId })
+    .rpc('get_study_plans_for_academic_unit', { p_academic_unit_id: academicUnitId })
 
   if (error) throw error
 
@@ -71,7 +70,7 @@ export async function getStudyPlansForCareerProgram(careerProgramId: number): Pr
     id: plan.id,
     name: plan.name,
     academicDegree: plan.academic_degree,
-    careerProgramId: plan.career_program_id,
+    academicUnitId: plan.academic_unit_id,
     academicModalityId: 0,
     externalPlanId: plan.external_plan_id,
     firstLevelNumber: 0,

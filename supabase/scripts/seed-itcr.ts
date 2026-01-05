@@ -1186,9 +1186,8 @@ interface IngestUuids {
   academicUnitIdByCode: Map<string, number>;
   academicModalityIdByCode: Map<string, number>;
   academicTermIdByExternalKey: Map<string, number>;
-  careerProgramIdByCode: Map<string, number>;
   courseIdByCode: Map<string, number>;
-  studyPlanIdByProgramCodeAndExternalPlanId: Map<string, number>;
+  studyPlanIdByUnitCodeAndExternalPlanId: Map<string, number>;
 }
 
 function keyStudyPlan(programCode: string, externalPlanId: number): string {
@@ -1219,7 +1218,7 @@ async function fetchOfferingsByAcademicUnitAndYearFromGuiaHorarios(params: {
 async function buildIngestMaps(params: {
   supabase: SupabaseRestClient;
 }): Promise<IngestUuids> {
-  const [campuses, units, modalities, terms, programs, courses, studyPlans] =
+  const [campuses, units, modalities, terms, courses, studyPlans] =
     await Promise.all([
       params.supabase.select<{ id: number; code: string }>({
         table: "campus",
@@ -1242,11 +1241,6 @@ async function buildIngestMaps(params: {
         limit: 50_000,
       }),
       params.supabase.select<{ id: number; code: string }>({
-        table: "career_program",
-        columns: "id,code",
-        limit: 50_000,
-      }),
-      params.supabase.select<{ id: number; code: string }>({
         table: "course",
         columns: "id,code",
         limit: 200_000,
@@ -1254,10 +1248,10 @@ async function buildIngestMaps(params: {
       params.supabase.select<{
         id: number;
         external_plan_id: number;
-        career_program_id: number;
+        academic_unit_id: number;
       }>({
         table: "study_plan",
-        columns: "id,external_plan_id,career_program_id",
+        columns: "id,external_plan_id,academic_unit_id",
         limit: 100_000,
       }),
     ]);
@@ -1274,21 +1268,18 @@ async function buildIngestMaps(params: {
   const academicTermIdByExternalKey = new Map<string, number>();
   for (const t of terms) academicTermIdByExternalKey.set(t.external_key, t.id);
 
-  const careerProgramIdByCode = new Map<string, number>();
-  for (const p of programs) careerProgramIdByCode.set(p.code, p.id);
-
   const courseIdByCode = new Map<string, number>();
   for (const c of courses) courseIdByCode.set(c.code, c.id);
 
-  const programIdToCode = new Map<number, string>();
-  for (const p of programs) programIdToCode.set(p.id, p.code);
+  const unitCodeById = new Map<number, string>();
+  for (const u of units) unitCodeById.set(u.id, u.code);
 
-  const studyPlanIdByProgramCodeAndExternalPlanId = new Map<string, number>();
+  const studyPlanIdByUnitCodeAndExternalPlanId = new Map<string, number>();
   for (const sp of studyPlans) {
-    const programCode = programIdToCode.get(sp.career_program_id);
-    if (!programCode) continue;
-    studyPlanIdByProgramCodeAndExternalPlanId.set(
-      keyStudyPlan(programCode, safeNumber(sp.external_plan_id, 0)),
+    const unitCode = unitCodeById.get(sp.academic_unit_id);
+    if (!unitCode) continue;
+    studyPlanIdByUnitCodeAndExternalPlanId.set(
+      keyStudyPlan(unitCode, safeNumber(sp.external_plan_id, 0)),
       sp.id,
     );
   }
@@ -1298,9 +1289,8 @@ async function buildIngestMaps(params: {
     academicUnitIdByCode,
     academicModalityIdByCode,
     academicTermIdByExternalKey,
-    careerProgramIdByCode,
     courseIdByCode,
-    studyPlanIdByProgramCodeAndExternalPlanId,
+    studyPlanIdByUnitCodeAndExternalPlanId,
   };
 }
 
@@ -1617,103 +1607,41 @@ async function syncProgramsAndCampusAvailability(params: {
     }
   }
 
-  // Insert missing academic units referenced by program codes.
-  const units = await params.supabase.select<{ id: number; code: string }>({
-    table: "academic_unit",
-    columns: "id,code",
-    limit: 50_000,
-  });
-  const unitIdByCode = new Map<string, number>();
-  for (const u of units) unitIdByCode.set(u.code, u.id);
-
-  const missingUnitRows = Array.from(allPrograms.values())
-    .filter((p) => !unitIdByCode.has(p.code))
-    .map((p) => ({
-      university_id: params.universityId,
-      code: p.code,
-      name: p.name,
-      offers_careers: true,
-    }));
-
-  if (missingUnitRows.length > 0) {
-    await params.supabase.upsertMany({
-      table: "academic_unit",
-      rows: missingUnitRows,
-      onConflict: "code",
-      dryRun: params.dryRun,
-    });
-  }
-
-  // Mark offers_careers=true on units that appear in curriculum program list.
-  const careerUnitRows = Array.from(allPrograms.values()).map((p) => ({
-    university_id: params.universityId,
-    code: p.code,
-    name: p.name,
-    offers_careers: true,
-  }));
-  if (careerUnitRows.length > 0) {
-    await params.supabase.upsertMany({
-      table: "academic_unit",
-      rows: careerUnitRows,
-      onConflict: "code",
-      dryRun: params.dryRun,
-    });
-  }
+  // Academic units are already seeded; we just map programs to campuses via academic_unit_campus.
+  // No need to insert into career_program (it no longer exists).
 
   const maps = await buildIngestMaps({ supabase: params.supabase });
 
-  const programRows = Array.from(allPrograms.values())
-    .map((p) => {
-      const academic_unit_id = maps.academicUnitIdByCode.get(p.code);
-      if (!academic_unit_id) return null;
-      return {
-        academic_unit_id,
-        code: p.code,
-        name: p.name,
-        academic_degree: null,
-      };
-    })
-    .filter((x): x is NonNullable<typeof x> => Boolean(x));
-
-  await params.supabase.upsertMany({
-    table: "career_program",
-    rows: programRows,
-    onConflict: "code",
-    dryRun: params.dryRun,
-  });
-
-  const maps2 = await buildIngestMaps({ supabase: params.supabase });
-
-  const careerCampusRows: Array<{
-    career_program_id: number;
+  const academicUnitCampusRows: Array<{
+    academic_unit_id: number;
     campus_id: number;
   }> = [];
 
   // Deduplicate pairs to avoid Postgres error:
   // "ON CONFLICT DO UPDATE command cannot affect row a second time"
-  // This happens when the same (career_program_id, campus_id) appears more than once
+  // This happens when the same (academic_unit_id, campus_id) appears more than once
   // in a single insert/upsert statement.
-  const seenCareerCampusPairs = new Set<string>();
+  const seenAcademicUnitCampusPairs = new Set<string>();
 
   for (const pair of campusProgramPairs) {
-    const campus_id = maps2.campusIdByCode.get(pair.campus_code);
-    const career_program_id = maps2.careerProgramIdByCode.get(
+    const campus_id = maps.campusIdByCode.get(pair.campus_code);
+    const academic_unit_id = maps.academicUnitIdByCode.get(
       pair.program_code,
     );
-    if (!campus_id || !career_program_id) continue;
+    if (!campus_id || !academic_unit_id) continue;
 
-    const key = `${career_program_id}:${campus_id}`;
-    if (seenCareerCampusPairs.has(key)) continue;
-    seenCareerCampusPairs.add(key);
+    const key = `${academic_unit_id}:${campus_id}`;
+    if (seenAcademicUnitCampusPairs.has(key)) continue;
+    seenAcademicUnitCampusPairs.add(key);
 
-    careerCampusRows.push({ career_program_id, campus_id });
+    academicUnitCampusRows.push({ academic_unit_id, campus_id });
   }
 
-  for (const batch of chunk(careerCampusRows, 5000)) {
+  for (const batch of chunk(academicUnitCampusRows, 5000)) {
     await params.supabase.upsertMany({
-      table: "career_campus",
+      table: "academic_unit_campus",
       rows: batch,
-      onConflict: "career_program_id,campus_id",
+      onConflict: "academic_unit_id,campus_id",
       dryRun: params.dryRun,
     });
   }
@@ -1798,7 +1726,7 @@ async function syncCurriculumPlans(params: {
 
   // Accumulate plan headers we want to ingest.
   const planHeaders: Array<{
-    career_program_id: number;
+    academic_unit_id: number;
     academic_modality_id: number;
     external_plan_id: number;
     name: string;
@@ -1858,8 +1786,8 @@ async function syncCurriculumPlans(params: {
     for (const program of careers) {
       programIdx++;
       const programCode = program.code;
-      const career_program_id = maps.careerProgramIdByCode.get(programCode);
-      if (!career_program_id) continue;
+      const academic_unit_id = maps.academicUnitIdByCode.get(programCode);
+      if (!academic_unit_id) continue;
 
       logProgress(
         `    [${programIdx}/${careers.length}] Program ${programCode}: fetching study plans (campus-scoped list)...`,
@@ -1924,7 +1852,7 @@ async function syncCurriculumPlans(params: {
         const spKey = keyStudyPlan(programCode, external_plan_id);
 
         planHeaders.push({
-          career_program_id,
+          academic_unit_id,
           academic_modality_id,
           external_plan_id,
           name:
@@ -2069,20 +1997,12 @@ async function syncCurriculumPlans(params: {
   }
 
   // NOTE:
-  // Courses are no longer assigned an owning_academic_unit_id during seeding.
-  // Course ownership and academic unit associations must be managed via direct database updates
-  // or administrative UI, as course codes do not reliably map to academic units.
-  // All course identifications are determined via study_plan_level_course and course_relation tables.
+  // Courses no longer have owning_academic_unit_id.
+  // Course associations are determined via study_plan_level_course and course_relation tables.
 
-  const maps2 = await buildIngestMaps({ supabase: params.supabase });
-
-  // Courses are inserted with owning_academic_unit_id = null.
-  // Course ownership is managed externally; course associations are determined via 
-  // study_plan_level_course and course_relation tables.
   logProgress(`Processing ${courseUpserts.size} courses...`);
   const courseRows = Array.from(courseUpserts.values()).map((c) => {
     return {
-      owning_academic_unit_id: null,
       code: c.code,
       name: c.name,
       default_credits: c.credits,
@@ -2113,11 +2033,11 @@ async function syncCurriculumPlans(params: {
   // Upsert study_plan headers - deduplicate first to avoid constraint violations
   logProgress(`Processing ${planHeaders.length} study plan headers...`);
 
-  // Deduplicate by career_program_id + external_plan_id
+  // Deduplicate by academic_unit_id + external_plan_id
   const uniquePlanHeaders = Array.from(
     new Map(
       planHeaders.map((h) => [
-        `${h.career_program_id}-${h.external_plan_id}`,
+        `${h.academic_unit_id}-${h.external_plan_id}`,
         h,
       ]),
     ).values(),
@@ -2139,7 +2059,7 @@ async function syncCurriculumPlans(params: {
     await params.supabase.upsertMany<(typeof batch)[0]>({
       table: "study_plan",
       rows: batch,
-      onConflict: "career_program_id,external_plan_id",
+      onConflict: "academic_unit_id,external_plan_id",
       dryRun: params.dryRun,
       showProgress: false,
     });
@@ -2162,9 +2082,9 @@ async function syncCurriculumPlans(params: {
     valid_to: Date | null;
   }> = [];
   for (const spc of planCampusPairs) {
-    const [programCode, externalPlanIdStr] = spc.study_plan_key.split("::");
-    const study_plan_id = maps3.studyPlanIdByProgramCodeAndExternalPlanId.get(
-      keyStudyPlan(programCode!, safeNumber(externalPlanIdStr, 0)),
+    const [unitCode, externalPlanIdStr] = spc.study_plan_key.split("::");
+    const study_plan_id = maps3.studyPlanIdByUnitCodeAndExternalPlanId.get(
+      keyStudyPlan(unitCode!, safeNumber(externalPlanIdStr, 0)),
     );
     const campus_id = maps.campusIdByCode.get(spc.campus_code);
     if (!study_plan_id || !campus_id) continue;
@@ -2212,9 +2132,9 @@ async function syncCurriculumPlans(params: {
     level_label: string;
   }> = [];
   for (const l of levelMap.values()) {
-    const [programCode, externalPlanIdStr] = l.study_plan_key.split("::");
-    const study_plan_id = maps3.studyPlanIdByProgramCodeAndExternalPlanId.get(
-      keyStudyPlan(programCode!, safeNumber(externalPlanIdStr, 0)),
+    const [unitCode, externalPlanIdStr] = l.study_plan_key.split("::");
+    const study_plan_id = maps3.studyPlanIdByUnitCodeAndExternalPlanId.get(
+      keyStudyPlan(unitCode!, safeNumber(externalPlanIdStr, 0)),
     );
     if (!study_plan_id) continue;
     levelRows.push({
@@ -2282,9 +2202,9 @@ async function syncCurriculumPlans(params: {
     sort_order: number;
   }> = [];
   for (const plc of plcMap.values()) {
-    const [programCode, externalPlanIdStr] = plc.study_plan_key.split("::");
-    const study_plan_id = maps3.studyPlanIdByProgramCodeAndExternalPlanId.get(
-      keyStudyPlan(programCode!, safeNumber(externalPlanIdStr, 0)),
+    const [unitCode, externalPlanIdStr] = plc.study_plan_key.split("::");
+    const study_plan_id = maps3.studyPlanIdByUnitCodeAndExternalPlanId.get(
+      keyStudyPlan(unitCode!, safeNumber(externalPlanIdStr, 0)),
     );
     if (!study_plan_id) continue;
     const level_id = levelIdByPlanIdAndNumber.get(
@@ -2332,9 +2252,9 @@ async function syncCurriculumPlans(params: {
     relation_type: string;
   }> = [];
   for (const r of relMap.values()) {
-    const [programCode, externalPlanIdStr] = r.study_plan_key.split("::");
-    const study_plan_id = maps3.studyPlanIdByProgramCodeAndExternalPlanId.get(
-      keyStudyPlan(programCode!, safeNumber(externalPlanIdStr, 0)),
+    const [unitCode, externalPlanIdStr] = r.study_plan_key.split("::");
+    const study_plan_id = maps3.studyPlanIdByUnitCodeAndExternalPlanId.get(
+      keyStudyPlan(unitCode!, safeNumber(externalPlanIdStr, 0)),
     );
     if (!study_plan_id) continue;
 
@@ -2697,24 +2617,15 @@ async function syncScheduleGuide(params: {
           });
         }
 
-        // Insert missing courses with best-effort owning unit code
+        // Insert missing courses (no owning_academic_unit_id anymore)
         const missingCourseRows = courseCodes
           .filter((c) => !freshMaps.courseIdByCode.has(c))
-          .map((c) => {
-            const unitCode = inferAcademicUnitCodeFromCourseCode(c);
-            const owning_academic_unit_id = unitCode
-              ? freshMaps.academicUnitIdByCode.get(unitCode)
-              : null;
-            if (!owning_academic_unit_id) return null;
-            return {
-              owning_academic_unit_id,
-              code: c,
-              name: courseNameByCode.get(c) ?? "", // Use empty string if no enriched name found
-              default_credits: 0,
-              default_weekly_hours: 0,
-            };
-          })
-          .filter((x): x is NonNullable<typeof x> => Boolean(x));
+          .map((c) => ({
+            code: c,
+            name: courseNameByCode.get(c) ?? "",
+            default_credits: 0,
+            default_weekly_hours: 0,
+          }));
 
         for (const batch of chunk(missingCourseRows, 2000)) {
           await params.supabase.upsertMany<(typeof batch)[0]>({
@@ -2752,12 +2663,13 @@ async function syncScheduleGuide(params: {
 
         // Offerings are defined at the header level as a unique tuple:
         // (course_id, campus_id, academic_unit_id, academic_term_id).
-        const offeringKey = (courseId: number) =>
-          `${courseId}::${campus_id}::${academic_unit_id}::${academic_term_id}`;
+        // NOTE: When enrichByOfferingGroupKey is available, use the campus from DSC_SEDE (Guía Horarios)
+        // instead of the loop campus, as Guía Horarios provides the actual campus where the group is offered.
         const offeringByKey = new Map<
           string,
           {
             course_id: number;
+            campus_id: number;
             course_name_snapshot: string;
             credits_snapshot: number;
             weekly_hours_snapshot: number;
@@ -2770,10 +2682,46 @@ async function syncScheduleGuide(params: {
             r.courseCode.toUpperCase(),
           );
           if (!course_id) continue;
-          const key = offeringKey(course_id);
-          if (!offeringByKey.has(key)) {
-            offeringByKey.set(key, {
+
+          // Determine the correct campus_id:
+          // The Student Records HTML is filtered by campus, but the group might actually be offered at a different
+          // campus (identified by DSC_SEDE in Guía Horarios). We need to check both possibilities:
+          // 1. Try to find the group in enrichment under the loop campus (most common case)
+          // 2. If not found, try all campuses (Guía Horarios has all groups regardless of requesting campus)
+          let offering_campus_id = campus_id;
+          let enrichmentKey = `${campus.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+          let enrichment = enrichByOfferingGroupKey.get(enrichmentKey);
+          
+          // If not found with loop campus, search all campuses
+          if (!enrichment) {
+            for (const c of campuses) {
+              enrichmentKey = `${c.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+              enrichment = enrichByOfferingGroupKey.get(enrichmentKey);
+              if (enrichment) {
+                // Found! Extract the campus from DSC_SEDE mapping
+                const guiaCampusCode = c.code;
+                const guiaCampusId = maps2.campusIdByCode.get(guiaCampusCode);
+                if (guiaCampusId) {
+                  offering_campus_id = guiaCampusId;
+                }
+                break;
+              }
+            }
+          } else if (enrichment.meetings && enrichment.meetings.length > 0) {
+            // Already found with loop campus, but check if DSC_SEDE indicates a different campus
+            const keyParts = enrichmentKey.split("::");
+            const guiaCampusCode = keyParts[0];
+            const guiaCampusId = maps2.campusIdByCode.get(guiaCampusCode);
+            if (guiaCampusId) {
+              offering_campus_id = guiaCampusId;
+            }
+          }
+
+          const offeringKey = `${course_id}::${offering_campus_id}::${academic_unit_id}::${academic_term_id}`;
+          if (!offeringByKey.has(offeringKey)) {
+            offeringByKey.set(offeringKey, {
               course_id,
+              campus_id: offering_campus_id,
               course_name_snapshot: r.courseName || r.courseCode,
               credits_snapshot: r.credits,
               weekly_hours_snapshot: 0,
@@ -2784,7 +2732,7 @@ async function syncScheduleGuide(params: {
 
         const offeringRows = Array.from(offeringByKey.values()).map((o) => ({
           course_id: o.course_id,
-          campus_id,
+          campus_id: o.campus_id,
           academic_unit_id,
           academic_term_id,
           course_name_snapshot: o.course_name_snapshot,
@@ -2803,7 +2751,8 @@ async function syncScheduleGuide(params: {
           });
         }
 
-        // Refresh offerings for this campus/term to map groups
+        // Refresh offerings for this academic unit/term to map groups
+        // Note: offerings may have different campus_ids due to Guía Horarios enrichment
         const offerings: Array<{
           id: number;
           course_id: number;
@@ -2819,16 +2768,15 @@ async function syncScheduleGuide(params: {
         }>({
           table: "course_offering",
           columns: "id,course_id,campus_id,academic_unit_id,academic_term_id",
-          filter: `campus_id=eq.${campus_id}&academic_term_id=eq.${academic_term_id}&academic_unit_id=eq.${academic_unit_id}`,
+          filter: `academic_term_id=eq.${academic_term_id}&academic_unit_id=eq.${academic_unit_id}`,
           limit: 200_000,
         });
 
-        const offeringIdByCourseId = new Map<number, number>();
+        // Map offerings by (course_id, campus_id) since campus may vary
+        const offeringIdByKey = new Map<string, number>();
         for (const o of offerings) {
-          if (o.campus_id !== campus_id) continue;
-          if (o.academic_term_id !== academic_term_id) continue;
-          if (o.academic_unit_id !== academic_unit_id) continue;
-          offeringIdByCourseId.set(o.course_id, o.id);
+          const key = `${o.course_id}::${o.campus_id}`;
+          offeringIdByKey.set(key, o.id);
         }
 
         // Groups represent sections within an offering. A group is identified by (course_offering_id, group_code).
@@ -2869,7 +2817,37 @@ async function syncScheduleGuide(params: {
             r.courseCode.toUpperCase(),
           );
           if (!course_id) continue;
-          const course_offering_id = offeringIdByCourseId.get(course_id);
+
+          // Determine correct campus_id (same logic as offerings)
+          let offering_campus_id = campus_id;
+          let enrichmentKey = `${campus.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+          let enrichment = enrichByOfferingGroupKey.get(enrichmentKey);
+          
+          // If not found with loop campus, search all campuses
+          if (!enrichment) {
+            for (const c of campuses) {
+              enrichmentKey = `${c.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+              enrichment = enrichByOfferingGroupKey.get(enrichmentKey);
+              if (enrichment) {
+                const guiaCampusCode = c.code;
+                const guiaCampusId = maps2.campusIdByCode.get(guiaCampusCode);
+                if (guiaCampusId) {
+                  offering_campus_id = guiaCampusId;
+                }
+                break;
+              }
+            }
+          } else if (enrichment.meetings && enrichment.meetings.length > 0) {
+            const keyParts = enrichmentKey.split("::");
+            const guiaCampusCode = keyParts[0];
+            const guiaCampusId = maps2.campusIdByCode.get(guiaCampusCode);
+            if (guiaCampusId) {
+              offering_campus_id = guiaCampusId;
+            }
+          }
+
+          const offeringKey = `${course_id}::${offering_campus_id}`;
+          const course_offering_id = offeringIdByKey.get(offeringKey);
           if (!course_offering_id) continue;
 
           const group_type = r.groupType ?? "Regular";
@@ -2931,7 +2909,37 @@ async function syncScheduleGuide(params: {
             r.courseCode.toUpperCase(),
           );
           if (!course_id) continue;
-          const course_offering_id = offeringIdByCourseId.get(course_id);
+
+          // Determine correct campus_id (same logic as offerings)
+          let offering_campus_id = campus_id;
+          let enrichmentKey = `${campus.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+          let enrichment = enrichByOfferingGroupKey.get(enrichmentKey);
+          
+          // If not found with loop campus, search all campuses
+          if (!enrichment) {
+            for (const c of campuses) {
+              enrichmentKey = `${c.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+              enrichment = enrichByOfferingGroupKey.get(enrichmentKey);
+              if (enrichment) {
+                const guiaCampusCode = c.code;
+                const guiaCampusId = maps2.campusIdByCode.get(guiaCampusCode);
+                if (guiaCampusId) {
+                  offering_campus_id = guiaCampusId;
+                }
+                break;
+              }
+            }
+          } else if (enrichment.meetings && enrichment.meetings.length > 0) {
+            const keyParts = enrichmentKey.split("::");
+            const guiaCampusCode = keyParts[0];
+            const guiaCampusId = maps2.campusIdByCode.get(guiaCampusCode);
+            if (guiaCampusId) {
+              offering_campus_id = guiaCampusId;
+            }
+          }
+
+          const offeringKey = `${course_id}::${offering_campus_id}`;
+          const course_offering_id = offeringIdByKey.get(offeringKey);
           if (!course_offering_id) continue;
 
           const groupId = groupIdByOfferingIdAndGroupCode.get(
@@ -2951,8 +2959,20 @@ async function syncScheduleGuide(params: {
 
           // Meetings are attached using Guía Horarios when present (one row per weekday/time).
           // If enrichment is missing, the HTML schedule text is parsed to infer meeting rows.
-          const enrichKey = `${campus.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
-          const enrich = enrichByOfferingGroupKey.get(enrichKey);
+          // Search for enrichment using same logic as offerings: try loop campus first, then all campuses
+          let enrichKey = `${campus.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+          let enrich = enrichByOfferingGroupKey.get(enrichKey);
+          
+          // If not found with loop campus, search all campuses
+          if (!enrich) {
+            for (const c of campuses) {
+              enrichKey = `${c.code}::${r.courseCode.toUpperCase()}::${r.groupCode}::${termKey}`;
+              enrich = enrichByOfferingGroupKey.get(enrichKey);
+              if (enrich) {
+                break;
+              }
+            }
+          }
 
           const meetingsFromGuia = enrich?.meetings ?? [];
           if (meetingsFromGuia.length > 0) {

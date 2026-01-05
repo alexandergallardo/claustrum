@@ -7,8 +7,8 @@ import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
 import {
   getUniversities,
   getCampuses,
-  getCareerProgramsForCampus,
-  getStudyPlansForCareerProgram,
+  getAcademicUnitsForCampus,
+  getStudyPlansForAcademicUnit,
   getStudyPlanCourses,
   getStudyPlanCourseRelations,
   getUserStudyPlan,
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/app/curriculum/')({
 function PlanEstudiosPage() {
   const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null)
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null)
-  const [selectedCareerProgramId, setSelectedCareerProgramId] = useState<number | null>(null)
+  const [selectedAcademicUnitId, setSelectedAcademicUnitId] = useState<number | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [autoFilledFromUser, setAutoFilledFromUser] = useState(false)
 
@@ -39,9 +39,9 @@ function PlanEstudiosPage() {
   const [campuses, setCampuses] = useState<CatalogCampus[]>([])
   const [campusesLoading, setCampusesLoading] = useState(false)
 
-  // State for career programs (Carreras)
-  const [careerPrograms, setCareerPrograms] = useState<CatalogCareerProgram[]>([])
-  const [careerProgramsLoading, setCareerProgramsLoading] = useState(false)
+  // State for academic units (Escuelas)
+  const [academicUnits, setAcademicUnits] = useState<CatalogCareerProgram[]>([])
+  const [academicUnitsLoading, setAcademicUnitsLoading] = useState(false)
 
   // State for plans
   const [plans, setPlans] = useState<any[]>([])
@@ -105,30 +105,30 @@ function PlanEstudiosPage() {
     loadCampuses()
   }, [selectedUniversityId])
 
-  // Load career programs when campus changes
+  // Load academic units when campus changes
   useEffect(() => {
     if (!selectedCampusId) {
-      setCareerPrograms([])
+      setAcademicUnits([])
       return
     }
 
-    const loadCareerPrograms = async () => {
+    const loadAcademicUnits = async () => {
       try {
-        setCareerProgramsLoading(true)
-        const data = await getCareerProgramsForCampus(selectedCampusId)
-        setCareerPrograms(data)
+        setAcademicUnitsLoading(true)
+        const data = await getAcademicUnitsForCampus(selectedCampusId)
+        setAcademicUnits(data)
       } catch (error) {
-        console.error('Error loading career programs:', error)
+        console.error('Error loading academic units:', error)
       } finally {
-        setCareerProgramsLoading(false)
+        setAcademicUnitsLoading(false)
       }
     }
-    loadCareerPrograms()
+    loadAcademicUnits()
   }, [selectedCampusId])
 
-  // Load plans when career program changes
+  // Load plans when academic unit changes
   useEffect(() => {
-    if (!selectedCareerProgramId) {
+    if (!selectedAcademicUnitId) {
       setPlans([])
       return
     }
@@ -136,7 +136,7 @@ function PlanEstudiosPage() {
     const loadPlans = async () => {
       try {
         setPlansLoading(true)
-        const data = await getStudyPlansForCareerProgram(selectedCareerProgramId)
+        const data = await getStudyPlansForAcademicUnit(selectedAcademicUnitId)
         setPlans(data)
       } catch (error) {
         console.error('Error loading plans:', error)
@@ -145,7 +145,7 @@ function PlanEstudiosPage() {
       }
     }
     loadPlans()
-  }, [selectedCareerProgramId])
+  }, [selectedAcademicUnitId])
 
   // Load plan detail when plan changes
   useEffect(() => {
@@ -214,18 +214,18 @@ function PlanEstudiosPage() {
   const handleUniversityChange = useCallback((id: number | null) => {
     setSelectedUniversityId(id)
     setSelectedCampusId(null)
-    setSelectedCareerProgramId(null)
+    setSelectedAcademicUnitId(null)
     setSelectedPlanId(null)
   }, [])
 
   const handleCampusChange = useCallback((id: number | null) => {
     setSelectedCampusId(id)
-    setSelectedCareerProgramId(null)
+    setSelectedAcademicUnitId(null)
     setSelectedPlanId(null)
   }, [])
 
-  const handleCareerProgramChange = useCallback((id: number | null) => {
-    setSelectedCareerProgramId(id)
+  const handleAcademicUnitChange = useCallback((id: number | null) => {
+    setSelectedAcademicUnitId(id)
     setSelectedPlanId(null)
   }, [])
 
@@ -238,7 +238,7 @@ function PlanEstudiosPage() {
     if (userStudyPlan && !autoFilledFromUser && selectedPlanId === null) {
       setSelectedUniversityId(userStudyPlan.universityId)
       setSelectedCampusId(userStudyPlan.campusId)
-      setSelectedCareerProgramId(userStudyPlan.careerProgramId)
+      setSelectedAcademicUnitId(userStudyPlan.departmentId ?? userStudyPlan.academicUnitId)
       setSelectedPlanId(userStudyPlan.studyPlanId)
       setAutoFilledFromUser(true)
     }
@@ -264,17 +264,17 @@ function PlanEstudiosPage() {
               <PlanFilters
                 universities={universities}
                 campuses={mainCampuses}
-                careerPrograms={careerPrograms}
+                careerPrograms={academicUnits}
                 plans={plans}
                 selectedUniversityId={selectedUniversityId}
                 selectedCampusId={selectedCampusId}
-                selectedCareerProgramId={selectedCareerProgramId}
+                selectedCareerProgramId={selectedAcademicUnitId}
                 selectedPlanId={selectedPlanId}
                 onUniversityChange={handleUniversityChange}
                 onCampusChange={handleCampusChange}
-                onCareerProgramChange={handleCareerProgramChange}
+                onCareerProgramChange={handleAcademicUnitChange}
                 onPlanChange={handlePlanChange}
-                isLoadingCareerPrograms={careerProgramsLoading}
+                isLoadingCareerPrograms={academicUnitsLoading}
                 isLoadingPlans={plansLoading}
                 isLoadingUniversities={universitiesLoading}
                 isLoadingCampuses={campusesLoading}

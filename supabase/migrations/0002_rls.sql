@@ -32,8 +32,7 @@ ALTER TABLE public.campus                         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.academic_unit                  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.academic_modality              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.academic_term                  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.career_program                 ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.career_campus                  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.academic_unit_campus           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.study_plan                     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.study_plan_campus              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.course                         ENABLE ROW LEVEL SECURITY;
@@ -273,6 +272,10 @@ DROP POLICY IF EXISTS "Public can read academic units" ON public.academic_unit;
 CREATE POLICY "Public can read academic units" ON public.academic_unit
 FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "Public can read academic unit campuses" ON public.academic_unit_campus;
+CREATE POLICY "Public can read academic unit campuses" ON public.academic_unit_campus
+FOR SELECT TO anon, authenticated USING (true);
+
 DROP POLICY IF EXISTS "Public can read modalities" ON public.academic_modality;
 CREATE POLICY "Public can read modalities" ON public.academic_modality
 FOR SELECT TO anon, authenticated USING (true);
@@ -281,13 +284,6 @@ DROP POLICY IF EXISTS "Public can read terms" ON public.academic_term;
 CREATE POLICY "Public can read terms" ON public.academic_term
 FOR SELECT TO anon, authenticated USING (true);
 
-DROP POLICY IF EXISTS "Public can read career programs" ON public.career_program;
-CREATE POLICY "Public can read career programs" ON public.career_program
-FOR SELECT TO anon, authenticated USING (true);
-
-DROP POLICY IF EXISTS "Public can read career campuses" ON public.career_campus;
-CREATE POLICY "Public can read career campuses" ON public.career_campus
-FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Public can read study plans" ON public.study_plan;
 CREATE POLICY "Public can read study plans" ON public.study_plan

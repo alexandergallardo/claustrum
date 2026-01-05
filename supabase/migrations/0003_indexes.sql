@@ -54,22 +54,18 @@ CREATE INDEX IF NOT EXISTS idx_academic_term_modality_id ON public.academic_term
 CREATE INDEX IF NOT EXISTS idx_academic_term_year_period ON public.academic_term(year, period_number);
 
 -- ============================================================================
--- CAREER PROGRAM / JOIN TABLES
+-- ACADEMIC UNIT CAMPUS JOIN TABLE
 -- ============================================================================
--- career_program.code is UNIQUE (implicit index). Joins by academic_unit_id are common.
-CREATE INDEX IF NOT EXISTS idx_career_program_academic_unit_id ON public.career_program(academic_unit_id);
-CREATE INDEX IF NOT EXISTS idx_career_program_name ON public.career_program(name);
-
--- career_campus has UNIQUE(career_program_id, campus_id) (implicit composite index).
--- Add reverse index for queries by campus -> programs.
-CREATE INDEX IF NOT EXISTS idx_career_campus_campus_id ON public.career_campus(campus_id);
+-- academic_unit_campus has UNIQUE(academic_unit_id, campus_id) (implicit composite index).
+-- Add reverse index for queries by campus -> units.
+CREATE INDEX IF NOT EXISTS idx_academic_unit_campus_campus_id ON public.academic_unit_campus(campus_id);
 
 -- ============================================================================
 -- STUDY PLAN / JOIN TABLES
 -- ============================================================================
--- study_plan has UNIQUE(career_program_id, external_plan_id) (implicit composite index).
+-- study_plan has UNIQUE(academic_unit_id, external_plan_id) (implicit composite index).
 -- Upstream often queries by external_plan_id; add a non-unique index for that lookup.
-CREATE INDEX IF NOT EXISTS idx_study_plan_career_program_id ON public.study_plan(career_program_id);
+CREATE INDEX IF NOT EXISTS idx_study_plan_academic_unit_id ON public.study_plan(academic_unit_id);
 CREATE INDEX IF NOT EXISTS idx_study_plan_academic_modality_id ON public.study_plan(academic_modality_id);
 CREATE INDEX IF NOT EXISTS idx_study_plan_external_plan_id ON public.study_plan(external_plan_id);
 
@@ -80,8 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_study_plan_campus_campus_id ON public.study_plan_
 -- ============================================================================
 -- COURSE + CURRICULUM STRUCTURE
 -- ============================================================================
--- course.code is UNIQUE (implicit index). Common joins by owning_academic_unit_id.
-CREATE INDEX IF NOT EXISTS idx_course_owning_academic_unit_id ON public.course(owning_academic_unit_id);
+-- course.code is UNIQUE (implicit index). No owning_academic_unit_id anymore.
 CREATE INDEX IF NOT EXISTS idx_course_name ON public.course(name);
 
 -- study_plan_level has UNIQUE(study_plan_id, level_number) (implicit composite index).
