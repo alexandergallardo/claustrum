@@ -1294,18 +1294,6 @@ async function buildIngestMaps(params: {
   };
 }
 
-function inferAcademicUnitCodeFromCourseCode(
-  courseCode: string,
-): string | null {
-  const c = courseCode.trim().toUpperCase();
-  if (/^MA\d+/.test(c)) return "MA";
-  if (/^IC\d+/.test(c)) return "CA";
-  if (/^CA\d+/.test(c)) return "CA";
-  if (/^FH\d+/.test(c)) return "FH";
-  if (/^E[A-Z]?\d+/.test(c)) return "E";
-  return null;
-}
-
 /**
  * Validates if a string is a valid course code (not a message/placeholder text).
  * Valid course codes follow the pattern: 2-3 letter prefix + digits.

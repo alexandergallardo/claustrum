@@ -43,6 +43,7 @@ export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {
     campusName: profile.campus_name!,
     universityId: profile.university_id,
     departmentId: profile.academic_unit_id,
+    academicUnitId: profile.academic_unit_id,
   }
 }
 
