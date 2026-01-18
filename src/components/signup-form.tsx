@@ -46,6 +46,7 @@ export function SignupForm({
           data: {
             full_name: name,
           },
+          emailRedirectTo: `${window.location.origin}/verify-email`,
         },
       })
 
@@ -57,7 +58,7 @@ export function SignupForm({
       if (data.session) {
         navigate({ to: "/app" })
       } else {
-        setSuccess("Please check your email to confirm your account")
+        navigate({ to: "/verify-email" })
       }
     } finally {
       setIsSubmitting(false)
