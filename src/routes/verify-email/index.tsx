@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Mail, CheckCircle, RefreshCw } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+export const Route = createFileRoute("/verify-email/")({
+  component: VerifyEmailPage,
+})
 
 export default function VerifyEmailPage() {
   const navigate = useNavigate()

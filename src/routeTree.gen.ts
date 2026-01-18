@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/_index'
+import { Route as VerifyEmailIndexRouteImport } from './routes/verify-email/index'
 import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as AppIndexRouteImport } from './routes/app/_index'
@@ -24,6 +25,11 @@ import { Route as AppSettingsLayoutRouteImport } from './routes/app/settings/_la
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailIndexRoute = VerifyEmailIndexRouteImport.update({
+  id: '/verify-email/',
+  path: '/verify-email/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupIndexRoute = SignupIndexRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppIndexRoute
   '/login/': typeof LoginIndexRoute
   '/signup/': typeof SignupIndexRoute
+  '/verify-email/': typeof VerifyEmailIndexRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppIndexRoute
   '/login': typeof LoginIndexRoute
   '/signup': typeof SignupIndexRoute
+  '/verify-email': typeof VerifyEmailIndexRoute
   '/app/settings': typeof AppSettingsIndexRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/app/_index': typeof AppIndexRoute
   '/login/': typeof LoginIndexRoute
   '/signup/': typeof SignupIndexRoute
+  '/verify-email/': typeof VerifyEmailIndexRoute
   '/app/settings/_layout': typeof AppSettingsLayoutRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login/'
     | '/signup/'
+    | '/verify-email/'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/login'
     | '/signup'
+    | '/verify-email'
     | '/app/settings'
     | '/app/settings/appearance'
     | '/app/settings/profile'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/app/_index'
     | '/login/'
     | '/signup/'
+    | '/verify-email/'
     | '/app/settings/_layout'
     | '/app/settings/appearance'
     | '/app/settings/profile'
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
+  VerifyEmailIndexRoute: typeof VerifyEmailIndexRoute
   AppCurriculumIndexRoute: typeof AppCurriculumIndexRoute
   AppScheduleIndexRoute: typeof AppScheduleIndexRoute
 }
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email/': {
+      id: '/verify-email/'
+      path: '/verify-email'
+      fullPath: '/verify-email/'
+      preLoaderRoute: typeof VerifyEmailIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup/': {
@@ -287,6 +307,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
+  VerifyEmailIndexRoute: VerifyEmailIndexRoute,
   AppCurriculumIndexRoute: AppCurriculumIndexRoute,
   AppScheduleIndexRoute: AppScheduleIndexRoute,
 }
