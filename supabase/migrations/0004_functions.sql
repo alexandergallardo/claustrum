@@ -688,4 +688,28 @@ ALTER FUNCTION public.get_user_schedule_courses(UUID, BIGINT, BIGINT, BOOLEAN) S
 ALTER FUNCTION public.get_schedule_user_context() SECURITY INVOKER;
 ALTER FUNCTION public.get_schedule_courses_by_academic_unit(BIGINT, BIGINT, BIGINT, BOOLEAN) SECURITY INVOKER;
 
+-- ============================================================================
+-- FUNCTION: update_student_course_status
+-- ============================================================================
+-- Updates or inserts a student's course status record.
+CREATE OR REPLACE FUNCTION public.update_student_course_status(
+  p_user_id UUID,
+  p_study_plan_id INTEGER,
+  p_course_id INTEGER,
+  p_status student_course_status
+)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO public.student_course_record (user_id, study_plan_id, course_id, status, recorded_at)
+  VALUES (p_user_id, p_study_plan_id, p_course_id, p_status, NOW())
+  ON CONFLICT (user_id, study_plan_id, course_id)
+  DO UPDATE SET
+    status = p_status,
+    recorded_at = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.update_student_course_status TO authenticated;
+
 COMMIT;

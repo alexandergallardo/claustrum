@@ -519,6 +519,18 @@ CREATE TABLE IF NOT EXISTS public.student_course_record (
     ON UPDATE CASCADE
 );
 
+-- Add unique constraint for upsert functionality (migration 0006)
+ALTER TABLE public.student_course_record
+DROP CONSTRAINT IF EXISTS student_course_record_user_course_plan_unique;
+
+ALTER TABLE public.student_course_record
+ADD CONSTRAINT student_course_record_user_course_plan_unique
+UNIQUE (user_id, study_plan_id, course_id);
+
+-- Make academic_term_id nullable (migration 0007)
+ALTER TABLE public.student_course_record
+ALTER COLUMN academic_term_id DROP NOT NULL;
+
 -- Saved Schedules
 CREATE TABLE IF NOT EXISTS public.saved_schedule (
   id              BIGSERIAL PRIMARY KEY,
