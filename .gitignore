@@ -18,3 +18,5 @@ todos.json
 supabase/.branches
 supabase/.temp
 supabase/snippets/*
+supabase/config.toml
+supabase/.env
