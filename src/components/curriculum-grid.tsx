@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
+import { useStudentCourseStatuses, useUpdateCourseStatus } from "@/lib/hooks/use-queries"
 import { CourseCard, type RelationType } from "./course-card"
 import { CourseDetails } from "./course-details"
 import type { StudyPlanDetail, StudyPlanCourse } from "@/lib/types"
@@ -18,42 +19,50 @@ export interface Course {
   status: CourseStatus
   prerequisites?: string[]
   corequisites?: string[]
+  equivalents?: string[]
 }
 
 interface CurriculumGridProps {
   planDetail: StudyPlanDetail
+  userId?: string
+  studyPlanId?: number
 }
 
 const normalizeText = (text: string) => text.toUpperCase()
 
-export function CurriculumGrid({ planDetail }: CurriculumGridProps) {
+export function CurriculumGrid({ planDetail, userId, studyPlanId }: CurriculumGridProps) {
   const [courses, setCourses] = useState<Course[]>([])
-const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null)
 
-  // Convert API data to Course format
+  const { data: statusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null)
+  const updateCourseStatus = useUpdateCourseStatus()
+
   useEffect(() => {
     const convertedCourses: Course[] = planDetail.periods.flatMap((period: any) =>
       period.courses.map((course: StudyPlanCourse) => {
         const courseRelations = planDetail.courseRelations.get(course.courseId)
         const prerequisites = courseRelations?.prerequisites.map(String) ?? []
         const corequisites = courseRelations?.corequisites.map(String) ?? []
+        const equivalents = courseRelations?.equivalents?.map(String) ?? []
+        const status = statusMap?.get(course.courseId) ?? "not_taken"
 
         return {
           id: course.courseId.toString(),
           code: course.courseCode,
           name: normalizeText(course.courseName || course.courseCode),
           credits: course.credits,
-          hours: course.credits * 3, // Estimate hours from credits
+          hours: course.credits * 3,
           semester: course.levelNumber ?? 1,
-          status: "not_taken" as CourseStatus,
+          status,
           prerequisites,
           corequisites,
+          equivalents,
         }
       }),
     )
     setCourses(convertedCourses)
-  }, [planDetail])
+  }, [planDetail, statusMap])
 
   const courseById = useMemo(() => {
     const map = new Map<string, Course>()
@@ -79,10 +88,22 @@ const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
     setSelectedCourse(course)
   }
 
-  const handleStatusChange = (courseId: string, newStatus: CourseStatus) => {
-    // In a real app, this would update the backend
-    console.log(`Course ${courseId} status changed to ${newStatus}`)
-  }
+  const handleStatusChange = useCallback(async (courseId: string, newStatus: CourseStatus) => {
+    if (!userId || !studyPlanId) {
+      throw new Error("No puedes guardar cambios sin estar autenticado y tener un plan de estudios seleccionado")
+    }
+
+    try {
+      await updateCourseStatus.mutateAsync({
+        userId,
+        studyPlanId,
+        courseId: parseInt(courseId),
+        status: newStatus,
+      })
+    } catch (error) {
+      throw error
+    }
+  }, [userId, studyPlanId, updateCourseStatus])
 
   return (
     <div className="flex flex-col h-full min-w-0">
@@ -120,9 +141,9 @@ const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
       </div>
 
       <div className="pt-6 border-t border-border px-4 pb-4 shrink-0">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-row gap-8">
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Leyenda de estados:</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Leyenda de estados</h3>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded bg-chart-2/20 border-2 border-chart-2/30" />
@@ -148,7 +169,7 @@ const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
           </div>
           
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-3">Relaciones (al pasar el mouse):</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Relaciones</h3>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <div className="flex items-center justify-center w-6 h-6 rounded-full bg-background border-2 border-amber-500 text-amber-600 shadow-sm">

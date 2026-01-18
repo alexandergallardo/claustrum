@@ -41,6 +41,72 @@ const truncateText = (text: string, maxLength = 35) => {
 
 const normalizeText = (text: string) => text.toUpperCase()
 
+function FilterSkeleton() {
+  return <Skeleton className="h-10 w-[200px]" />
+}
+
+function FilterSelect({
+  label,
+  value,
+  placeholder,
+  items,
+  onChange,
+  isLoading,
+  isVisible,
+}: {
+  label: string
+  value: string
+  placeholder: string
+  items: { id: number; name: string }[]
+  onChange: (val: string) => void
+  isLoading: boolean
+  isVisible: boolean
+}) {
+  if (!isVisible) return null
+
+  const hasData = items.length > 0
+  const showSkeleton = isLoading && !hasData
+
+  return (
+    <div className={`flex flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
+      <label className="text-sm font-medium">{label}</label>
+      {showSkeleton ? (
+        <FilterSkeleton />
+      ) : (
+        <Select value={value || undefined} onValueChange={onChange}>
+          <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
+            <SelectGroup>
+              <TooltipProvider>
+                {items.map((item) => {
+                  const fullText = normalizeText(item.name)
+                  const displayText = truncateText(fullText)
+                  return (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <SelectItem value={item.id.toString()}>
+                          {displayText}
+                        </SelectItem>
+                      </TooltipTrigger>
+                      {displayText !== fullText && (
+                        <TooltipContent side="right">
+                          <p>{fullText}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  )
+                })}
+              </TooltipProvider>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  )
+}
+
 export function PlanFilters({
   universities,
   campuses,
@@ -59,154 +125,60 @@ export function PlanFilters({
   isLoadingCareerPrograms,
   isLoadingPlans,
 }: PlanFiltersProps) {
-  if (isLoadingUniversities) {
-    return <Skeleton className="h-12 w-full" />
+  const hasUniversities = universities.length > 0
+
+  if (!hasUniversities && isLoadingUniversities) {
+    return (
+      <div className="flex flex-wrap items-end gap-4">
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-wrap items-end gap-4">
-      {/* Universities */}
-      <div className="flex flex-col gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-        <label className="text-sm font-medium">Universidad</label>
-        <Select value={selectedUniversityId?.toString() || ''} onValueChange={(val) => onUniversityChange(val ? parseInt(val) : null)}>
-          <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
-            <SelectValue placeholder="Selecciona una universidad" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
-            <SelectGroup>
-              <TooltipProvider>
-                {universities.map((uni) => {
-                  const fullText = normalizeText(uni.name)
-                  const displayText = truncateText(fullText)
-                  return (
-                    <Tooltip key={uni.id}>
-                      <TooltipTrigger asChild>
-                        <SelectItem value={uni.id.toString()}>
-                          {displayText}
-                        </SelectItem>
-                      </TooltipTrigger>
-                      {displayText !== fullText && (
-                        <TooltipContent side="right">
-                          <p>{fullText}</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  )
-                })}
-              </TooltipProvider>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
+      <FilterSelect
+        label="Universidad"
+        value={selectedUniversityId?.toString() || ''}
+        placeholder="Selecciona una universidad"
+        items={universities}
+        onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
+        isLoading={!hasUniversities && isLoadingUniversities}
+        isVisible={true}
+      />
 
-      {/* Campuses - Only show if university is selected AND data is loaded */}
-      {selectedUniversityId && !isLoadingCampuses && campuses.length > 0 && (
-        <div className="flex flex-col gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-          <label className="text-sm font-medium">Sede</label>
-          <Select value={selectedCampusId?.toString() || ''} onValueChange={(val) => onCampusChange(val ? parseInt(val) : null)}>
-            <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
-              <SelectValue placeholder="Selecciona una sede" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
-              <SelectGroup>
-                <TooltipProvider>
-                  {campuses.map((campus) => {
-                    const fullText = normalizeText(campus.name)
-                    const displayText = truncateText(fullText)
-                    return (
-                      <Tooltip key={campus.id}>
-                        <TooltipTrigger asChild>
-                          <SelectItem value={campus.id.toString()}>
-                            {displayText}
-                          </SelectItem>
-                        </TooltipTrigger>
-                        {displayText !== fullText && (
-                          <TooltipContent side="right">
-                            <p>{fullText}</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    )
-                  })}
-                </TooltipProvider>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <FilterSelect
+        label="Sede"
+        value={selectedCampusId?.toString() || ''}
+        placeholder="Selecciona una sede"
+        items={campuses}
+        onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
+        isLoading={!campuses.length && isLoadingCampuses}
+        isVisible={!!selectedUniversityId}
+      />
 
-      {/* Career programs - Only show if campus is selected AND data is loaded */}
-      {selectedCampusId && !isLoadingCareerPrograms && careerPrograms.length > 0 && (
-        <div className="flex flex-col gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-          <label className="text-sm font-medium">Carrera</label>
-          <Select value={selectedCareerProgramId?.toString() || ''} onValueChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}>
-            <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
-              <SelectValue placeholder="Selecciona una carrera" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
-              <SelectGroup>
-                <TooltipProvider>
-                  {careerPrograms.map((program) => {
-                    const fullText = normalizeText(program.name)
-                    const displayText = truncateText(fullText)
-                    return (
-                      <Tooltip key={program.id}>
-                        <TooltipTrigger asChild>
-                          <SelectItem value={program.id.toString()}>
-                            {displayText}
-                          </SelectItem>
-                        </TooltipTrigger>
-                        {displayText !== fullText && (
-                          <TooltipContent side="right">
-                            <p>{fullText}</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    )
-                  })}
-                </TooltipProvider>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <FilterSelect
+        label="Carrera"
+        value={selectedCareerProgramId?.toString() || ''}
+        placeholder="Selecciona una carrera"
+        items={careerPrograms}
+        onChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}
+        isLoading={!careerPrograms.length && isLoadingCareerPrograms}
+        isVisible={!!selectedCampusId}
+      />
 
-      {/* Plans - Only show if career program is selected AND data is loaded */}
-      {selectedCareerProgramId && !isLoadingPlans && plans.length > 0 && (
-        <div className="flex flex-col gap-2 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-          <label className="text-sm font-medium">Plan de estudios</label>
-          <Select value={selectedPlanId?.toString() || ''} onValueChange={(val) => onPlanChange(val ? parseInt(val) : null)}>
-            <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
-              <SelectValue placeholder="Selecciona un plan" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
-              <SelectGroup>
-                <TooltipProvider>
-                  {plans.map((plan) => {
-                    // name already comes formatted as "external_plan_id - name" from RPC
-                    const fullText = normalizeText(plan.name)
-                    const displayText = truncateText(fullText)
-                    return (
-                      <Tooltip key={plan.id}>
-                        <TooltipTrigger asChild>
-                          <SelectItem value={plan.id.toString()}>
-                            {displayText}
-                          </SelectItem>
-                        </TooltipTrigger>
-                        {displayText !== fullText && (
-                          <TooltipContent side="right">
-                            <p>{fullText}</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    )
-                  })}
-                </TooltipProvider>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+      <FilterSelect
+        label="Plan de estudios"
+        value={selectedPlanId?.toString() || ''}
+        placeholder="Selecciona un plan"
+        items={plans}
+        onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
+        isLoading={!plans.length && isLoadingPlans}
+        isVisible={!!selectedCareerProgramId}
+      />
     </div>
   )
 }

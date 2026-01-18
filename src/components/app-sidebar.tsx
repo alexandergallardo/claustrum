@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   IconDashboard,
   IconBook,
+  IconCalendarTime,
   IconInnerShadowTop,
 } from "@tabler/icons-react"
 import type { User } from "@supabase/supabase-js"
@@ -25,6 +26,11 @@ const data = {
       title: "Dashboard",
       url: "/app",
       icon: IconDashboard,
+    },
+    {
+      title: "Horarios",
+      url: "/app/schedule",
+      icon: IconCalendarTime,
     },
     {
       title: "Plan de Estudios",

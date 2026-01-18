@@ -1,250 +1,118 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useState, useCallback, useEffect } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useCallback, useEffect } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
 import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
 import {
-  getUniversities,
-  getCampuses,
-  getAcademicUnitsForCampus,
-  getStudyPlansForAcademicUnit,
-  getStudyPlanCourses,
-  getStudyPlanCourseRelations,
-  getUserStudyPlan,
-} from '@/lib/api'
-import type { StudyPeriod, StudyPlanDetail, CatalogStudyPlan, CatalogCampus, CatalogCareerProgram } from '@/lib/types'
+  useUniversities,
+  useCampuses,
+  useAcademicUnits,
+  useStudyPlans,
+  useStudyPlanDetail,
+  useUserStudyPlan,
+} from '@/lib/hooks/use-queries'
+import type { CatalogCampus, CatalogStudyPlan } from '@/lib/types'
 import { PlanFilters } from '@/components/plan-estudios/plan-filters'
 import { PlanBoard } from '@/components/plan-estudios/plan-board'
 import { AlertTriangle } from 'lucide-react'
 
 const MAIN_CAMPUS_CODES = new Set(['AL', 'CA', 'LM', 'SC', 'SJ'])
 
+const curriculumSearchSchema = z.object({
+  university: z.coerce.number().optional(),
+  campus: z.coerce.number().optional(),
+  career: z.coerce.number().optional(),
+  plan: z.coerce.number().optional(),
+})
+
+import { z } from 'zod'
+
 export const Route = createFileRoute('/app/curriculum/')({
+  validateSearch: curriculumSearchSchema,
   component: PlanEstudiosPage,
 })
 
 function PlanEstudiosPage() {
-  const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null)
-  const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null)
-  const [selectedAcademicUnitId, setSelectedAcademicUnitId] = useState<number | null>(null)
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
-  const [autoFilledFromUser, setAutoFilledFromUser] = useState(false)
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/app/curriculum' })
 
-  // State for universities
-  const [universities, setUniversities] = useState<any[]>([])
-  const [universitiesLoading, setUniversitiesLoading] = useState(true)
+  const selectedUniversityId = search.university ?? null
+  const selectedCampusId = search.campus ?? null
+  const selectedAcademicUnitId = search.career ?? null
+  const selectedPlanId = search.plan ?? null
 
-  // State for campuses
-  const [campuses, setCampuses] = useState<CatalogCampus[]>([])
-  const [campusesLoading, setCampusesLoading] = useState(false)
+  const { data: universities, isLoading: isLoadingUniversities } = useUniversities()
+  const campusesQuery = useCampuses(selectedUniversityId)
+  const academicUnitsQuery = useAcademicUnits(selectedCampusId)
+  const plansQuery = useStudyPlans(selectedAcademicUnitId)
 
-  // State for academic units (Escuelas)
-  const [academicUnits, setAcademicUnits] = useState<CatalogCareerProgram[]>([])
-  const [academicUnitsLoading, setAcademicUnitsLoading] = useState(false)
+  const selectedPlanData = plansQuery.data?.find((p: CatalogStudyPlan) => p.id === selectedPlanId)
+  const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData)
+  const { data: userStudyPlan } = useUserStudyPlan()
 
-  // State for plans
-  const [plans, setPlans] = useState<any[]>([])
-  const [plansLoading, setPlansLoading] = useState(false)
+  const campuses = campusesQuery.data ?? []
+  const academicUnits = academicUnitsQuery.data ?? []
+  const plans = plansQuery.data ?? []
 
-  // State for plan detail
-  const [planDetail, setPlanDetail] = useState<StudyPlanDetail | null>(null)
-  const [planLoading, setPlanLoading] = useState(false)
-  const [planError, setPlanError] = useState<string | null>(null)
+  const mainCampuses = campuses.filter((c: CatalogCampus) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId)
 
-  // State for user study plan
-  const [userStudyPlan, setUserStudyPlan] = useState<any>(null)
-
-  // Load user's study plan on mount
   useEffect(() => {
-    const loadUserStudyPlan = async () => {
-      try {
-        const data = await getUserStudyPlan()
-        setUserStudyPlan(data)
-      } catch (error) {
-        console.error('Error loading user study plan:', error)
-      }
+    if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
+      navigate({
+        to: '/app/curriculum',
+        search: {
+          university: userStudyPlan.universityId ?? undefined,
+          campus: userStudyPlan.campusId ?? undefined,
+          career: userStudyPlan.academicUnitId ?? undefined,
+          plan: userStudyPlan.studyPlanId ?? undefined,
+        },
+      })
     }
-    loadUserStudyPlan()
-  }, [])
+  }, [userStudyPlan, selectedUniversityId, selectedCampusId, selectedAcademicUnitId, selectedPlanId, navigate])
 
-  // Load universities on mount
-  useEffect(() => {
-    const loadUniversities = async () => {
-      try {
-        setUniversitiesLoading(true)
-        const data = await getUniversities()
-        setUniversities(data)
-      } catch (error) {
-        console.error('Error loading universities:', error)
-      } finally {
-        setUniversitiesLoading(false)
-      }
-    }
-    loadUniversities()
-  }, [])
-
-  // Load campuses when university changes
-  useEffect(() => {
-    if (!selectedUniversityId) {
-      setCampuses([])
-      return
-    }
-
-    const loadCampuses = async () => {
-      try {
-        setCampusesLoading(true)
-        const data = await getCampuses(selectedUniversityId)
-        setCampuses(data)
-      } catch (error) {
-        console.error('Error loading campuses:', error)
-      } finally {
-        setCampusesLoading(false)
-      }
-    }
-    loadCampuses()
-  }, [selectedUniversityId])
-
-  // Load academic units when campus changes
-  useEffect(() => {
-    if (!selectedCampusId) {
-      setAcademicUnits([])
-      return
-    }
-
-    const loadAcademicUnits = async () => {
-      try {
-        setAcademicUnitsLoading(true)
-        const data = await getAcademicUnitsForCampus(selectedCampusId)
-        setAcademicUnits(data)
-      } catch (error) {
-        console.error('Error loading academic units:', error)
-      } finally {
-        setAcademicUnitsLoading(false)
-      }
-    }
-    loadAcademicUnits()
-  }, [selectedCampusId])
-
-  // Load plans when academic unit changes
-  useEffect(() => {
-    if (!selectedAcademicUnitId) {
-      setPlans([])
-      return
-    }
-
-    const loadPlans = async () => {
-      try {
-        setPlansLoading(true)
-        const data = await getStudyPlansForAcademicUnit(selectedAcademicUnitId)
-        setPlans(data)
-      } catch (error) {
-        console.error('Error loading plans:', error)
-      } finally {
-        setPlansLoading(false)
-      }
-    }
-    loadPlans()
-  }, [selectedAcademicUnitId])
-
-  // Load plan detail when plan changes
-  useEffect(() => {
-    if (!selectedPlanId) {
-      setPlanDetail(null)
-      return
-    }
-
-    const loadPlanDetail = async () => {
-      try {
-        setPlanLoading(true)
-        setPlanError(null)
-        const [courses, relations] = await Promise.all([
-          getStudyPlanCourses(selectedPlanId),
-          getStudyPlanCourseRelations(selectedPlanId),
-        ])
-
-        // NOTE: In `course_relation`, `from_course_id` is the dependent course and `to_course_id` is the required course.
-        // So for a given course X, its prerequisites/corequisites are stored where `from_course_id = X`.
-        const courseRelations = new Map<number, { prerequisites: number[]; corequisites: number[] }>()
-        for (const r of relations) {
-          if (r.relationType !== 'PREREQUISITE' && r.relationType !== 'COREQUISITE') continue
-          const existing = courseRelations.get(r.fromCourseId) ?? { prerequisites: [], corequisites: [] }
-          if (r.relationType === 'PREREQUISITE') {
-            existing.prerequisites.push(r.toCourseId)
-          } else {
-            existing.corequisites.push(r.toCourseId)
-          }
-          courseRelations.set(r.fromCourseId, existing)
-        }
-
-        // Group courses by levelNumber (period/semester)
-        const periods = new Map<number | null, typeof courses.courses>()
-        for (const course of courses.courses) {
-          const level = course.levelNumber ?? 0
-          if (!periods.has(level)) {
-            periods.set(level, [])
-          }
-          periods.get(level)!.push(course)
-        }
-
-        const periodArray: StudyPeriod[] = Array.from(periods.entries())
-          .sort(([a], [b]) => (a ?? 0) - (b ?? 0))
-          .map(([levelNumber, courses]) => ({
-            levelNumber,
-            courses,
-          }))
-
-        const selectedPlanData = plans.find((p: CatalogStudyPlan) => p.id === selectedPlanId)
-        setPlanDetail({
-          plan: selectedPlanData || ({} as CatalogStudyPlan),
-          periods: periodArray,
-          courseRelations,
-        })
-      } catch (error) {
-        console.error('Error loading plan detail:', error)
-        setPlanError('Error al cargar el plan de estudios. Intenta de nuevo.')
-      } finally {
-        setPlanLoading(false)
-      }
-    }
-    loadPlanDetail()
-  }, [selectedPlanId, plans])
-
-  // Handle cascading resets
   const handleUniversityChange = useCallback((id: number | null) => {
-    setSelectedUniversityId(id)
-    setSelectedCampusId(null)
-    setSelectedAcademicUnitId(null)
-    setSelectedPlanId(null)
-  }, [])
+    navigate({
+      search: {
+        university: id ?? undefined,
+        campus: undefined,
+        career: undefined,
+        plan: undefined,
+      },
+    })
+  }, [navigate])
 
   const handleCampusChange = useCallback((id: number | null) => {
-    setSelectedCampusId(id)
-    setSelectedAcademicUnitId(null)
-    setSelectedPlanId(null)
-  }, [])
+    navigate({
+      search: {
+        ...search,
+        campus: id ?? undefined,
+        career: undefined,
+        plan: undefined,
+      },
+    })
+  }, [navigate, search])
 
   const handleAcademicUnitChange = useCallback((id: number | null) => {
-    setSelectedAcademicUnitId(id)
-    setSelectedPlanId(null)
-  }, [])
+    navigate({
+      search: {
+        ...search,
+        career: id ?? undefined,
+        plan: undefined,
+      },
+    })
+  }, [navigate, search])
 
   const handlePlanChange = useCallback((id: number | null) => {
-    setSelectedPlanId(id)
-  }, [])
+    navigate({
+      search: {
+        ...search,
+        plan: id ?? undefined,
+      },
+    })
+  }, [navigate, search])
 
-  // Auto-fill user's study plan data when loaded
-  useEffect(() => {
-    if (userStudyPlan && !autoFilledFromUser && selectedPlanId === null) {
-      setSelectedUniversityId(userStudyPlan.universityId)
-      setSelectedCampusId(userStudyPlan.campusId)
-      setSelectedAcademicUnitId(userStudyPlan.departmentId ?? userStudyPlan.academicUnitId)
-      setSelectedPlanId(userStudyPlan.studyPlanId)
-      setAutoFilledFromUser(true)
-    }
-  }, [userStudyPlan, autoFilledFromUser, selectedPlanId])
-
-  const mainCampuses = campuses.filter((c) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId)
+  const isLoadingFilters = isLoadingUniversities || campusesQuery.isLoading || academicUnitsQuery.isLoading || plansQuery.isLoading
 
   return (
     <AppLayoutWrapper>
@@ -261,27 +129,36 @@ function PlanEstudiosPage() {
             </div>
 
             <div className="px-4 lg:px-6">
-              <PlanFilters
-                universities={universities}
-                campuses={mainCampuses}
-                careerPrograms={academicUnits}
-                plans={plans}
-                selectedUniversityId={selectedUniversityId}
-                selectedCampusId={selectedCampusId}
-                selectedCareerProgramId={selectedAcademicUnitId}
-                selectedPlanId={selectedPlanId}
-                onUniversityChange={handleUniversityChange}
-                onCampusChange={handleCampusChange}
-                onCareerProgramChange={handleAcademicUnitChange}
-                onPlanChange={handlePlanChange}
-                isLoadingCareerPrograms={academicUnitsLoading}
-                isLoadingPlans={plansLoading}
-                isLoadingUniversities={universitiesLoading}
-                isLoadingCampuses={campusesLoading}
-              />
+              {isLoadingFilters ? (
+                <div className="flex flex-wrap items-end gap-4">
+                  <Skeleton className="h-22 w-[200px]" />
+                  <Skeleton className="h-22 w-[200px]" />
+                  <Skeleton className="h-22 w-[200px]" />
+                  <Skeleton className="h-22 w-[200px]" />
+                </div>
+              ) : (
+                <PlanFilters
+                  universities={universities ?? []}
+                  campuses={mainCampuses}
+                  careerPrograms={academicUnits}
+                  plans={plans}
+                  selectedUniversityId={selectedUniversityId}
+                  selectedCampusId={selectedCampusId}
+                  selectedCareerProgramId={selectedAcademicUnitId}
+                  selectedPlanId={selectedPlanId}
+                  onUniversityChange={handleUniversityChange}
+                  onCampusChange={handleCampusChange}
+                  onCareerProgramChange={handleAcademicUnitChange}
+                  onPlanChange={handlePlanChange}
+                  isLoadingUniversities={isLoadingUniversities}
+                  isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
+                  isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
+                  isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                />
+              )}
             </div>
 
-            {planError && (
+            {planDetailQuery.isError && (
               <div className="px-4 lg:px-6">
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
@@ -292,22 +169,29 @@ function PlanEstudiosPage() {
               </div>
             )}
 
-            {selectedPlanId && planLoading && (
+            {selectedPlanId && planDetailQuery.isLoading && (
               <div className="px-4 lg:px-6 space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-96 w-full" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-6 w-48" />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-32 w-full" />
+                  ))}
+                </div>
               </div>
             )}
 
-            {selectedPlanId && !planLoading && planDetail && (
+            {selectedPlanId && planDetailQuery.isSuccess && planDetailQuery.data && (
               <div className="px-4 lg:px-6 min-h-0 flex-1">
                 <Card className="h-full min-h-0 overflow-auto">
-                  <PlanBoard planDetail={planDetail} />
+                  <PlanBoard planDetail={planDetailQuery.data} />
                 </Card>
               </div>
             )}
 
-            {!selectedPlanId && (
+            {!selectedPlanId && !planDetailQuery.isLoading && (
               <div className="px-4 lg:px-6">
                 <Card className="flex-1 min-h-96 flex items-center justify-center">
                   <p className="text-muted-foreground">Selecciona una carrera para visualizar el plan de estudios</p>

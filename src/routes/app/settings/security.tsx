@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ShieldIcon, LockIcon, Loader2Icon, SmartphoneIcon } from "lucide-react";
-import type { User } from "@supabase/supabase-js";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,41 +19,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { useAuthUser } from "@/lib/hooks/use-queries";
 
 export const Route = createFileRoute("/app/settings/security")({
   component: SecurityPage,
 });
 
 function SecurityPage() {
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const [authUser, setAuthUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: authUser, isLoading } = useAuthUser();
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
-
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setAuthUser(user ?? null);
-      setIsLoading(false);
-    }
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setAuthUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
 
   if (isLoading) {
     return (
@@ -84,13 +61,6 @@ function SecurityPage() {
   }
 
   async function handlePasswordReset() {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user?.email) {
-      toast.error("No se puede restablecer la contraseña");
-      return;
-    }
-
     if (newPassword !== confirmPassword) {
       toast.error("Las contraseñas no coinciden");
       return;
@@ -103,6 +73,9 @@ function SecurityPage() {
 
     setIsSendingPasswordReset(true);
     try {
+      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+      const supabase = getSupabaseBrowserClient();
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });

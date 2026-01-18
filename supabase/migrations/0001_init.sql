@@ -1,10 +1,12 @@
 -- 0001_init.sql
--- Initial schema: extensions, enums, tables, constraints (PK/UK/FK/CHECK), and triggers/functions.
+-- Initial schema: extensions, enums, tables, constraints (PK/UK/FK), and triggers/functions.
 --
 -- Notes / conventions:
 -- - This migration intentionally DOES NOT create RLS policies or enable RLS. That is handled in `0002_rls.sql`.
 -- - Most non-unique indexes are also deferred to `0003_indexes.sql` to keep concerns separated.
 -- - All tables live in `public` unless otherwise noted.
+-- - Enums are used for stable categorical data for optimal storage and performance.
+-- - Column comments are added at the end of the file for Supabase documentation.
 
 BEGIN;
 
@@ -17,11 +19,12 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================================
--- ENUMS
+-- ENUMS (stable categorical values for optimal performance)
 -- ============================================================================
 
 DO $$
 BEGIN
+  -- Course relation type: prerequisite/corequisite/equivalent
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'course_relation_type') THEN
     CREATE TYPE course_relation_type AS ENUM (
       'PREREQUISITE',
@@ -30,37 +33,30 @@ BEGIN
     );
   END IF;
 
+  -- Student course status: in-progress/withdrawn/approved/failed
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'student_course_status') THEN
     CREATE TYPE student_course_status AS ENUM (
-      'PASSED',
-      'FAILED',
       'IN_PROGRESS',
       'WITHDRAWN',
-      'APPROVED'
+      'APPROVED',
+      'FAILED'
     );
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'course_type') THEN
-    CREATE TYPE course_type AS ENUM (
-      'Curso Unico',
-      'Curso Comun',
-      'Electiva Unica'
-    );
-  END IF;
-
+  -- Group delivery mode type
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'group_type') THEN
     CREATE TYPE group_type AS ENUM (
-      'Regular',
-      'Semipresencial',
-      'Virtual',
-      'Asistida'
+      'REGULAR',
+      'SEMIPRESENCIAL',
+      'VIRTUAL',
+      'ASISTIDA',
+      'TUTORIA'
     );
   END IF;
 END $$;
 
 -- ============================================================================
--- TABLES (CATALOG / REFERENCE DATA)
--- These are primarily read-only from the app perspective and populated by admin/seeds/sync scripts.
+-- CATALOG / REFERENCE DATA TABLES
 -- ============================================================================
 
 -- Countries (ISO-3166 alpha-2)
@@ -72,10 +68,7 @@ CREATE TABLE IF NOT EXISTS public.country (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.country IS 'Reference table for countries (ISO-3166 alpha-2).';
-COMMENT ON COLUMN public.country.iso2_code IS 'ISO-3166 alpha-2 country code (unique).';
-
--- Universities (e.g., ITCR)
+-- Universities / institutions
 CREATE TABLE IF NOT EXISTS public.university (
   id         BIGSERIAL PRIMARY KEY,
   country_id BIGINT NOT NULL,
@@ -91,18 +84,12 @@ CREATE TABLE IF NOT EXISTS public.university (
     ON UPDATE CASCADE
 );
 
-COMMENT ON TABLE public.university IS 'Universities / institutions; currently used for ITCR and future expansion.';
-COMMENT ON COLUMN public.university.short_name IS 'Short display name (e.g., ITCR).';
-
--- Campuses / sedes (code used across multiple external APIs)
+-- Campuses / sedes
 CREATE TABLE IF NOT EXISTS public.campus (
   id            BIGSERIAL PRIMARY KEY,
   university_id BIGINT NOT NULL,
   code          TEXT NOT NULL UNIQUE,
   name          TEXT NOT NULL,
-  opened_on     DATE,
-  closed_on     DATE,
-  is_active     BOOLEAN NOT NULL DEFAULT TRUE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -113,15 +100,12 @@ CREATE TABLE IF NOT EXISTS public.campus (
     ON UPDATE CASCADE
 );
 
-COMMENT ON TABLE public.campus IS 'Campus/site (sede). `code` is the canonical cross-API identifier (e.g., CA, SJ).';
-
--- Academic Units (schools/departments offering courses; some also offer degree programs)
+-- Academic Units (schools/departments)
 CREATE TABLE IF NOT EXISTS public.academic_unit (
   id             BIGSERIAL PRIMARY KEY,
   university_id  BIGINT NOT NULL,
   code           TEXT NOT NULL UNIQUE,
   name           TEXT NOT NULL,
-  offers_careers BOOLEAN NOT NULL DEFAULT FALSE,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -132,10 +116,7 @@ CREATE TABLE IF NOT EXISTS public.academic_unit (
     ON UPDATE CASCADE
 );
 
-COMMENT ON TABLE public.academic_unit IS 'School/department (escuela/departamento). May or may not have careers (degree programs).';
-COMMENT ON COLUMN public.academic_unit.offers_careers IS 'True when unit appears as a career/program provider in curriculum endpoints.';
-
--- Academic modalities (Semestre/Verano/etc.) from guiahorarios
+-- Academic Modalities
 CREATE TABLE IF NOT EXISTS public.academic_modality (
   id               BIGSERIAL PRIMARY KEY,
   code             TEXT NOT NULL UNIQUE,
@@ -145,9 +126,7 @@ CREATE TABLE IF NOT EXISTS public.academic_modality (
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.academic_modality IS 'Catalog of academic modalities (S=Semestre, V=Verano, etc.).';
-
--- Academic terms (specific year + modality + period number, plus external key)
+-- Academic Terms
 CREATE TABLE IF NOT EXISTS public.academic_term (
   id                  BIGSERIAL PRIMARY KEY,
   academic_modality_id BIGINT NOT NULL,
@@ -167,13 +146,11 @@ CREATE TABLE IF NOT EXISTS public.academic_term (
     ON UPDATE CASCADE
 );
 
-COMMENT ON TABLE public.academic_term IS 'Academic period instance: year + modality + period_number; external_key matches upstream keys (e.g., 2026_S_1, VER-2025).';
-
 -- ============================================================================
 -- PROGRAM / CURRICULUM TABLES
 -- ============================================================================
 
--- Academic unit offered at campus (many-to-many)
+-- Academic Unit offered at Campus
 CREATE TABLE IF NOT EXISTS public.academic_unit_campus (
   id               BIGSERIAL PRIMARY KEY,
   academic_unit_id BIGINT NOT NULL,
@@ -196,16 +173,14 @@ CREATE TABLE IF NOT EXISTS public.academic_unit_campus (
     UNIQUE (academic_unit_id, campus_id)
 );
 
-COMMENT ON TABLE public.academic_unit_campus IS 'Join table: which academic units (schools/careers) are offered at which campuses.';
-
--- Study plan / curriculum (plan de estudio)
+-- Study Plans / Curricula
 CREATE TABLE IF NOT EXISTS public.study_plan (
   id                   BIGSERIAL PRIMARY KEY,
   academic_unit_id     BIGINT NOT NULL,
   academic_modality_id BIGINT NOT NULL,
-  external_plan_id     INTEGER NOT NULL,
-  name                 TEXT NOT NULL,
-  academic_degree      TEXT,
+  external_plan_id     INTEGER NOT NULL, -- Example: 412
+  name                 TEXT NOT NULL, -- Example: INGENIERIA EN COMPUTACION-2022
+  academic_degree      TEXT, -- Example: BACHILLERATO UNIVERSITARIO
   first_level_number   INTEGER NOT NULL DEFAULT 0,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -226,9 +201,7 @@ CREATE TABLE IF NOT EXISTS public.study_plan (
     UNIQUE (academic_unit_id, external_plan_id)
 );
 
-COMMENT ON TABLE public.study_plan IS 'Curriculum/study plan version (Bachillerato, Licenciatura, etc.) for an academic unit; external_plan_id comes from upstream plan id.';
-
--- Study plan valid at campus (many-to-many + optional validity dates)
+-- Study Plan valid at Campus
 CREATE TABLE IF NOT EXISTS public.study_plan_campus (
   id           BIGSERIAL PRIMARY KEY,
   study_plan_id BIGINT NOT NULL,
@@ -253,26 +226,7 @@ CREATE TABLE IF NOT EXISTS public.study_plan_campus (
     UNIQUE (study_plan_id, campus_id)
 );
 
-COMMENT ON TABLE public.study_plan_campus IS 'Join table: where/when a study plan is valid; supports campus availability rules.';
-
--- ============================================================================
--- COURSE TABLES
--- ============================================================================
-
--- Canonical course catalog
-CREATE TABLE IF NOT EXISTS public.course (
-  id                   BIGSERIAL PRIMARY KEY,
-  code                 TEXT NOT NULL UNIQUE,
-  name                 TEXT NOT NULL,
-  default_credits      INTEGER NOT NULL DEFAULT 0,
-  default_weekly_hours INTEGER NOT NULL DEFAULT 0,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-COMMENT ON TABLE public.course IS 'Canonical course catalog. `code` is the official course code (e.g., IC1802). Courses are shared across multiple study plans without a single owning unit.';
-
--- Plan levels (e.g., Semestre 0, Semestre 1)
+-- Study Plan Levels
 CREATE TABLE IF NOT EXISTS public.study_plan_level (
   id           BIGSERIAL PRIMARY KEY,
   study_plan_id BIGINT NOT NULL,
@@ -290,9 +244,22 @@ CREATE TABLE IF NOT EXISTS public.study_plan_level (
     UNIQUE (study_plan_id, level_number)
 );
 
-COMMENT ON TABLE public.study_plan_level IS 'A level/semester inside a study plan; label is upstream text, level_number is normalized ordering.';
+-- ============================================================================
+-- COURSE TABLES
+-- ============================================================================
 
--- Courses in plan level (join + course attributes as defined in plan)
+-- Canonical Course Catalog
+CREATE TABLE IF NOT EXISTS public.course (
+  id                   BIGSERIAL PRIMARY KEY,
+  code                 TEXT NOT NULL UNIQUE,
+  name                 TEXT NOT NULL,
+  default_credits      INTEGER NOT NULL DEFAULT 0,
+  default_weekly_hours INTEGER NOT NULL DEFAULT 0,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Courses in Study Plan Level
 CREATE TABLE IF NOT EXISTS public.study_plan_level_course (
   id                 BIGSERIAL PRIMARY KEY,
   study_plan_level_id BIGINT NOT NULL,
@@ -317,9 +284,7 @@ CREATE TABLE IF NOT EXISTS public.study_plan_level_course (
     UNIQUE (study_plan_level_id, course_id)
 );
 
-COMMENT ON TABLE public.study_plan_level_course IS 'Join table: courses included in a specific study plan level (with credits/hours as per plan).';
-
--- Course relations in a plan (prereq/coreq/equivalent)
+-- Course Relations in a Plan
 CREATE TABLE IF NOT EXISTS public.course_relation (
   id            BIGSERIAL PRIMARY KEY,
   study_plan_id BIGINT NOT NULL,
@@ -350,43 +315,27 @@ CREATE TABLE IF NOT EXISTS public.course_relation (
     UNIQUE (study_plan_id, from_course_id, to_course_id, relation_type)
 );
 
-COMMENT ON TABLE public.course_relation IS 'Prerequisite/corequisite/equivalent constraints for courses within a study plan.';
-
 -- ============================================================================
 -- COURSE OFFERING TABLES (SCHEDULE)
---
--- Term representation:
--- - `academic_term.external_key` stores the term key used by the Student Records endpoints
---   (e.g., "2026_S_1"), which is required to query the schedule guide HTML table.
--- - Guía Horarios provides schedule rows per (school, year) and includes modality/period fields
---   (NUM_ANO, IDE_MODALIDAD, IDE_PER_MOD) that can be normalized to the same key format
---   ("{NUM_ANO}_{IDE_MODALIDAD}_{IDE_PER_MOD}") to join/enrich schedule data.
 -- ============================================================================
 
--- Professors (normalized by full name; upstream varies in casing)
+-- Professors / Instructors
 CREATE TABLE IF NOT EXISTS public.professor (
   id        BIGSERIAL PRIMARY KEY,
   full_name TEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.professor IS 'Professor/instructor catalog (deduped by full_name).';
-
--- Course offering (header-level) for campus + term + publishing unit
---
--- Uniqueness:
--- A course offering is uniquely identified by (course_id, campus_id, academic_unit_id, academic_term_id).
--- This supports repeated ingestion runs via upsert semantics without creating duplicates.
+-- Course Offering (header-level)
 CREATE TABLE IF NOT EXISTS public.course_offering (
   id                  BIGSERIAL PRIMARY KEY,
   course_id           BIGINT NOT NULL,
   campus_id           BIGINT NOT NULL,
   academic_unit_id    BIGINT NOT NULL,
   academic_term_id    BIGINT NOT NULL,
-  course_name_snapshot TEXT NOT NULL,
   credits_snapshot    INTEGER NOT NULL,
   weekly_hours_snapshot INTEGER NOT NULL,
-  course_type         course_type,
+  course_type         TEXT,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT course_offering_course_id_fkey
@@ -417,33 +366,26 @@ CREATE TABLE IF NOT EXISTS public.course_offering (
     UNIQUE (course_id, campus_id, academic_unit_id, academic_term_id)
 );
 
-COMMENT ON TABLE public.course_offering IS 'A course offered at a campus during a term (header). Snapshots preserve upstream display values at the time of ingestion.';
-
--- Groups/sections for an offering
+-- Groups / Sections for an Offering
 CREATE TABLE IF NOT EXISTS public.course_offering_group (
   id                BIGSERIAL PRIMARY KEY,
   course_offering_id BIGINT NOT NULL,
   group_code        TEXT NOT NULL,
   group_type        group_type NOT NULL,
-  classroom         TEXT,
   capacity          INTEGER NOT NULL DEFAULT 0,
-  reserved_seats    INTEGER NOT NULL DEFAULT 0,
-  enrolled_count    INTEGER NOT NULL DEFAULT 0,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT course_offering_group_course_offering_id_fkey
     FOREIGN KEY (course_offering_id)
-    REFERENCES public.course_offering(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
+      REFERENCES public.course_offering(id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE,
 
   CONSTRAINT course_offering_group_unique
     UNIQUE (course_offering_id, group_code)
 );
 
-COMMENT ON TABLE public.course_offering_group IS 'Specific group/section within a course offering (e.g., Grupo 01).';
-
--- Group-professor join (many-to-many)
+-- Group-Professor Join (many-to-many)
 CREATE TABLE IF NOT EXISTS public.course_offering_group_professor (
   id                     BIGSERIAL PRIMARY KEY,
   course_offering_group_id BIGINT NOT NULL,
@@ -466,20 +408,14 @@ CREATE TABLE IF NOT EXISTS public.course_offering_group_professor (
     UNIQUE (course_offering_group_id, professor_id)
 );
 
-COMMENT ON TABLE public.course_offering_group_professor IS 'Join table: professors assigned to a specific offering group.';
-
--- Meetings (weekday/time) for a group
---
--- Uniqueness:
--- A meeting row is uniquely identified by
--- (course_offering_group_id, weekday, starts_at, ends_at).
--- This allows the ingestion to upsert meetings without producing duplicates across multiple runs.
+-- Meeting Times for a Group
 CREATE TABLE IF NOT EXISTS public.course_offering_meeting (
   id                     BIGSERIAL PRIMARY KEY,
   course_offering_group_id BIGINT NOT NULL,
   weekday                INTEGER NOT NULL,
   starts_at              TIME NOT NULL,
   ends_at                TIME NOT NULL,
+  classroom              TEXT,
   created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT course_offering_meeting_course_offering_group_id_fkey
@@ -495,65 +431,11 @@ CREATE TABLE IF NOT EXISTS public.course_offering_meeting (
     UNIQUE (course_offering_group_id, weekday, starts_at, ends_at)
 );
 
-COMMENT ON TABLE public.course_offering_meeting IS 'Normalized schedule meeting rows (weekday/time) for a group; one row per meeting.';
-
--- Reservations (reserved seats with optional targeting)
---
--- The schema supports reservation targeting via nullable foreign keys:
--- - campus_id, academic_unit_id, study_plan_id
--- When targeting is known, a reservation row represents reserved seats constrained to that target.
--- When targeting is unknown or not provided by upstream sources, an untargeted row may be stored
--- with all three targeting columns set to NULL.
---
--- Uniqueness:
--- A reservation row is uniquely identified by
--- (course_offering_group_id, campus_id, academic_unit_id, study_plan_id).
--- This allows combining seat counts from one source with targeting from another source while keeping
--- ingestion idempotent across repeated runs.
-CREATE TABLE IF NOT EXISTS public.course_offering_reservation (
-  id                     BIGSERIAL PRIMARY KEY,
-  course_offering_group_id BIGINT NOT NULL,
-  campus_id              BIGINT,
-  academic_unit_id       BIGINT,
-  study_plan_id          BIGINT,
-  reserved_seats         INTEGER,
-  created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT course_offering_reservation_group_id_fkey
-    FOREIGN KEY (course_offering_group_id)
-    REFERENCES public.course_offering_group(id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-
-  CONSTRAINT course_offering_reservation_campus_id_fkey
-    FOREIGN KEY (campus_id)
-    REFERENCES public.campus(id)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE,
-
-  CONSTRAINT course_offering_reservation_academic_unit_id_fkey
-    FOREIGN KEY (academic_unit_id)
-    REFERENCES public.academic_unit(id)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE,
-
-  CONSTRAINT course_offering_reservation_study_plan_id_fkey
-    FOREIGN KEY (study_plan_id)
-    REFERENCES public.study_plan(id)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE,
-
-  CONSTRAINT course_offering_reservation_unique
-    UNIQUE (course_offering_group_id, campus_id, academic_unit_id, study_plan_id)
-);
-
-COMMENT ON TABLE public.course_offering_reservation IS 'Optional reservation targeting for groups (campus/unit/plan) when upstream provides constraints.';
-
 -- ============================================================================
--- USER / STUDENT DATA TABLES (RLS will be enabled + policies in 0002_rls.sql)
+-- USER / STUDENT DATA TABLES
 -- ============================================================================
 
--- User profile (links to auth.users)
+-- User Profile
 CREATE TABLE IF NOT EXISTS public."user" (
   id         UUID PRIMARY KEY,
   carnet     TEXT UNIQUE,
@@ -566,9 +448,7 @@ CREATE TABLE IF NOT EXISTS public."user" (
     ON DELETE CASCADE
 );
 
-COMMENT ON TABLE public."user" IS 'App user profile (student). Only stores carnet; other identity fields exist in auth.users.';
-
--- User study plans (declared plan context)
+-- User Study Plan Context
 CREATE TABLE IF NOT EXISTS public.user_study_plan (
   id           BIGSERIAL PRIMARY KEY,
   user_id      UUID NOT NULL,
@@ -602,9 +482,7 @@ CREATE TABLE IF NOT EXISTS public.user_study_plan (
     UNIQUE (user_id, study_plan_id, campus_id)
 );
 
-COMMENT ON TABLE public.user_study_plan IS 'User declared study plan + campus context (used for eligibility checks and personalization).';
-
--- Student course records (app-managed transcript-like history)
+-- Student Course Records
 CREATE TABLE IF NOT EXISTS public.student_course_record (
   id              BIGSERIAL PRIMARY KEY,
   user_id         UUID NOT NULL,
@@ -641,9 +519,7 @@ CREATE TABLE IF NOT EXISTS public.student_course_record (
     ON UPDATE CASCADE
 );
 
-COMMENT ON TABLE public.student_course_record IS 'User course history (status/grade/approved) used for eligibility and filtering.';
-
--- Saved schedules (user-defined collections)
+-- Saved Schedules
 CREATE TABLE IF NOT EXISTS public.saved_schedule (
   id              BIGSERIAL PRIMARY KEY,
   user_id         UUID NOT NULL,
@@ -665,9 +541,7 @@ CREATE TABLE IF NOT EXISTS public.saved_schedule (
     ON UPDATE CASCADE
 );
 
-COMMENT ON TABLE public.saved_schedule IS 'User-defined saved schedule (not enrollment).';
-
--- Saved schedule items (groups chosen in a saved schedule)
+-- Saved Schedule Items
 CREATE TABLE IF NOT EXISTS public.saved_schedule_item (
   id                     BIGSERIAL PRIMARY KEY,
   saved_schedule_id      BIGINT NOT NULL,
@@ -690,13 +564,10 @@ CREATE TABLE IF NOT EXISTS public.saved_schedule_item (
     UNIQUE (saved_schedule_id, course_offering_group_id)
 );
 
-COMMENT ON TABLE public.saved_schedule_item IS 'Selected offering groups inside a saved schedule.';
-
 -- ============================================================================
 -- HELPER FUNCTIONS + TRIGGERS
 -- ============================================================================
 
--- Generic updated_at trigger function (public)
 CREATE OR REPLACE FUNCTION public.trigger_set_timestamp()
 RETURNS TRIGGER
 SET search_path = public
@@ -707,12 +578,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION public.trigger_set_timestamp() IS 'Generic trigger to set updated_at=now() on UPDATE.';
-
--- Apply updated_at triggers to tables that define updated_at
 DO $$
 BEGIN
-  -- user
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_user') THEN
     CREATE TRIGGER set_timestamp_user
       BEFORE UPDATE ON public."user"
@@ -720,7 +587,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- university
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_university') THEN
     CREATE TRIGGER set_timestamp_university
       BEFORE UPDATE ON public.university
@@ -728,7 +594,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- campus
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_campus') THEN
     CREATE TRIGGER set_timestamp_campus
       BEFORE UPDATE ON public.campus
@@ -736,7 +601,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- academic_unit
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_academic_unit') THEN
     CREATE TRIGGER set_timestamp_academic_unit
       BEFORE UPDATE ON public.academic_unit
@@ -744,7 +608,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- academic_modality
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_academic_modality') THEN
     CREATE TRIGGER set_timestamp_academic_modality
       BEFORE UPDATE ON public.academic_modality
@@ -752,7 +615,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- academic_term
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_academic_term') THEN
     CREATE TRIGGER set_timestamp_academic_term
       BEFORE UPDATE ON public.academic_term
@@ -760,7 +622,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- study_plan
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_study_plan') THEN
     CREATE TRIGGER set_timestamp_study_plan
       BEFORE UPDATE ON public.study_plan
@@ -768,7 +629,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- course
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_course') THEN
     CREATE TRIGGER set_timestamp_course
       BEFORE UPDATE ON public.course
@@ -776,7 +636,6 @@ BEGIN
       EXECUTE FUNCTION public.trigger_set_timestamp();
   END IF;
 
-  -- saved_schedule
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_saved_schedule') THEN
     CREATE TRIGGER set_timestamp_saved_schedule
       BEFORE UPDATE ON public.saved_schedule
@@ -785,9 +644,6 @@ BEGIN
   END IF;
 END $$;
 
--- Auto-create user profile upon auth.users insert
--- SECURITY DEFINER because it must insert into public."user" regardless of caller privileges,
--- and will be invoked by an auth trigger.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 SET search_path = public
@@ -799,8 +655,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-COMMENT ON FUNCTION public.handle_new_user() IS 'Trigger function: when a new auth user is created, create a matching row in public.user (profile).';
-
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'on_auth_user_created') THEN
@@ -810,5 +664,206 @@ BEGIN
       EXECUTE FUNCTION public.handle_new_user();
   END IF;
 END $$;
+
+-- ============================================================================
+-- TABLE COMMENTS (for Supabase documentation)
+-- ============================================================================
+
+COMMENT ON TABLE public.country IS 'Reference table for countries (ISO-3166 alpha-2).';
+COMMENT ON COLUMN public.country.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.country.name IS 'Country name in English or local language.';
+COMMENT ON COLUMN public.country.iso2_code IS 'ISO-3166 alpha-2 two-letter country code (unique).';
+COMMENT ON COLUMN public.country.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.country.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.university IS 'Universities and institutions; currently used for ITCR and future expansion.';
+COMMENT ON COLUMN public.university.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.university.country_id IS 'Foreign key to the country this university belongs to.';
+COMMENT ON COLUMN public.university.name IS 'Full official name of the university.';
+COMMENT ON COLUMN public.university.short_name IS 'Short display name (e.g., ITCR, UCR) used in UI.';
+COMMENT ON COLUMN public.university.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.university.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.campus IS 'Campus and physical locations where courses are offered. Code is the canonical cross-API identifier.';
+COMMENT ON COLUMN public.campus.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.campus.university_id IS 'Foreign key to the university that owns this campus.';
+COMMENT ON COLUMN public.campus.code IS 'Canonical code used across multiple external APIs (e.g., CA, SJ, AL).';
+COMMENT ON COLUMN public.campus.name IS 'Full descriptive name of the campus.';
+COMMENT ON COLUMN public.campus.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.campus.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.academic_unit IS 'Academic units (schools/departments) that may offer degree programs or courses.';
+COMMENT ON COLUMN public.academic_unit.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.academic_unit.university_id IS 'Foreign key to the university this unit belongs to.';
+COMMENT ON COLUMN public.academic_unit.code IS 'Unique code identifier for the academic unit.';
+COMMENT ON COLUMN public.academic_unit.name IS 'Full name of the school/department.';
+COMMENT ON COLUMN public.academic_unit.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.academic_unit.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.academic_modality IS 'Catalog of academic period types (Semestre, Verano, Bimestre, etc.).';
+COMMENT ON COLUMN public.academic_modality.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.academic_modality.code IS 'Short code identifier for the modality (e.g., S=Semestre, V=Verano, B=Bimestre).';
+COMMENT ON COLUMN public.academic_modality.name IS 'Full descriptive name of the modality.';
+COMMENT ON COLUMN public.academic_modality.periods_per_year IS 'Number of periods per academic year for this modality.';
+COMMENT ON COLUMN public.academic_modality.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.academic_modality.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.academic_term IS 'Academic period instance: year + modality + period number with optional validity dates.';
+COMMENT ON COLUMN public.academic_term.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.academic_term.academic_modality_id IS 'Foreign key to the academic modality this term belongs to.';
+COMMENT ON COLUMN public.academic_term.year IS 'Calendar year of the academic term (e.g., 2026).';
+COMMENT ON COLUMN public.academic_term.period_number IS 'Period number within the modality (e.g., 1, 2 for Semestre).';
+COMMENT ON COLUMN public.academic_term.external_key IS 'External key from upstream system matching the format {YEAR}_{MODALITY}_{PERIOD}.';
+COMMENT ON COLUMN public.academic_term.display_name IS 'Human-readable display name (e.g., "2026 - Semestre 1").';
+COMMENT ON COLUMN public.academic_term.starts_on IS 'Start date of the term (optional, for scheduling).';
+COMMENT ON COLUMN public.academic_term.ends_on IS 'End date of the term (optional, for scheduling).';
+COMMENT ON COLUMN public.academic_term.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.academic_term.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.academic_unit_campus IS 'Join table: which academic units (schools/careers) are available at which campuses.';
+COMMENT ON COLUMN public.academic_unit_campus.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.academic_unit_campus.academic_unit_id IS 'Foreign key to the academic unit.';
+COMMENT ON COLUMN public.academic_unit_campus.campus_id IS 'Foreign key to the campus.';
+COMMENT ON COLUMN public.academic_unit_campus.created_at IS 'Timestamp when the relationship was created.';
+
+COMMENT ON TABLE public.study_plan IS 'Curriculum and study plan versions (Bachillerato, Licenciatura, Maestria) for an academic unit.';
+COMMENT ON COLUMN public.study_plan.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.study_plan.academic_unit_id IS 'Foreign key to the academic unit offering this plan.';
+COMMENT ON COLUMN public.study_plan.academic_modality_id IS 'Foreign key to the academic modality (Semestre, Bimestre, etc.).';
+COMMENT ON COLUMN public.study_plan.external_plan_id IS 'External plan ID from upstream curriculum system.';
+COMMENT ON COLUMN public.study_plan.name IS 'Full name of the study plan degree.';
+COMMENT ON COLUMN public.study_plan.academic_degree IS 'Academic degree type (e.g., "Licenciatura", "Maestria", "Doctorado").';
+COMMENT ON COLUMN public.study_plan.first_level_number IS 'First level number for ordering (usually 0 or 1).';
+COMMENT ON COLUMN public.study_plan.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.study_plan.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.study_plan_campus IS 'Join table: where and when a study plan is valid at a specific campus.';
+COMMENT ON COLUMN public.study_plan_campus.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.study_plan_campus.study_plan_id IS 'Foreign key to the study plan.';
+COMMENT ON COLUMN public.study_plan_campus.campus_id IS 'Foreign key to the campus where the plan is available.';
+COMMENT ON COLUMN public.study_plan_campus.valid_from IS 'Date from which the plan is valid at this campus (null = always).';
+COMMENT ON COLUMN public.study_plan_campus.valid_to IS 'Date until which the plan is valid at this campus (null = always).';
+COMMENT ON COLUMN public.study_plan_campus.created_at IS 'Timestamp when the relationship was created.';
+
+COMMENT ON TABLE public.study_plan_level IS 'Organizational levels within a study plan (e.g., Semestre 0, Semestre 1, Semestre 2).';
+COMMENT ON COLUMN public.study_plan_level.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.study_plan_level.study_plan_id IS 'Foreign key to the parent study plan.';
+COMMENT ON COLUMN public.study_plan_level.level_number IS 'Sequential number for ordering levels (0, 1, 2, ...).';
+COMMENT ON COLUMN public.study_plan_level.level_label IS 'Human-readable label for display (e.g., "Semestre 1", "Bimestre 3").';
+COMMENT ON COLUMN public.study_plan_level.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public.course IS 'Canonical course catalog. Courses are shared across multiple study plans and academic units.';
+COMMENT ON COLUMN public.course.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.course.code IS 'Official course code (e.g., "IC1802", "MA1001") - unique identifier.';
+COMMENT ON COLUMN public.course.name IS 'Full name of the course.';
+COMMENT ON COLUMN public.course.default_credits IS 'Default number of credits for this course.';
+COMMENT ON COLUMN public.course.default_weekly_hours IS 'Default weekly lecture hours for this course.';
+COMMENT ON COLUMN public.course.created_at IS 'Timestamp when the record was created.';
+COMMENT ON COLUMN public.course.updated_at IS 'Timestamp when the record was last updated.';
+
+COMMENT ON TABLE public.study_plan_level_course IS 'Join table: courses included in a specific study plan level with plan-specific credits and hours.';
+COMMENT ON COLUMN public.study_plan_level_course.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.study_plan_level_course.study_plan_level_id IS 'Foreign key to the study plan level.';
+COMMENT ON COLUMN public.study_plan_level_course.course_id IS 'Foreign key to the course.';
+COMMENT ON COLUMN public.study_plan_level_course.credits IS 'Number of credits for this course in this specific plan level.';
+COMMENT ON COLUMN public.study_plan_level_course.weekly_hours IS 'Number of weekly hours for this course in this specific plan level.';
+COMMENT ON COLUMN public.study_plan_level_course.sort_order IS 'Sort order for display purposes within the level.';
+
+COMMENT ON TABLE public.course_relation IS 'Prerequisite, corequisite, and equivalent relationships between courses within a study plan.';
+COMMENT ON COLUMN public.course_relation.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.course_relation.study_plan_id IS 'Foreign key to the study plan this relation belongs to.';
+COMMENT ON COLUMN public.course_relation.from_course_id IS 'The course that has the relation (e.g., the course requiring a prerequisite).';
+COMMENT ON COLUMN public.course_relation.to_course_id IS 'The related course (e.g., the prerequisite or equivalent).';
+COMMENT ON COLUMN public.course_relation.relation_type IS 'Type of relation: PREREQUISITE, COREQUISITE, or EQUIVALENT.';
+COMMENT ON COLUMN public.course_relation.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public.professor IS 'Professor and instructor catalog, deduplicated by full name.';
+COMMENT ON COLUMN public.professor.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.professor.full_name IS 'Full name of the professor (unique, deduplication key).';
+COMMENT ON COLUMN public.professor.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public.course_offering IS 'A course being offered at a specific campus during a specific academic term (header-level).';
+COMMENT ON COLUMN public.course_offering.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.course_offering.course_id IS 'Foreign key to the canonical course.';
+COMMENT ON COLUMN public.course_offering.campus_id IS 'Foreign key to the campus where this offering takes place.';
+COMMENT ON COLUMN public.course_offering.academic_unit_id IS 'Foreign key to the academic unit publishing this offering.';
+COMMENT ON COLUMN public.course_offering.academic_term_id IS 'Foreign key to the academic term for this offering.';
+COMMENT ON COLUMN public.course_offering.credits_snapshot IS 'Snapshot of credits at the time of offering creation.';
+COMMENT ON COLUMN public.course_offering.weekly_hours_snapshot IS 'Snapshot of weekly hours at the time of offering creation.';
+COMMENT ON COLUMN public.course_offering.course_type IS 'Course type classification (null allowed - values may vary).';
+COMMENT ON COLUMN public.course_offering.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public.course_offering_group IS 'Specific group and section instances of a course offering (e.g., "Grupo 01", "Grupo 02").';
+COMMENT ON COLUMN public.course_offering_group.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.course_offering_group.course_offering_id IS 'Foreign key to the parent course offering.';
+COMMENT ON COLUMN public.course_offering_group.group_code IS 'Group code identifier within the offering (e.g., "01", "A").';
+COMMENT ON COLUMN public.course_offering_group.group_type IS 'Delivery mode type: REGULAR, SEMIPRESENCIAL, VIRTUAL, ASISTIDA, or TUTORIA.';
+COMMENT ON COLUMN public.course_offering_group.capacity IS 'Maximum number of students allowed in this group.';
+COMMENT ON COLUMN public.course_offering_group.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public.course_offering_group_professor IS 'Join table: professors assigned to a specific offering group.';
+COMMENT ON COLUMN public.course_offering_group_professor.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.course_offering_group_professor.course_offering_group_id IS 'Foreign key to the offering group.';
+COMMENT ON COLUMN public.course_offering_group_professor.professor_id IS 'Foreign key to the professor.';
+COMMENT ON COLUMN public.course_offering_group_professor.created_at IS 'Timestamp when the assignment was created.';
+
+COMMENT ON TABLE public.course_offering_meeting IS 'Individual meeting sessions (weekday, time, classroom) for a specific group.';
+COMMENT ON COLUMN public.course_offering_meeting.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.course_offering_meeting.course_offering_group_id IS 'Foreign key to the offering group this meeting belongs to.';
+COMMENT ON COLUMN public.course_offering_meeting.weekday IS 'Day of the week (1=Monday through 7=Sunday).';
+COMMENT ON COLUMN public.course_offering_meeting.starts_at IS 'Meeting start time.';
+COMMENT ON COLUMN public.course_offering_meeting.ends_at IS 'Meeting end time.';
+COMMENT ON COLUMN public.course_offering_meeting.classroom IS 'Classroom or location identifier (e.g., "A-101", "Lab 1").';
+COMMENT ON COLUMN public.course_offering_meeting.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public."user" IS 'App user profile linking to Supabase auth.users and storing app-specific user data.';
+COMMENT ON COLUMN public."user".id IS 'Primary key and foreign key to auth.users.id.';
+COMMENT ON COLUMN public."user".carnet IS 'Student ID or carnet (unique per user).';
+COMMENT ON COLUMN public."user".created_at IS 'Timestamp when the profile was created.';
+COMMENT ON COLUMN public."user".updated_at IS 'Timestamp when the profile was last updated.';
+
+COMMENT ON TABLE public.user_study_plan IS 'User study plan context associating users with their declared plan and campus.';
+COMMENT ON COLUMN public.user_study_plan.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.user_study_plan.user_id IS 'Foreign key to the user profile.';
+COMMENT ON COLUMN public.user_study_plan.study_plan_id IS 'Foreign key to the study plan the user is following.';
+COMMENT ON COLUMN public.user_study_plan.campus_id IS 'Foreign key to the campus where the user is enrolled.';
+COMMENT ON COLUMN public.user_study_plan.entry_year IS 'Academic year the user started this plan.';
+COMMENT ON COLUMN public.user_study_plan.started_on IS 'Date when the user started this plan context.';
+COMMENT ON COLUMN public.user_study_plan.ended_on IS 'Date when the user ended this plan context (null if still active).';
+COMMENT ON COLUMN public.user_study_plan.is_active IS 'Flag indicating if this is the users active plan context.';
+COMMENT ON COLUMN public.user_study_plan.created_at IS 'Timestamp when the record was created.';
+
+COMMENT ON TABLE public.student_course_record IS 'User course history with status, grades, and completion information.';
+COMMENT ON COLUMN public.student_course_record.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.student_course_record.user_id IS 'Foreign key to the user profile.';
+COMMENT ON COLUMN public.student_course_record.study_plan_id IS 'Foreign key to the study plan this record belongs to.';
+COMMENT ON COLUMN public.student_course_record.course_id IS 'Foreign key to the course.';
+COMMENT ON COLUMN public.student_course_record.academic_term_id IS 'Foreign key to the academic term when the course was taken.';
+COMMENT ON COLUMN public.student_course_record.status IS 'Enrollment status: IN_PROGRESS, WITHDRAWN, APPROVED, or FAILED.';
+COMMENT ON COLUMN public.student_course_record.grade IS 'Numeric grade received (if applicable).';
+COMMENT ON COLUMN public.student_course_record.approved IS 'Flag indicating if the course was approved/passed.';
+COMMENT ON COLUMN public.student_course_record.recorded_at IS 'Timestamp when this record was created/recorded.';
+
+COMMENT ON TABLE public.saved_schedule IS 'User-defined schedule collections for planning purposes (not enrollment).';
+COMMENT ON COLUMN public.saved_schedule.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.saved_schedule.user_id IS 'Foreign key to the user who owns this schedule.';
+COMMENT ON COLUMN public.saved_schedule.name IS 'User-defined name for the schedule.';
+COMMENT ON COLUMN public.saved_schedule.academic_term_id IS 'Foreign key to the academic term this schedule is for.';
+COMMENT ON COLUMN public.saved_schedule.created_at IS 'Timestamp when the schedule was created.';
+COMMENT ON COLUMN public.saved_schedule.updated_at IS 'Timestamp when the schedule was last updated.';
+
+COMMENT ON TABLE public.saved_schedule_item IS 'Individual offering groups selected within a saved schedule.';
+COMMENT ON COLUMN public.saved_schedule_item.id IS 'Primary key identifier.';
+COMMENT ON COLUMN public.saved_schedule_item.saved_schedule_id IS 'Foreign key to the parent saved schedule.';
+COMMENT ON COLUMN public.saved_schedule_item.course_offering_group_id IS 'Foreign key to the offering group selected in the schedule.';
+COMMENT ON COLUMN public.saved_schedule_item.created_at IS 'Timestamp when the item was added.';
+
+-- ============================================================================
+-- ENUM COMMENTS
+-- ============================================================================
+
+COMMENT ON TYPE course_relation_type IS 'Course relation types: PREREQUISITE, COREQUISITE, or EQUIVALENT.';
+COMMENT ON TYPE student_course_status IS 'Student course statuses: IN_PROGRESS, WITHDRAWN, APPROVED, or FAILED.';
+COMMENT ON TYPE group_type IS 'Group delivery modes: REGULAR, SEMIPRESENCIAL, VIRTUAL, ASISTIDA, or TUTORIA.';
 
 COMMIT;

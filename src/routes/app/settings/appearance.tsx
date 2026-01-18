@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
-import { PaletteIcon, Loader2Icon, SunIcon, MoonIcon, MonitorIcon } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
+import { PaletteIcon, SunIcon, MoonIcon, MonitorIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,19 +30,6 @@ const themes = [
 
 function AppearancePage() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -98,13 +84,6 @@ function AppearancePage() {
                 </button>
               );
             })}
-          </div>
-
-          <div className="rounded-md bg-muted/50 p-4 text-sm text-muted-foreground">
-            <p>
-              <strong>Nota:</strong> El tema se guarda automáticamente en tu navegador
-              y se aplicará en futuras visitas.
-            </p>
           </div>
         </CardContent>
       </Card>

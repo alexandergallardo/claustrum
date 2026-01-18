@@ -124,8 +124,7 @@ School/department that offers courses (escuela/departamento). Some may not have 
     - `1.1 cargaEscuelas`: `DSC_DEPTO` (uppercase).
     - `3.3 carga_carreras_tds_lib`: span text.
     - `1.3 getdatosEscuelaAno`: `DSC_DEPTO`.
-  - Example: `ESCUELA DE INGENIERIA EN COMPUTACION`.
-- `offers_careers`: True if appears in `2.2 carga_carreras_json` for any campus.
+    - Example: `ESCUELA DE INGENIERIA EN COMPUTACION`.
 - `created_at`, `updated_at`
 
 ### `career_program`

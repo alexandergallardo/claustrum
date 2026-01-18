@@ -2,14 +2,24 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser-client'
 import type {
   CatalogUniversity,
   CatalogCampus,
-  CatalogDepartment,
   CatalogCareerProgram,
   CatalogStudyPlan,
   StudyPlanCoursesResponse,
   CoursePrerequisitesResponse,
-  UserStudyPlanContext,
   UserProfileContextRow,
 } from '@/lib/types'
+
+export interface UserStudyPlanContext {
+  userStudyPlanId: number
+  studyPlanId: number
+  campusId: number
+  entryYear: number
+  studyPlanName: string
+  campusName: string
+  universityId: number | null
+  departmentId: number | null
+  academicUnitId: number | null
+}
 
 const supabase = getSupabaseBrowserClient()
 
@@ -31,7 +41,6 @@ export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {
 
   const profile = data as unknown as UserProfileContextRow
 
-  // If no study plan is associated, data might be returned but with null fields
   if (!profile || !profile.study_plan_id) return null
 
   return {
@@ -55,7 +64,6 @@ export async function getAcademicUnitsForCampus(campusId: number): Promise<Catal
 
   return (data ?? []).map((row: any) => ({
     id: row.id,
-    academicUnitId: row.id,
     code: row.code,
     name: row.name,
   }))
@@ -69,14 +77,10 @@ export async function getStudyPlansForAcademicUnit(academicUnitId: number): Prom
 
   return (data ?? []).map((plan: any) => ({
     id: plan.id,
+    academic_unit_id: plan.academic_unit_id,
+    external_plan_id: plan.external_plan_id,
     name: plan.name,
-    academicDegree: plan.academic_degree,
-    academicUnitId: plan.academic_unit_id,
-    academicModalityId: 0,
-    externalPlanId: plan.external_plan_id,
-    firstLevelNumber: 0,
-    createdAt: '',
-    updatedAt: '',
+    academic_degree: plan.academic_degree,
   }))
 }
 
@@ -91,10 +95,7 @@ export async function getUniversities(): Promise<CatalogUniversity[]> {
   return data.map(univ => ({
     id: univ.id,
     name: univ.name,
-    shortName: univ.short_name,
-    countryId: univ.country_id,
-    createdAt: univ.created_at,
-    updatedAt: univ.updated_at,
+    short_name: univ.short_name,
   }))
 }
 
@@ -115,83 +116,33 @@ export async function getCampuses(universityId?: number): Promise<CatalogCampus[
 
   return data.map(campus => ({
     id: campus.id,
-    name: campus.name,
+    university_id: campus.university_id,
     code: campus.code,
-    universityId: campus.university_id,
-    isActive: campus.is_active,
-    openedOn: campus.opened_on,
-    closedOn: campus.closed_on,
-    createdAt: campus.created_at,
-    updatedAt: campus.updated_at,
+    name: campus.name,
   }))
 }
 
-export async function getDepartments(
-  universityId?: number
-): Promise<CatalogDepartment[]> {
+export async function getStudyPlans(
+  academicUnitId?: number
+): Promise<CatalogStudyPlan[]> {
   let query = supabase
-    .from('academic_unit')
+    .from('study_plan')
     .select('*')
-    .eq('offers_careers', true)
-    .order('name')
 
-  if (universityId) {
-    query = query.eq('university_id', universityId)
+  if (academicUnitId) {
+    query = query.eq('academic_unit_id', academicUnitId)
   }
 
   const { data, error } = await query
 
   if (error) throw error
 
-  return data.map(dept => ({
-    id: dept.id,
-    name: dept.name,
-    code: dept.code,
-    universityId: dept.university_id,
-    offersCareers: dept.offers_careers,
-    createdAt: dept.created_at,
-    updatedAt: dept.updated_at,
-  }))
-}
-
-export async function getStudyPlans(
-  departmentId?: number
-): Promise<CatalogStudyPlan[]> {
-  // First get career programs that match the filters
-  let careerQuery = supabase
-    .from('career_program')
-    .select('id')
-
-  if (departmentId) {
-    careerQuery = careerQuery.eq('academic_unit_id', departmentId)
-  }
-
-  const { data: careers, error: careerError } = await careerQuery
-  if (careerError) throw careerError
-
-  const careerIds = careers.map(c => c.id)
-
-  // Then get study plans for those careers
-  let planQuery = supabase
-    .from('study_plan')
-    .select('*')
-    .in('career_program_id', careerIds)
-    .order('name')
-
-  const { data, error } = await planQuery
-
-  if (error) throw error
-
   return data.map(plan => ({
     id: plan.id,
+    academic_unit_id: plan.academic_unit_id,
+    external_plan_id: plan.external_plan_id,
     name: plan.name,
-    academicDegree: plan.academic_degree,
-    careerProgramId: plan.career_program_id,
-    academicModalityId: plan.academic_modality_id,
-    externalPlanId: plan.external_plan_id,
-    firstLevelNumber: plan.first_level_number,
-    createdAt: plan.created_at,
-    updatedAt: plan.updated_at,
+    academic_degree: plan.academic_degree,
   }))
 }
 

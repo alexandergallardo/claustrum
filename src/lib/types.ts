@@ -1,53 +1,28 @@
-// Database types based on Supabase schema
-
 export interface CatalogUniversity {
   id: number
   name: string
-  shortName: string
-  countryId: number
-  createdAt: string
-  updatedAt: string
+  short_name: string
 }
 
 export interface CatalogCampus {
   id: number
-  name: string
+  university_id: number
   code: string
-  universityId: number
-  isActive: boolean
-  openedOn?: string
-  closedOn?: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface CatalogDepartment {
-  id: number
   name: string
-  code: string
-  universityId: number
-  offersCareers: boolean
-  createdAt: string
-  updatedAt: string
 }
 
 export interface CatalogCareerProgram {
   id: number
-  academicUnitId: number
   code: string
   name: string
 }
 
 export interface CatalogStudyPlan {
   id: number
+  academic_unit_id: number
+  external_plan_id: number
   name: string
-  academicDegree?: string
-  careerProgramId: number
-  academicModalityId: number
-  externalPlanId: number
-  firstLevelNumber: number
-  createdAt: string
-  updatedAt: string
+  academic_degree: string | null
 }
 
 export interface StudyPlanCourse {
@@ -117,4 +92,71 @@ export interface UserProfileContextRow {
   study_plan_name: string | null
   user_study_plan_id: number | null
   entry_year: number | null
+}
+
+export interface AcademicTerm {
+  id: number
+  academic_modality_id: number
+  year: number
+  period_number: number
+  external_key: string
+  display_name: string
+  starts_on: string | null
+  ends_on: string | null
+}
+
+export interface ScheduleSession {
+  weekday: number
+  starts_at: string
+  ends_at: string
+  classroom: string | null
+}
+
+export interface ScheduleGroup {
+  group_id: number
+  group_code: string
+  group_type: string
+  capacity: number
+  enrolled_count: number
+  professors: string[] | null
+  meetings: ScheduleSession[] | null
+}
+
+export interface ScheduleCourse {
+  offering_id: number
+  course_id: number
+  course_code: string
+  course_name: string
+  credits: number
+  weekly_hours: number
+  course_type: string | null
+  academic_unit_id: number
+  academic_unit_name: string
+  campus_id: number
+  academic_term_id: number
+  term_display_name: string
+  groups: ScheduleGroup[] | null
+  level_number: number | null
+}
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  color: string
+  start: Date
+  end: Date
+  courseId: string
+  group: number
+}
+
+export interface UserStudyPlanContext {
+  user_id: string
+  university_id: number | null
+  campus_id: number | null
+  academic_unit_id: number | null
+  study_plan_id: number | null
+  university_name: string | null
+  campus_name: string | null
+  academic_unit_name: string | null
+  study_plan_name: string | null
 }

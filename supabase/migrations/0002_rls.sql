@@ -44,7 +44,6 @@ ALTER TABLE public.course_offering                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.course_offering_group          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.course_offering_group_professor ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.course_offering_meeting        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.course_offering_reservation    ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- USER TABLE POLICIES
@@ -327,10 +326,6 @@ FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Public can read meetings" ON public.course_offering_meeting;
 CREATE POLICY "Public can read meetings" ON public.course_offering_meeting
-FOR SELECT TO anon, authenticated USING (true);
-
-DROP POLICY IF EXISTS "Public can read reservations" ON public.course_offering_reservation;
-CREATE POLICY "Public can read reservations" ON public.course_offering_reservation
 FOR SELECT TO anon, authenticated USING (true);
 
 -- ============================================================================

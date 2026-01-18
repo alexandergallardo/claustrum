@@ -5,18 +5,10 @@ type Args = {
 };
 
 function parseArgs(argv: string[]): Args {
-  const args: Args = { apiArgs: [] };
-
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-
-    if (a === "--") {
-      args.apiArgs = argv.slice(i + 1);
-      break;
-    }
-  }
-
-  return args;
+  const sepIndex = argv.indexOf("--");
+  return {
+    apiArgs: sepIndex >= 0 ? argv.slice(sepIndex + 1) : argv.slice(2),
+  };
 }
 
 function env(name: string): string {
@@ -45,7 +37,7 @@ function assertRequiredEnv(): void {
 }
 
 async function run(): Promise<void> {
-  const args = parseArgs(process.argv.slice(2));
+  const args = parseArgs(process.argv);
 
   assertRequiredEnv();
 
@@ -57,11 +49,7 @@ async function run(): Promise<void> {
     "bun",
     ["run", "supabase/scripts/seed-itcr.ts", ...args.apiArgs],
     {
-      env: {
-        ...process.env,
-        VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL,
-        SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
-      },
+      env: process.env,
       stdio: "inherit",
     },
   );

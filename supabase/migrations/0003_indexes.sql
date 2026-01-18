@@ -27,16 +27,14 @@ CREATE INDEX IF NOT EXISTS idx_university_short_name ON public.university(short_
 -- ============================================================================
 -- CAMPUS
 -- ============================================================================
--- code is UNIQUE (implicit index). Filter by active campuses and joins to university.
+-- code is UNIQUE (implicit index). Joins to university.
 CREATE INDEX IF NOT EXISTS idx_campus_university_id ON public.campus(university_id);
-CREATE INDEX IF NOT EXISTS idx_campus_is_active ON public.campus(is_active);
 
 -- ============================================================================
 -- ACADEMIC UNIT
 -- ============================================================================
--- code is UNIQUE (implicit index). Typical filters: offers_careers + join to university.
+-- code is UNIQUE (implicit index). Typical filters: join to university.
 CREATE INDEX IF NOT EXISTS idx_academic_unit_university_id ON public.academic_unit(university_id);
-CREATE INDEX IF NOT EXISTS idx_academic_unit_offers_careers ON public.academic_unit(offers_careers);
 CREATE INDEX IF NOT EXISTS idx_academic_unit_name ON public.academic_unit(name);
 
 -- ============================================================================
@@ -124,12 +122,7 @@ CREATE INDEX IF NOT EXISTS idx_course_offering_group_professor_professor_id
 -- Meetings
 CREATE INDEX IF NOT EXISTS idx_course_offering_meeting_group_id ON public.course_offering_meeting(course_offering_group_id);
 CREATE INDEX IF NOT EXISTS idx_course_offering_meeting_weekday ON public.course_offering_meeting(weekday);
-
--- Reservations
-CREATE INDEX IF NOT EXISTS idx_course_offering_reservation_group_id ON public.course_offering_reservation(course_offering_group_id);
-CREATE INDEX IF NOT EXISTS idx_course_offering_reservation_campus_id ON public.course_offering_reservation(campus_id);
-CREATE INDEX IF NOT EXISTS idx_course_offering_reservation_academic_unit_id ON public.course_offering_reservation(academic_unit_id);
-CREATE INDEX IF NOT EXISTS idx_course_offering_reservation_study_plan_id ON public.course_offering_reservation(study_plan_id);
+CREATE INDEX IF NOT EXISTS idx_course_offering_meeting_classroom ON public.course_offering_meeting(classroom);
 
 -- ============================================================================
 -- USER-OWNED TABLES

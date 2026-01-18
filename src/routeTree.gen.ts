@@ -10,11 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/_index'
-import { Route as AppIndexRouteImport } from './routes/app/_index'
 import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as AppIndexRouteImport } from './routes/app/_index'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
+import { Route as AppScheduleIndexRouteImport } from './routes/app/schedule/index'
 import { Route as AppCurriculumIndexRouteImport } from './routes/app/curriculum/index'
 import { Route as AppSettingsSecurityRouteImport } from './routes/app/settings/security'
 import { Route as AppSettingsProfileRouteImport } from './routes/app/settings/profile'
@@ -23,11 +24,6 @@ import { Route as AppSettingsLayoutRouteImport } from './routes/app/settings/_la
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppIndexRoute = AppIndexRouteImport.update({
-  id: '/app/_index',
-  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupIndexRoute = SignupIndexRouteImport.update({
@@ -40,6 +36,11 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/app/_index',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
   id: '/app/settings',
   path: '/app/settings',
@@ -49,6 +50,11 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppScheduleIndexRoute = AppScheduleIndexRouteImport.update({
+  id: '/app/schedule/',
+  path: '/app/schedule/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppCurriculumIndexRoute = AppCurriculumIndexRouteImport.update({
   id: '/app/curriculum/',
@@ -76,17 +82,20 @@ const AppSettingsLayoutRoute = AppSettingsLayoutRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/app/settings': typeof AppSettingsLayoutRoute
   '/app': typeof AppIndexRoute
-  '/login': typeof LoginIndexRoute
-  '/signup': typeof SignupIndexRoute
+  '/login/': typeof LoginIndexRoute
+  '/signup/': typeof SignupIndexRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
-  '/app/curriculum': typeof AppCurriculumIndexRoute
+  '/app/curriculum/': typeof AppCurriculumIndexRoute
+  '/app/schedule/': typeof AppScheduleIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/app': typeof AppIndexRoute
   '/login': typeof LoginIndexRoute
   '/signup': typeof SignupIndexRoute
@@ -95,6 +104,7 @@ export interface FileRoutesByTo {
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/curriculum': typeof AppCurriculumIndexRoute
+  '/app/schedule': typeof AppScheduleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -108,22 +118,26 @@ export interface FileRoutesById {
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/curriculum/': typeof AppCurriculumIndexRoute
+  '/app/schedule/': typeof AppScheduleIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/app/settings'
     | '/app'
-    | '/login'
-    | '/signup'
+    | '/login/'
+    | '/signup/'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
-    | '/app/curriculum'
+    | '/app/curriculum/'
+    | '/app/schedule/'
     | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/app'
     | '/login'
     | '/signup'
@@ -132,6 +146,7 @@ export interface FileRouteTypes {
     | '/app/settings/profile'
     | '/app/settings/security'
     | '/app/curriculum'
+    | '/app/schedule'
   id:
     | '__root__'
     | '/_index'
@@ -144,6 +159,7 @@ export interface FileRouteTypes {
     | '/app/settings/profile'
     | '/app/settings/security'
     | '/app/curriculum/'
+    | '/app/schedule/'
     | '/app/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -154,6 +170,7 @@ export interface RootRouteChildren {
   LoginIndexRoute: typeof LoginIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
   AppCurriculumIndexRoute: typeof AppCurriculumIndexRoute
+  AppScheduleIndexRoute: typeof AppScheduleIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -161,8 +178,22 @@ declare module '@tanstack/react-router' {
     '/_index': {
       id: '/_index'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup/': {
+      id: '/signup/'
+      path: '/signup'
+      fullPath: '/signup/'
+      preLoaderRoute: typeof SignupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/_index': {
@@ -170,20 +201,6 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup/': {
-      id: '/signup/'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login/': {
-      id: '/login/'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/settings': {
@@ -200,10 +217,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
+    '/app/schedule/': {
+      id: '/app/schedule/'
+      path: '/app/schedule'
+      fullPath: '/app/schedule/'
+      preLoaderRoute: typeof AppScheduleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/curriculum/': {
       id: '/app/curriculum/'
       path: '/app/curriculum'
-      fullPath: '/app/curriculum'
+      fullPath: '/app/curriculum/'
       preLoaderRoute: typeof AppCurriculumIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -264,6 +288,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginIndexRoute: LoginIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
   AppCurriculumIndexRoute: AppCurriculumIndexRoute,
+  AppScheduleIndexRoute: AppScheduleIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

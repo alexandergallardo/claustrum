@@ -1,17 +1,23 @@
 import { useState, useMemo } from 'react'
-import type { Course, Group } from '@/lib/types'
+import type { ScheduleCourse, ScheduleGroup } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { User, Clock, MapPin } from 'lucide-react'
+import { User, Clock, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { groupsHaveConflict, getGroupId } from '@/lib/calendar-utils'
+import { getGroupId } from '@/lib/calendar-utils'
 import { colorOptions } from '@/components/calendar/calendar-tailwind-classes'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 type SelectedGroups = Set<string>
 
 interface CourseListProps {
-  courses: Course[]
+  courses: ScheduleCourse[]
   selectedGroups: SelectedGroups
   onSelectionChange: (selectedGroups: SelectedGroups) => void
 }
@@ -21,34 +27,45 @@ export default function CourseList({
   selectedGroups,
   onSelectionChange,
 }: CourseListProps) {
-  const [courseColors] = useState<Map<string, string>>(() => {
-    const map = new Map()
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
+
+  const courseColors = useMemo(() => {
+    const map = new Map<string, string>()
     courses.forEach((course, index) => {
       const color = colorOptions[index % colorOptions.length].value
-      map.set(course.courseId, color)
+      map.set(course.course_code, color)
     })
     return map
-  })
+  }, [courses])
 
   const conflictMap = useMemo(() => {
     const map = new Map<string, Set<string>>()
-    const allGroups: Array<{ course: Course; group: Group }> = []
+    const allGroupsList: Array<{ course: ScheduleCourse; group: ScheduleGroup }> = []
 
     courses.forEach((course) => {
-      course.groups.forEach((group) => {
-        allGroups.push({ course, group })
-      })
+      if (course.groups) {
+        course.groups.forEach((group) => {
+          allGroupsList.push({ course, group })
+        })
+      }
     })
 
-    allGroups.forEach(({ course: course1, group: group1 }, index1) => {
-      const id1 = getGroupId(course1.courseId, group1.group)
-      allGroups.slice(index1 + 1).forEach(({ course: course2, group: group2 }) => {
-        const id2 = getGroupId(course2.courseId, group2.group)
-        if (groupsHaveConflict(group1, group2)) {
-          if (!map.has(id1)) map.set(id1, new Set())
-          if (!map.has(id2)) map.set(id2, new Set())
-          map.get(id1)!.add(id2)
-          map.get(id2)!.add(id1)
+    allGroupsList.forEach(({ course: course1, group: group1 }, index1) => {
+      const id1 = getGroupId(course1.course_code, parseInt(group1.group_code, 10))
+      allGroupsList.slice(index1 + 1).forEach(({ course: course2, group: group2 }) => {
+        const id2 = getGroupId(course2.course_code, parseInt(group2.group_code, 10))
+        if (group1.meetings && group2.meetings) {
+          for (const s1 of group1.meetings) {
+            for (const s2 of group2.meetings) {
+              if (s1.weekday !== s2.weekday) continue
+              if (s1.starts_at < s2.ends_at && s1.ends_at > s2.starts_at) {
+                if (!map.has(id1)) map.set(id1, new Set())
+                if (!map.has(id2)) map.set(id2, new Set())
+                map.get(id1)!.add(id2)
+                map.get(id2)!.add(id1)
+              }
+            }
+          }
         }
       })
     })
@@ -56,8 +73,28 @@ export default function CourseList({
     return map
   }, [courses])
 
-  const isGroupDisabled = (courseId: string, group: number): boolean => {
-    const groupId = getGroupId(courseId, group)
+  const getConflictReasons = (courseCode: string, groupCode: string): string[] => {
+    const reasons: string[] = []
+    const groupId = getGroupId(courseCode, parseInt(groupCode, 10))
+    const conflictingIds = conflictMap.get(groupId)
+
+    if (!conflictingIds) return reasons
+
+    for (const otherId of conflictingIds) {
+      if (selectedGroups.has(otherId)) {
+        const [otherCourseCode, otherGroupNum] = otherId.split('-')
+        const otherCourse = courses.find((c) => c.course_code === otherCourseCode)
+        if (otherCourse) {
+          reasons.push(`${otherCourse.course_name} (Grupo ${otherGroupNum})`)
+        }
+      }
+    }
+
+    return reasons
+  }
+
+  const isGroupDisabled = (courseCode: string, groupCode: string): boolean => {
+    const groupId = getGroupId(courseCode, parseInt(groupCode, 10))
     if (selectedGroups.has(groupId)) return false
 
     const conflicts = conflictMap.get(groupId)
@@ -72,8 +109,8 @@ export default function CourseList({
     return false
   }
 
-  const handleGroupToggle = (courseId: string, group: number) => {
-    const groupId = getGroupId(courseId, group)
+  const handleGroupToggle = (courseCode: string, groupCode: string) => {
+    const groupId = getGroupId(courseCode, parseInt(groupCode, 10))
     const newSelection = new Set(selectedGroups)
 
     if (newSelection.has(groupId)) {
@@ -98,141 +135,135 @@ export default function CourseList({
     return colorMap[color] || colorMap.blue
   }
 
+  const formatWeekday = (weekday: number): string => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    return days[weekday] || ''
+  }
+
+  const formatTime = (time: string): string => {
+    const [hours, minutes] = time.split(':')
+    return `${hours.padStart(2, '0')}:${minutes}`
+  }
+
   return (
-    <div className="flex flex-col gap-4 h-full overflow-y-auto p-4">
-      {courses.map((course) => {
-        const color = courseColors.get(course.courseId) || 'blue'
-        const colorStyles = getColorStyles(color)
+    <TooltipProvider>
+      <div className="flex flex-col gap-4 h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
+        {courses.map((course) => {
+          const color = courseColors.get(course.course_code) || 'blue'
+          const colorStyles = getColorStyles(color)
 
-        return (
-          <Card key={course.courseId} className="w-full">
-            <CardHeader>
-              <CardTitle className="text-lg">{course.name}</CardTitle>
-              <CardDescription>
-                {course.courseId} • {course.credits} créditos • Nivel {course.level}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3 overflow-x-auto pt-1 pb-2 scroll-smooth snap-x snap-mandatory [scrollbar-width:thin] [scrollbar-color:hsl(var(--muted-foreground)/0.3)_transparent] hover:[scrollbar-color:hsl(var(--muted-foreground)/0.5)_transparent]">
-                {course.groups.map((group) => {
-                  const groupId = getGroupId(course.courseId, group.group)
-                  const isSelected = selectedGroups.has(groupId)
-                  const isDisabled = isGroupDisabled(course.courseId, group.group)
+          return (
+            <Card key={course.offering_id} className="w-full">
+              <CardHeader>
+                <CardTitle className="text-lg">{course.course_name}</CardTitle>
+                <CardDescription>
+                  {course.course_code} • {course.credits} créditos
+                  {course.level_number !== null && course.level_number !== undefined && course.level_number < 999 && (
+                    <> • Nivel {course.level_number}</>
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3 overflow-x-auto pt-1 pb-2 scroll-smooth snap-x snap-mandatory [scrollbar-width:thin] [scrollbar-color:hsl(var(--muted-foreground)/0.3)_transparent] hover:[scrollbar-color:hsl(var(--muted-foreground)/0.5)_transparent]">
+                  {course.groups?.map((group) => {
+                    const groupId = getGroupId(course.course_code, parseInt(group.group_code, 10))
+                    const isSelected = selectedGroups.has(groupId)
+                    const disabled = isGroupDisabled(course.course_code, group.group_code)
+                    const reasons = disabled ? getConflictReasons(course.course_code, group.group_code) : []
+                    const showBlockedTooltip = disabled && hoveredGroupId === groupId && reasons.length > 0
 
-                  return (
-                    <div
-                      key={groupId}
-                      className={cn(
-                        'flex flex-col min-w-[240px] p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer snap-start',
-                        'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm',
-                        isDisabled && 'opacity-50 cursor-not-allowed hover:translate-y-0 hover:shadow-none',
-                        !isDisabled && !isSelected && 'hover:bg-muted/50 border-border',
-                        isSelected && 'shadow-lg -translate-y-0.5 ring-1 ring-offset-1 ring-offset-background'
-                      )}
-                      style={
-                        isSelected
-                          ? {
-                              backgroundColor: colorStyles.bg,
-                              borderColor: colorStyles.border,
-                              // @ts-expect-error CSS custom property for ring color
-                              '--tw-ring-color': colorStyles.border,
+                    return (
+                      <Tooltip key={groupId}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              'flex flex-col min-w-[240px] p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer snap-start relative',
+                              'hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm',
+                              disabled && 'opacity-50 cursor-not-allowed hover:translate-y-0 hover:shadow-none',
+                              !disabled && !isSelected && 'hover:bg-muted/50 border-border',
+                              isSelected && 'shadow-lg -translate-y-0.5 ring-1 ring-offset-1 ring-offset-background'
+                            )}
+                            style={
+                              isSelected
+                                ? {
+                                    backgroundColor: colorStyles.bg,
+                                    borderColor: colorStyles.border,
+                                  }
+                                : undefined
                             }
-                          : undefined
-                      }
-                      onClick={() => !isDisabled && handleGroupToggle(course.courseId, group.group)}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            'text-xs',
-                            isSelected && 'border',
-                            isSelected && 'bg-background/50'
-                          )}
-                          style={isSelected ? { borderColor: colorStyles.border } : undefined}
-                        >
-                          Grupo {group.group}
-                        </Badge>
-                        <span className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-muted-foreground')}>
-                          {group.type}
-                        </span>
-                      </div>
-
-                      <Separator className="mb-2" />
-
-                      <div className="space-y-1.5">
-                        <div className="flex items-start gap-2">
-                          <User className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
-                          <span className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-foreground')}>
-                            {group.professor}
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <Clock className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
-                          <div className="flex flex-col">
-                            {group.sessions.map((session, idx) => (
-                              <span key={idx} className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-foreground')}>
-                                {session.day} {session.startTime}-{session.endTime}
+                            onClick={() => !disabled && handleGroupToggle(course.course_code, group.group_code)}
+                            onMouseEnter={() => setHoveredGroupId(groupId)}
+                            onMouseLeave={() => setHoveredGroupId(null)}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge
+                                variant="secondary"
+                                className={cn(
+                                  'text-xs',
+                                  isSelected && 'border',
+                                  isSelected && 'bg-background/50'
+                                )}
+                                style={isSelected ? { borderColor: colorStyles.border } : undefined}
+                              >
+                                Grupo {group.group_code}
+                              </Badge>
+                              <span className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-muted-foreground')}>
+                                {group.group_type}
                               </span>
-                            ))}
-                          </div>
-                        </div>
+                            </div>
 
-                        {(() => {
-                          const classrooms = group.sessions
-                            .map((s) => s.classroom)
-                            .filter((c): c is string => !!c)
-                          const uniqueClassrooms = [...new Set(classrooms)]
-                          
-                          if (uniqueClassrooms.length === 0) {
-                            return (
+                            <Separator className="mb-2" />
+
+                            <div className="space-y-1.5">
                               <div className="flex items-start gap-2">
-                                <MapPin className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
+                                <User className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
                                 <span className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-foreground')}>
-                                  Sin aula
+                                  {group.professors?.join(', ') || 'Sin asignar'}
                                 </span>
                               </div>
-                            )
-                          }
-                          
-                          if (uniqueClassrooms.length === 1) {
-                            return (
+
                               <div className="flex items-start gap-2">
-                                <MapPin className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
-                                <span className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-foreground')}>
-                                  {uniqueClassrooms[0]}
-                                </span>
+                                <Clock className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
+                                <div className="flex flex-col">
+                                  {group.meetings?.map((session, idx) => (
+                                    <span key={idx} className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-foreground')}>
+                                      {formatWeekday(session.weekday)} {formatTime(session.starts_at)}-{formatTime(session.ends_at)}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                            )
-                          }
-                          
-                          return (
+
+                              <p className={cn('text-xs mt-2', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')}>
+                                {group.capacity} cupos
+                              </p>
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        {showBlockedTooltip && (
+                          <TooltipContent className="max-w-xs bg-destructive text-destructive-foreground">
                             <div className="flex items-start gap-2">
-                              <MapPin className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')} />
-                              <div className="flex flex-col">
-                                {uniqueClassrooms.map((classroom, idx) => (
-                                  <span key={idx} className={cn('text-xs', isSelected ? 'text-muted-foreground/80' : 'text-foreground')}>
-                                    {classroom}
-                                  </span>
-                                ))}
+                              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-semibold">Grupo bloqueado</p>
+                                <p className="text-sm">Choque con:</p>
+                                <ul className="text-sm list-disc list-inside">
+                                  {reasons.map((reason, idx) => (
+                                    <li key={idx}>{reason}</li>
+                                  ))}
+                                </ul>
                               </div>
                             </div>
-                          )
-                        })()}
-                      </div>
-
-                      <p className={cn('text-xs mt-2', isSelected ? 'text-muted-foreground/70' : 'text-muted-foreground')}>
-                        {group.capacity} cupos
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
-    </div>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </TooltipProvider>
   )
 }
