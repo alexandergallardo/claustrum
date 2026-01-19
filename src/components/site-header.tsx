@@ -39,7 +39,7 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <h1 className="text-base font-medium">Horarios</h1>
+        <h1 className="text-base font-medium">Claustrum</h1>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" disabled>
             <Bell className="h-[1.2rem] w-[1.2rem]" />

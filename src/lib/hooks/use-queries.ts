@@ -388,12 +388,22 @@ export function useUpdateCourseStatus() {
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
-      const { error } = await sb.rpc("update_student_course_status", {
-        p_user_id: params.userId,
-        p_study_plan_id: params.studyPlanId,
-        p_course_id: params.courseId,
-        p_status: params.status.toUpperCase() as any,
-      });
+      let error;
+
+      if (params.status === "not_taken") {
+        ({ error } = await sb.rpc("delete_student_course_status", {
+          p_user_id: params.userId,
+          p_study_plan_id: params.studyPlanId,
+          p_course_id: params.courseId,
+        }));
+      } else {
+        ({ error } = await sb.rpc("update_student_course_status", {
+          p_user_id: params.userId,
+          p_study_plan_id: params.studyPlanId,
+          p_course_id: params.courseId,
+          p_status: params.status.toUpperCase() as any,
+        }));
+      }
 
       if (error) throw error;
     },

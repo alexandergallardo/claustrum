@@ -93,16 +93,8 @@ export function PlanBoard({ planDetail }: PlanBoardProps) {
         </button>
       </div>
 
-      <div
-        className="flex-1 min-h-0 overflow-auto"
-        style={{
-          transform: `scale(${zoom})`,
-          transformOrigin: "top left",
-          width: `${100 / zoom}%`,
-          height: `${100 / zoom}%`,
-        }}
-      >
-        <CurriculumGrid planDetail={planDetail} userId={userId} studyPlanId={studyPlanId} />
+      <div className="flex-1 min-h-0">
+        <CurriculumGrid planDetail={planDetail} userId={userId} studyPlanId={studyPlanId} zoom={zoom} />
       </div>
     </div>
   )

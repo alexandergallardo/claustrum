@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
 import {
   useUniversities,
@@ -60,7 +60,7 @@ function PlanEstudiosPage() {
   useEffect(() => {
     if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
       navigate({
-        to: '/app/curriculum',
+        to: '/app/curriculum/',
         search: {
           university: userStudyPlan.universityId ?? undefined,
           campus: userStudyPlan.campusId ?? undefined,
@@ -112,8 +112,6 @@ function PlanEstudiosPage() {
     })
   }, [navigate, search])
 
-  const isLoadingFilters = isLoadingUniversities || campusesQuery.isLoading || academicUnitsQuery.isLoading || plansQuery.isLoading
-
   return (
     <AppLayoutWrapper>
       <div className="flex flex-1 flex-col">
@@ -129,33 +127,24 @@ function PlanEstudiosPage() {
             </div>
 
             <div className="px-4 lg:px-6">
-              {isLoadingFilters ? (
-                <div className="flex flex-wrap items-end gap-4">
-                  <Skeleton className="h-22 w-[200px]" />
-                  <Skeleton className="h-22 w-[200px]" />
-                  <Skeleton className="h-22 w-[200px]" />
-                  <Skeleton className="h-22 w-[200px]" />
-                </div>
-              ) : (
-                <PlanFilters
-                  universities={universities ?? []}
-                  campuses={mainCampuses}
-                  careerPrograms={academicUnits}
-                  plans={plans}
-                  selectedUniversityId={selectedUniversityId}
-                  selectedCampusId={selectedCampusId}
-                  selectedCareerProgramId={selectedAcademicUnitId}
-                  selectedPlanId={selectedPlanId}
-                  onUniversityChange={handleUniversityChange}
-                  onCampusChange={handleCampusChange}
-                  onCareerProgramChange={handleAcademicUnitChange}
-                  onPlanChange={handlePlanChange}
-                  isLoadingUniversities={isLoadingUniversities}
-                  isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
-                  isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
-                  isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
-                />
-              )}
+              <PlanFilters
+                universities={universities ?? []}
+                campuses={mainCampuses}
+                careerPrograms={academicUnits}
+                plans={plans}
+                selectedUniversityId={selectedUniversityId}
+                selectedCampusId={selectedCampusId}
+                selectedCareerProgramId={selectedAcademicUnitId}
+                selectedPlanId={selectedPlanId}
+                onUniversityChange={handleUniversityChange}
+                onCampusChange={handleCampusChange}
+                onCareerProgramChange={handleAcademicUnitChange}
+                onPlanChange={handlePlanChange}
+                isLoadingUniversities={isLoadingUniversities}
+                isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
+                isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
+                isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+              />
             </div>
 
             {planDetailQuery.isError && (
@@ -185,7 +174,7 @@ function PlanEstudiosPage() {
 
             {selectedPlanId && planDetailQuery.isSuccess && planDetailQuery.data && (
               <div className="px-4 lg:px-6 min-h-0 flex-1">
-                <Card className="h-full min-h-0 overflow-auto">
+                <Card className="h-full min-h-0 overflow-auto py-0">
                   <PlanBoard planDetail={planDetailQuery.data} />
                 </Card>
               </div>

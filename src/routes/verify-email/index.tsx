@@ -95,90 +95,85 @@ export default function VerifyEmailPage() {
     }
   }
 
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 md:p-10">
-        <Card className="w-full max-w-md">
-          <CardContent className="flex flex-col items-center gap-4 py-10">
-            <div className="animate-spin">
-              <RefreshCw className="size-10 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground">Verifying your email...</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const isLoading = status === "loading"
+  const isSuccess = status === "success"
+  const isPending = status === "pending"
 
-  if (status === "success") {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 md:p-10">
-        <Card className="w-full max-w-md border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950">
-          <CardContent className="flex flex-col items-center gap-4 py-10">
-            <CheckCircle className="size-14 text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-2xl font-bold text-emerald-800 dark:text-emerald-200">
-              Email verified!
-            </h2>
-            <p className="text-emerald-700 dark:text-emerald-300 text-center">
-              Redirecting to your dashboard...
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const title = isLoading ? "Verifying your email" : isSuccess ? "Email verified!" : "Check your email"
+  const description = isLoading
+    ? "This should only take a moment."
+    : isSuccess
+      ? "Redirecting to your dashboard..."
+      : "We sent a verification link to"
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 md:p-10">
+    <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background p-6 md:p-10">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-primary/10">
-            <Mail className="size-7 text-primary" />
+          <div
+            className={`mx-auto mb-4 flex size-14 items-center justify-center rounded-full ${
+              isSuccess ? "bg-emerald-500/10" : "bg-primary/10"
+            }`}
+          >
+            {isLoading ? (
+              <RefreshCw className="size-7 animate-spin text-muted-foreground" />
+            ) : isSuccess ? (
+              <CheckCircle className="size-7 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <Mail className="size-7 text-primary" />
+            )}
           </div>
-          <CardTitle className="text-2xl">Check your email</CardTitle>
+          <CardTitle className="text-2xl">{title}</CardTitle>
           <CardDescription className="text-center">
-            We&apos;ve sent a verification link to your email address.
+            {isPending ? (
+              <>
+                {description} {email ?? "your email"}.
+              </>
+            ) : (
+              description
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <div className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">
-            <p>Click the link in the email to verify your account. If you don&apos;t see the email, check your spam folder.</p>
-          </div>
+          {isPending && (
+            <p className="mx-auto max-w-sm text-center text-sm text-muted-foreground">
+              Didn&apos;t get it? Check spam or promotions.
+            </p>
+          )}
 
-          {resendSuccess ? (
-            <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-              <p>Email sent successfully! Please check your inbox.</p>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleResendEmail}
-              disabled={resending}
-            >
-              {resending ? (
-                <>
-                  <RefreshCw className="mr-2 size-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 size-4" />
+          {isPending &&
+            (resendSuccess ? (
+              <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <p>Email sent successfully! Please check your inbox.</p>
+              </div>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResendEmail}
+                  disabled={resending}
+                >
+                  <RefreshCw className={`mr-2 size-4 ${resending ? "animate-spin" : ""}`} />
                   Resend verification email
-                </>
-              )}
-            </Button>
+                </Button>
+                {resending && (
+                  <p className="text-center text-xs text-muted-foreground">Sending...</p>
+                )}
+              </>
+            ))}
+
+          {isPending && resendError && (
+            <p className="text-center text-sm text-destructive">{resendError}</p>
           )}
 
-          {resendError && (
-            <p className="text-sm text-destructive text-center">{resendError}</p>
+          {isPending && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>
+                Back to login
+              </Button>
+            </div>
           )}
-
-          <div className="flex items-center justify-center gap-2 pt-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>
-              Back to login
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

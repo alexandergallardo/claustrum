@@ -15,7 +15,7 @@ function LandingPage() {
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
               <GalleryVerticalEnd className="size-4" />
             </div>
-            Acme Inc.
+            Claustrum
           </Link>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
@@ -30,7 +30,7 @@ function LandingPage() {
       <main className="flex-1 container mx-auto py-16 px-4">
         <div className="flex flex-col items-center text-center space-y-6 mb-16">
           <h1 className="text-4xl font-bold tracking-tight">
-            Bienvenido a Acme Inc.
+            Bienvenido a Claustrum.
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl">
             La mejor solución para gestionar tus horarios de forma eficiente y

@@ -709,7 +709,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.update_student_course_status TO authenticated;
+ -- Grant execute permission to authenticated users
+ GRANT EXECUTE ON FUNCTION public.update_student_course_status TO authenticated;
 
-COMMIT;
+-- ============================================================================
+-- FUNCTION: delete_student_course_status
+-- ============================================================================
+-- Deletes a student's course status record (used to mark as not taken).
+CREATE OR REPLACE FUNCTION public.delete_student_course_status(
+  p_user_id UUID,
+  p_study_plan_id INTEGER,
+  p_course_id INTEGER
+)
+RETURNS void AS $$
+BEGIN
+  DELETE FROM public.student_course_record
+  WHERE user_id = p_user_id
+    AND study_plan_id = p_study_plan_id
+    AND course_id = p_course_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.delete_student_course_status TO authenticated;
+
+ COMMIT;

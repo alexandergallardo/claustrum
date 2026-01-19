@@ -62,6 +62,7 @@ export interface StudyPlanDetail {
   courseRelations: Map<number, {
     prerequisites: number[]
     corequisites: number[]
+    equivalents?: number[]
   }>
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { useCoursesByIds } from "@/lib/hooks/use-queries"
 import type { Course, CourseStatus } from "@/components/curriculum-grid"
@@ -48,6 +48,10 @@ export function CourseDetails({ course, courses, onClose, onStatusChange }: Cour
   const [isSaving, setIsSaving] = useState(false)
   const [showAllEquivalents, setShowAllEquivalents] = useState(false)
   const EQUIVALENTS_PER_PAGE = 10
+
+  useEffect(() => {
+    setLocalStatus(null)
+  }, [course?.id])
 
   const equivalentIds = course?.equivalents?.map((id) => parseInt(id)) ?? []
   const { data: equivalentCourses = [] } = useCoursesByIds(equivalentIds.length > 0 ? equivalentIds : null)

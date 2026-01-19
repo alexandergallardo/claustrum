@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useStudentCourseStatuses, useUpdateCourseStatus } from "@/lib/hooks/use-queries"
 import { CourseCard, type RelationType } from "./course-card"
 import { CourseDetails } from "./course-details"
@@ -26,14 +26,18 @@ interface CurriculumGridProps {
   planDetail: StudyPlanDetail
   userId?: string
   studyPlanId?: number
+  zoom?: number
 }
 
 const normalizeText = (text: string) => text.toUpperCase()
 
-export function CurriculumGrid({ planDetail, userId, studyPlanId }: CurriculumGridProps) {
+export function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: CurriculumGridProps) {
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null)
+  const [contentHeight, setContentHeight] = useState<number | null>(null)
+  const [contentWidth, setContentWidth] = useState<number | null>(null)
+  const scaledContentRef = useRef<HTMLDivElement>(null)
 
   const { data: statusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null)
   const updateCourseStatus = useUpdateCourseStatus()
@@ -62,6 +66,7 @@ export function CurriculumGrid({ planDetail, userId, studyPlanId }: CurriculumGr
       }),
     )
     setCourses(convertedCourses)
+    setContentHeight(null)
   }, [planDetail, statusMap])
 
   const courseById = useMemo(() => {
@@ -71,6 +76,15 @@ export function CurriculumGrid({ planDetail, userId, studyPlanId }: CurriculumGr
   }, [courses])
 
   const semesters = Array.from(new Set(courses.map((c) => c.semester))).sort((a, b) => a - b)
+
+  useEffect(() => {
+    if (scaledContentRef.current) {
+      const height = scaledContentRef.current.scrollHeight
+      const width = scaledContentRef.current.scrollWidth
+      setContentHeight(height)
+      setContentWidth(width)
+    }
+  }, [zoom, courses])
 
   const getRelationType = useCallback((targetId: string, courseId: string): RelationType => {
     const target = courseById.get(targetId)
@@ -107,40 +121,49 @@ export function CurriculumGrid({ planDetail, userId, studyPlanId }: CurriculumGr
 
   return (
     <div className="flex flex-col h-full min-w-0">
-      <div className="relative px-4 py-4 z-0 flex-1 min-h-0 overflow-x-auto overflow-y-auto">
-        <div className="flex gap-20 pb-8 pl-4">
-          {semesters.map((semester) => (
-            <div key={semester} className="flex-shrink-0 w-48">
-              <div className="mb-4 pb-2 border-b border-border">
-                <h2 className="text-lg font-semibold text-foreground">
-                  {`Semestre ${semester}`}
-                </h2>
+      <div className="relative py-4 z-0 flex-1 min-h-0 overflow-x-auto overflow-y-auto">
+        <div
+          className="origin-top-left px-4"
+          style={{
+            transform: `scale(${zoom})`,
+            width: contentHeight && contentWidth ? `${(contentWidth + 32) * zoom}px` : `${100 / zoom}%`,
+            height: contentHeight ? `${contentHeight * zoom}px` : undefined,
+          }}
+        >
+          <div ref={scaledContentRef} className="flex gap-20 pb-4">
+            {semesters.map((semester) => (
+              <div key={semester} className="flex-shrink-0 w-48">
+                <div className="mb-4 pb-2 border-b border-border">
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {`Semestre ${semester}`}
+                  </h2>
+                </div>
+                <div className="space-y-4">
+                  {courses
+                    .filter((c) => c.semester === semester)
+                    .map((course) => (
+                      <div
+                        key={course.id}
+                        onMouseEnter={() => setHoveredCourse(course.id)}
+                        onMouseLeave={() => setHoveredCourse(null)}
+                        onClick={() => handleCourseClick(course)}
+                      >
+                        <CourseCard
+                          id={`course-${course.id}`}
+                          course={course}
+                          isHovered={hoveredCourse === course.id}
+                          relationType={hoveredCourse ? getRelationType(hoveredCourse, course.id) : null}
+                        />
+                      </div>
+                    ))}
+                </div>
               </div>
-              <div className="space-y-4">
-                {courses
-                  .filter((c) => c.semester === semester)
-                  .map((course) => (
-                    <div
-                      key={course.id}
-                      onMouseEnter={() => setHoveredCourse(course.id)}
-                      onMouseLeave={() => setHoveredCourse(null)}
-                      onClick={() => handleCourseClick(course)}
-                    >
-                      <CourseCard
-                        id={`course-${course.id}`}
-                        course={course}
-                        isHovered={hoveredCourse === course.id}
-                        relationType={hoveredCourse ? getRelationType(hoveredCourse, course.id) : null}
-                      />
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="pt-6 border-t border-border px-4 pb-4 shrink-0">
+      <div className="pt-1 border-t border-border px-4 pb-2 shrink-0">
         <div className="flex flex-row gap-8">
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">Leyenda de estados</h3>
