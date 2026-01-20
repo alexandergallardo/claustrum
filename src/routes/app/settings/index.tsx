@@ -1,13 +1,4 @@
-import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
-import {
-  UserIcon,
-  ShieldIcon,
-  PaletteIcon,
-} from "lucide-react";
-import { useState } from "react";
-
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/app/settings/")({
   beforeLoad: () => {

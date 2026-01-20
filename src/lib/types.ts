@@ -23,6 +23,7 @@ export interface CatalogStudyPlan {
   external_plan_id: number
   name: string
   academic_degree: string | null
+  modality_name?: string
 }
 
 export interface StudyPlanCourse {
@@ -46,15 +47,28 @@ export interface CoursePrerequisitesResponse {
   corequisites: number[]
 }
 
-export interface CoursePrerequisitesResponse {
-  prerequisites: number[]
-  corequisites: number[]
-}
-
 export interface StudyPeriod {
   levelNumber: number | null
+  levelLabel?: string
   courses: StudyPlanCourse[]
 }
+
+export interface Course {
+  id: string
+  code: string
+  name: string
+  credits: number
+  hours: number
+  semester: number
+  status: CourseStatus
+  prerequisites: string[]
+  corequisites: string[]
+  equivalents?: string[]
+}
+
+export type CourseStatus = "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress"
+
+export type StudentCourseStatusMap = Map<number, CourseStatus>
 
 export interface StudyPlanDetail {
   plan: CatalogStudyPlan

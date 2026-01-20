@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ChevronDown, ChevronUp, Filter } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan } from '@/lib/types'
 
 interface PlanFiltersProps {
@@ -53,14 +55,16 @@ function FilterSelect({
   onChange,
   isLoading,
   isVisible,
+  showCode = false,
 }: {
   label: string
   value: string
   placeholder: string
-  items: { id: number; name: string }[]
+  items: { id: number; code?: string; name: string }[]
   onChange: (val: string) => void
   isLoading: boolean
   isVisible: boolean
+  showCode?: boolean
 }) {
   if (!isVisible) return null
 
@@ -81,7 +85,9 @@ function FilterSelect({
             <SelectGroup>
               <TooltipProvider>
                 {items.map((item) => {
-                  const fullText = normalizeText(item.name)
+                  const fullText = showCode && item.code
+                    ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+                    : normalizeText(item.name)
                   const displayText = truncateText(fullText)
                   return (
                     <Tooltip key={item.id}>
@@ -92,7 +98,7 @@ function FilterSelect({
                       </TooltipTrigger>
                       {displayText !== fullText && (
                         <TooltipContent side="right">
-                          <p>{fullText}</p>
+                          <p>{showCode ? normalizeText(item.name) : fullText}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -105,6 +111,14 @@ function FilterSelect({
       )}
     </div>
   )
+}
+
+const FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open"
+
+function getInitialFiltersPanelOpen(): boolean {
+  if (typeof window === "undefined") return true
+  const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY)
+  return stored !== "false"
 }
 
 export function PlanFilters({
@@ -125,7 +139,12 @@ export function PlanFilters({
   isLoadingCareerPrograms,
   isLoadingPlans,
 }: PlanFiltersProps) {
+  const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
+
+  useEffect(() => {
+    localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString())
+  }, [isFiltersVisible])
 
   if (!hasUniversities && isLoadingUniversities) {
     return (
@@ -139,46 +158,59 @@ export function PlanFilters({
   }
 
   return (
-    <div className="flex flex-wrap items-end gap-4">
-      <FilterSelect
-        label="Universidad"
-        value={selectedUniversityId?.toString() || ''}
-        placeholder="Selecciona una universidad"
-        items={universities}
-        onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
-        isLoading={!hasUniversities && isLoadingUniversities}
-        isVisible={true}
-      />
+    <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors md:hidden"
+      >
+        <Filter className="w-4 h-4" />
+        <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
+        {isFiltersVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
 
-      <FilterSelect
-        label="Sede"
-        value={selectedCampusId?.toString() || ''}
-        placeholder="Selecciona una sede"
-        items={campuses}
-        onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
-        isLoading={!campuses.length && isLoadingCampuses}
-        isVisible={!!selectedUniversityId}
-      />
+      <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden md:block'}`}>
+        <FilterSelect
+          label="Universidad"
+          value={selectedUniversityId?.toString() || ''}
+          placeholder="Selecciona una universidad"
+          items={universities}
+          onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
+          isLoading={!hasUniversities && isLoadingUniversities}
+          isVisible={true}
+        />
 
-      <FilterSelect
-        label="Carrera"
-        value={selectedCareerProgramId?.toString() || ''}
-        placeholder="Selecciona una carrera"
-        items={careerPrograms}
-        onChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}
-        isLoading={!careerPrograms.length && isLoadingCareerPrograms}
-        isVisible={!!selectedCampusId}
-      />
+        <FilterSelect
+          label="Sede"
+          value={selectedCampusId?.toString() || ''}
+          placeholder="Selecciona una sede"
+          items={campuses}
+          onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
+          isLoading={!campuses.length && isLoadingCampuses}
+          isVisible={!!selectedUniversityId}
+        />
 
-      <FilterSelect
-        label="Plan de estudios"
-        value={selectedPlanId?.toString() || ''}
-        placeholder="Selecciona un plan"
-        items={plans}
-        onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
-        isLoading={!plans.length && isLoadingPlans}
-        isVisible={!!selectedCareerProgramId}
-      />
+        <FilterSelect
+          label="Carrera"
+          value={selectedCareerProgramId?.toString() || ''}
+          placeholder="Selecciona una carrera"
+          items={careerPrograms}
+          onChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}
+          isLoading={!careerPrograms.length && isLoadingCareerPrograms}
+          isVisible={!!selectedCampusId}
+          showCode={true}
+        />
+
+        <FilterSelect
+          label="Plan de estudios"
+          value={selectedPlanId?.toString() || ''}
+          placeholder="Selecciona un plan"
+          items={plans}
+          onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
+          isLoading={!plans.length && isLoadingPlans}
+          isVisible={!!selectedCareerProgramId}
+        />
+      </div>
     </div>
   )
 }

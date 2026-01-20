@@ -152,14 +152,17 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT DISTINCT au.id, au.code, au.name
-  FROM public.academic_unit au
-  INNER JOIN public.academic_unit_campus auc ON auc.academic_unit_id = au.id
-  WHERE auc.campus_id = p_campus_id
+  FROM public.v_academic_units_with_plans au
+  WHERE au.id IN (
+    SELECT academic_unit_id
+    FROM public.academic_unit_campus
+    WHERE campus_id = p_campus_id
+  )
   ORDER BY au.name;
 END;
 $$;
 
-COMMENT ON FUNCTION public.get_academic_units_for_campus IS 'Returns academic units available at a specific campus.';
+COMMENT ON FUNCTION public.get_academic_units_for_campus IS 'Returns academic units with study plans available at a specific campus.';
 
 -- ============================================================================
 -- FUNCTION: get_academic_units_for_university (invoker)
@@ -188,7 +191,7 @@ COMMENT ON FUNCTION public.get_academic_units_for_university IS 'Returns academi
 -- Returns study plans for a specific academic unit, ordered by newest first (higher external_plan_id = newer).
 -- Format: "external_plan_id - name"
 CREATE OR REPLACE FUNCTION public.get_study_plans_for_academic_unit(p_academic_unit_id BIGINT)
-RETURNS TABLE (id BIGINT, academic_unit_id BIGINT, external_plan_id INTEGER, name TEXT, academic_degree TEXT)
+RETURNS TABLE (id BIGINT, academic_unit_id BIGINT, external_plan_id INTEGER, name TEXT, academic_degree TEXT, modality_name TEXT)
 LANGUAGE plpgsql
 SET search_path = public
 SECURITY INVOKER
@@ -200,14 +203,59 @@ BEGIN
     sp.academic_unit_id, 
     sp.external_plan_id, 
     sp.external_plan_id::TEXT || ' - ' || sp.name AS name, 
-    sp.academic_degree
+    sp.academic_degree,
+    am.name AS modality_name
   FROM public.study_plan sp
+  LEFT JOIN public.academic_modality am ON sp.academic_modality_id = am.id
   WHERE sp.academic_unit_id = p_academic_unit_id
   ORDER BY sp.external_plan_id DESC;
 END;
 $$;
 
 COMMENT ON FUNCTION public.get_study_plans_for_academic_unit IS 'Returns study plans for a specific academic unit, ordered by newest first.';
+
+-- ============================================================================
+-- FUNCTION: get_study_plans_for_campus_and_academic_unit (invoker)
+-- ============================================================================
+-- Returns study plans for a specific academic unit and campus.
+-- Only returns plans that are valid for the selected campus or have no campus restriction.
+-- This filters out old plans that were created before certain campuses existed.
+CREATE OR REPLACE FUNCTION public.get_study_plans_for_campus_and_academic_unit(
+  p_academic_unit_id BIGINT,
+  p_campus_id BIGINT
+)
+RETURNS TABLE (id BIGINT, academic_unit_id BIGINT, external_plan_id INTEGER, name TEXT, academic_degree TEXT)
+LANGUAGE plpgsql
+SET search_path = public
+SECURITY INVOKER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    sp.id,
+    sp.academic_unit_id,
+    sp.external_plan_id,
+    sp.external_plan_id::TEXT || ' - ' || sp.name AS name,
+    sp.academic_degree
+  FROM public.study_plan sp
+  WHERE sp.academic_unit_id = p_academic_unit_id
+    AND (
+      sp.id IN (
+        SELECT study_plan_id
+        FROM public.study_plan_campus
+        WHERE campus_id = p_campus_id
+      )
+      OR NOT EXISTS (
+        SELECT 1
+        FROM public.study_plan_campus
+        WHERE study_plan_id = sp.id
+      )
+    )
+  ORDER BY sp.external_plan_id DESC;
+END;
+$$;
+
+COMMENT ON FUNCTION public.get_study_plans_for_campus_and_academic_unit IS 'Returns study plans for a specific academic unit and campus, filtering by campus availability.';
 
 -- ============================================================================
 -- FUNCTION: derive_user_context_from_study_plan (invoker)
@@ -304,6 +352,7 @@ CREATE OR REPLACE FUNCTION public.get_study_plan_courses_details(p_study_plan_id
 RETURNS TABLE (
   course_id BIGINT,
   level_number INTEGER,
+  level_label TEXT,
   credits INTEGER,
   weekly_hours INTEGER,
   sort_order INTEGER,
@@ -321,6 +370,7 @@ BEGIN
   SELECT
     splc.course_id,
     spl.level_number,
+    spl.level_label,
     splc.credits,
     splc.weekly_hours,
     splc.sort_order,
@@ -732,5 +782,52 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION public.delete_student_course_status TO authenticated;
+
+-- ============================================================================
+-- FUNCTION: get_course_equivalents_for_plan
+-- ============================================================================
+-- Returns all course equivalents for a specific study plan with pagination.
+-- Includes equivalents even if they are not in any level of the study plan.
+-- Optimized with indexes for performance with hundreds of equivalents per course.
+CREATE OR REPLACE FUNCTION public.get_course_equivalents_for_plan(
+  p_study_plan_id BIGINT,
+  p_from_course_id BIGINT,
+  p_limit INTEGER DEFAULT 10,
+  p_offset INTEGER DEFAULT 0
+)
+RETURNS TABLE (to_course_id BIGINT, to_course_code TEXT, to_course_name TEXT, total_count BIGINT)
+LANGUAGE plpgsql
+SET search_path = public
+SECURITY INVOKER
+AS $$
+DECLARE
+  v_total_count BIGINT;
+BEGIN
+  -- Get total count of equivalents for pagination
+  SELECT COUNT(DISTINCT cr.to_course_id) INTO v_total_count
+  FROM public.course_relation cr
+  WHERE cr.study_plan_id = p_study_plan_id
+    AND cr.from_course_id = p_from_course_id
+    AND cr.relation_type = 'EQUIVALENT';
+
+  RETURN QUERY
+  SELECT
+    cr.to_course_id,
+    c.code AS to_course_code,
+    c.name AS to_course_name,
+    v_total_count AS total_count
+  FROM public.course_relation cr
+  LEFT JOIN public.course c ON c.id = cr.to_course_id
+  WHERE cr.study_plan_id = p_study_plan_id
+    AND cr.from_course_id = p_from_course_id
+    AND cr.relation_type = 'EQUIVALENT'
+  ORDER BY c.code
+  LIMIT p_limit
+  OFFSET p_offset;
+END;
+$$;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.get_course_equivalents_for_plan TO authenticated;
 
  COMMIT;

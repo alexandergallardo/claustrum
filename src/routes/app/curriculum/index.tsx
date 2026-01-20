@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
 import { useCallback, useEffect } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card } from '@/components/ui/card'
@@ -14,7 +15,7 @@ import {
 } from '@/lib/hooks/use-queries'
 import type { CatalogCampus, CatalogStudyPlan } from '@/lib/types'
 import { PlanFilters } from '@/components/plan-estudios/plan-filters'
-import { PlanBoard } from '@/components/plan-estudios/plan-board'
+import { MemoizedPlanBoard } from '@/components/plan-estudios/plan-board'
 import { AlertTriangle } from 'lucide-react'
 
 const MAIN_CAMPUS_CODES = new Set(['AL', 'CA', 'LM', 'SC', 'SJ'])
@@ -25,8 +26,6 @@ const curriculumSearchSchema = z.object({
   career: z.coerce.number().optional(),
   plan: z.coerce.number().optional(),
 })
-
-import { z } from 'zod'
 
 export const Route = createFileRoute('/app/curriculum/')({
   validateSearch: curriculumSearchSchema,
@@ -48,6 +47,7 @@ function PlanEstudiosPage() {
   const plansQuery = useStudyPlans(selectedAcademicUnitId)
 
   const selectedPlanData = plansQuery.data?.find((p: CatalogStudyPlan) => p.id === selectedPlanId)
+
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData)
   const { data: userStudyPlan } = useUserStudyPlan()
 
@@ -175,7 +175,7 @@ function PlanEstudiosPage() {
             {selectedPlanId && planDetailQuery.isSuccess && planDetailQuery.data && (
               <div className="px-4 lg:px-6 min-h-0 flex-1">
                 <Card className="h-full min-h-0 overflow-auto py-0">
-                  <PlanBoard planDetail={planDetailQuery.data} />
+                  <MemoizedPlanBoard planDetail={planDetailQuery.data} />
                 </Card>
               </div>
             )}

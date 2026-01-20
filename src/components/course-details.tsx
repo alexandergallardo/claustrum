@@ -2,20 +2,22 @@
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { useCoursesByIds } from "@/lib/hooks/use-queries"
-import type { Course, CourseStatus } from "@/components/curriculum-grid"
+import { useCourseEquivalents } from "@/lib/hooks/use-queries"
+import type { Course, CourseStatus } from "@/lib/types"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface CourseDetailsProps {
   course: Course | null
-  courses: Course[]
+  courseById: Map<string, Course>
+  studyPlanId?: number
+  modalityName?: string
   onClose: () => void
-  onStatusChange: (courseId: string, status: CourseStatus) => void
+  onStatusChange: (courseId: string, status: CourseStatus) => Promise<"success" | "local">
 }
 
 const statusLabels: Record<CourseStatus, string> = {
@@ -43,27 +45,43 @@ function StatusBadge({ status }: { status: CourseStatus }) {
   )
 }
 
-export function CourseDetails({ course, courses, onClose, onStatusChange }: CourseDetailsProps) {
+export function CourseDetails({ course, courseById, studyPlanId, modalityName, onClose, onStatusChange }: CourseDetailsProps) {
   const [localStatus, setLocalStatus] = useState<CourseStatus | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [showAllEquivalents, setShowAllEquivalents] = useState(false)
+  const [equivalentsPage, setEquivalentsPage] = useState(0)
   const EQUIVALENTS_PER_PAGE = 10
 
   useEffect(() => {
-    setLocalStatus(null)
+    setLocalStatus(course?.status ?? null)
+    setEquivalentsPage(0)
   }, [course?.id])
 
-  const equivalentIds = course?.equivalents?.map((id) => parseInt(id)) ?? []
-  const { data: equivalentCourses = [] } = useCoursesByIds(equivalentIds.length > 0 ? equivalentIds : null)
+  const queryResult = useCourseEquivalents(
+    studyPlanId ?? null,
+    course?.id ? parseInt(course.id) : null,
+    equivalentsPage,
+    EQUIVALENTS_PER_PAGE
+  )
+
+  const equivalentsResult = queryResult.data
+  const totalEquivalents = queryResult.data?.totalCount ?? 0
+  const equivalents = equivalentsResult?.data ?? []
+  const totalPages = Math.ceil(totalEquivalents / EQUIVALENTS_PER_PAGE)
 
   if (!course) return null
 
   const effectiveStatus = localStatus ?? course.status
 
-  const prerequisites = courses.filter((c) => course.prerequisites?.includes(c.id))
-  const corequisites = courses.filter((c) => course.corequisites?.includes(c.id))
-  const displayedEquivalents = showAllEquivalents ? equivalentCourses : equivalentCourses.slice(0, EQUIVALENTS_PER_PAGE)
-  const isPrerequisiteFor = courses.filter((c) => c.prerequisites?.includes(course.id))
+  const prerequisites = (course.prerequisites || [])
+    .map((id) => courseById.get(id))
+    .filter((c): c is Course => c !== undefined)
+
+  const corequisites = (course.corequisites || [])
+    .map((id) => courseById.get(id))
+    .filter((c): c is Course => c !== undefined)
+
+  const isPrerequisiteFor = Array.from(courseById.values())
+    .filter((c) => c.prerequisites?.includes(course.id))
 
   const hasChanges = localStatus !== null && localStatus !== course.status
 
@@ -72,8 +90,17 @@ export function CourseDetails({ course, courses, onClose, onStatusChange }: Cour
 
     setIsSaving(true)
     try {
-      onStatusChange(course.id, localStatus)
-      toast.success("Estado del curso actualizado correctamente")
+      const result = await onStatusChange(course.id, localStatus)
+
+      if (result === "local") {
+        toast.success("Estado del curso guardado localmente", {
+          description: "Inicia sesión para guardar tu progreso permanentemente",
+          duration: 5000,
+        })
+      } else {
+        toast.success("Estado del curso actualizado correctamente")
+      }
+
       onClose()
     } catch (err) {
       toast.error("Error al actualizar el estado del curso")
@@ -106,7 +133,7 @@ export function CourseDetails({ course, courses, onClose, onStatusChange }: Cour
               <p className="text-2xl font-bold text-foreground">{course.hours}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Semestre</p>
+              <p className="text-sm text-muted-foreground mb-1">{modalityName || "Nivel"}</p>
               <p className="text-2xl font-bold text-foreground">{course.semester}</p>
             </div>
           </div>
@@ -116,7 +143,7 @@ export function CourseDetails({ course, courses, onClose, onStatusChange }: Cour
               Estado del curso
             </Label>
             <Select value={effectiveStatus} onValueChange={(value) => setLocalStatus(value as CourseStatus)}>
-              <SelectTrigger id="status" className="mt-2 transition-none [&_[data-state=open]]:border-input">
+              <SelectTrigger id="status" className="mt-2">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -186,44 +213,54 @@ export function CourseDetails({ course, courses, onClose, onStatusChange }: Cour
             </div>
           )}
 
-          {equivalentCourses.length > 0 && (
+          {equivalents.length > 0 && (
             <div>
-              <h3 className="text-base font-semibold mb-3 text-foreground">
-                Equivalencias {equivalentCourses.length > EQUIVALENTS_PER_PAGE && `(${equivalentCourses.length})`}
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold text-foreground">
+                  Equivalencias {totalEquivalents > 0 && `(${totalEquivalents})`}
+                </h3>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEquivalentsPage(Math.max(0, equivalentsPage - 1))}
+                      disabled={equivalentsPage === 0}
+                      className="h-7 w-7"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {equivalentsPage + 1}/{totalPages}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEquivalentsPage(Math.min(totalPages - 1, equivalentsPage + 1))}
+                      disabled={equivalentsPage >= totalPages - 1}
+                      className="h-7 w-7"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
-                {displayedEquivalents.map((eq) => {
+                {equivalents.map((eq: { id: number; code: string | null; name: string | null }) => {
                   const displayName = eq.name || eq.code || "Sin nombre"
                   return (
                     <div key={eq.id} className="p-3 rounded-md bg-muted/50 border border-border">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-sm text-foreground">{displayName}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{eq.code}</p>
+                          {eq.code && (
+                            <p className="text-xs text-muted-foreground font-mono">{eq.code}</p>
+                          )}
                         </div>
-                        <StatusBadge status={eq.status} />
                       </div>
                     </div>
                   )
                 })}
-                {equivalentCourses.length > EQUIVALENTS_PER_PAGE && (
-                  <button
-                    onClick={() => setShowAllEquivalents(!showAllEquivalents)}
-                    className="w-full mt-2 text-sm text-primary hover:underline flex items-center justify-center gap-1"
-                  >
-                    {showAllEquivalents ? (
-                      <>
-                        <ChevronUp className="w-4 h-4" />
-                        Mostrar menos
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4" />
-                        Mostrar todos ({equivalentCourses.length})
-                      </>
-                    )}
-                  </button>
-                )}
               </div>
             </div>
           )}

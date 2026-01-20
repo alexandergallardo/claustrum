@@ -1,6 +1,6 @@
-import type { Course, CourseStatus } from "@/components/curriculum-grid"
+import type { Course, CourseStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { ArrowRight, Lock, Unlock, Link } from "lucide-react"
+import { Lock, Unlock, Link } from "lucide-react"
 
 export type RelationType = 'prerequisite' | 'corequisite' | 'postrequisite' | null
 

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
-import type { AcademicTerm } from "@/lib/types";
+import type { AcademicTerm, StudyPeriod, CatalogStudyPlan, StudyPlanCourse, StudyPlanDetail, UserProfileContextRow } from "@/lib/types";
+import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
 export function useUniversities() {
   return useQuery({
@@ -60,18 +61,22 @@ export function useAcademicUnits(campusId: number | null) {
 
 export function useStudyPlans(academicUnitId: number | null) {
   return useQuery({
-    queryKey: ["studyPlans", academicUnitId],
+    queryKey: ["studyPlansV2", academicUnitId],
     queryFn: async () => {
       if (!academicUnitId) return [];
+
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
+
       const { data, error } = await sb
         .rpc("get_study_plans_for_academic_unit", { p_academic_unit_id: academicUnitId })
-        .select("id,academic_unit_id,external_plan_id,name,academic_degree");
+        .select("id,academic_unit_id,external_plan_id,name,academic_degree,modality_name");
+
       if (error) throw error;
-      return (data ?? []) as StudyPlanRow[];
+      return (data ?? []) as CatalogStudyPlan[];
     },
     enabled: !!academicUnitId,
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }
@@ -128,43 +133,9 @@ export type AcademicUnitRow = {
   name: string;
 };
 
-export type StudyPlanRow = {
-  id: number;
-  academic_unit_id: number;
-  external_plan_id: number;
-  name: string;
-  academic_degree: string | null;
-};
-
-export type UserProfileContextRow = {
-  user_id: string;
-  carnet: string | null;
-  university_id: number | null;
-  university_name: string | null;
-  campus_id: number | null;
-  campus_name: string | null;
-  academic_unit_id: number | null;
-  academic_unit_name: string | null;
-  study_plan_id: number | null;
-  study_plan_name: string | null;
-  entry_year: number | null;
-};
-
-export type StudyPeriod = {
-  levelNumber: number;
-  courses: StudyPlanCourse[];
-};
-
-export type StudyPlanCourse = {
-  courseId: number;
-  levelNumber: number;
-  credits: number;
-  weeklyHours: number;
-  sortOrder: number;
-  courseCode: string;
-  courseName: string;
-  courseDefaultCredits: number;
-  courseDefaultWeeklyHours: number;
+export type CourseEquivalentsResult = {
+  data: Array<{ id: number; code: string | null; name: string | null; totalCount: number }>;
+  totalCount: number;
 };
 
 export type CourseRelation = {
@@ -173,17 +144,9 @@ export type CourseRelation = {
   relationType: 'PREREQUISITE' | 'COREQUISITE' | 'EQUIVALENT';
 };
 
-export type StudentCourseStatusMap = Map<number, "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress">;
-
-export type StudyPlanDetail = {
-  plan: StudyPlanRow;
-  periods: StudyPeriod[];
-  courseRelations: Map<number, { prerequisites: number[]; corequisites: number[]; equivalents: number[] }>;
-};
-
-export function useStudyPlanDetail(planId: number | null, selectedPlanData: StudyPlanRow | undefined) {
+export function useStudyPlanDetail(planId: number | null, selectedPlanData: CatalogStudyPlan | undefined) {
   return useQuery({
-    queryKey: ["studyPlanDetail", planId],
+    queryKey: ["studyPlanDetail", planId, selectedPlanData?.id],
     queryFn: async () => {
       if (!planId) return null;
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
@@ -212,7 +175,7 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Stud
         courseRelations.set(r.from_course_id, existing);
       }
 
-      const periods = new Map<number | null, StudyPlanCourse[]>();
+      const periods = new Map<number | null, { levelLabel?: string; courses: StudyPlanCourse[] }>();
       for (const item of coursesResult.data ?? []) {
         const course: StudyPlanCourse = {
           courseId: item.course_id,
@@ -227,20 +190,23 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Stud
         };
         const level = item.level_number ?? 0;
         if (!periods.has(level)) {
-          periods.set(level, []);
+          periods.set(level, { levelLabel: item.level_label, courses: [] });
         }
-        periods.get(level)!.push(course);
+        periods.get(level)!.courses.push(course);
       }
 
       const periodArray = Array.from(periods.entries())
         .sort(([a], [b]) => (a ?? 0) - (b ?? 0))
-        .map(([levelNumber, courses]): StudyPeriod => ({
+        .map(([levelNumber, { levelLabel, courses }]): StudyPeriod => ({
           levelNumber: levelNumber ?? 0,
+          levelLabel,
           courses,
         }));
 
       return {
-        plan: selectedPlanData ?? { id: planId, academic_unit_id: 0, external_plan_id: 0, name: "", academic_degree: null },
+        plan: selectedPlanData
+          ? { ...selectedPlanData } as CatalogStudyPlan
+          : { id: planId, academic_unit_id: 0, external_plan_id: 0, name: "", academic_degree: null, modality_name: undefined } as CatalogStudyPlan,
         periods: periodArray,
         courseRelations,
       } as StudyPlanDetail;
@@ -351,7 +317,17 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
   return useQuery({
     queryKey: ["studentCourseStatuses", userId, studyPlanId],
     queryFn: async () => {
-      if (!userId || !studyPlanId) return new Map<number, "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress">();
+      let statusMap = new Map<number, "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress">();
+
+      if (!userId || !studyPlanId) {
+        const localChanges = getLocalCourseStatusChanges();
+        for (const change of localChanges) {
+          if (change.studyPlanId === studyPlanId) {
+            statusMap.set(change.courseId, change.status);
+          }
+        }
+        return statusMap;
+      }
 
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
@@ -364,13 +340,20 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
 
       if (error) throw error;
 
-      const statusMap = new Map<number, "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress">();
       for (const record of data ?? []) {
         statusMap.set(record.course_id, record.status.toLowerCase() as any);
       }
+
+      const localChanges = getLocalCourseStatusChanges();
+      for (const change of localChanges) {
+        if (change.studyPlanId === studyPlanId) {
+          statusMap.set(change.courseId, change.status);
+        }
+      }
+
       return statusMap;
     },
-    enabled: !!userId && !!studyPlanId,
+    enabled: true,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -432,5 +415,42 @@ export function useCoursesByIds(courseIds: number[] | null) {
     },
     enabled: !!courseIds && courseIds.length > 0,
     staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: number | null, page: number = 0, limit: number = 10) {
+  return useQuery({
+    queryKey: ["courseEquivalents", studyPlanId, fromCourseId, page, limit],
+    queryFn: async () => {
+      if (!studyPlanId || !fromCourseId) return { data: [], totalCount: 0 };
+
+      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+      const sb = getSupabaseBrowserClient();
+
+      const { data, error } = await sb.rpc("get_course_equivalents_for_plan", {
+        p_study_plan_id: studyPlanId,
+        p_from_course_id: fromCourseId,
+        p_limit: limit,
+        p_offset: page * limit,
+      });
+
+      if (error) throw error;
+
+      const equivalents: Array<{ id: number; code: string | null; name: string | null; totalCount: number }> = (data ?? []).map((item: { to_course_id: number; to_course_code: string | null; to_course_name: string | null; total_count: number | null }) => ({
+        id: item.to_course_id,
+        code: item.to_course_code,
+        name: item.to_course_name,
+        totalCount: item.total_count ?? 0,
+      }));
+
+      const totalCount = equivalents.length > 0 ? equivalents[0].totalCount : 0;
+
+      return {
+        data: equivalents,
+        totalCount,
+      };
+    },
+    enabled: !!studyPlanId && !!fromCourseId,
+    placeholderData: (previous) => previous,
   });
 }
