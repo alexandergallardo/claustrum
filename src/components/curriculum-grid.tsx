@@ -125,11 +125,11 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
             <h3 className="text-sm font-semibold text-foreground mb-3">Leyenda de estados</h3>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-chart-2/20 border-2 border-chart-2/30" />
+                <div className="w-6 h-6 rounded bg-emerald-500/20 border-2 border-emerald-500/30" />
                 <span className="text-sm text-muted-foreground">Aprobado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-chart-1/20 border-2 border-chart-1/30" />
+                <div className="w-6 h-6 rounded bg-blue-500/20 border-2 border-blue-500/30" />
                 <span className="text-sm text-muted-foreground">En curso</span>
               </div>
               <div className="flex items-center gap-2">
@@ -137,11 +137,11 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
                 <span className="text-sm text-muted-foreground">No cursado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-destructive/20 border-2 border-destructive/30" />
+                <div className="w-6 h-6 rounded bg-red-500/20 border-2 border-red-500/30" />
                 <span className="text-sm text-muted-foreground">Reprobado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-muted/50 border-2 border-muted-foreground/20" />
+                <div className="w-6 h-6 rounded bg-amber-500/20 border-2 border-amber-500/30" />
                 <span className="text-sm text-muted-foreground">Retirado</span>
               </div>
             </div>

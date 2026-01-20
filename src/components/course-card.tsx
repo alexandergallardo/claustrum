@@ -14,13 +14,13 @@ interface CourseCardProps {
 const statusConfig: Record<CourseStatus, { label: string; bgClassName: string; borderClassName: string }> = {
   approved: {
     label: "Aprobado",
-    bgClassName: "bg-chart-2/20",
-    borderClassName: "border-chart-2/30 hover:border-chart-2/50",
+    bgClassName: "bg-emerald-500/20",
+    borderClassName: "border-emerald-500/30 hover:border-emerald-500/50",
   },
   failed: {
     label: "Reprobado",
-    bgClassName: "bg-destructive/20",
-    borderClassName: "border-destructive/30 hover:border-destructive/50",
+    bgClassName: "bg-red-500/20",
+    borderClassName: "border-red-500/30 hover:border-red-500/50",
   },
   not_taken: {
     label: "No cursado",
@@ -29,13 +29,13 @@ const statusConfig: Record<CourseStatus, { label: string; bgClassName: string; b
   },
   withdrawn: {
     label: "Retirado",
-    bgClassName: "bg-muted/50",
-    borderClassName: "border-muted-foreground/20 hover:border-muted-foreground/40",
+    bgClassName: "bg-amber-500/20",
+    borderClassName: "border-amber-500/30 hover:border-amber-500/50",
   },
   in_progress: {
     label: "En curso",
-    bgClassName: "bg-chart-1/20",
-    borderClassName: "border-chart-1/30 hover:border-chart-1/50",
+    bgClassName: "bg-blue-500/20",
+    borderClassName: "border-blue-500/30 hover:border-blue-500/50",
   },
 }
 
