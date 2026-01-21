@@ -1,5 +1,5 @@
 import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
-import type { AcademicTerm, StudyPeriod, CatalogStudyPlan, StudyPlanCourse, StudyPlanDetail, UserProfileContextRow } from "@/lib/types";
+import type { AcademicTerm, StudyPeriod, CatalogStudyPlan, StudyPlanCourse, StudyPlanDetail, UserProfileContextRow, DashboardStats, SemesterProgress, NextCourse } from "@/lib/types";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
 export function useUniversities() {
@@ -235,10 +235,12 @@ export function useUserStudyPlan() {
       if (!profile || !profile.study_plan_id) return null;
 
       return {
+        userId: user.id,
         universityId: profile.university_id,
         campusId: profile.campus_id,
         academicUnitId: profile.academic_unit_id,
         studyPlanId: profile.study_plan_id,
+        studyPlanName: profile.study_plan_name,
       };
     },
     staleTime: 2 * 60 * 1000,
@@ -452,5 +454,32 @@ export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: n
     },
     enabled: !!studyPlanId && !!fromCourseId,
     placeholderData: (previous) => previous,
+  });
+}
+
+export function useDashboardStats(userId: string | null, studyPlanId: number | null) {
+  return useQuery({
+    queryKey: ["dashboardStats", userId, studyPlanId],
+    queryFn: async () => {
+      if (!userId || !studyPlanId) return null;
+
+      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+      const sb = getSupabaseBrowserClient();
+
+      const { data, error } = await sb.rpc("get_user_dashboard_stats", {
+        p_user_id: userId,
+        p_study_plan_id: studyPlanId,
+      });
+
+      if (error) throw error;
+
+      return data as {
+        stats: DashboardStats;
+        semesters: SemesterProgress[];
+        nextCourses: NextCourse[];
+      } | null;
+    },
+    enabled: !!userId && !!studyPlanId,
+    staleTime: 30 * 1000,
   });
 }

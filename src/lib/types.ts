@@ -101,12 +101,41 @@ export interface UserProfileContextRow {
   campus_name: string | null
   academic_unit_id: number | null
   academic_unit_name: string | null
-  career_program_id: number | null
-  career_program_name: string | null
   study_plan_id: number | null
   study_plan_name: string | null
-  user_study_plan_id: number | null
   entry_year: number | null
+}
+
+export interface DashboardStats {
+  totalCourses: number
+  completedCourses: number
+  inProgressCourses: number
+  failedCourses: number
+  withdrawnCourses: number
+  notTakenCourses: number
+  totalCredits: number
+  completedCredits: number
+  currentSemester: number
+  progressPercentage: number
+}
+
+export interface SemesterProgress {
+  levelNumber: number
+  levelLabel: string
+  totalCourses: number
+  completedCourses: number
+  credits: number
+  completedCredits: number
+  status: "completed" | "in_progress" | "pending"
+}
+
+export interface NextCourse {
+  id: string
+  code: string
+  name: string
+  credits: number
+  levelLabel: string
+  prerequisites: string[]
 }
 
 export interface AcademicTerm {
