@@ -23,7 +23,7 @@ BEGIN
       SUM(credits) FILTER (WHERE status = 'approved') AS completed_credits,
       COUNT(*) AS total,
       SUM(credits) AS total_credits
-    FROM user_course_status
+    FROM student_course_record
     WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id
   )
   SELECT json_build_object(
@@ -37,7 +37,7 @@ BEGIN
     'completedCredits', COALESCE((SELECT completed_credits FROM course_stats), 0),
     'currentSemester', COALESCE((
       SELECT MAX(level_number)
-      FROM user_course_status ucs
+      FROM student_course_record ucs
       JOIN study_plan_course spc ON spc.id = ucs.course_id
       WHERE ucs.user_id = p_user_id AND ucs.study_plan_id = p_study_plan_id
       AND ucs.status IN ('approved', 'in_progress')
@@ -74,7 +74,7 @@ BEGIN
       SUM(spc.credits) FILTER (WHERE ucs.status = 'approved') AS completed_credits,
       COUNT(*) FILTER (WHERE ucs.status = 'in_progress') AS in_progress
     FROM study_plan_course spc
-    LEFT JOIN user_course_status ucs ON ucs.course_id = spc.id
+    LEFT JOIN student_course_record ucs ON ucs.course_id = spc.id
       AND ucs.user_id = p_user_id
       AND ucs.study_plan_id = p_study_plan_id
     WHERE spc.study_plan_id = p_study_plan_id
@@ -98,7 +98,7 @@ BEGIN
     FROM study_plan_course spc
     WHERE spc.study_plan_id = p_study_plan_id
     AND spc.id NOT IN (
-      SELECT course_id FROM user_course_status
+      SELECT course_id FROM student_course_record
       WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id
       AND status IN ('approved', 'in_progress')
     )
@@ -106,7 +106,7 @@ BEGIN
       SELECT 1 FROM course_relation cr
       WHERE cr.to_course_id = spc.id AND cr.relation_type = 'PREREQUISITE'
       AND cr.from_course_id NOT IN (
-        SELECT course_id FROM user_course_status
+        SELECT course_id FROM student_course_record
         WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id AND status = 'approved'
       )
     )
@@ -149,15 +149,15 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-  UPDATE user_course_status
-  SET status = p_status, updated_at = NOW()
+  UPDATE student_course_record
+  SET status = p_status::student_course_status, recorded_at = NOW()
   WHERE user_id = p_user_id
     AND study_plan_id = p_study_plan_id
     AND course_id = p_course_id;
 
   IF NOT FOUND THEN
-    INSERT INTO user_course_status (user_id, study_plan_id, course_id, status, created_at, updated_at)
-    VALUES (p_user_id, p_study_plan_id, p_course_id, p_status, NOW(), NOW());
+    INSERT INTO student_course_record (user_id, study_plan_id, course_id, status, recorded_at)
+    VALUES (p_user_id, p_study_plan_id, p_course_id, p_status::student_course_status, NOW());
     RETURN 'inserted';
   END IF;
 
@@ -182,7 +182,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-  DELETE FROM user_course_status
+  DELETE FROM student_course_record
   WHERE user_id = p_user_id
     AND study_plan_id = p_study_plan_id
     AND course_id = p_course_id;
