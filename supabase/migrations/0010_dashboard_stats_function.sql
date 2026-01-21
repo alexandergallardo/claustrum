@@ -132,3 +132,68 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.get_user_dashboard_stats IS 'Returns dashboard statistics for a user study plan';
+
+-- Update update_student_course_status to use BIGINT and TEXT
+DROP FUNCTION IF EXISTS public.update_student_course_status(UUID, INTEGER, INTEGER, student_course_status);
+DROP FUNCTION IF EXISTS public.update_student_course_status(UUID, INTEGER, INTEGER, TEXT);
+
+CREATE OR REPLACE FUNCTION public.update_student_course_status(
+  p_user_id UUID,
+  p_study_plan_id BIGINT,
+  p_course_id BIGINT,
+  p_status TEXT
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  UPDATE user_course_status
+  SET status = p_status, updated_at = NOW()
+  WHERE user_id = p_user_id
+    AND study_plan_id = p_study_plan_id
+    AND course_id = p_course_id;
+
+  IF NOT FOUND THEN
+    INSERT INTO user_course_status (user_id, study_plan_id, course_id, status, created_at, updated_at)
+    VALUES (p_user_id, p_study_plan_id, p_course_id, p_status, NOW(), NOW());
+    RETURN 'inserted';
+  END IF;
+
+  RETURN 'updated';
+END;
+$$;
+
+COMMENT ON FUNCTION public.update_student_course_status IS 'Updates or inserts a course status for a user';
+GRANT EXECUTE ON FUNCTION public.update_student_course_status TO authenticated;
+
+-- Update delete_student_course_status to use BIGINT
+DROP FUNCTION IF EXISTS public.delete_student_course_status(UUID, INTEGER, INTEGER);
+
+CREATE OR REPLACE FUNCTION public.delete_student_course_status(
+  p_user_id UUID,
+  p_study_plan_id BIGINT,
+  p_course_id BIGINT
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  DELETE FROM user_course_status
+  WHERE user_id = p_user_id
+    AND study_plan_id = p_study_plan_id
+    AND course_id = p_course_id;
+
+  IF FOUND THEN
+    RETURN 'deleted';
+  END IF;
+
+  RETURN 'not_found';
+END;
+$$;
+
+COMMENT ON FUNCTION public.delete_student_course_status IS 'Deletes a course status for a user';
+GRANT EXECUTE ON FUNCTION public.delete_student_course_status TO authenticated;
