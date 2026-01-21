@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useRef, useState, useLayoutEffect } from "react";
 import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import { DashboardStatsCards, CourseStatusChart } from "@/components/dashboard/dashboard-stats";
 import { ProgressTimeline } from "@/components/dashboard/progress-timeline";
@@ -17,6 +18,14 @@ function DashboardPage() {
     userStudyPlan?.userId ?? null,
     userStudyPlan?.studyPlanId ?? null
   );
+  const distributionRef = useRef<HTMLDivElement>(null);
+  const [distributionHeight, setDistributionHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (distributionRef.current) {
+      setDistributionHeight(distributionRef.current.offsetHeight);
+    }
+  }, [dashboardData]);
 
   const isAuthenticated = !!userStudyPlan?.userId;
   const isLoading = isLoadingUserPlan || isLoadingStats;
@@ -33,7 +42,7 @@ function DashboardPage() {
             ) : (
               <>
                 <div className="px-4 lg:px-6">
-                  <h1 className="text-2xl font-bold">Tu Progreso Académico</h1>
+                  <h1 className="text-2xl font-bold">Tu progreso académico</h1>
                   <p className="text-muted-foreground">
                     {userStudyPlan?.studyPlanName || "Plan de estudios"}
                   </p>
@@ -44,12 +53,18 @@ function DashboardPage() {
                 </div>
 
                 <div className="grid gap-4 px-4 lg:px-6 md:grid-cols-2 lg:grid-cols-7">
-                  <div className="col-span-4">
+                  <div ref={distributionRef} className="w-full min-w-0 lg:col-span-4 h-fit">
                     <CourseStatusChart stats={dashboardData.stats} />
                   </div>
-                  <div className="col-span-3">
+                  <div 
+                    className="w-full min-w-0 lg:col-span-3"
+                    style={distributionHeight ? { maxHeight: distributionHeight } : undefined}
+                  >
                     <NextCourses
                       courses={dashboardData.nextCourses}
+                      universityId={userStudyPlan?.universityId ?? null}
+                      campusId={userStudyPlan?.campusId ?? null}
+                      academicUnitId={userStudyPlan?.academicUnitId ?? null}
                       studyPlanId={userStudyPlan?.studyPlanId ?? null}
                     />
                   </div>

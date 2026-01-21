@@ -1,116 +1,262 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import type { DashboardStats } from "@/lib/types"
-import { BookOpen, CheckCircle, Clock, XCircle, GraduationCap, Award } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import type { DashboardStats } from "@/lib/types";
+import { Label, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 
 interface DashboardStatsCardsProps {
-  stats: DashboardStats
+  stats: DashboardStats;
+}
+
+function RadialProgressCard({
+  title,
+  value,
+  total,
+  percentage,
+  description,
+  color,
+}: {
+  title: string;
+  value: number | string;
+  total?: number | string;
+  percentage: number;
+  description: string;
+  color: string;
+}) {
+  const chartData = [{ progress: percentage, fill: color }];
+  const chartConfig = {
+    progress: { label: title, color },
+  } satisfies ChartConfig;
+
+  return (
+    <Card className="flex flex-col">
+      <CardContent className="flex items-center gap-4 p-4">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-square h-[80px] shrink-0"
+        >
+          <RadialBarChart
+            data={chartData}
+            startAngle={90}
+            endAngle={90 - (percentage / 100) * 360}
+            innerRadius={30}
+            outerRadius={40}
+          >
+            <PolarGrid
+              gridType="circle"
+              radialLines={false}
+              stroke="none"
+              className="first:fill-muted last:fill-background"
+              polarRadius={[33, 27]}
+            />
+            <RadialBar dataKey="progress" background cornerRadius={10} />
+            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+              <Label
+                content={({ viewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <text
+                        x={viewBox.cx}
+                        y={viewBox.cy}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        <tspan
+                          x={viewBox.cx}
+                          y={viewBox.cy}
+                          className="fill-foreground text-lg font-bold"
+                        >
+                          {percentage}%
+                        </tspan>
+                      </text>
+                    );
+                  }
+                }}
+              />
+            </PolarRadiusAxis>
+          </RadialBarChart>
+        </ChartContainer>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-muted-foreground">{title}</span>
+          <span className="text-2xl font-bold tracking-tight">
+            {value}{total ? <span className="text-muted-foreground text-lg font-normal">/{total}</span> : null}
+          </span>
+          <span className="text-xs text-muted-foreground">{description}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniBarCard({
+  title,
+  value,
+  total,
+  segments,
+  color,
+}: {
+  title: string;
+  value: number;
+  total: number;
+  segments?: { value: number; color: string; label: string }[];
+  color: string;
+}) {
+  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+  
+  return (
+    <Card className="flex flex-col">
+      <CardContent className="flex flex-col gap-2 p-4">
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold tracking-tight">{value}</span>
+          <span className="text-sm text-muted-foreground">/ {total}</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+            {segments ? (
+              segments.map((segment, i) => {
+                const segmentWidth = total > 0 ? (segment.value / total) * 100 : 0;
+                return (
+                  <div
+                    key={i}
+                    className="h-full first:rounded-l-full last:rounded-r-full transition-all"
+                    style={{
+                      width: `${segmentWidth}%`,
+                      backgroundColor: segment.color,
+                    }}
+                  />
+                );
+              })
+            ) : (
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${percentage}%`,
+                  backgroundColor: color,
+                }}
+              />
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">{percentage}% del total</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SemesterCard({
+  currentSemester,
+  totalSemesters,
+}: {
+  currentSemester: number;
+  totalSemesters: number;
+}) {
+  return (
+    <Card className="flex flex-col">
+      <CardContent className="flex flex-col gap-2 p-4">
+        <span className="text-sm font-medium text-muted-foreground">Semestre actual</span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-bold tracking-tight">{currentSemester}</span>
+          <span className="text-sm text-muted-foreground">de {totalSemesters}</span>
+        </div>
+        <div className="flex gap-1">
+          {Array.from({ length: totalSemesters }, (_, i) => (
+            <div
+              key={i}
+              className="h-2 flex-1 rounded-full transition-all"
+              style={{
+                backgroundColor: i < currentSemester 
+                  ? "var(--chart-3)" 
+                  : i === currentSemester 
+                    ? "var(--chart-4)"
+                    : "hsl(var(--muted))",
+              }}
+            />
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {totalSemesters - currentSemester} semestres restantes
+        </span>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
-  const cards = [
-    {
-      title: "Progreso General",
-      value: `${stats.progressPercentage}%`,
-      icon: GraduationCap,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-      description: `${stats.completedCourses}/${stats.totalCourses} cursos completados`,
-    },
-    {
-      title: "Créditos Aprobados",
-      value: `${stats.completedCredits}/${stats.totalCredits}`,
-      icon: Award,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
-      description: "créditos completados",
-    },
-    {
-      title: "Cursos Aprobados",
-      value: stats.completedCourses,
-      icon: CheckCircle,
-      color: "text-emerald-500",
-      bgColor: "bg-emerald-500/10",
-      description: "completados",
-    },
-    {
-      title: "En Curso",
-      value: stats.inProgressCourses,
-      icon: Clock,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-      description: "cursando",
-    },
-    {
-      title: "Reprobados",
-      value: stats.failedCourses,
-      icon: XCircle,
-      color: "text-red-500",
-      bgColor: "bg-red-500/10",
-      description: "reprobados",
-    },
-    {
-      title: "Semestre Actual",
-      value: stats.currentSemester,
-      icon: BookOpen,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
-      description: "semestre en curso",
-    },
-  ]
+  const totalCredits = stats.totalCredits || 1;
+  const creditsPercentage = Math.round((stats.completedCredits / totalCredits) * 100);
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
-            <div className={`p-2 rounded-full ${card.bgColor}`}>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <p className="text-xs text-muted-foreground">{card.description}</p>
-            <Progress
-              value={stats.progressPercentage}
-              className="mt-3 h-1"
-            />
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+      <RadialProgressCard
+        title="Progreso general"
+        value={stats.completedCourses}
+        total={stats.totalCourses}
+        percentage={stats.progressPercentage}
+        description="cursos completados"
+        color="var(--chart-1)"
+      />
+      <RadialProgressCard
+        title="Créditos"
+        value={stats.completedCredits}
+        total={stats.totalCredits}
+        percentage={creditsPercentage}
+        description="créditos aprobados"
+        color="var(--chart-2)"
+      />
+      <MiniBarCard
+        title="Cursos aprobados"
+        value={stats.completedCourses}
+        total={stats.totalCourses}
+        color="var(--chart-3)"
+      />
+      <MiniBarCard
+        title="En curso"
+        value={stats.inProgressCourses}
+        total={stats.totalCourses}
+        color="var(--chart-4)"
+      />
+      <MiniBarCard
+        title="Reprobados"
+        value={stats.failedCourses}
+        total={stats.totalCourses}
+        color="var(--chart-5)"
+      />
+      <SemesterCard
+        currentSemester={stats.currentSemester}
+        totalSemesters={10}
+      />
     </div>
-  )
+  );
 }
 
 interface CourseStatusChartProps {
-  stats: DashboardStats
+  stats: DashboardStats;
 }
 
 export function CourseStatusChart({ stats }: CourseStatusChartProps) {
-  const total = stats.totalCourses || 1
+  const total = stats.totalCourses || 1;
   const data = [
     { name: "Aprobados", value: stats.completedCourses, color: "#10b981" },
-    { name: "En Curso", value: stats.inProgressCourses, color: "#3b82f6" },
-    { name: "No Cursados", value: stats.notTakenCourses, color: "#71717a" },
+    { name: "En curso", value: stats.inProgressCourses, color: "#3b82f6" },
+    { name: "No cursados", value: stats.notTakenCourses, color: "#71717a" },
     { name: "Reprobados", value: stats.failedCourses, color: "#ef4444" },
     { name: "Retirados", value: stats.withdrawnCourses, color: "#f59e0b" },
-  ]
+  ];
 
-  const maxValue = Math.max(...data.map((d) => d.value))
+  const maxValue = Math.max(...data.map((d) => d.value));
 
   return (
-    <Card>
+    <Card className="h-full w-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-base">Distribución de Cursos</CardTitle>
+        <CardTitle className="text-base">Distribución de cursos</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="flex-1 pt-0">
+        <div className="space-y-3 h-full">
           {data.map((item) => {
-            const percentage = Math.round((item.value / total) * 100)
-            const width = maxValue > 0 ? (item.value / maxValue) * 100 : 0
+            const percentage = Math.round((item.value / total) * 100);
+            const width = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
             return (
               <div key={item.name} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
@@ -135,10 +281,10 @@ export function CourseStatusChart({ stats }: CourseStatusChartProps) {
                   />
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

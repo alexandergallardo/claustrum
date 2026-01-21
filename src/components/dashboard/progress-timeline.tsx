@@ -12,7 +12,7 @@ export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Progreso por Semestre</CardTitle>
+        <CardTitle className="text-base">Progreso por semestre</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="relative">

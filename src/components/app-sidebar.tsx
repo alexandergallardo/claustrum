@@ -19,11 +19,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { Link } from "@tanstack/react-router";
 
 const data = {
   navMain: [
     {
-      title: "Dashboard",
+      title: "Panel",
       url: "/app",
       icon: IconDashboard,
     },
@@ -83,10 +84,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <Link to="/">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Claustrum</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
