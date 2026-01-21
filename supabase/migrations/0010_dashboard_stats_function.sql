@@ -79,36 +79,46 @@ BEGIN
   ) sem;
 
   -- Get next available courses (prerequisites met or no prerequisites)
-  SELECT json_agg(
-    json_build_object(
-      'id', spc.id::text,
-      'code', spc.course_code,
-      'name', spc.course_name,
-      'credits', spc.credits,
-      'levelLabel', 'Semestre ' || spc.level_number::text,
-      'prerequisites', ARRAY(
+  WITH next_courses AS (
+    SELECT
+      spc.id::text AS id,
+      spc.course_code AS code,
+      spc.course_name AS name,
+      spc.credits AS credits,
+      'Semestre ' || spc.level_number::text AS levelLabel,
+      ARRAY(
         SELECT json_agg(prereq.course_code::text)
         FROM study_plan_course prereq
         JOIN course_relation cr ON cr.to_course_id = spc.id AND cr.relation_type = 'PREREQUISITE'
         WHERE prereq.id = cr.from_course_id
-      )
-    ) ORDER BY spc.level_number, spc.course_code LIMIT 10
-  ) INTO v_next_courses
-  FROM study_plan_course spc
-  WHERE spc.study_plan_id = p_study_plan_id
-  AND spc.id NOT IN (
-    SELECT course_id FROM user_course_status
-    WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id
-    AND status IN ('approved', 'in_progress')
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM course_relation cr
-    WHERE cr.to_course_id = spc.id AND cr.relation_type = 'PREREQUISITE'
-    AND cr.from_course_id NOT IN (
+      ) AS prerequisites
+    FROM study_plan_course spc
+    WHERE spc.study_plan_id = p_study_plan_id
+    AND spc.id NOT IN (
       SELECT course_id FROM user_course_status
-      WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id AND status = 'approved'
+      WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id
+      AND status IN ('approved', 'in_progress')
     )
-  );
+    AND NOT EXISTS (
+      SELECT 1 FROM course_relation cr
+      WHERE cr.to_course_id = spc.id AND cr.relation_type = 'PREREQUISITE'
+      AND cr.from_course_id NOT IN (
+        SELECT course_id FROM user_course_status
+        WHERE user_id = p_user_id AND study_plan_id = p_study_plan_id AND status = 'approved'
+      )
+    )
+    ORDER BY spc.level_number, spc.course_code
+    LIMIT 10
+  )
+  SELECT json_agg(json_build_object(
+    'id', id,
+    'code', code,
+    'name', name,
+    'credits', credits,
+    'levelLabel', levelLabel,
+    'prerequisites', prerequisites
+  )) INTO v_next_courses
+  FROM next_courses;
 
   RETURN json_build_object(
     'stats', v_stats,
