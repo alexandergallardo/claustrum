@@ -1,6 +1,10 @@
--- Fix search_path security issues in existing functions
+-- Fix function duplicates by dropping and recreating with proper arguments
 
--- Update update_student_course_status to set search_path
+-- Drop existing functions if they exist with different signatures
+DROP FUNCTION IF EXISTS public.update_student_course_status(UUID, BIGINT, BIGINT, TEXT);
+DROP FUNCTION IF EXISTS public.delete_student_course_status(UUID, BIGINT, BIGINT);
+
+-- Create update_student_course_status function
 CREATE OR REPLACE FUNCTION public.update_student_course_status(
   p_user_id UUID,
   p_study_plan_id BIGINT,
@@ -31,7 +35,7 @@ $$;
 
 COMMENT ON FUNCTION public.update_student_course_status IS 'Updates or inserts a course status for a user';
 
--- Update delete_student_course_status to set search_path
+-- Create delete_student_course_status function
 CREATE OR REPLACE FUNCTION public.delete_student_course_status(
   p_user_id UUID,
   p_study_plan_id BIGINT,
@@ -58,7 +62,9 @@ $$;
 
 COMMENT ON FUNCTION public.delete_student_course_status IS 'Deletes a course status for a user';
 
--- Update get_user_dashboard_stats to set search_path (already has it but let's verify)
+-- Also update get_user_dashboard_stats if it exists
+DROP FUNCTION IF EXISTS public.get_user_dashboard_stats(UUID, BIGINT);
+
 CREATE OR REPLACE FUNCTION public.get_user_dashboard_stats(p_user_id UUID, p_study_plan_id BIGINT)
 RETURNS JSON
 LANGUAGE plpgsql

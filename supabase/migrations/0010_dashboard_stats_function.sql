@@ -1,8 +1,11 @@
 -- FUNCTION: get_user_dashboard_stats (invoker)
+DROP FUNCTION IF EXISTS public.get_user_dashboard_stats(UUID, BIGINT);
+
 CREATE OR REPLACE FUNCTION public.get_user_dashboard_stats(p_user_id UUID, p_study_plan_id BIGINT)
 RETURNS JSON
 LANGUAGE plpgsql
 SECURITY INVOKER
+SET search_path = ''
 AS $$
 DECLARE
   v_stats JSON;
