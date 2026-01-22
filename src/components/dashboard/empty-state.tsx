@@ -44,6 +44,30 @@ export function EmptyDashboard({ isAuthenticated }: EmptyDashboardProps) {
   )
 }
 
+function RadialProgressSkeleton() {
+  return (
+    <div className="bg-muted rounded-lg p-4 flex flex-col justify-center md:flex-row md:items-center gap-4">
+      <div className="h-[100px] w-[100px] rounded-full bg-muted-foreground/20 shrink-0 self-center md:self-auto animate-pulse" />
+      <div className="flex flex-col gap-1 text-center md:text-left w-full">
+        <div className="h-4 w-24 bg-muted-foreground/20 rounded mx-auto md:mx-0" />
+        <div className="h-7 w-16 bg-muted-foreground/20 rounded mx-auto md:mx-0" />
+        <div className="h-3 w-28 bg-muted-foreground/20 rounded mx-auto md:mx-0" />
+      </div>
+    </div>
+  )
+}
+
+function MiniBarSkeleton() {
+  return (
+    <div className="bg-muted rounded-lg p-4 space-y-2">
+      <div className="h-4 w-24 bg-muted-foreground/20 rounded" />
+      <div className="h-7 w-16 bg-muted-foreground/20 rounded" />
+      <div className="h-2 w-full bg-muted-foreground/20 rounded-full" />
+      <div className="h-3 w-20 bg-muted-foreground/20 rounded" />
+    </div>
+  )
+}
+
 export function DashboardSkeleton() {
   return (
     <div className="animate-pulse">
@@ -53,17 +77,15 @@ export function DashboardSkeleton() {
         <div className="h-5 w-48 bg-muted rounded" />
       </div>
 
-      {/* Stats cards - 6 cards in 2x3 grid with bar charts */}
+      {/* Stats cards - 6 cards in 2x3 grid */}
       <div className="px-4 lg:px-6 mt-4 md:mt-6">
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-muted rounded-lg p-4 space-y-2">
-              <div className="h-4 w-24 bg-muted-foreground/20 rounded" />
-              <div className="h-7 w-16 bg-muted-foreground/20 rounded" />
-              <div className="h-2 w-full bg-muted-foreground/20 rounded-full" />
-              <div className="h-3 w-20 bg-muted-foreground/20 rounded" />
-            </div>
-          ))}
+          <RadialProgressSkeleton />
+          <RadialProgressSkeleton />
+          <MiniBarSkeleton />
+          <MiniBarSkeleton />
+          <MiniBarSkeleton />
+          <MiniBarSkeleton />
         </div>
       </div>
 

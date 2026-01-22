@@ -24,7 +24,7 @@ export function NextCourses({ courses, universityId, campusId, academicUnitId, s
       return (
         <Link to="/app/curriculum" search={searchParams} className="block cursor-pointer">
           <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-muted-foreground">
                   {course.code}
@@ -70,8 +70,8 @@ export function NextCourses({ courses, universityId, campusId, academicUnitId, s
             No hay cursos disponibles para mostrar.
           </p>
         ) : (
-          <ScrollArea className="h-full">
-            <div className="space-y-2 pr-3">
+          <ScrollArea className="h-full pr-3">
+            <div className="space-y-2">
               {courses.map((course) => (
                 <CourseLink key={course.id} course={course} />
               ))}

@@ -31,17 +31,17 @@ function RadialProgressCard({
 
   return (
     <Card className="flex flex-col">
-      <CardContent className="flex items-center gap-4 p-4">
+      <CardContent className="flex flex-col justify-center md:flex-row md:items-center gap-4 p-4">
         <ChartContainer
           config={chartConfig}
-          className="aspect-square h-[80px] shrink-0"
+          className="aspect-square h-[100px] w-[100px] shrink-0 self-center md:self-auto"
         >
           <RadialBarChart
             data={chartData}
             startAngle={90}
             endAngle={90 - (percentage / 100) * 360}
-            innerRadius={30}
-            outerRadius={40}
+            innerRadius={38}
+            outerRadius={50}
           >
             <PolarGrid
               gridType="circle"
@@ -77,7 +77,7 @@ function RadialProgressCard({
             </PolarRadiusAxis>
           </RadialBarChart>
         </ChartContainer>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 text-center md:text-left w-full mx-auto md:mx-0">
           <span className="text-sm font-medium text-muted-foreground">{title}</span>
           <span className="text-2xl font-bold tracking-tight">
             {value}{total ? <span className="text-muted-foreground text-lg font-normal">/{total}</span> : null}
@@ -167,9 +167,9 @@ function SemesterCard({
               className="h-2 flex-1 rounded-full transition-all"
               style={{
                 backgroundColor: i < currentSemester 
-                  ? "var(--chart-3)" 
+                  ? "var(--color-emerald-500)" 
                   : i === currentSemester 
-                    ? "var(--chart-4)"
+                    ? "var(--color-blue-500)"
                     : "hsl(var(--muted))",
               }}
             />
@@ -195,7 +195,7 @@ export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
         total={stats.totalCourses}
         percentage={stats.progressPercentage}
         description="cursos completados"
-        color="var(--chart-1)"
+        color="var(--color-emerald-500)"
       />
       <RadialProgressCard
         title="Créditos"
@@ -203,25 +203,25 @@ export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
         total={stats.totalCredits}
         percentage={creditsPercentage}
         description="créditos aprobados"
-        color="var(--chart-2)"
+        color="var(--color-emerald-500)"
       />
       <MiniBarCard
         title="Cursos aprobados"
         value={stats.completedCourses}
         total={stats.totalCourses}
-        color="var(--chart-3)"
+        color="var(--color-emerald-500)"
       />
       <MiniBarCard
         title="En curso"
         value={stats.inProgressCourses}
         total={stats.totalCourses}
-        color="var(--chart-4)"
+        color="var(--color-blue-500)"
       />
       <MiniBarCard
         title="Reprobados"
         value={stats.failedCourses}
         total={stats.totalCourses}
-        color="var(--chart-5)"
+        color="var(--color-red-500)"
       />
       <SemesterCard
         currentSemester={stats.currentSemester}
@@ -238,11 +238,11 @@ interface CourseStatusChartProps {
 export function CourseStatusChart({ stats }: CourseStatusChartProps) {
   const total = stats.totalCourses || 1;
   const data = [
-    { name: "Aprobados", value: stats.completedCourses, color: "#10b981" },
-    { name: "En curso", value: stats.inProgressCourses, color: "#3b82f6" },
-    { name: "No cursados", value: stats.notTakenCourses, color: "#71717a" },
-    { name: "Reprobados", value: stats.failedCourses, color: "#ef4444" },
-    { name: "Retirados", value: stats.withdrawnCourses, color: "#f59e0b" },
+    { name: "Aprobados", value: stats.completedCourses, color: "var(--color-emerald-500)" },
+    { name: "En curso", value: stats.inProgressCourses, color: "var(--color-blue-500)" },
+    { name: "No cursados", value: stats.notTakenCourses, color: "var(--color-zinc-500)" },
+    { name: "Reprobados", value: stats.failedCourses, color: "var(--color-red-500)" },
+    { name: "Retirados", value: stats.withdrawnCourses, color: "var(--color-amber-500)" },
   ];
 
   const maxValue = Math.max(...data.map((d) => d.value));

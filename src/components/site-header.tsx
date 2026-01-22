@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/theme-provider"
 import { UserMenuDropdown } from "@/components/user-menu-dropdown";
 import { useEffect, useState } from "react";
@@ -49,7 +50,7 @@ export function SiteHeader() {
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
           <Separator orientation="vertical" className="h-6" />
-          {user && (
+          {user ? (
             <UserMenuDropdown
               user={{
                 name: userName,
@@ -68,6 +69,8 @@ export function SiteHeader() {
               side="bottom"
               sideOffset={4}
             />
+          ) : (
+            <Skeleton className="h-8 w-8 rounded-full" />
           )}
         </div>
       </div>
