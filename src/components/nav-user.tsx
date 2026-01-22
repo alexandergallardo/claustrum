@@ -1,0 +1,86 @@
+import { EllipsisVertical, LogIn, Settings } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { UserMenuDropdown } from "@/components/user-menu-dropdown";
+
+export function NavUser({
+  user,
+}: {
+  user?: {
+    name: string;
+    email: string;
+    avatar: string;
+  } | null;
+}) {
+  const { isMobile } = useSidebar();
+
+  if (!user) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <Link to="/login">
+              <LogIn className="h-4 w-4" />
+              <span className="flex-1 text-left">Sign in</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <Link to="/app/settings/appearance">
+              <Settings className="h-4 w-4" />
+              <span className="flex-1 text-left">Settings</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <UserMenuDropdown
+          user={user}
+          trigger={
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <Avatar className="h-8 w-8 rounded-lg grayscale">
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{user.name}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {user.email}
+                </span>
+              </div>
+              <EllipsisVertical className="ml-auto h-4 w-4" />
+            </SidebarMenuButton>
+          }
+          align="end"
+          side={isMobile ? "bottom" : "right"}
+          sideOffset={4}
+          contentClass="w-56 rounded-lg"
+        />
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+}

@@ -1,0 +1,88 @@
+import { Link, useNavigate } from "@tanstack/react-router";
+import { LogOut, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+interface UserMenuDropdownProps {
+  user: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  trigger: React.ReactNode;
+  align?: "start" | "center" | "end";
+  side?: "top" | "right" | "bottom" | "left";
+  sideOffset?: number;
+  contentClass?: string;
+}
+
+export function UserMenuDropdown({
+  user,
+  trigger,
+  align = "end",
+  side = "bottom",
+  sideOffset = 4,
+  contentClass = "w-56 rounded-lg",
+}: UserMenuDropdownProps) {
+  const navigate = useNavigate();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent
+        className={contentClass}
+        side={side as any}
+        align={align}
+        sideOffset={sideOffset}
+      >
+        <DropdownMenuLabel className="p-0 font-normal">
+          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+            <Avatar className="h-8 w-8 rounded-lg">
+              <AvatarImage src={user.avatar} alt={user.name} />
+              <AvatarFallback className="rounded-lg">
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">{user.name}</span>
+              <span className="text-muted-foreground truncate text-xs">
+                {user.email}
+              </span>
+            </div>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <Link to="/app/settings/profile">
+              <Settings className="h-4 w-4" />
+              Configuración
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={async () => {
+            const { getSupabaseBrowserClient } = await import(
+              "@/lib/supabase/browser-client"
+            );
+            const supabase = getSupabaseBrowserClient();
+            await supabase.auth.signOut();
+            navigate({ to: "/login" });
+          }}
+        >
+          <LogOut className="h-4 w-4" />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
