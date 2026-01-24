@@ -11,6 +11,13 @@ const DAY_MAP: Record<string, number> = {
   sábado: 6,
   sabado: 6,
   domingo: 0,
+  '0': 0,
+  '1': 1,
+  '2': 2,
+  '3': 3,
+  '4': 4,
+  '5': 5,
+  '6': 6,
 }
 
 function normalizeDayName(day: string): string {
@@ -25,14 +32,33 @@ export function parseTimeToDate(time: string, dayOfWeek: number, weekStart: Date
   return date
 }
 
-export function sessionToEvent(
-  session: ScheduleSession,
-  courseId: string,
-  courseName: string,
-  group: number,
-  color: string,
+export function sessionToEvent({
+  session,
+  courseId,
+  courseCode,
+  courseName,
+  groupCode,
+  groupId,
+  groupType,
+  professors,
+  classroom,
+  campusName,
+  color,
+  weekStart,
+}: {
+  session: ScheduleSession
+  courseId: string
+  courseCode: string
+  courseName: string
+  groupCode: string
+  groupId: string
+  groupType: string | null
+  professors: string[] | null
+  classroom: string | null
+  campusName: string | null
+  color: string
   weekStart: Date
-): CalendarEvent {
+}): CalendarEvent {
   const normalizedDay = normalizeDayName(String(session.weekday))
   const dayOfWeek = DAY_MAP[normalizedDay]
   if (dayOfWeek === undefined) {
@@ -42,14 +68,24 @@ export function sessionToEvent(
   const start = parseTimeToDate(session.starts_at, dayOfWeek, weekStart)
   const end = parseTimeToDate(session.ends_at, dayOfWeek, weekStart)
 
+  const groupNumber = parseInt(groupCode, 10)
+
   return {
-    id: `${courseId}-${group}-${session.weekday}-${session.starts_at}-${weekStart.getTime()}`,
-    title: `${courseName} - Grupo ${group}`,
+    id: `${groupId}-${session.weekday}-${session.starts_at}-${weekStart.getTime()}`,
+    title: courseName,
+    courseName,
+    courseCode,
+    groupCode,
+    groupId,
+    groupType,
+    professors,
+    classroom,
+    campusName,
     color,
     start,
     end,
     courseId,
-    group,
+    group: groupNumber,
   }
 }
 
@@ -106,7 +142,7 @@ export function getConflictInfo(
     conflictMessages: new Map(),
   }
 
-  const groupId = getGroupId(courseCode, parseInt(groupCode, 10))
+  const groupId = getGroupId(courseCode, parseInt(groupCode, 10), group.campus_id)
   if (!selectedGroups.has(groupId)) {
     return result
   }
@@ -114,7 +150,7 @@ export function getConflictInfo(
   const selectedSessions = group.meetings || []
 
   for (const other of allGroups) {
-    const otherGroupId = getGroupId(other.course.course_code, parseInt(other.group.group_code, 10))
+    const otherGroupId = getGroupId(other.course.course_code, parseInt(other.group.group_code, 10), other.group.campus_id)
     if (otherGroupId === groupId) continue
     if (!selectedGroups.has(otherGroupId)) continue
 
@@ -161,6 +197,9 @@ function formatTime(time: string): string {
   return `${hours.padStart(2, '0')}:${minutes}`
 }
 
-export function getGroupId(courseId: string, group: number): string {
+export function getGroupId(courseId: string, group: number, campusId?: number | null): string {
+  if (campusId !== null && campusId !== undefined) {
+    return `${courseId}-${group}-${campusId}`
+  }
   return `${courseId}-${group}`
 }

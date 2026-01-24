@@ -1,11 +1,7 @@
 import type { CalendarProps } from './calendar-types'
-import CalendarHeader from './header/calendar-header'
 import CalendarBody from './body/calendar-body'
-import CalendarHeaderActions from './header/actions/calendar-header-actions'
-import CalendarHeaderDate from './header/date/calendar-header-date'
-import CalendarHeaderActionsMode from './header/actions/calendar-header-actions-mode'
-import CalendarHeaderActionsZoom from './header/actions/calendar-header-actions-zoom'
 import CalendarProvider from './calendar-provider'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 export default function Calendar({
   events,
@@ -15,6 +11,9 @@ export default function Calendar({
   date,
   setDate,
   calendarIconIsToday = true,
+  onRemoveEvent,
+  hourHeight,
+  setHourHeight,
 }: CalendarProps) {
   return (
     <CalendarProvider
@@ -25,15 +24,13 @@ export default function Calendar({
       date={date}
       setDate={setDate}
       calendarIconIsToday={calendarIconIsToday}
+      onRemoveEvent={onRemoveEvent}
+      hourHeight={hourHeight}
+      setHourHeight={setHourHeight}
     >
-      <CalendarHeader>
-        <CalendarHeaderDate />
-        <CalendarHeaderActions>
-          <CalendarHeaderActionsZoom />
-          <CalendarHeaderActionsMode />
-        </CalendarHeaderActions>
-      </CalendarHeader>
-      <CalendarBody />
+      <TooltipProvider delayDuration={200}>
+        <CalendarBody />
+      </TooltipProvider>
     </CalendarProvider>
   )
 }

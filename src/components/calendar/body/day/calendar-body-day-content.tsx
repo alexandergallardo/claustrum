@@ -1,17 +1,79 @@
 import { useCalendarContext } from '../../calendar-context'
 import { isSameDay } from 'date-fns'
-import { hours } from './calendar-body-day-margin'
+import { useMemo } from 'react'
+import { hours, START_HOUR, END_HOUR } from './calendar-body-day-margin'
 import CalendarBodyHeader from '../calendar-body-header'
 import CalendarEvent from '../calendar-event'
+
+interface EventPosition {
+  left: string
+  width: string
+  top: string
+  height: string
+}
 
 export default function CalendarBodyDayContent({ date }: { date: Date }) {
   const { events, hourHeight } = useCalendarContext()
 
-  const dayEvents = events.filter((event) => isSameDay(event.start, date))
+  const dayEvents = useMemo(
+    () => events.filter((event) => isSameDay(event.start, date)),
+    [events, date]
+  )
+
+  const eventLayouts = useMemo(() => {
+    const layouts = new Map<string, EventPosition>()
+    if (!dayEvents.length) return layouts
+
+    dayEvents.forEach((event) => {
+      const overlappingEvents = dayEvents.filter((otherEvent) => {
+        if (otherEvent.id === event.id) return false
+        return event.start < otherEvent.end && event.end > otherEvent.start
+      })
+
+      const group = [event, ...overlappingEvents].sort(
+        (a, b) => a.start.getTime() - b.start.getTime()
+      )
+      const position = group.indexOf(event)
+      const width = `${100 / (overlappingEvents.length + 1)}%`
+      const left = `${(position * 100) / (overlappingEvents.length + 1)}%`
+
+      const startHour = event.start.getHours()
+      const startMinutes = event.start.getMinutes()
+
+      let endHour = event.end.getHours()
+      let endMinutes = event.end.getMinutes()
+
+      if (!isSameDay(event.start, event.end)) {
+        endHour = END_HOUR
+        endMinutes = 0
+      }
+
+      const adjustedStartHour = Math.max(startHour - START_HOUR, 0)
+      const adjustedEndHour = Math.min(endHour, END_HOUR) - START_HOUR
+
+      const topPosition =
+        adjustedStartHour * hourHeight + (startMinutes / 60) * hourHeight
+      const adjustedStartMinutes = startHour < START_HOUR ? 0 : startMinutes
+      const duration =
+        adjustedEndHour * 60 +
+        endMinutes -
+        (adjustedStartHour * 60 + adjustedStartMinutes)
+      const height = Math.max((duration / 60) * hourHeight, 24)
+
+      layouts.set(event.id, {
+        left,
+        width,
+        top: `${topPosition}px`,
+        height: `${height}px`,
+      })
+    })
+
+    return layouts
+  }, [dayEvents, hourHeight])
 
   return (
     <div className="flex flex-col flex-grow">
-      <CalendarBodyHeader date={date} />
+      <CalendarBodyHeader date={date} onlyDay />
 
       <div className="flex-1 relative">
         {hours.map((hour) => (
@@ -23,7 +85,11 @@ export default function CalendarBodyDayContent({ date }: { date: Date }) {
         ))}
 
         {dayEvents.map((event) => (
-          <CalendarEvent key={event.id} event={event} />
+          <CalendarEvent
+            key={event.id}
+            event={event}
+            style={eventLayouts.get(event.id)}
+          />
         ))}
       </div>
     </div>

@@ -24,6 +24,9 @@ export default function CalendarProvider({
   date,
   setDate,
   calendarIconIsToday = true,
+  onRemoveEvent,
+  hourHeight: externalHourHeight,
+  setHourHeight: externalSetHourHeight,
   children,
 }: {
   events: CalendarEvent[]
@@ -33,17 +36,26 @@ export default function CalendarProvider({
   date: Date
   setDate: (date: Date) => void
   calendarIconIsToday: boolean
+  onRemoveEvent?: (event: CalendarEvent) => void
+  hourHeight?: number
+  setHourHeight?: (height: number) => void
   children: React.ReactNode
 }) {
   const [newEventDialogOpen, setNewEventDialogOpen] = useState(false)
   const [manageEventDialogOpen, setManageEventDialogOpen] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-  const [hourHeight, setHourHeightState] = useState(getStoredHourHeight)
+  const [internalHourHeight, setHourHeightState] = useState(getStoredHourHeight)
+
+  const hourHeight = externalHourHeight ?? internalHourHeight
 
   const setHourHeight = useCallback((height: number) => {
-    setHourHeightState(height)
-    localStorage.setItem(HOUR_HEIGHT_STORAGE_KEY, String(height))
-  }, [])
+    if (externalSetHourHeight) {
+      externalSetHourHeight(height)
+    } else {
+      setHourHeightState(height)
+      localStorage.setItem(HOUR_HEIGHT_STORAGE_KEY, String(height))
+    }
+  }, [externalSetHourHeight])
 
   return (
     <CalendarContext.Provider
@@ -55,6 +67,7 @@ export default function CalendarProvider({
         date,
         setDate,
         calendarIconIsToday,
+        onRemoveEvent,
         newEventDialogOpen,
         setNewEventDialogOpen,
         manageEventDialogOpen,

@@ -33,7 +33,7 @@ export default function CalendarBody() {
   }, [handleWheel])
 
   return (
-    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden">
+    <div ref={containerRef} className="flex-1 flex flex-col">
       {mode === 'day' && <CalendarBodyDay />}
       {mode === 'week' && <CalendarBodyWeek />}
       {mode === 'month' && <CalendarBodyMonth />}

@@ -6,7 +6,7 @@ export type Mode = (typeof calendarModes)[number]
 
 // Altura de hora en píxeles (por defecto 128px = h-32)
 export const DEFAULT_HOUR_HEIGHT = 128
-export const MIN_HOUR_HEIGHT = 48
+export const MIN_HOUR_HEIGHT = 64
 export const MAX_HOUR_HEIGHT = 192
 
 export type CalendarProps = {
@@ -17,6 +17,9 @@ export type CalendarProps = {
   date: Date
   setDate: (date: Date) => void
   calendarIconIsToday?: boolean
+  onRemoveEvent?: (event: CalendarEventType) => void
+  hourHeight?: number
+  setHourHeight?: (height: number) => void
 }
 
 export type CalendarContextType = CalendarProps & {
