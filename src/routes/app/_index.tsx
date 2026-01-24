@@ -5,14 +5,14 @@ import { DashboardStatsCards, CourseStatusChart } from "@/components/dashboard/d
 import { ProgressTimeline } from "@/components/dashboard/progress-timeline";
 import { NextCourses } from "@/components/dashboard/next-courses";
 import { EmptyDashboard, DashboardSkeleton } from "@/components/dashboard/empty-state";
-import { useUserStudyPlan } from "@/lib/hooks/use-queries";
-import { useDashboardStats } from "@/lib/hooks/use-queries";
+import { useAuthUser, useDashboardStats, useUserStudyPlan } from "@/lib/hooks/use-queries";
 
 export const Route = createFileRoute("/app/_index")({
   component: DashboardPage,
 });
 
 function DashboardPage() {
+  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const { data: userStudyPlan, isLoading: isLoadingUserPlan } = useUserStudyPlan();
   const { data: dashboardData, isLoading: isLoadingStats } = useDashboardStats(
     userStudyPlan?.userId ?? null,
@@ -27,8 +27,9 @@ function DashboardPage() {
     }
   }, [dashboardData]);
 
-  const isAuthenticated = !!userStudyPlan?.userId;
-  const isLoading = isLoadingUserPlan || isLoadingStats;
+  const isAuthenticated = !!authUser;
+  const hasProfile = !!userStudyPlan?.studyPlanId;
+  const isLoading = isAuthLoading || isLoadingUserPlan || isLoadingStats;
 
   return (
     <AppLayoutWrapper>
@@ -38,7 +39,7 @@ function DashboardPage() {
             {isLoading ? (
               <DashboardSkeleton />
             ) : !isAuthenticated || !dashboardData?.stats ? (
-              <EmptyDashboard isAuthenticated={isAuthenticated} />
+              <EmptyDashboard isAuthenticated={isAuthenticated} hasProfile={hasProfile} />
             ) : (
               <>
                 <div className="px-4 lg:px-6">
