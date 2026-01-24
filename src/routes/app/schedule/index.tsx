@@ -6,10 +6,12 @@ import {
   useEffect,
   useRef,
   useTransition,
+  type CSSProperties,
 } from "react";
 import { toJpeg, toPng } from "html-to-image";
 import { z } from "zod";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import Calendar from "@/components/calendar/calendar";
 import CourseList from "@/components/course-list";
@@ -21,6 +23,7 @@ import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleFilters } from "@/components/schedule/schedule-filters";
 import { ResizablePanel } from "@/components/resizable-panel";
+import { Button } from "@/components/ui/button";
 import {
   ScheduleZoomControls,
   SCHEDULE_DEFAULT_HOUR_HEIGHT,
@@ -33,18 +36,23 @@ import {
   START_HOUR,
   END_HOUR,
 } from "@/components/calendar/body/day/calendar-body-day-margin";
+import { cn } from "@/lib/utils";
 import {
   useUniversities,
   useCampuses,
   useAcademicUnits,
   useStudyPlans,
+  useStudyPlanDetail,
   useAcademicTerms,
   useScheduleCourses,
   useUserStudyPlan,
   useSuggestedAcademicTerm,
+  useAuthUser,
 } from "@/lib/hooks/use-queries";
 
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
+const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
+const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
 
 const scheduleSearchSchema = z.object({
   view: z.enum(["week", "month", "day"]).optional(),
@@ -72,11 +80,25 @@ function SchedulePage() {
   const selectedCareerId = search.career ?? null;
   const selectedPlanId = search.plan ?? null;
   const selectedTermId = search.term ?? null;
-  const showAllCourses = search.showAll ?? true;
+  const [storedShowAll, setStoredShowAll] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const stored = localStorage.getItem(SHOW_ALL_STORAGE_KEY);
+    if (stored === null) return true;
+    return stored === "true";
+  });
+  const [storedShowOtherCampuses, setStoredShowOtherCampuses] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem(SHOW_OTHER_CAMPUSES_STORAGE_KEY);
+    if (stored === null) return false;
+    return stored === "true";
+  });
+  const showAllCourses = search.showAll ?? storedShowAll;
+  const showOtherCampuses = search.otherCampuses ?? storedShowOtherCampuses;
 
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const mode: Mode = "week";
   const [date] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [isCourseListOpen, setIsCourseListOpen] = useState(true);
   const [hourHeight, setHourHeight] = useState<number>(
     SCHEDULE_DEFAULT_HOUR_HEIGHT,
   );
@@ -105,9 +127,18 @@ function SchedulePage() {
     termId: selectedTermId,
     campusId: selectedCampusId,
     careerId: selectedCareerId,
-    includeOtherCampuses: search.otherCampuses ?? false,
+    planId: selectedPlanId,
+    includeOtherCampuses: showOtherCampuses,
     showAllCourses: showAllCourses,
   });
+  const { data: authUser } = useAuthUser();
+  const selectedPlanData = plansQuery.data?.find(
+    (plan) => plan.id === selectedPlanId,
+  );
+  const planDetailQuery = useStudyPlanDetail(
+    selectedPlanId,
+    selectedPlanData,
+  );
   const { data: userStudyPlan } = useUserStudyPlan();
   const suggestedTermQuery = useSuggestedAcademicTerm(selectedPlanId);
 
@@ -119,7 +150,21 @@ function SchedulePage() {
   const careers = careersQuery.data ?? [];
   const plans = plansQuery.data ?? [];
   const terms = termsQuery.data ?? [];
-  const courses = coursesQuery.data ?? [];
+  const planCourseIds = useMemo(() => {
+    if (!planDetailQuery.data) return null;
+    const ids = new Set<number>();
+    planDetailQuery.data.periods.forEach((period) => {
+      period.courses.forEach((course) => ids.add(course.courseId));
+    });
+    return ids;
+  }, [planDetailQuery.data]);
+
+  const courses = useMemo(() => {
+    const fetchedCourses = coursesQuery.data ?? [];
+    if (authUser || !selectedPlanId) return fetchedCourses;
+    if (!planCourseIds) return [];
+    return fetchedCourses.filter((course) => planCourseIds.has(course.course_id));
+  }, [authUser, coursesQuery.data, planCourseIds, selectedPlanId]);
 
   const orderedCourses = useMemo(() => {
     return [...courses].sort((a, b) => {
@@ -152,15 +197,16 @@ function SchedulePage() {
 
     orderedCourses.forEach((course) => {
       course.groups?.forEach((group) => {
+        const campusId = group.campus_id ?? course.campus_id ?? null;
         const groupId = getGroupId(
           course.course_code,
           parseInt(group.group_code, 10),
-          group.campus_id,
+          campusId,
         );
         map.set(groupId, {
           course,
           group,
-          campusId: group.campus_id ?? null,
+          campusId,
         });
       });
     });
@@ -232,6 +278,23 @@ function SchedulePage() {
     setSelectedGroups(new Set(serializedGroups));
   }, [search.groups, serializedGroups]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (search.showAll === undefined) return;
+    localStorage.setItem(SHOW_ALL_STORAGE_KEY, String(search.showAll));
+    setStoredShowAll(search.showAll);
+  }, [search.showAll]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (search.otherCampuses === undefined) return;
+    localStorage.setItem(
+      SHOW_OTHER_CAMPUSES_STORAGE_KEY,
+      String(search.otherCampuses),
+    );
+    setStoredShowOtherCampuses(search.otherCampuses);
+  }, [search.otherCampuses]);
+
   const updateSelectedGroups = useCallback(
     (nextGroups: Set<string>) => {
       setSelectedGroups(nextGroups);
@@ -246,6 +309,7 @@ function SchedulePage() {
             ...search,
             groups: nextGroupsValue,
           },
+          resetScroll: false,
         });
       });
     },
@@ -472,7 +536,10 @@ function SchedulePage() {
     careersQuery.isLoading ||
     plansQuery.isLoading ||
     termsQuery.isLoading;
-  const isInitialLoading = isLoadingFilters && !universities?.length;
+  const isPlanCoursesLoading =
+    !authUser && !!selectedPlanId && planDetailQuery.isLoading;
+  const isInitialLoading =
+    (isLoadingFilters && !universities?.length) || isPlanCoursesLoading;
 
   if (isInitialLoading) {
     return (
@@ -568,9 +635,9 @@ function SchedulePage() {
                 isLoadingTerms={
                   termsQuery.isFetching && termsQuery.data?.length === 0
                 }
-                showAll={search.showAll ?? true}
+                showAll={showAllCourses}
                 onShowAllChange={handleShowAllChange}
-                showOtherCampuses={search.otherCampuses ?? false}
+                showOtherCampuses={showOtherCampuses}
                 onShowOtherCampusesChange={handleOtherCampusesChange}
               />
             </div>
@@ -595,32 +662,63 @@ function SchedulePage() {
             {orderedCourses.length > 0 && (
               <div className="px-4 lg:px-6">
                 <div
-                  className="border rounded-lg shrink-0"
-                  style={{ height: calendarHeight }}
+                  className="border rounded-lg shrink-0 h-auto lg:h-[var(--calendar-height)]"
+                  style={{
+                    "--calendar-height": `${calendarHeight}px`,
+                  } as CSSProperties}
                 >
                   <ResizablePanel
                     leftContent={
-                      <div className="h-full flex flex-col">
+                      <div className="flex flex-col lg:h-full">
                         <div className="px-4 py-3 border-b bg-muted/30 shrink-0">
-                          <h2 className="text-lg font-semibold">
-                            {orderedCourses.length} curso
-                            {orderedCourses.length !== 1 ? "s" : ""} disponible
-                            {orderedCourses.length !== 1 ? "s" : ""}
-                          </h2>
+                          <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-semibold">
+                              {orderedCourses.length} curso
+                              {orderedCourses.length !== 1 ? "s" : ""} disponible
+                              {orderedCourses.length !== 1 ? "s" : ""}
+                            </h2>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="ml-auto lg:hidden"
+                              aria-label={
+                                isCourseListOpen
+                                  ? "Contraer cursos disponibles"
+                                  : "Mostrar cursos disponibles"
+                              }
+                              onClick={() =>
+                                setIsCourseListOpen((open) => !open)
+                              }
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform",
+                                  isCourseListOpen ? "rotate-0" : "-rotate-90",
+                                )}
+                              />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex-1 overflow-hidden">
+                        <div
+                          className={cn(
+                            "overflow-hidden px-3 h-[60vh] lg:flex-1 lg:h-auto lg:px-0",
+                            !isCourseListOpen && "hidden lg:block",
+                          )}
+                        >
                           <CourseList
+                            key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
                             courses={orderedCourses}
                             selectedGroups={selectedGroups}
                             onSelectionChange={updateSelectedGroups}
                             campusById={campusById}
-                            showCampus={search.otherCampuses ?? false}
+                            showCampus={showOtherCampuses}
                           />
                         </div>
                       </div>
                     }
                     rightContent={
-                      <div className="relative h-full">
+                      <div className="relative lg:h-full">
                         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                           <ScheduleZoomControls
                             hourHeight={hourHeight}
@@ -629,7 +727,10 @@ function SchedulePage() {
                           />
                           <ScheduleExportDialog onExport={handleExport} />
                         </div>
-                        <div ref={calendarRef} className="h-full">
+                        <div
+                          ref={calendarRef}
+                          className="lg:h-full overflow-hidden border-t border-border/50 p-0"
+                        >
                           <Calendar
                             events={calendarEvents}
                             setEvents={() => {}}

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/tooltip'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { ChevronDown, ChevronUp, Filter } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
 
 interface ScheduleFiltersProps {
@@ -50,6 +52,14 @@ const truncateText = (text: string, maxLength = 35) => {
 }
 
 const normalizeText = (text: string) => text.toUpperCase()
+
+const FILTERS_PANEL_STORAGE_KEY = 'schedule-filters-panel-open'
+
+function getInitialFiltersPanelOpen(): boolean {
+  if (typeof window === 'undefined') return true
+  const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY)
+  return stored !== 'false'
+}
 
 function FilterSkeleton() {
   return <Skeleton className="h-10 w-[200px]" />
@@ -143,7 +153,12 @@ export function ScheduleFilters({
   showOtherCampuses,
   onShowOtherCampusesChange,
 }: ScheduleFiltersProps) {
+  const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
+
+  useEffect(() => {
+    localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString())
+  }, [isFiltersVisible])
 
   if (!hasUniversities && isLoadingUniversities) {
     return (
@@ -160,7 +175,18 @@ export function ScheduleFilters({
   const showSwitches = !!selectedTermId
 
   return (
-    <div className="flex flex-wrap items-end gap-4">
+    <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <Filter className="h-4 w-4" />
+        <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
+        {isFiltersVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden'}`}>
       <FilterSelect
         label="Universidad"
         value={selectedUniversityId?.toString() || ''}
@@ -211,27 +237,28 @@ export function ScheduleFilters({
         isVisible={!!selectedCampusId}
       />
 
-      {showSwitches && onShowAllChange !== undefined && (
-        <div className="flex items-center space-x-2 pb-2">
-          <Switch
-            id="showAll"
-            checked={showAll ?? true}
-            onCheckedChange={onShowAllChange}
-          />
-          <Label htmlFor="showAll">Mostrar todos los cursos</Label>
-        </div>
-      )}
+        {showSwitches && onShowAllChange !== undefined && (
+          <div className="flex items-center space-x-2 pb-2">
+            <Switch
+              id="showAll"
+              checked={showAll ?? true}
+              onCheckedChange={onShowAllChange}
+            />
+            <Label htmlFor="showAll">Mostrar todos los cursos</Label>
+          </div>
+        )}
 
-      {showSwitches && onShowOtherCampusesChange !== undefined && (
-        <div className="flex items-center space-x-2 pb-2">
-          <Switch
-            id="otherCampuses"
-            checked={showOtherCampuses ?? false}
-            onCheckedChange={onShowOtherCampusesChange}
-          />
-          <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
-        </div>
-      )}
+        {showSwitches && onShowOtherCampusesChange !== undefined && (
+          <div className="flex items-center space-x-2 pb-2">
+            <Switch
+              id="otherCampuses"
+              checked={showOtherCampuses ?? false}
+              onCheckedChange={onShowOtherCampusesChange}
+            />
+            <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

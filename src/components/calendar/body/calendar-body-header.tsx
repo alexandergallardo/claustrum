@@ -12,7 +12,7 @@ export default function CalendarBodyHeader({
   const isToday = isSameDay(date, new Date())
 
   return (
-    <div className="flex items-center justify-center gap-1 py-2 w-full sticky top-0 bg-background z-10 border-b">
+    <div className="flex items-center justify-center gap-1 h-[33px] w-full sticky top-0 bg-background z-10 border-b">
       <span
         className={cn(
           'text-xs font-medium capitalize',

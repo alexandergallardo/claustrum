@@ -271,13 +271,29 @@ export function useScheduleCourses(params: {
   termId: number | null;
   campusId: number | null;
   careerId: number | null;
+  planId: number | null;
   includeOtherCampuses: boolean;
   showAllCourses: boolean;
 }) {
-  const { termId, campusId, careerId, includeOtherCampuses, showAllCourses } = params;
+  const {
+    termId,
+    campusId,
+    careerId,
+    planId,
+    includeOtherCampuses,
+    showAllCourses,
+  } = params;
 
   return useQuery({
-    queryKey: ["scheduleCourses", termId, campusId, careerId, includeOtherCampuses, showAllCourses],
+    queryKey: [
+      "scheduleCourses",
+      termId,
+      campusId,
+      careerId,
+      planId,
+      includeOtherCampuses,
+      showAllCourses,
+    ],
     queryFn: async () => {
       if (!termId || !campusId) return null;
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
@@ -294,6 +310,15 @@ export function useScheduleCourses(params: {
             p_campus_id: campusId,
             p_include_other_campuses: includeOtherCampuses,
             p_show_all_courses: showAllCourses,
+          })
+          .select("*"));
+      } else if (planId) {
+        ({ data, error } = await sb
+          .rpc("get_schedule_courses_by_study_plan", {
+            p_academic_term_id: termId,
+            p_campus_id: campusId,
+            p_study_plan_id: planId,
+            p_include_other_campuses: includeOtherCampuses,
           })
           .select("*"));
       } else if (careerId) {
@@ -314,6 +339,7 @@ export function useScheduleCourses(params: {
     },
     enabled: !!termId && !!campusId,
     staleTime: 2 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 

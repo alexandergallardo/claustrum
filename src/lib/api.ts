@@ -44,7 +44,7 @@ export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {
   if (!profile || !profile.study_plan_id) return null
 
   return {
-    userStudyPlanId: profile.user_study_plan_id!,
+    userStudyPlanId: profile.study_plan_id!,
     studyPlanId: profile.study_plan_id,
     campusId: profile.campus_id!,
     entryYear: profile.entry_year!,

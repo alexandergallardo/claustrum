@@ -1,4 +1,11 @@
-import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
+import {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+  type CSSProperties,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 interface ResizablePanelProps {
@@ -62,10 +69,13 @@ export function ResizablePanel({
   }, [isResizing, handleMouseMove, handleMouseUp])
 
   return (
-    <div ref={containerRef} className={cn('flex w-full h-full', className)}>
+    <div
+      ref={containerRef}
+      className={cn('flex w-full h-full flex-col lg:flex-row', className)}
+    >
       <div
-        style={{ width: leftWidth }}
-        className="flex-shrink-0 h-full overflow-hidden"
+        style={{ '--left-panel-width': `${leftWidth}px` } as CSSProperties}
+        className="flex-shrink-0 w-full overflow-hidden lg:h-full lg:w-[var(--left-panel-width)]"
       >
         {leftContent}
       </div>
@@ -73,7 +83,7 @@ export function ResizablePanel({
       <div
         onMouseDown={handleMouseDown}
         className={cn(
-          'w-1 h-full cursor-col-resize flex items-center justify-center transition-colors duration-200 flex-shrink-0',
+          'hidden lg:flex w-1 h-full cursor-col-resize items-center justify-center transition-colors duration-200 flex-shrink-0',
           isResizing
             ? 'bg-primary'
             : 'hover:bg-primary/50 bg-border'
@@ -89,7 +99,7 @@ export function ResizablePanel({
         />
       </div>
 
-      <div className="flex-1 h-full overflow-hidden">
+      <div className="flex-1 w-full overflow-hidden lg:h-full">
         {rightContent}
       </div>
     </div>
