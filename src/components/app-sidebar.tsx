@@ -5,7 +5,6 @@ import {
   IconCalendarTime,
   IconInnerShadowTop,
 } from "@tabler/icons-react";
-import type { User } from "@supabase/supabase-js";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -18,8 +17,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { Link } from "@tanstack/react-router";
+import { useAuthUser } from "@/lib/hooks/use-queries";
 
 const data = {
   navMain: [
@@ -42,30 +41,7 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [authUser, setAuthUser] = React.useState<User | null>(null);
-
-  React.useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-
-    async function initAuth() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setAuthUser(user);
-    }
-
-    initAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const { data: authUser } = useAuthUser();
 
   const user = authUser
     ? {
