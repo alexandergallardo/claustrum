@@ -240,16 +240,32 @@ function SchedulePage() {
   }, [userStudyPlan, search, navigate]);
 
   useEffect(() => {
-    if (selectedCampusId && terms.length > 0 && !selectedTermId) {
-      let termId = terms[0].id;
-      if (suggestedTermQuery.data && !search.term) {
-        termId = suggestedTermQuery.data;
-      }
+    if (
+      selectedCampusId &&
+      terms.length > 0 &&
+      !selectedTermId &&
+      suggestedTermQuery.isSuccess &&
+      suggestedTermQuery.data
+    ) {
       navigate({
         to: "/app/schedule",
         search: {
           ...search,
-          term: termId,
+          term: suggestedTermQuery.data,
+        },
+      });
+    } else if (
+      selectedCampusId &&
+      terms.length > 0 &&
+      !selectedTermId &&
+      suggestedTermQuery.isSuccess &&
+      !suggestedTermQuery.data
+    ) {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          term: terms[0].id,
         },
       });
     }
@@ -260,6 +276,7 @@ function SchedulePage() {
     search,
     navigate,
     suggestedTermQuery.data,
+    suggestedTermQuery.isSuccess,
   ]);
 
   useEffect(() => {
