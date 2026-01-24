@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { User, Clock, AlertTriangle, MapPin } from 'lucide-react'
+import { User, Clock, AlertTriangle, MapPin, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getGroupId } from '@/lib/calendar-utils'
 import { colorOptions } from '@/components/calendar/calendar-tailwind-classes'
@@ -435,16 +435,19 @@ const CourseCard = memo(function CourseCard({
                           </div>
                         </div>
 
-                        <p className={cn('text-xs mt-2 text-foreground', isSelected && 'opacity-70')}>
-                          {groupView.group.capacity} cupos
-                        </p>
+                        <div className="flex items-start gap-2">
+                          <Users className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', isSelected ? 'opacity-70' : 'text-muted-foreground')} />
+                          <span className={cn('text-xs text-foreground', isSelected && 'opacity-70')}>
+                            {groupView.group.capacity} cupos
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    {disabled && reasons.length > 0 ? (
+                  {disabled && reasons.length > 0 && (
+                    <TooltipContent className="max-w-xs bg-destructive text-destructive-foreground">
                       <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                         <div>
                           <p className="font-semibold">Grupo bloqueado</p>
                           <p className="text-sm">Choque con:</p>
@@ -455,16 +458,8 @@ const CourseCard = memo(function CourseCard({
                           </ul>
                         </div>
                       </div>
-                    ) : (
-                      <div className="text-xs">
-                        <p className="font-semibold">Grupo {groupView.group.group_code}</p>
-                        <p className="text-muted-foreground">{groupView.professorLabel}</p>
-                        {groupView.meetingLabels.map((meeting) => (
-                          <p key={meeting.id}>{meeting.label}</p>
-                        ))}
-                      </div>
-                    )}
-                  </TooltipContent>
+                    </TooltipContent>
+                  )}
                 </Tooltip>
               )
             })}
