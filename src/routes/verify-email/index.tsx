@@ -69,7 +69,7 @@ export default function VerifyEmailPage() {
 
   const handleResendEmail = async () => {
     if (!email) {
-      setResendError("Unable to resend email")
+      setResendError("No se puede reenviar el correo")
       return
     }
 
@@ -89,7 +89,7 @@ export default function VerifyEmailPage() {
         setResendSuccess(true)
       }
     } catch (err) {
-      setResendError("An unexpected error occurred")
+      setResendError("Ocurrió un error inesperado")
     } finally {
       setResending(false)
     }
@@ -99,12 +99,12 @@ export default function VerifyEmailPage() {
   const isSuccess = status === "success"
   const isPending = status === "pending"
 
-  const title = isLoading ? "Verifying your email" : isSuccess ? "Email verified!" : "Check your email"
+  const title = isLoading ? "Verificando tu correo" : isSuccess ? "¡Correo verificado!" : "Revisa tu correo"
   const description = isLoading
-    ? "This should only take a moment."
+    ? "Esto solo tomará un momento."
     : isSuccess
-      ? "Redirecting to your dashboard..."
-      : "We sent a verification link to"
+      ? "Redirigiendo a tu panel..."
+      : "Enviamos un enlace de verificación a"
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background p-6 md:p-10">
@@ -127,7 +127,7 @@ export default function VerifyEmailPage() {
           <CardDescription className="text-center">
             {isPending ? (
               <>
-                {description} {email ?? "your email"}.
+                {description} {email ?? "tu correo"}.
               </>
             ) : (
               description
@@ -137,14 +137,14 @@ export default function VerifyEmailPage() {
         <CardContent className="flex flex-col gap-4">
           {isPending && (
             <p className="mx-auto max-w-sm text-center text-sm text-muted-foreground">
-              Didn&apos;t get it? Check spam or promotions.
+              ¿No lo recibiste? Revisa spam o promociones.
             </p>
           )}
 
           {isPending &&
             (resendSuccess ? (
               <div className="rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                <p>Email sent successfully! Please check your inbox.</p>
+                <p>Correo enviado correctamente. Por favor revisa tu bandeja de entrada.</p>
               </div>
             ) : (
               <>
@@ -155,10 +155,10 @@ export default function VerifyEmailPage() {
                   disabled={resending}
                 >
                   <RefreshCw className={`mr-2 size-4 ${resending ? "animate-spin" : ""}`} />
-                  Resend verification email
+                  Reenviar correo de verificación
                 </Button>
                 {resending && (
-                  <p className="text-center text-xs text-muted-foreground">Sending...</p>
+                  <p className="text-center text-xs text-muted-foreground">Enviando...</p>
                 )}
               </>
             ))}
@@ -170,7 +170,7 @@ export default function VerifyEmailPage() {
           {isPending && (
             <div className="flex items-center justify-center gap-2 pt-2">
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>
-                Back to login
+                Volver a inicio de sesión
               </Button>
             </div>
           )}

@@ -32,7 +32,7 @@ export function NavUser({
           >
             <Link to="/login">
               <LogIn className="h-4 w-4" />
-              <span className="flex-1 text-left">Sign in</span>
+              <span className="flex-1 text-left">Iniciar sesión</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -44,7 +44,7 @@ export function NavUser({
           >
             <Link to="/app/settings/appearance">
               <Settings className="h-4 w-4" />
-              <span className="flex-1 text-left">Settings</span>
+              <span className="flex-1 text-left">Configuración</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

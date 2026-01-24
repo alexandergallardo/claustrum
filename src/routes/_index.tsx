@@ -19,10 +19,10 @@ function LandingPage() {
           </Link>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
-              <Link to="/login">Login</Link>
+              <Link to="/login">Iniciar sesión</Link>
             </Button>
             <Button asChild>
-              <Link to="/signup">Sign Up</Link>
+              <Link to="/signup">Regístrate</Link>
             </Button>
           </div>
         </div>
