@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, memo, useEffect } from 'react'
+import { useMemo, useRef, useCallback, memo, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { ScheduleCourse, ScheduleGroup } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -204,7 +204,6 @@ export default function CourseList({
   campusById,
   showCampus = false,
 }: CourseListProps) {
-  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const itemCountRef = useRef(courses.length)
   const measuredHeightsRef = useRef<number[]>([])
@@ -291,10 +290,6 @@ export default function CourseList({
     [onSelectionChange, selectedGroups]
   )
 
-  const handleHoveredGroupIdChange = useCallback((value: string | null) => {
-    setHoveredGroupId(value)
-  }, [])
-
   return (
     <TooltipProvider>
       <div ref={scrollRef} className="h-full overflow-auto">
@@ -325,8 +320,6 @@ export default function CourseList({
                   selectedGroupIds={selectedGroups}
                   disabledGroupIdSet={disabledSet}
                   conflictReasonsByGroupId={conflictReasons}
-                  hoveredGroupId={hoveredGroupId}
-                  setHoveredGroupId={handleHoveredGroupIdChange}
                   onGroupToggle={handleGroupToggle}
                 />
               </div>
@@ -345,8 +338,6 @@ const CourseCard = memo(function CourseCard({
   selectedGroupIds,
   disabledGroupIdSet,
   conflictReasonsByGroupId,
-  hoveredGroupId,
-  setHoveredGroupId,
   onGroupToggle,
 }: {
   course: ScheduleCourse
@@ -355,8 +346,6 @@ const CourseCard = memo(function CourseCard({
   selectedGroupIds: SelectedGroups
   disabledGroupIdSet: Set<string>
   conflictReasonsByGroupId: Map<string, string[]>
-  hoveredGroupId: string | null
-  setHoveredGroupId: (value: string | null) => void
   onGroupToggle: (courseCode: string, groupCode: string, campusId?: number | null) => void
 }) {
   return (
@@ -377,7 +366,6 @@ const CourseCard = memo(function CourseCard({
               const isSelected = selectedGroupIds.has(groupView.groupId)
               const disabled = disabledGroupIdSet.has(groupView.groupId)
               const reasons = conflictReasonsByGroupId.get(groupView.groupId) ?? []
-              const showBlockedTooltip = disabled && hoveredGroupId === groupView.groupId && reasons.length > 0
 
               return (
                 <Tooltip key={groupView.groupId}>
@@ -399,8 +387,6 @@ const CourseCard = memo(function CourseCard({
                           : undefined
                       }
                       onClick={() => !disabled && onGroupToggle(course.course_code, groupView.group.group_code, groupView.group.campus_id ?? course.campus_id)}
-                      onMouseEnter={() => setHoveredGroupId(groupView.groupId)}
-                      onMouseLeave={() => setHoveredGroupId(null)}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <Badge
@@ -455,10 +441,10 @@ const CourseCard = memo(function CourseCard({
                       </div>
                     </div>
                   </TooltipTrigger>
-                  {showBlockedTooltip && (
-                    <TooltipContent className="max-w-xs bg-destructive text-destructive-foreground">
+                  <TooltipContent className="max-w-xs">
+                    {disabled && reasons.length > 0 ? (
                       <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
                         <div>
                           <p className="font-semibold">Grupo bloqueado</p>
                           <p className="text-sm">Choque con:</p>
@@ -469,8 +455,16 @@ const CourseCard = memo(function CourseCard({
                           </ul>
                         </div>
                       </div>
-                    </TooltipContent>
-                  )}
+                    ) : (
+                      <div className="text-xs">
+                        <p className="font-semibold">Grupo {groupView.group.group_code}</p>
+                        <p className="text-muted-foreground">{groupView.professorLabel}</p>
+                        {groupView.meetingLabels.map((meeting) => (
+                          <p key={meeting.id}>{meeting.label}</p>
+                        ))}
+                      </div>
+                    )}
+                  </TooltipContent>
                 </Tooltip>
               )
             })}
