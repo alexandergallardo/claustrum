@@ -7,6 +7,12 @@ import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 
 const config = defineConfig({
+  optimizeDeps: {
+    exclude: ['html-to-image'],
+  },
+  ssr: {
+    noExternal: ['html-to-image'],
+  },
   plugins: [
     devtools(),
     cloudflare({ viteEnvironment: { name: 'ssr' } }),

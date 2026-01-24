@@ -30,11 +30,14 @@ export default function CalendarBodyDayMargin({
             className="relative first:mt-0 transition-[height] duration-200"
             style={{ height: `${hourHeight}px` }}
           >
-            {index !== 0 && (
-              <span className="absolute text-xs text-muted-foreground -top-2.5 left-2">
-                {format(new Date().setHours(hour, 0, 0, 0), 'h a', { locale: es })}
-              </span>
-            )}
+            <span
+              className={cn(
+                'absolute text-xs text-muted-foreground left-2',
+                index === 0 ? 'top-1' : '-top-2.5'
+              )}
+            >
+              {format(new Date().setHours(hour, 0, 0, 0), 'h a', { locale: es })}
+            </span>
           </div>
         ))}
       </div>

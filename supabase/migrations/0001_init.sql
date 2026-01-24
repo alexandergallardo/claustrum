@@ -50,7 +50,8 @@ BEGIN
       'SEMIPRESENCIAL',
       'VIRTUAL',
       'ASISTIDA',
-      'TUTORIA'
+      'TUTORIA',
+      'LABORATORIO'
     );
   END IF;
 END $$;

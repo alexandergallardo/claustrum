@@ -13,6 +13,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
 
 interface ScheduleFiltersProps {
@@ -36,6 +38,10 @@ interface ScheduleFiltersProps {
   isLoadingCareers: boolean
   isLoadingPlans: boolean
   isLoadingTerms: boolean
+  showAll?: boolean
+  onShowAllChange?: (checked: boolean) => void
+  showOtherCampuses?: boolean
+  onShowOtherCampusesChange?: (checked: boolean) => void
 }
 
 const truncateText = (text: string, maxLength = 35) => {
@@ -132,6 +138,10 @@ export function ScheduleFilters({
   isLoadingCareers,
   isLoadingPlans,
   isLoadingTerms,
+  showAll,
+  onShowAllChange,
+  showOtherCampuses,
+  onShowOtherCampusesChange,
 }: ScheduleFiltersProps) {
   const hasUniversities = universities.length > 0
 
@@ -146,6 +156,8 @@ export function ScheduleFilters({
       </div>
     )
   }
+
+  const showSwitches = !!selectedTermId
 
   return (
     <div className="flex flex-wrap items-end gap-4">
@@ -198,6 +210,28 @@ export function ScheduleFilters({
         isLoading={!terms.length && isLoadingTerms}
         isVisible={!!selectedCampusId}
       />
+
+      {showSwitches && onShowAllChange !== undefined && (
+        <div className="flex items-center space-x-2 pb-2">
+          <Switch
+            id="showAll"
+            checked={showAll ?? true}
+            onCheckedChange={onShowAllChange}
+          />
+          <Label htmlFor="showAll">Mostrar todos los cursos</Label>
+        </div>
+      )}
+
+      {showSwitches && onShowOtherCampusesChange !== undefined && (
+        <div className="flex items-center space-x-2 pb-2">
+          <Switch
+            id="otherCampuses"
+            checked={showOtherCampuses ?? false}
+            onCheckedChange={onShowOtherCampusesChange}
+          />
+          <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
+        </div>
+      )}
     </div>
   )
 }

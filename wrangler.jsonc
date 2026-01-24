@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "horarios",
+	"name": "claustrum",
 	"compatibility_date": "2025-12-10",
 	"compatibility_flags": [
 		"nodejs_compat"
@@ -15,7 +15,7 @@
 	},
 	"routes": [
 		{
-			"pattern": "horarios.maugp.com",
+			"pattern": "claustrum.maugp.com",
 			"custom_domain": true
 		}
 	],

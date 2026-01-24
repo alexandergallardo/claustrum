@@ -26,7 +26,7 @@ export default function CalendarBodyMonth() {
   const calendarDays = eachDayOfInterval({
     start: calendarStart,
     end: calendarEnd,
-  })
+  }).filter((day) => day.getDay() !== 0)
 
   const today = new Date()
 
@@ -41,8 +41,8 @@ export default function CalendarBodyMonth() {
 
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
-      <div className="hidden md:grid grid-cols-7 border-border divide-x divide-border">
-        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
+      <div className="hidden md:grid grid-cols-6 border-border divide-x divide-border">
+        {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
           <div
             key={day}
             className="py-2 text-center text-sm font-medium text-muted-foreground border-b border-border"
@@ -55,7 +55,7 @@ export default function CalendarBodyMonth() {
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={monthStart.toISOString()}
-          className="grid md:grid-cols-7 flex-grow overflow-y-auto relative"
+          className="grid md:grid-cols-6 flex-grow overflow-y-auto relative"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

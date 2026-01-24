@@ -1,18 +1,38 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useMemo, useCallback, useEffect } from 'react'
-import { z } from 'zod'
-import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
-import Calendar from '@/components/calendar/calendar'
-import CourseList from '@/components/course-list'
-import { sessionToEvent } from '@/lib/calendar-utils'
-import { startOfWeek, eachWeekOfInterval, addWeeks } from 'date-fns'
-import { colorOptions } from '@/components/calendar/calendar-tailwind-classes'
-import type { Mode, CalendarEvent } from '@/components/calendar/calendar-types'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ScheduleFilters } from '@/components/schedule/schedule-filters'
-import { ResizablePanel } from '@/components/resizable-panel'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  useTransition,
+} from "react";
+import { toJpeg, toPng } from "html-to-image";
+import { z } from "zod";
+import { toast } from "sonner";
+import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
+import Calendar from "@/components/calendar/calendar";
+import CourseList from "@/components/course-list";
+import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
+import { startOfWeek } from "date-fns";
+import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
+import type { Mode, CalendarEvent } from "@/components/calendar/calendar-types";
+import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScheduleFilters } from "@/components/schedule/schedule-filters";
+import { ResizablePanel } from "@/components/resizable-panel";
+import {
+  ScheduleZoomControls,
+  SCHEDULE_DEFAULT_HOUR_HEIGHT,
+} from "@/components/schedule/schedule-zoom-controls";
+import {
+  ScheduleExportDialog,
+  type ScheduleExportOptions,
+} from "@/components/schedule/schedule-export-dialog";
+import {
+  START_HOUR,
+  END_HOUR,
+} from "@/components/calendar/body/day/calendar-body-day-margin";
 import {
   useUniversities,
   useCampuses,
@@ -21,229 +41,438 @@ import {
   useAcademicTerms,
   useScheduleCourses,
   useUserStudyPlan,
-} from '@/lib/hooks/use-queries'
+  useSuggestedAcademicTerm,
+} from "@/lib/hooks/use-queries";
 
-const MAIN_CAMPUS_CODES = new Set(['AL', 'CA', 'LM', 'SC', 'SJ'])
+const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 
 const scheduleSearchSchema = z.object({
-  view: z.enum(['week', 'month', 'day']).optional(),
+  view: z.enum(["week", "month", "day"]).optional(),
   university: z.coerce.number().optional(),
   campus: z.coerce.number().optional(),
   career: z.coerce.number().optional(),
   plan: z.coerce.number().optional(),
   term: z.coerce.number().optional(),
   otherCampuses: z.boolean().optional(),
-})
+  showAll: z.boolean().optional(),
+  groups: z.string().optional(),
+});
 
-export const Route = createFileRoute('/app/schedule/')({
+export const Route = createFileRoute("/app/schedule/")({
   validateSearch: scheduleSearchSchema,
   component: SchedulePage,
-})
-
-const SEMESTER_START = new Date(2026, 1, 16)
+});
 
 function SchedulePage() {
-  const search = Route.useSearch()
-  const navigate = useNavigate({ from: '/app/schedule' })
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
 
-  const selectedUniversityId = search.university ?? null
-  const selectedCampusId = search.campus ?? null
-  const selectedCareerId = search.career ?? null
-  const selectedPlanId = search.plan ?? null
-  const selectedTermId = search.term ?? null
+  const selectedUniversityId = search.university ?? null;
+  const selectedCampusId = search.campus ?? null;
+  const selectedCareerId = search.career ?? null;
+  const selectedPlanId = search.plan ?? null;
+  const selectedTermId = search.term ?? null;
+  const showAllCourses = search.showAll ?? true;
 
-  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
-  const mode = search.view ?? 'week'
-  const [date, setDate] = useState(SEMESTER_START)
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
+  const mode: Mode = "week";
+  const [date] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [hourHeight, setHourHeight] = useState<number>(
+    SCHEDULE_DEFAULT_HOUR_HEIGHT,
+  );
+  const [, startTransition] = useTransition();
+  const totalHours = END_HOUR - START_HOUR + 1;
+  const calendarHeight = totalHours * hourHeight + 33;
+  const previousGroupsRef = useRef<string | undefined>(undefined);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
-  const { data: universities, isLoading: isLoadingUniversities } = useUniversities()
-  const campusesQuery = useCampuses(selectedUniversityId)
-  const careersQuery = useAcademicUnits(selectedCampusId)
-  const plansQuery = useStudyPlans(selectedCareerId)
-  const termsQuery = useAcademicTerms(selectedCampusId)
+  const serializedGroups = useMemo(() => {
+    if (!search.groups) return [];
+    return search.groups
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }, [search.groups]);
+
+
+  const { data: universities, isLoading: isLoadingUniversities } =
+    useUniversities();
+  const campusesQuery = useCampuses(selectedUniversityId);
+  const careersQuery = useAcademicUnits(selectedCampusId);
+  const plansQuery = useStudyPlans(selectedCareerId);
+  const termsQuery = useAcademicTerms(selectedCampusId);
   const coursesQuery = useScheduleCourses({
     termId: selectedTermId,
     campusId: selectedCampusId,
     careerId: selectedCareerId,
     includeOtherCampuses: search.otherCampuses ?? false,
-  })
-  const { data: userStudyPlan } = useUserStudyPlan()
+    showAllCourses: showAllCourses,
+  });
+  const { data: userStudyPlan } = useUserStudyPlan();
+  const suggestedTermQuery = useSuggestedAcademicTerm(selectedPlanId);
 
-  const campuses = campusesQuery.data ?? []
-  const careers = careersQuery.data ?? []
-  const plans = plansQuery.data ?? []
-  const terms = termsQuery.data ?? []
-  const courses = coursesQuery.data ?? []
+  const campuses = campusesQuery.data ?? [];
+  const campusById = useMemo(
+    () => new Map(campuses.map((campus) => [campus.id, campus.name])),
+    [campuses],
+  );
+  const careers = careersQuery.data ?? [];
+  const plans = plansQuery.data ?? [];
+  const terms = termsQuery.data ?? [];
+  const courses = coursesQuery.data ?? [];
 
-  const mainCampuses = campuses.filter((c) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId)
+  const orderedCourses = useMemo(() => {
+    return [...courses].sort((a, b) => {
+      const levelA = a.level_number ?? 999;
+      const levelB = b.level_number ?? 999;
+      if (levelA !== levelB) return levelA - levelB;
+
+      const sortA = a.sort_order ?? 999;
+      const sortB = b.sort_order ?? 999;
+      if (sortA !== sortB) return sortA - sortB;
+
+      return a.course_code.localeCompare(b.course_code);
+    });
+  }, [courses]);
+
+  const weekStart = useMemo(
+    () => startOfWeek(date, { weekStartsOn: 1 }),
+    [date],
+  );
+
+  const groupById = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        course: ScheduleCourse;
+        group: ScheduleGroup;
+        campusId: number | null;
+      }
+    >();
+
+    orderedCourses.forEach((course) => {
+      course.groups?.forEach((group) => {
+        const groupId = getGroupId(
+          course.course_code,
+          parseInt(group.group_code, 10),
+          group.campus_id,
+        );
+        map.set(groupId, {
+          course,
+          group,
+          campusId: group.campus_id ?? null,
+        });
+      });
+    });
+
+    return map;
+  }, [orderedCourses]);
+
+  const mainCampuses = campuses.filter(
+    (c) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId,
+  );
 
   useEffect(() => {
-    if (userStudyPlan && !search.university && !search.campus && !search.career && !search.plan && !search.term) {
+    if (
+      userStudyPlan &&
+      !search.university &&
+      !search.campus &&
+      !search.career &&
+      !search.plan &&
+      !search.term
+    ) {
       navigate({
-        to: '/app/schedule',
+        to: "/app/schedule",
         search: {
           university: userStudyPlan.universityId ?? undefined,
           campus: userStudyPlan.campusId ?? undefined,
           career: userStudyPlan.academicUnitId ?? undefined,
           plan: userStudyPlan.studyPlanId ?? undefined,
         },
-      })
+      });
     }
-  }, [userStudyPlan, search, navigate])
+  }, [userStudyPlan, search, navigate]);
 
   useEffect(() => {
     if (selectedCampusId && terms.length > 0 && !selectedTermId) {
+      let termId = terms[0].id;
+      if (suggestedTermQuery.data && !search.term) {
+        termId = suggestedTermQuery.data;
+      }
       navigate({
-        to: '/app/schedule',
+        to: "/app/schedule",
         search: {
           ...search,
-          term: terms[0].id,
+          term: termId,
         },
-      })
+      });
     }
-  }, [selectedCampusId, terms, selectedTermId, search, navigate])
+  }, [
+    selectedCampusId,
+    terms,
+    selectedTermId,
+    search,
+    navigate,
+    suggestedTermQuery.data,
+  ]);
 
-  const handleViewChange = useCallback((newMode: Mode) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        view: newMode,
-      },
-    })
-  }, [navigate, search])
+  useEffect(() => {
+    const stored = localStorage.getItem("schedule-hour-height");
+    if (stored) {
+      const height = parseInt(stored, 10);
+      if (!isNaN(height)) {
+        setHourHeight(height);
+      }
+    }
+  }, []);
 
-  const handleUniversityChange = useCallback((id: number | null) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        university: id ?? undefined,
-        campus: undefined,
-        career: undefined,
-        plan: undefined,
-        term: undefined,
-      },
-    })
-  }, [navigate, search])
+  useEffect(() => {
+    if (previousGroupsRef.current === search.groups) return;
+    previousGroupsRef.current = search.groups;
+    setSelectedGroups(new Set(serializedGroups));
+  }, [search.groups, serializedGroups]);
 
-  const handleCampusChange = useCallback((id: number | null) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        campus: id ?? undefined,
-        career: undefined,
-        plan: undefined,
-        term: undefined,
-      },
-    })
-  }, [navigate, search])
+  const updateSelectedGroups = useCallback(
+    (nextGroups: Set<string>) => {
+      setSelectedGroups(nextGroups);
+      const nextGroupsValue = nextGroups.size
+        ? Array.from(nextGroups).join(",")
+        : undefined;
+      if (nextGroupsValue === search.groups) return;
+      startTransition(() => {
+        navigate({
+          to: "/app/schedule",
+          search: {
+            ...search,
+            groups: nextGroupsValue,
+          },
+        });
+      });
+    },
+    [navigate, search, startTransition]
+  );
 
-  const handleCareerChange = useCallback((id: number | null) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        career: id ?? undefined,
-        plan: undefined,
-        term: undefined,
-      },
-    })
-  }, [navigate, search])
+  const handleExport = useCallback(async (options: ScheduleExportOptions) => {
+    const calendarElement = calendarRef.current;
+    if (!calendarElement) {
+      toast.error("No se pudo encontrar el elemento del calendario");
+      return;
+    }
 
-  const handlePlanChange = useCallback((id: number | null) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        plan: id ?? undefined,
-        term: undefined,
-      },
-    })
-  }, [navigate, search])
+    const exportTheme = options.transparent ? null : options.theme;
+    if (exportTheme) {
+      calendarElement.setAttribute("data-export-theme", exportTheme);
+    }
 
-  const handleTermChange = useCallback((id: number | null) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        term: id ?? undefined,
-      },
-    })
-  }, [navigate, search])
+    try {
+      const extension = options.format === "jpeg" ? "jpg" : "png";
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      const backgroundColor = options.transparent
+        ? undefined
+        : options.theme === "dark"
+          ? "#0b0b0b"
+          : "#ffffff";
 
-  const handleOtherCampusesChange = useCallback((checked: boolean) => {
-    navigate({
-      to: '/app/schedule',
-      search: {
-        ...search,
-        otherCampuses: checked ?? undefined,
-      },
-    })
-  }, [navigate, search])
+      const dataUrl =
+        options.format === "jpeg"
+          ? await toJpeg(calendarElement, {
+              quality: 0.95,
+              backgroundColor,
+              pixelRatio: 2,
+            })
+          : await toPng(calendarElement, {
+              backgroundColor,
+              pixelRatio: 2,
+            });
+
+      const link = document.createElement("a");
+      link.download = `horario-${dateStamp}.${extension}`;
+      link.href = dataUrl;
+      link.click();
+
+      toast.success("Horario exportado correctamente");
+    } catch (error) {
+      console.error("Error exporting schedule:", error);
+      toast.error("Error al exportar el horario");
+    } finally {
+      if (exportTheme) {
+        calendarElement.removeAttribute("data-export-theme");
+      }
+    }
+  }, []);
+
+  const handleUniversityChange = useCallback(
+    (id: number | null) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          university: id ?? undefined,
+          campus: undefined,
+          career: undefined,
+          plan: undefined,
+          term: undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
+
+  const handleCampusChange = useCallback(
+    (id: number | null) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          campus: id ?? undefined,
+          career: undefined,
+          plan: undefined,
+          term: undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
+
+  const handleCareerChange = useCallback(
+    (id: number | null) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          career: id ?? undefined,
+          plan: undefined,
+          term: undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
+
+  const handlePlanChange = useCallback(
+    (id: number | null) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          plan: id ?? undefined,
+          term: undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
+
+  const handleTermChange = useCallback(
+    (id: number | null) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          term: id ?? undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
+
+  const handleOtherCampusesChange = useCallback(
+    (checked: boolean) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          otherCampuses: checked ?? undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
+
+  const handleShowAllChange = useCallback(
+    (checked: boolean) => {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          showAll: checked ?? undefined,
+        },
+      });
+    },
+    [navigate, search],
+  );
 
   const courseColors = useMemo(() => {
-    const map = new Map<string, string>()
-    courses.forEach((course, index) => {
-      const color = colorOptions[index % colorOptions.length].value
-      map.set(course.course_code, color)
-    })
-    return map
-  }, [courses])
+    const map = new Map<string, string>();
+    orderedCourses.forEach((course, index) => {
+      const color = colorOptions[index % colorOptions.length].value;
+      map.set(course.course_code, color);
+    });
+    return map;
+  }, [orderedCourses]);
 
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
-    if (!courses) return []
+    if (!orderedCourses) return [];
 
-    const events: CalendarEvent[] = []
+    const events: CalendarEvent[] = [];
 
-    const semesterWeekStart = startOfWeek(SEMESTER_START, { weekStartsOn: 1 })
-    const semesterEnd = addWeeks(semesterWeekStart, 16)
-    const weeks = eachWeekOfInterval(
-      { start: semesterWeekStart, end: semesterEnd },
-      { weekStartsOn: 1 }
-    )
+    selectedGroups.forEach((selectedGroupId) => {
+      const groupData = groupById.get(selectedGroupId);
+      if (!groupData?.group.meetings) return;
 
-    selectedGroups.forEach((groupId) => {
-      const [courseCode, groupNumStr] = groupId.split('-')
-      const groupNum = parseInt(groupNumStr, 10)
+      const course = groupData.course;
+      const group = groupData.group;
+      const courseCode = course.course_code;
+      const color = courseColors.get(courseCode) || "blue";
+      const campusName = groupData.campusId
+        ? (campusById.get(groupData.campusId) ?? null)
+        : null;
 
-      const course = courses.find((c) => c.course_code === courseCode)
-      if (!course) return
-      if (!course.groups) return
+      const sessions = group.meetings;
+      if (!sessions) return;
 
-      const group = (course.groups as any[]).find((g: any) => parseInt(g.group_code, 10) === groupNum)
-      if (!group || !group.meetings) return
+      sessions.forEach((session: any) => {
+        try {
+          const event = sessionToEvent({
+            session,
+            courseId: courseCode,
+            courseCode,
+            courseName: course.course_name,
+            groupCode: group.group_code,
+            groupId: selectedGroupId,
+            groupType: group.group_type ?? null,
+            professors: group.professors ?? null,
+            classroom: session.classroom ?? null,
+            campusName,
+            color,
+            weekStart,
+          });
+          events.push(event);
+        } catch (err) {
+          console.error("Error converting session to event:", err);
+        }
+      });
+    });
 
-      const color = courseColors.get(courseCode) || 'blue'
+    return events;
+  }, [selectedGroups, courseColors, weekStart, campusById, groupById]);
 
-      const sessions = group.meetings
-      if (!sessions) return
+  const handleRemoveEvent = useCallback(
+    (event: CalendarEvent) => {
+      const next = new Set(selectedGroups);
+      next.delete(event.groupId);
+      updateSelectedGroups(next);
+    },
+    [selectedGroups, updateSelectedGroups]
+  );
 
-      weeks.forEach((weekStart) => {
-        sessions.forEach((session: any) => {
-          try {
-            const event = sessionToEvent(
-              session,
-              courseCode,
-              course.course_name,
-              groupNum,
-              color,
-              weekStart
-            )
-            events.push(event)
-          } catch (err) {
-            console.error('Error converting session to event:', err)
-          }
-        })
-      })
-    })
-
-    return events
-  }, [selectedGroups, courses, courseColors])
-
-  const isLoadingFilters = isLoadingUniversities || campusesQuery.isLoading || careersQuery.isLoading || plansQuery.isLoading || termsQuery.isLoading
-  const isInitialLoading = isLoadingFilters && !universities?.length
+  const isLoadingFilters =
+    isLoadingUniversities ||
+    campusesQuery.isLoading ||
+    careersQuery.isLoading ||
+    plansQuery.isLoading ||
+    termsQuery.isLoading;
+  const isInitialLoading = isLoadingFilters && !universities?.length;
 
   if (isInitialLoading) {
     return (
@@ -273,7 +502,7 @@ function SchedulePage() {
           </div>
         </div>
       </AppLayoutWrapper>
-    )
+    );
   }
 
   if (coursesQuery.isError) {
@@ -281,12 +510,18 @@ function SchedulePage() {
       <AppLayoutWrapper>
         <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">Error al cargar el horario</h2>
-            <p className="text-muted-foreground">{coursesQuery.error instanceof Error ? coursesQuery.error.message : 'Error desconocido'}</p>
+            <h2 className="text-2xl font-bold mb-2">
+              Error al cargar el horario
+            </h2>
+            <p className="text-muted-foreground">
+              {coursesQuery.error instanceof Error
+                ? coursesQuery.error.message
+                : "Error desconocido"}
+            </p>
           </div>
         </div>
       </AppLayoutWrapper>
-    )
+    );
   }
 
   return (
@@ -321,69 +556,96 @@ function SchedulePage() {
                 onPlanChange={handlePlanChange}
                 onTermChange={handleTermChange}
                 isLoadingUniversities={isLoadingUniversities}
-                isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
-                isLoadingCareers={careersQuery.isFetching && careersQuery.data?.length === 0}
-                isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
-                isLoadingTerms={termsQuery.isFetching && termsQuery.data?.length === 0}
+                isLoadingCampuses={
+                  campusesQuery.isFetching && campusesQuery.data?.length === 0
+                }
+                isLoadingCareers={
+                  careersQuery.isFetching && careersQuery.data?.length === 0
+                }
+                isLoadingPlans={
+                  plansQuery.isFetching && plansQuery.data?.length === 0
+                }
+                isLoadingTerms={
+                  termsQuery.isFetching && termsQuery.data?.length === 0
+                }
+                showAll={search.showAll ?? true}
+                onShowAllChange={handleShowAllChange}
+                showOtherCampuses={search.otherCampuses ?? false}
+                onShowOtherCampusesChange={handleOtherCampusesChange}
               />
             </div>
 
-            <div className="px-4 lg:px-6">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="otherCampuses"
-                  checked={search.otherCampuses ?? false}
-                  onCheckedChange={handleOtherCampusesChange}
-                />
-                <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
-              </div>
-            </div>
-
-            {selectedTermId && !courses.length && !coursesQuery.isLoading && (
-              <div className="px-4 lg:px-6">
-                <div className="flex items-center justify-center h-[calc(100vh-24rem)]">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-2">No hay cursos disponibles</h2>
-                    <p className="text-muted-foreground">
-                      No se encontraron cursos para el período seleccionado
-                    </p>
+            {selectedTermId &&
+              !orderedCourses.length &&
+              !coursesQuery.isLoading && (
+                <div className="px-4 lg:px-6">
+                  <div className="flex items-center justify-center h-[calc(100vh-24rem)]">
+                    <div className="text-center">
+                      <h2 className="text-2xl font-bold mb-2">
+                        No hay cursos disponibles
+                      </h2>
+                      <p className="text-muted-foreground">
+                        No se encontraron cursos para el período seleccionado
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {courses.length > 0 && (
+            {orderedCourses.length > 0 && (
               <div className="px-4 lg:px-6">
-                <div className="h-[calc(100vh-16rem)] border rounded-lg overflow-hidden">
+                <div
+                  className="border rounded-lg shrink-0"
+                  style={{ height: calendarHeight }}
+                >
                   <ResizablePanel
                     leftContent={
                       <div className="h-full flex flex-col">
                         <div className="px-4 py-3 border-b bg-muted/30 shrink-0">
                           <h2 className="text-lg font-semibold">
-                            {courses.length} curso{courses.length !== 1 ? 's' : ''} disponible{courses.length !== 1 ? 's' : ''}
+                            {orderedCourses.length} curso
+                            {orderedCourses.length !== 1 ? "s" : ""} disponible
+                            {orderedCourses.length !== 1 ? "s" : ""}
                           </h2>
                         </div>
                         <div className="flex-1 overflow-hidden">
                           <CourseList
-                            courses={courses}
+                            courses={orderedCourses}
                             selectedGroups={selectedGroups}
-                            onSelectionChange={setSelectedGroups}
+                            onSelectionChange={updateSelectedGroups}
+                            campusById={campusById}
+                            showCampus={search.otherCampuses ?? false}
                           />
                         </div>
                       </div>
                     }
                     rightContent={
-                      <Calendar
-                        events={calendarEvents}
-                        setEvents={() => {}}
-                        mode={mode}
-                        setMode={handleViewChange}
-                        date={date}
-                        setDate={setDate}
-                      />
+                      <div className="relative h-full">
+                        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+                          <ScheduleZoomControls
+                            hourHeight={hourHeight}
+                            setHourHeight={setHourHeight}
+                            isFloating={false}
+                          />
+                          <ScheduleExportDialog onExport={handleExport} />
+                        </div>
+                        <div ref={calendarRef} className="h-full">
+                          <Calendar
+                            events={calendarEvents}
+                            setEvents={() => {}}
+                            mode={mode}
+                            setMode={() => {}}
+                            date={date}
+                            setDate={() => {}}
+                            onRemoveEvent={handleRemoveEvent}
+                            hourHeight={hourHeight}
+                            setHourHeight={setHourHeight}
+                          />
+                        </div>
+                      </div>
                     }
                     initialLeftWidth={400}
-                    minLeftWidth={320}
+                    minLeftWidth={326}
                     maxLeftWidth={600}
                   />
                 </div>
@@ -393,5 +655,5 @@ function SchedulePage() {
         </div>
       </div>
     </AppLayoutWrapper>
-  )
+  );
 }

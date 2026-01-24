@@ -164,6 +164,7 @@ export interface ScheduleGroup {
   enrolled_count: number
   professors: string[] | null
   meetings: ScheduleSession[] | null
+  campus_id?: number | null
 }
 
 export interface ScheduleCourse {
@@ -181,11 +182,21 @@ export interface ScheduleCourse {
   term_display_name: string
   groups: ScheduleGroup[] | null
   level_number: number | null
+  level_label?: string | null
+  sort_order?: number | null
 }
 
 export interface CalendarEvent {
   id: string
   title: string
+  courseName: string
+  courseCode: string
+  groupCode: string
+  groupId: string
+  groupType: string | null
+  professors: string[] | null
+  classroom: string | null
+  campusName: string | null
   color: string
   start: Date
   end: Date
