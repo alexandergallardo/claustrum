@@ -1,28 +1,16 @@
-import { Moon, Sun, Bell } from "lucide-react";
+import { Moon, Sun, Bell, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/components/theme-provider"
 import { UserMenuDropdown } from "@/components/user-menu-dropdown";
-import { useEffect, useState } from "react";
+import { useAuthUser } from "@/lib/hooks/use-queries";
+import { Link } from "@tanstack/react-router";
 
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    async function loadUser() {
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser(data.user);
-      }
-    }
-    loadUser();
-  }, []);
+  const { data: user } = useAuthUser();
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -70,7 +58,12 @@ export function SiteHeader() {
               sideOffset={4}
             />
           ) : (
-            <Skeleton className="h-8 w-8 rounded-full" />
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/login">
+                <LogIn className="h-4 w-4 mr-1" />
+                Iniciar sesión
+              </Link>
+            </Button>
           )}
         </div>
       </div>
