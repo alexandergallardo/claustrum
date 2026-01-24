@@ -31,7 +31,7 @@ export function SignupForm({
     setSuccess(null)
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
+      setError("Las contraseñas no coinciden")
       return
     }
 
@@ -69,39 +69,38 @@ export function SignupForm({
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Create your account</h1>
+          <h1 className="text-2xl font-bold">Crea tu cuenta</h1>
           <p className="text-muted-foreground text-sm text-balance">
-            Fill in the form below to create your account
+            Completa el formulario para crear tu cuenta
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="name">Full Name</FieldLabel>
+          <FieldLabel htmlFor="name">Nombre completo</FieldLabel>
           <Input
             id="name"
             type="text"
-            placeholder="John Doe"
+            placeholder="Juan Pérez"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </Field>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
           <Input
             id="email"
             type="email"
-            placeholder="m@example.com"
+            placeholder="m@ejemplo.com"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <FieldDescription>
-            We&apos;ll use this to contact you. We will not share your email
-            with anyone else.
+            Usaremos esto para contactarte. No compartiremos tu correo con nadie.
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <FieldLabel htmlFor="password">Contraseña</FieldLabel>
           <Input
             id="password"
             type="password"
@@ -110,11 +109,11 @@ export function SignupForm({
             onChange={(e) => setPassword(e.target.value)}
           />
           <FieldDescription>
-            Must be at least 8 characters long.
+            Debe tener al menos 8 caracteres.
           </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="confirm-password">Confirm Password</FieldLabel>
+          <FieldLabel htmlFor="confirm-password">Confirmar contraseña</FieldLabel>
           <Input
             id="confirm-password"
             type="password"
@@ -122,7 +121,7 @@ export function SignupForm({
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
-          <FieldDescription>Please confirm your password.</FieldDescription>
+          <FieldDescription>Por favor confirma tu contraseña.</FieldDescription>
         </Field>
         {error && (
           <div className="text-sm text-destructive">{error}</div>
@@ -132,10 +131,10 @@ export function SignupForm({
         )}
         <Field>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Creating account..." : "Create Account"}
+            {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
           </Button>
         </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
+        <FieldSeparator>O continúa con</FieldSeparator>
         <Field>
           <Button variant="outline" type="button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -144,12 +143,12 @@ export function SignupForm({
                 fill="currentColor"
               />
             </svg>
-            Sign up with GitHub
+            Regístrate con GitHub
           </Button>
           <FieldDescription className="px-6 text-center">
-            Already have an account?{" "}
+            ¿Ya tienes una cuenta?{" "}
             <Link to="/login" className="underline underline-offset-4">
-              Sign in
+              Inicia sesión
             </Link>
           </FieldDescription>
         </Field>
