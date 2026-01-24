@@ -110,7 +110,9 @@ const CalendarEvent = memo(function CalendarEvent({
               <span className="flex h-3 w-3 items-center justify-center shrink-0 sm:h-4 sm:w-4">
                 <User className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
-              <span className="leading-tight truncate">{professorLabel}</span>
+              <span className={cn("leading-tight", !isCompact ? "whitespace-normal break-words line-clamp-2" : "truncate")}>
+                {professorLabel}
+              </span>
             </div>
             {isCompact && (
               <p className="text-[9px] opacity-80 sm:text-[10px]">
