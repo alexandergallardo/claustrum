@@ -282,6 +282,12 @@ export default function CourseList({
       if (newSelection.has(groupId)) {
         newSelection.delete(groupId)
       } else {
+        newSelection.forEach((selectedId) => {
+          const [selectedCourseCode] = selectedId.split('-')
+          if (selectedCourseCode === courseCode) {
+            newSelection.delete(selectedId)
+          }
+        })
         newSelection.add(groupId)
       }
 
