@@ -9,6 +9,10 @@ export const DEFAULT_HOUR_HEIGHT = 128
 export const MIN_HOUR_HEIGHT = 64
 export const MAX_HOUR_HEIGHT = 192
 
+export const DEFAULT_DAY_WIDTH = 150
+export const MIN_DAY_WIDTH = 110
+export const MAX_DAY_WIDTH = 220
+
 export type CalendarProps = {
   events: CalendarEventType[]
   setEvents: (events: CalendarEventType[]) => void
@@ -20,6 +24,8 @@ export type CalendarProps = {
   onRemoveEvent?: (event: CalendarEventType) => void
   hourHeight?: number
   setHourHeight?: (height: number) => void
+  dayWidth?: number
+  setDayWidth?: (width: number) => void
 }
 
 export type CalendarContextType = CalendarProps & {
@@ -31,4 +37,6 @@ export type CalendarContextType = CalendarProps & {
   setSelectedEvent: (event: CalendarEventType | null) => void
   hourHeight: number
   setHourHeight: (height: number) => void
+  dayWidth: number
+  setDayWidth: (width: number) => void
 }

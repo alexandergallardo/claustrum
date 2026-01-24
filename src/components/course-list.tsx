@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, memo } from 'react'
+import { useState, useMemo, useRef, useCallback, memo, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { ScheduleCourse, ScheduleGroup } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,6 +55,148 @@ interface CourseListProps {
   showCampus?: boolean
 }
 
+interface GroupView {
+  group: ScheduleGroup
+  groupId: string
+  campusLabel: string | null
+  meetingLabels: Array<{ id: string; label: string }>
+  professorLabel: string
+}
+
+interface CourseViewData {
+  course: ScheduleCourse
+  groupViews: GroupView[]
+}
+
+const BASE_HEIGHT = 232
+const LINE_HEIGHT = 18
+const CAMPUS_LINE_SHOW = 1
+const CAMPUS_LINE_HIDE = 0
+
+function calculateEstimatedHeight(course: ScheduleCourse, showCampus: boolean): number {
+  const groups = course.groups ?? []
+  const maxMeetings = groups.reduce((max, group) => {
+    const count = group.meetings?.length ?? 0
+    return Math.max(max, count)
+  }, 0)
+  const campusLine = showCampus ? CAMPUS_LINE_SHOW : CAMPUS_LINE_HIDE
+  const estimatedLines = 3 + campusLine + maxMeetings
+  return BASE_HEIGHT + estimatedLines * LINE_HEIGHT
+}
+
+function createGroupView(
+  course: ScheduleCourse,
+  group: ScheduleGroup,
+  showCampus: boolean,
+  campusById?: Map<number, string>
+): GroupView {
+  const campusId = group.campus_id ?? course.campus_id ?? null
+  const groupId = getGroupId(course.course_code, parseInt(group.group_code, 10), campusId)
+  const campusLabel = showCampus
+    ? (campusId ? campusById?.get(campusId) ?? `Sede ${campusId}` : null)
+    : null
+
+  const meetingLabels = (group.meetings ?? []).map((session, idx) => {
+    const classroom = formatClassroom(session.classroom)
+    const label = `${formatWeekday(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}${classroom ? ` • Aula ${classroom}` : ''}`
+    return { id: `${groupId}-${idx}`, label }
+  })
+
+  return {
+    group,
+    groupId,
+    campusLabel,
+    meetingLabels,
+    professorLabel: group.professors?.join(', ') || 'Sin asignar',
+  }
+}
+
+function createCourseViewData(course: ScheduleCourse, showCampus: boolean, campusBy?: Map<number, string>): CourseViewData {
+  const groupViews = (course.groups ?? []).map(g => createGroupView(course, g, showCampus, campusBy))
+  return { course, groupViews }
+}
+
+function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>()
+  const allGroupsList: Array<{ course: ScheduleCourse; group: ScheduleGroup }> = []
+
+  courses.forEach((course) => {
+    if (!course.groups) return
+    course.groups.forEach((group) => {
+      allGroupsList.push({ course, group })
+    })
+  })
+
+  const length = allGroupsList.length
+  for (let i = 0; i < length; i++) {
+    const { course: course1, group: group1 } = allGroupsList[i]
+    const id1 = getGroupId(course1.course_code, parseInt(group1.group_code, 10), group1.campus_id)
+    const meetings1 = group1.meetings
+
+    if (!meetings1) continue
+
+    for (let j = i + 1; j < length; j++) {
+      const { course: course2, group: group2 } = allGroupsList[j]
+      const meetings2 = group2.meetings
+
+      if (!meetings2) continue
+
+      const id2 = getGroupId(course2.course_code, parseInt(group2.group_code, 10), group2.campus_id)
+
+      for (const s1 of meetings1) {
+        for (const s2 of meetings2) {
+          if (s1.weekday !== s2.weekday) continue
+          if (s1.starts_at < s2.ends_at && s1.ends_at > s2.starts_at) {
+            if (!map.has(id1)) map.set(id1, new Set())
+            if (!map.has(id2)) map.set(id2, new Set())
+            map.get(id1)!.add(id2)
+            map.get(id2)!.add(id1)
+            break
+          }
+        }
+      }
+    }
+  }
+
+  return map
+}
+
+function createConflictReasons(
+  selectedGroups: SelectedGroups,
+  conflictMap: Map<string, Set<string>>,
+  courses: ScheduleCourse[],
+  showCampus: boolean,
+  campusById?: Map<number, string>
+): { conflictReasons: Map<string, string[]>; disabledSet: Set<string> } {
+  const conflictReasons = new Map<string, string[]>()
+  const disabledSet = new Set<string>()
+  const courseByCode = new Map(courses.map(c => [c.course_code, c] as [string, ScheduleCourse]))
+
+  selectedGroups.forEach((selectedId) => {
+    const conflicts = conflictMap.get(selectedId)
+    if (!conflicts) return
+
+    conflicts.forEach((conflictId) => {
+      if (selectedGroups.has(conflictId)) return
+      disabledSet.add(conflictId)
+
+      const [courseCode, groupNum, campusIdStr] = selectedId.split('-')
+      const course = courseByCode.get(courseCode)
+      if (!course) return
+
+      const campusId = campusIdStr ? parseInt(campusIdStr, 10) : null
+      const campusLabel = showCampus ? (campusId ? campusById?.get(campusId) ?? `Sede ${campusId}` : null) : null
+      const campusSuffix = campusLabel ? ` • ${campusLabel}` : ''
+      const label = `${course.course_name} (Grupo ${groupNum}${campusSuffix})`
+
+      const existing = conflictReasons.get(conflictId) ?? []
+      conflictReasons.set(conflictId, [...existing, label])
+    })
+  })
+
+  return { conflictReasons, disabledSet }
+}
+
 export default function CourseList({
   courses,
   selectedGroups,
@@ -64,31 +206,26 @@ export default function CourseList({
 }: CourseListProps) {
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const itemCountRef = useRef(courses.length)
+  const measuredHeightsRef = useRef<number[]>([])
+  const conflictMapRef = useRef<Map<string, Set<string>> | null>(null)
 
-  const courseHeights = useMemo(() => {
-    const BASE_HEIGHT = 232
-    const LINE_HEIGHT = 18
-    const CAMPUS_LINE = showCampus ? 1 : 0
+  const courseCountRef = useRef(courses.length)
 
-    return courses.map((course) => {
-      const groups = course.groups ?? []
-      const maxMeetings = groups.reduce((max, group) => {
-        const count = group.meetings?.length ?? 0
-        return Math.max(max, count)
-      }, 0)
+  useEffect(() => {
+    if (courses.length !== itemCountRef.current) {
+      measuredHeightsRef.current = []
+      itemCountRef.current = courses.length
+    }
+    if (courses.length !== courseCountRef.current) {
+      conflictMapRef.current = null
+      courseCountRef.current = courses.length
+    }
+  }, [courses.length])
 
-      const estimatedLines = 3 + CAMPUS_LINE + maxMeetings
-      return BASE_HEIGHT + estimatedLines * LINE_HEIGHT
-    })
+  const estimatedHeights = useMemo(() => {
+    return courses.map(course => calculateEstimatedHeight(course, showCampus))
   }, [courses, showCampus])
-
-  const rowVirtualizer = useVirtualizer({
-    count: courses.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => courseHeights[index] ?? 320,
-    overscan: 3,
-    getItemKey: (index) => courses[index]?.offering_id ?? index,
-  })
 
   const courseColors = useMemo(() => {
     const map = new Map<string, string>()
@@ -108,123 +245,35 @@ export default function CourseList({
     return map
   }, [courses, courseColors])
 
+  const viewData = useMemo(() => {
+    return courses.map(course => createCourseViewData(course, showCampus, campusById))
+  }, [courses, showCampus, campusById])
+
   const conflictMap = useMemo(() => {
-    const map = new Map<string, Set<string>>()
-    const allGroupsList: Array<{ course: ScheduleCourse; group: ScheduleGroup }> = []
-
-    courses.forEach((course) => {
-      if (!course.groups) return
-      course.groups.forEach((group) => {
-        allGroupsList.push({ course, group })
-      })
-    })
-
-    const length = allGroupsList.length
-    for (let i = 0; i < length; i++) {
-      const { course: course1, group: group1 } = allGroupsList[i]
-      const id1 = getGroupId(course1.course_code, parseInt(group1.group_code, 10), group1.campus_id)
-      const meetings1 = group1.meetings
-
-      if (!meetings1) continue
-
-      for (let j = i + 1; j < length; j++) {
-        const { course: course2, group: group2 } = allGroupsList[j]
-        const meetings2 = group2.meetings
-
-        if (!meetings2) continue
-
-        const id2 = getGroupId(course2.course_code, parseInt(group2.group_code, 10), group2.campus_id)
-
-        for (const s1 of meetings1) {
-          for (const s2 of meetings2) {
-            if (s1.weekday !== s2.weekday) continue
-            if (s1.starts_at < s2.ends_at && s1.ends_at > s2.starts_at) {
-              if (!map.has(id1)) map.set(id1, new Set())
-              if (!map.has(id2)) map.set(id2, new Set())
-              map.get(id1)!.add(id2)
-              map.get(id2)!.add(id1)
-              break
-            }
-          }
-        }
-      }
-    }
-
-    return map
+    if (conflictMapRef.current) return conflictMapRef.current
+    const result = calculateConflictMap(courses)
+    conflictMapRef.current = result
+    return result
   }, [courses])
 
-  const getCampusLabel = (campusId: number | null | undefined): string | null => {
-    if (!campusId) return null
-    return campusById?.get(campusId) ?? `Sede ${campusId}`
-  }
+  const { conflictReasons, disabledSet } = useMemo(() => {
+    return createConflictReasons(selectedGroups, conflictMap, courses, showCampus, campusById)
+  }, [selectedGroups, conflictMap, courses, showCampus, campusById])
 
-  const precomputedData = useMemo(() => {
-    const courseByCodeInner = new Map(courses.map((course) => [course.course_code, course]))
-    const viewData: Array<{
-      course: ScheduleCourse
-      groupViews: Array<{
-        group: ScheduleGroup
-        groupId: string
-        campusLabel: string | null
-        meetingLabels: Array<{ id: string; label: string }>
-        professorLabel: string
-      }>
-    }> = []
-    const conflictReasons = new Map<string, string[]>()
-    const disabledSet = new Set<string>()
+  const rowVirtualizer = useVirtualizer({
+    count: courses.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) => measuredHeightsRef.current[index] ?? estimatedHeights[index] ?? 320,
+    overscan: 1,
+    getItemKey: (index) => courses[index]?.offering_id ?? index,
+  })
 
-    courses.forEach((course) => {
-      const groups = course.groups ?? []
-      const groupViews = groups.map((group) => {
-        const groupId = getGroupId(course.course_code, parseInt(group.group_code, 10), group.campus_id)
-        const campusLabel = showCampus ? getCampusLabel(group.campus_id ?? course.campus_id) : null
-        const meetingLabels =
-          group.meetings?.map((session, idx) => {
-            const classroom = formatClassroom(session.classroom)
-            const label = `${formatWeekday(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}${classroom ? ` • Aula ${classroom}` : ''}`
-            return { id: `${groupId}-${idx}`, label }
-          }) ?? []
-
-        return {
-          group,
-          groupId,
-          campusLabel,
-          meetingLabels,
-          professorLabel: group.professors?.join(', ') || 'Sin asignar',
-        }
-      })
-
-      viewData.push({ course, groupViews })
-    })
-
-    selectedGroups.forEach((selectedId) => {
-      const conflicts = conflictMap.get(selectedId)
-      if (!conflicts) return
-
-      conflicts.forEach((conflictId) => {
-        if (selectedGroups.has(conflictId)) return
-        disabledSet.add(conflictId)
-
-        const [courseCode, groupNum, campusIdStr] = selectedId.split('-')
-        const course = courseByCodeInner.get(courseCode)
-        if (!course) return
-
-        const campusId = campusIdStr ? parseInt(campusIdStr, 10) : null
-        const campusLabel = showCampus ? getCampusLabel(campusId) : null
-        const campusSuffix = campusLabel ? ` • ${campusLabel}` : ''
-        const label = `${course.course_name} (Grupo ${groupNum}${campusSuffix})`
-
-        const existing = conflictReasons.get(conflictId) ?? []
-        conflictReasons.set(conflictId, [...existing, label])
-      })
-    })
-
-    return {
-      viewData,
-      conflictReasons,
-      disabledSet,
+  const handleItemMounted = useCallback((index: number, element: HTMLElement | null) => {
+    if (element && measuredHeightsRef.current[index] === undefined) {
+      const height = element.getBoundingClientRect().height
+      measuredHeightsRef.current[index] = height
     }
-  }, [courses, showCampus, campusById, selectedGroups, conflictMap])
+  }, [])
 
   const handleGroupToggle = useCallback(
     (courseCode: string, groupCode: string, campusId?: number | null) => {
@@ -242,6 +291,10 @@ export default function CourseList({
     [onSelectionChange, selectedGroups]
   )
 
+  const handleHoveredGroupIdChange = useCallback((value: string | null) => {
+    setHoveredGroupId(value)
+  }, [])
+
   return (
     <TooltipProvider>
       <div ref={scrollRef} className="h-full overflow-auto">
@@ -250,14 +303,17 @@ export default function CourseList({
           style={{ height: rowVirtualizer.getTotalSize() }}
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const courseData = precomputedData.viewData[virtualRow.index]
+            const courseData = viewData[virtualRow.index]
             const course = courseData.course
             const colorStyles = courseColorStyles.get(course.course_code) ?? getColorStyles('blue')
 
             return (
               <div
                 key={course.offering_id}
-                ref={rowVirtualizer.measureElement}
+                ref={(el) => {
+                  rowVirtualizer.measureElement(el)
+                  handleItemMounted(virtualRow.index, el)
+                }}
                 data-index={virtualRow.index}
                 className="absolute left-0 top-0 w-full px-4 py-2"
                 style={{ transform: `translateY(${virtualRow.start}px)` }}
@@ -267,10 +323,10 @@ export default function CourseList({
                   groupViews={courseData.groupViews}
                   colorStyles={colorStyles}
                   selectedGroupIds={selectedGroups}
-                  disabledGroupIdSet={precomputedData.disabledSet}
-                  conflictReasonsByGroupId={precomputedData.conflictReasons}
+                  disabledGroupIdSet={disabledSet}
+                  conflictReasonsByGroupId={conflictReasons}
                   hoveredGroupId={hoveredGroupId}
-                  setHoveredGroupId={setHoveredGroupId}
+                  setHoveredGroupId={handleHoveredGroupIdChange}
                   onGroupToggle={handleGroupToggle}
                 />
               </div>
@@ -294,15 +350,9 @@ const CourseCard = memo(function CourseCard({
   onGroupToggle,
 }: {
   course: ScheduleCourse
-  groupViews: Array<{
-    group: ScheduleGroup
-    groupId: string
-    campusLabel: string | null
-    meetingLabels: Array<{ id: string; label: string }>
-    professorLabel: string
-  }>
+  groupViews: GroupView[]
   colorStyles: { bg: string; border: string; text: string }
-  selectedGroupIds: Set<string>
+  selectedGroupIds: SelectedGroups
   disabledGroupIdSet: Set<string>
   conflictReasonsByGroupId: Map<string, string[]>
   hoveredGroupId: string | null
@@ -348,7 +398,7 @@ const CourseCard = memo(function CourseCard({
                             }
                           : undefined
                       }
-                      onClick={() => !disabled && onGroupToggle(course.course_code, groupView.group.group_code, groupView.group.campus_id)}
+                      onClick={() => !disabled && onGroupToggle(course.course_code, groupView.group.group_code, groupView.group.campus_id ?? course.campus_id)}
                       onMouseEnter={() => setHoveredGroupId(groupView.groupId)}
                       onMouseLeave={() => setHoveredGroupId(null)}
                     >

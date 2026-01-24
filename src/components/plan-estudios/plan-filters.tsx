@@ -162,14 +162,14 @@ export function PlanFilters({
       <button
         type="button"
         onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors md:hidden"
+        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <Filter className="w-4 h-4" />
         <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
         {isFiltersVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
 
-      <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden md:block'}`}>
+      <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden'}`}>
         <FilterSelect
           label="Universidad"
           value={selectedUniversityId?.toString() || ''}
