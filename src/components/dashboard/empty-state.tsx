@@ -5,28 +5,37 @@ import { GraduationCap, ArrowRight } from "lucide-react"
 
 interface EmptyDashboardProps {
   isAuthenticated: boolean
+  hasProfile: boolean
 }
 
-export function EmptyDashboard({ isAuthenticated }: EmptyDashboardProps) {
+export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardProps) {
+  const title = !isAuthenticated
+    ? "Bienvenido a Claustrum"
+    : hasProfile
+      ? "Aún no tienes un plan de estudios configurado"
+      : "Completa tu perfil académico"
+
+  const description = !isAuthenticated
+    ? "Inicia sesión para ver tu plan de estudios y seguimiento de progreso académico."
+    : hasProfile
+      ? "Selecciona tu universidad, sede, carrera y plan de estudios para ver tu progreso académico."
+      : "Agrega tu universidad, sede, carrera y plan para que podamos armar tu dashboard."
+
+  const actionHref = hasProfile ? "/app/curriculum" : "/app/settings/profile"
+  const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Configurar perfil"
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
       <div className="bg-primary/10 p-4 rounded-full mb-4">
         <GraduationCap className="h-12 w-12 text-primary" />
       </div>
-      <h2 className="text-xl font-semibold mb-2">
-        {isAuthenticated
-          ? "Aún no tienes un plan de estudios configurado"
-          : "Bienvenido a Claustrum"}
-      </h2>
+      <h2 className="text-xl font-semibold mb-2">{title}</h2>
       <p className="text-muted-foreground text-center max-w-md mb-6">
-        {isAuthenticated
-          ? "Selecciona tu universidad, sede, carrera y plan de estudios para ver tu progreso académico."
-          : "Inicia sesión para ver tu plan de estudios y seguimiento de progreso académico."}
+        {description}
       </p>
       {isAuthenticated ? (
-        <a href="/app/curriculum">
+        <a href={actionHref}>
           <Button>
-            Ir al Plan de Estudios
+            {actionLabel}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </a>
