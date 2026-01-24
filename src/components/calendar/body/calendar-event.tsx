@@ -147,7 +147,7 @@ const CalendarEvent = memo(function CalendarEvent({
               <span className="flex h-4 w-4 items-center justify-center shrink-0">
                 <Building2 className="h-4 w-4" />
               </span>
-              <span className="max-w-[220px] truncate">{campusLabel}</span>
+              <span>{campusLabel}</span>
             </p>
           )}
           {showClassroom && (
@@ -168,9 +168,7 @@ const CalendarEvent = memo(function CalendarEvent({
             <span className="flex h-4 w-4 items-center justify-center shrink-0">
               <User className="h-4 w-4" />
             </span>
-            <span className="whitespace-normal break-words">
-              {professorLabel}
-            </span>
+            <span className="truncate">{professorLabel}</span>
           </p>
         </div>
       </TooltipContent>
