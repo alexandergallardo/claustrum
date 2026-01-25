@@ -438,7 +438,8 @@ export function useUpdateCourseStatus() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId] });
+      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId] })
+      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] })
     },
   });
 }
