@@ -58,6 +58,7 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
     if (!userId || !studyPlanId) {
       saveLocalCourseStatus(parseInt(courseId), studyPlanId ?? null, newStatus)
       queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses"] })
+      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] })
       return "local"
     }
 
