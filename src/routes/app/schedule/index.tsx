@@ -42,7 +42,7 @@ import {
   useCampuses,
   useAcademicUnits,
   useStudyPlans,
-  useStudyPlanDetail,
+  useStudyPlanCoursesDetails,
   useAcademicTerms,
   useScheduleCourses,
   useUserStudyPlan,
@@ -123,6 +123,7 @@ function SchedulePage() {
   const careersQuery = useAcademicUnits(selectedCampusId);
   const plansQuery = useStudyPlans(selectedCareerId);
   const termsQuery = useAcademicTerms(selectedCampusId);
+  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const coursesQuery = useScheduleCourses({
     termId: selectedTermId,
     campusId: selectedCampusId,
@@ -130,17 +131,26 @@ function SchedulePage() {
     planId: selectedPlanId,
     includeOtherCampuses: showOtherCampuses,
     showAllCourses: showAllCourses,
+    userId: authUser?.id ?? null,
+    isAuthReady: !isAuthLoading,
   });
-  const { data: authUser } = useAuthUser();
-  const selectedPlanData = plansQuery.data?.find(
-    (plan) => plan.id === selectedPlanId,
+  const shouldFetchUserPlan =
+    !search.university &&
+    !search.campus &&
+    !search.career &&
+    !search.plan &&
+    !search.term;
+  const { data: userStudyPlan } = useUserStudyPlan(
+    authUser?.id ?? null,
+    shouldFetchUserPlan && !!authUser?.id && !isAuthLoading,
   );
-  const planDetailQuery = useStudyPlanDetail(
+  const planCoursesQuery = useStudyPlanCoursesDetails(
+    !authUser && selectedPlanId ? selectedPlanId : null,
+  );
+  const suggestedTermQuery = useSuggestedAcademicTerm(
     selectedPlanId,
-    selectedPlanData,
+    !!selectedPlanId && !selectedTermId,
   );
-  const { data: userStudyPlan } = useUserStudyPlan();
-  const suggestedTermQuery = useSuggestedAcademicTerm(selectedPlanId);
 
   const campuses = campusesQuery.data ?? [];
   const campusById = useMemo(
@@ -151,13 +161,13 @@ function SchedulePage() {
   const plans = plansQuery.data ?? [];
   const terms = termsQuery.data ?? [];
   const planCourseIds = useMemo(() => {
-    if (!planDetailQuery.data) return null;
+    if (!planCoursesQuery.data) return null;
     const ids = new Set<number>();
-    planDetailQuery.data.periods.forEach((period) => {
+    planCoursesQuery.data.forEach((period) => {
       period.courses.forEach((course) => ids.add(course.courseId));
     });
     return ids;
-  }, [planDetailQuery.data]);
+  }, [planCoursesQuery.data]);
 
   const courses = useMemo(() => {
     const fetchedCourses = coursesQuery.data ?? [];
@@ -554,7 +564,7 @@ function SchedulePage() {
     plansQuery.isLoading ||
     termsQuery.isLoading;
   const isPlanCoursesLoading =
-    !authUser && !!selectedPlanId && planDetailQuery.isLoading;
+    !authUser && !!selectedPlanId && planCoursesQuery.isLoading;
   const isInitialLoading =
     (isLoadingFilters && !universities?.length) || isPlanCoursesLoading;
 
@@ -652,11 +662,13 @@ function SchedulePage() {
                 isLoadingTerms={
                   termsQuery.isFetching && termsQuery.data?.length === 0
                 }
-                showAll={showAllCourses}
-                onShowAllChange={handleShowAllChange}
-                showOtherCampuses={showOtherCampuses}
-                onShowOtherCampusesChange={handleOtherCampusesChange}
-              />
+              showAll={showAllCourses}
+              onShowAllChange={handleShowAllChange}
+              showAllDisabled={!authUser}
+              showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
+              showOtherCampuses={showOtherCampuses}
+              onShowOtherCampusesChange={handleOtherCampusesChange}
+            />
             </div>
 
             {selectedTermId &&

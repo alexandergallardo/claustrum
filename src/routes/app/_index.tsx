@@ -13,7 +13,10 @@ export const Route = createFileRoute("/app/_index")({
 
 function DashboardPage() {
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const { data: userStudyPlan, isLoading: isLoadingUserPlan } = useUserStudyPlan();
+  const { data: userStudyPlan, isLoading: isLoadingUserPlan } = useUserStudyPlan(
+    authUser?.id ?? null,
+    !!authUser?.id && !isAuthLoading,
+  );
   const { data: dashboardData, isLoading: isLoadingStats } = useDashboardStats(
     userStudyPlan?.userId ?? null,
     userStudyPlan?.studyPlanId ?? null

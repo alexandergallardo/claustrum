@@ -42,6 +42,8 @@ interface ScheduleFiltersProps {
   isLoadingTerms: boolean
   showAll?: boolean
   onShowAllChange?: (checked: boolean) => void
+  showAllDisabled?: boolean
+  showAllDisabledTooltip?: string
   showOtherCampuses?: boolean
   onShowOtherCampusesChange?: (checked: boolean) => void
 }
@@ -150,6 +152,8 @@ export function ScheduleFilters({
   isLoadingTerms,
   showAll,
   onShowAllChange,
+  showAllDisabled = false,
+  showAllDisabledTooltip,
   showOtherCampuses,
   onShowOtherCampusesChange,
 }: ScheduleFiltersProps) {
@@ -173,6 +177,19 @@ export function ScheduleFilters({
   }
 
   const showSwitches = !!selectedTermId
+  const isShowAllDisabled = !!showAllDisabled
+
+  const showAllControl = (
+    <div className="flex items-center space-x-2 pb-2">
+      <Switch
+        id="showAll"
+        checked={showAll ?? true}
+        onCheckedChange={onShowAllChange}
+        disabled={isShowAllDisabled}
+      />
+      <Label htmlFor="showAll">Mostrar todos los cursos</Label>
+    </div>
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -238,14 +255,22 @@ export function ScheduleFilters({
       />
 
         {showSwitches && onShowAllChange !== undefined && (
-          <div className="flex items-center space-x-2 pb-2">
-            <Switch
-              id="showAll"
-              checked={showAll ?? true}
-              onCheckedChange={onShowAllChange}
-            />
-            <Label htmlFor="showAll">Mostrar todos los cursos</Label>
-          </div>
+          isShowAllDisabled && showAllDisabledTooltip ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    {showAllControl}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>{showAllDisabledTooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            showAllControl
+          )
         )}
 
         {showSwitches && onShowOtherCampusesChange !== undefined && (

@@ -11,6 +11,7 @@ import {
   useAcademicUnits,
   useStudyPlans,
   useStudyPlanDetail,
+  useAuthUser,
   useUserStudyPlan,
 } from '@/lib/hooks/use-queries'
 import type { CatalogCampus, CatalogStudyPlan } from '@/lib/types'
@@ -34,7 +35,7 @@ export const Route = createFileRoute('/app/curriculum/')({
 
 function PlanEstudiosPage() {
   const search = Route.useSearch()
-  const navigate = useNavigate({ from: '/app/curriculum' })
+  const navigate = useNavigate({ from: '/app/curriculum/' })
 
   const selectedUniversityId = search.university ?? null
   const selectedCampusId = search.campus ?? null
@@ -49,7 +50,11 @@ function PlanEstudiosPage() {
   const selectedPlanData = plansQuery.data?.find((p: CatalogStudyPlan) => p.id === selectedPlanId)
 
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData)
-  const { data: userStudyPlan } = useUserStudyPlan()
+  const { data: authUser, isLoading: isAuthLoading } = useAuthUser()
+  const { data: userStudyPlan } = useUserStudyPlan(
+    authUser?.id ?? null,
+    !!authUser?.id && !isAuthLoading,
+  )
 
   const campuses = campusesQuery.data ?? []
   const academicUnits = academicUnitsQuery.data ?? []
@@ -60,7 +65,7 @@ function PlanEstudiosPage() {
   useEffect(() => {
     if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
       navigate({
-        to: '/app/curriculum/',
+        to: '/app/curriculum',
         search: {
           university: userStudyPlan.universityId ?? undefined,
           campus: userStudyPlan.campusId ?? undefined,

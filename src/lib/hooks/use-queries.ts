@@ -144,9 +144,55 @@ export type CourseRelation = {
   relationType: 'PREREQUISITE' | 'COREQUISITE' | 'EQUIVALENT';
 };
 
+function buildStudyPlanPeriods(items: Array<Record<string, unknown>>): StudyPeriod[] {
+  const periods = new Map<number | null, { levelLabel?: string; courses: StudyPlanCourse[] }>();
+  for (const item of items ?? []) {
+    const course: StudyPlanCourse = {
+      courseId: item.course_id as number,
+      levelNumber: item.level_number as number | null,
+      credits: item.credits as number,
+      weeklyHours: item.weekly_hours as number,
+      sortOrder: item.sort_order as number,
+      courseCode: item.course_code as string,
+      courseName: item.course_name as string,
+      courseDefaultCredits: item.default_credits as number,
+      courseDefaultWeeklyHours: item.default_weekly_hours as number,
+    };
+    const level = (item.level_number as number | null) ?? 0;
+    if (!periods.has(level)) {
+      periods.set(level, { levelLabel: item.level_label as string | undefined, courses: [] });
+    }
+    periods.get(level)!.courses.push(course);
+  }
+
+  return Array.from(periods.entries())
+    .sort(([a], [b]) => (a ?? 0) - (b ?? 0))
+    .map(([levelNumber, { levelLabel, courses }]): StudyPeriod => ({
+      levelNumber: levelNumber ?? 0,
+      levelLabel,
+      courses,
+    }));
+}
+
+export function useStudyPlanCoursesDetails(planId: number | null) {
+  return useQuery({
+    queryKey: ["studyPlanCourses", planId],
+    queryFn: async () => {
+      if (!planId) return null;
+      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+      const sb = getSupabaseBrowserClient();
+      const coursesResult = await sb.rpc("get_study_plan_courses_details", { p_study_plan_id: planId });
+      if (coursesResult.error) throw coursesResult.error;
+      return buildStudyPlanPeriods(coursesResult.data ?? []);
+    },
+    enabled: !!planId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useStudyPlanDetail(planId: number | null, selectedPlanData: CatalogStudyPlan | undefined) {
   return useQuery({
-    queryKey: ["studyPlanDetail", planId, selectedPlanData?.id],
+    queryKey: ["studyPlanDetail", planId],
     queryFn: async () => {
       if (!planId) return null;
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
@@ -175,58 +221,36 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Cata
         courseRelations.set(r.from_course_id, existing);
       }
 
-      const periods = new Map<number | null, { levelLabel?: string; courses: StudyPlanCourse[] }>();
-      for (const item of coursesResult.data ?? []) {
-        const course: StudyPlanCourse = {
-          courseId: item.course_id,
-          levelNumber: item.level_number,
-          credits: item.credits,
-          weeklyHours: item.weekly_hours,
-          sortOrder: item.sort_order,
-          courseCode: item.course_code,
-          courseName: item.course_name,
-          courseDefaultCredits: item.default_credits,
-          courseDefaultWeeklyHours: item.default_weekly_hours,
-        };
-        const level = item.level_number ?? 0;
-        if (!periods.has(level)) {
-          periods.set(level, { levelLabel: item.level_label, courses: [] });
-        }
-        periods.get(level)!.courses.push(course);
-      }
-
-      const periodArray = Array.from(periods.entries())
-        .sort(([a], [b]) => (a ?? 0) - (b ?? 0))
-        .map(([levelNumber, { levelLabel, courses }]): StudyPeriod => ({
-          levelNumber: levelNumber ?? 0,
-          levelLabel,
-          courses,
-        }));
+      const periodArray = buildStudyPlanPeriods(coursesResult.data ?? []);
 
       return {
-        plan: selectedPlanData
-          ? { ...selectedPlanData } as CatalogStudyPlan
-          : { id: planId, academic_unit_id: 0, external_plan_id: 0, name: "", academic_degree: null, modality_name: undefined } as CatalogStudyPlan,
+        plan: { id: planId, academic_unit_id: 0, external_plan_id: 0, name: "", academic_degree: null, modality_name: undefined } as CatalogStudyPlan,
         periods: periodArray,
         courseRelations,
       } as StudyPlanDetail;
+    },
+    select: (data) => {
+      if (!data) return data;
+      return {
+        ...data,
+        plan: selectedPlanData ? { ...selectedPlanData } as CatalogStudyPlan : data.plan,
+      };
     },
     enabled: !!planId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-export function useUserStudyPlan() {
+export function useUserStudyPlan(userId: string | null, enabled = true) {
   return useQuery({
-    queryKey: ["userStudyPlan"],
+    queryKey: ["userStudyPlan", userId],
     queryFn: async () => {
+      if (!userId) return null;
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
-      const { data: { user }, error: authError } = await sb.auth.getUser();
-      if (authError || !user) return null;
 
       const { data, error } = await sb
-        .rpc("get_user_profile_with_context", { p_user_id: user.id })
+        .rpc("get_user_profile_with_context", { p_user_id: userId })
         .select("*")
         .maybeSingle();
 
@@ -235,7 +259,7 @@ export function useUserStudyPlan() {
       if (!profile || !profile.study_plan_id) return null;
 
       return {
-        userId: user.id,
+        userId,
         universityId: profile.university_id,
         campusId: profile.campus_id,
         academicUnitId: profile.academic_unit_id,
@@ -243,6 +267,7 @@ export function useUserStudyPlan() {
         studyPlanName: profile.study_plan_name,
       };
     },
+    enabled: enabled && !!userId,
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -274,6 +299,8 @@ export function useScheduleCourses(params: {
   planId: number | null;
   includeOtherCampuses: boolean;
   showAllCourses: boolean;
+  userId: string | null;
+  isAuthReady: boolean;
 }) {
   const {
     termId,
@@ -282,6 +309,8 @@ export function useScheduleCourses(params: {
     planId,
     includeOtherCampuses,
     showAllCourses,
+    userId,
+    isAuthReady,
   } = params;
 
   return useQuery({
@@ -293,19 +322,19 @@ export function useScheduleCourses(params: {
       planId,
       includeOtherCampuses,
       showAllCourses,
+      userId,
     ],
     queryFn: async () => {
       if (!termId || !campusId) return null;
       const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
-      const { data: { user } } = await sb.auth.getUser();
 
       let data, error;
 
-      if (user) {
+      if (userId) {
         ({ data, error } = await sb
           .rpc("get_eligible_schedule_courses", {
-            p_user_id: user.id,
+            p_user_id: userId,
             p_academic_term_id: termId,
             p_campus_id: campusId,
             p_include_other_campuses: includeOtherCampuses,
@@ -337,13 +366,13 @@ export function useScheduleCourses(params: {
       if (error) throw error;
       return (data ?? []) as import('@/lib/types').ScheduleCourse[];
     },
-    enabled: !!termId && !!campusId,
+    enabled: isAuthReady && !!termId && !!campusId,
     staleTime: 2 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 }
 
-export function useSuggestedAcademicTerm(studyPlanId: number | null) {
+export function useSuggestedAcademicTerm(studyPlanId: number | null, enabled = true) {
   return useQuery({
     queryKey: ["suggestedAcademicTerm", studyPlanId],
     queryFn: async () => {
@@ -355,7 +384,7 @@ export function useSuggestedAcademicTerm(studyPlanId: number | null) {
       if (error) throw error;
       return data as number | null;
     },
-    enabled: !!studyPlanId,
+    enabled: enabled && !!studyPlanId,
     staleTime: 5 * 60 * 1000,
   });
 }
