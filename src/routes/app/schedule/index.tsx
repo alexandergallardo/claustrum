@@ -42,7 +42,6 @@ import {
   useCampuses,
   useAcademicUnits,
   useStudyPlans,
-  useStudyPlanCoursesDetails,
   useAcademicTerms,
   useScheduleCourses,
   useUserStudyPlan,
@@ -80,6 +79,14 @@ function SchedulePage() {
   const selectedCareerId = search.career ?? null;
   const selectedPlanId = search.plan ?? null;
   const selectedTermId = search.term ?? null;
+  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
+    () =>
+      !search.university &&
+      !search.campus &&
+      !search.career &&
+      !search.plan &&
+      !search.term,
+  );
   const [storedShowAll, setStoredShowAll] = useState(() => {
     if (typeof window === "undefined") return true;
     const stored = localStorage.getItem(SHOW_ALL_STORAGE_KEY);
@@ -124,28 +131,21 @@ function SchedulePage() {
   const plansQuery = useStudyPlans(selectedCareerId);
   const termsQuery = useAcademicTerms(selectedCampusId);
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+  const isAuthenticated = !!authUser;
+  const effectiveShowAllCourses = isAuthenticated ? showAllCourses : true;
   const coursesQuery = useScheduleCourses({
     termId: selectedTermId,
     campusId: selectedCampusId,
     careerId: selectedCareerId,
     planId: selectedPlanId,
     includeOtherCampuses: showOtherCampuses,
-    showAllCourses: showAllCourses,
+    showAllCourses: effectiveShowAllCourses,
     userId: authUser?.id ?? null,
     isAuthReady: !isAuthLoading,
   });
-  const shouldFetchUserPlan =
-    !search.university &&
-    !search.campus &&
-    !search.career &&
-    !search.plan &&
-    !search.term;
   const { data: userStudyPlan } = useUserStudyPlan(
     authUser?.id ?? null,
-    shouldFetchUserPlan && !!authUser?.id && !isAuthLoading,
-  );
-  const planCoursesQuery = useStudyPlanCoursesDetails(
-    !authUser && selectedPlanId ? selectedPlanId : null,
+    !!authUser?.id && !isAuthLoading,
   );
   const suggestedTermQuery = useSuggestedAcademicTerm(
     selectedPlanId,
@@ -160,21 +160,7 @@ function SchedulePage() {
   const careers = careersQuery.data ?? [];
   const plans = plansQuery.data ?? [];
   const terms = termsQuery.data ?? [];
-  const planCourseIds = useMemo(() => {
-    if (!planCoursesQuery.data) return null;
-    const ids = new Set<number>();
-    planCoursesQuery.data.forEach((period) => {
-      period.courses.forEach((course) => ids.add(course.courseId));
-    });
-    return ids;
-  }, [planCoursesQuery.data]);
-
-  const courses = useMemo(() => {
-    const fetchedCourses = coursesQuery.data ?? [];
-    if (authUser || !selectedPlanId) return fetchedCourses;
-    if (!planCourseIds) return [];
-    return fetchedCourses.filter((course) => planCourseIds.has(course.course_id));
-  }, [authUser, coursesQuery.data, planCourseIds, selectedPlanId]);
+  const courses = useMemo(() => coursesQuery.data ?? [], [coursesQuery.data]);
 
   const orderedCourses = useMemo(() => {
     return [...courses].sort((a, b) => {
@@ -229,13 +215,21 @@ function SchedulePage() {
   );
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!userStudyPlan || !isUsingProfileDefaults) return;
     if (
-      userStudyPlan &&
-      !search.university &&
-      !search.campus &&
-      !search.career &&
-      !search.plan &&
-      !search.term
+      search.university === userStudyPlan.universityId &&
+      search.campus === userStudyPlan.campusId &&
+      search.career === userStudyPlan.academicUnitId &&
+      search.plan === userStudyPlan.studyPlanId
+    ) {
+      return;
+    }
+    if (
+      userStudyPlan.universityId ||
+      userStudyPlan.campusId ||
+      userStudyPlan.academicUnitId ||
+      userStudyPlan.studyPlanId
     ) {
       navigate({
         to: "/app/schedule",
@@ -247,7 +241,35 @@ function SchedulePage() {
         },
       });
     }
-  }, [userStudyPlan, search, navigate]);
+  }, [isAuthenticated, isUsingProfileDefaults, navigate, search, userStudyPlan]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (!userStudyPlan) return;
+    const hasSearch =
+      !!search.university ||
+      !!search.campus ||
+      !!search.career ||
+      !!search.plan ||
+      !!search.term;
+    if (!hasSearch) {
+      setIsUsingProfileDefaults(true);
+      return;
+    }
+    const matchesProfile =
+      search.university === userStudyPlan.universityId &&
+      search.campus === userStudyPlan.campusId &&
+      search.career === userStudyPlan.academicUnitId &&
+      search.plan === userStudyPlan.studyPlanId;
+    if (!matchesProfile) {
+      setIsUsingProfileDefaults(false);
+    }
+  }, [isAuthenticated, search, userStudyPlan]);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+    setIsUsingProfileDefaults(false);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (
@@ -308,9 +330,10 @@ function SchedulePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (search.showAll === undefined) return;
+    if (!isAuthenticated) return;
     localStorage.setItem(SHOW_ALL_STORAGE_KEY, String(search.showAll));
     setStoredShowAll(search.showAll);
-  }, [search.showAll]);
+  }, [isAuthenticated, search.showAll]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -394,6 +417,7 @@ function SchedulePage() {
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
+      setIsUsingProfileDefaults(false);
       navigate({
         to: "/app/schedule",
         search: {
@@ -411,6 +435,7 @@ function SchedulePage() {
 
   const handleCampusChange = useCallback(
     (id: number | null) => {
+      setIsUsingProfileDefaults(false);
       navigate({
         to: "/app/schedule",
         search: {
@@ -427,6 +452,7 @@ function SchedulePage() {
 
   const handleCareerChange = useCallback(
     (id: number | null) => {
+      setIsUsingProfileDefaults(false);
       navigate({
         to: "/app/schedule",
         search: {
@@ -442,6 +468,7 @@ function SchedulePage() {
 
   const handlePlanChange = useCallback(
     (id: number | null) => {
+      setIsUsingProfileDefaults(false);
       navigate({
         to: "/app/schedule",
         search: {
@@ -456,6 +483,7 @@ function SchedulePage() {
 
   const handleTermChange = useCallback(
     (id: number | null) => {
+      setIsUsingProfileDefaults(false);
       navigate({
         to: "/app/schedule",
         search: {
@@ -482,6 +510,7 @@ function SchedulePage() {
 
   const handleShowAllChange = useCallback(
     (checked: boolean) => {
+      if (!isAuthenticated) return;
       navigate({
         to: "/app/schedule",
         search: {
@@ -490,8 +519,24 @@ function SchedulePage() {
         },
       });
     },
-    [navigate, search],
+    [isAuthenticated, navigate, search],
   );
+
+  const handleUseProfileDefaults = useCallback(() => {
+    if (!userStudyPlan) return;
+    setIsUsingProfileDefaults(true);
+    navigate({
+      to: "/app/schedule",
+      search: {
+        ...search,
+        university: userStudyPlan.universityId ?? undefined,
+        campus: userStudyPlan.campusId ?? undefined,
+        career: userStudyPlan.academicUnitId ?? undefined,
+        plan: userStudyPlan.studyPlanId ?? undefined,
+        term: undefined,
+      },
+    });
+  }, [navigate, search, userStudyPlan]);
 
   const courseColors = useMemo(() => {
     const map = new Map<string, string>();
@@ -563,10 +608,7 @@ function SchedulePage() {
     careersQuery.isLoading ||
     plansQuery.isLoading ||
     termsQuery.isLoading;
-  const isPlanCoursesLoading =
-    !authUser && !!selectedPlanId && planCoursesQuery.isLoading;
-  const isInitialLoading =
-    (isLoadingFilters && !universities?.length) || isPlanCoursesLoading;
+  const isInitialLoading = isLoadingFilters && !universities?.length;
 
   if (isInitialLoading) {
     return (
@@ -662,12 +704,15 @@ function SchedulePage() {
                 isLoadingTerms={
                   termsQuery.isFetching && termsQuery.data?.length === 0
                 }
-              showAll={showAllCourses}
-              onShowAllChange={handleShowAllChange}
-              showAllDisabled={!authUser}
-              showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
-              showOtherCampuses={showOtherCampuses}
-              onShowOtherCampusesChange={handleOtherCampusesChange}
+                showAll={effectiveShowAllCourses}
+                onShowAllChange={handleShowAllChange}
+                showAllDisabled={!isAuthenticated}
+                showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
+                showOtherCampuses={showOtherCampuses}
+                onShowOtherCampusesChange={handleOtherCampusesChange}
+                canUseProfileDefaults={isAuthenticated && !!userStudyPlan}
+                isUsingProfileDefaults={isUsingProfileDefaults}
+                onUseProfileDefaults={handleUseProfileDefaults}
             />
             </div>
 
