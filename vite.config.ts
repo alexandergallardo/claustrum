@@ -1,29 +1,19 @@
 import { defineConfig } from 'vite'
-import { devtools } from '@tanstack/devtools-vite'
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
-import viteReact from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
-import { cloudflare } from '@cloudflare/vite-plugin'
 
-const config = defineConfig({
-  optimizeDeps: {
-    exclude: ['html-to-image'],
-  },
-  ssr: {
-    noExternal: ['html-to-image'],
-  },
+export default defineConfig({
   plugins: [
-    devtools(),
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
-    // this is the plugin that enables path aliases
+    TanStackRouterVite(),
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
     tailwindcss(),
-    tanstackStart(),
-    viteReact(),
+    react(),
   ],
+  optimizeDeps: {
+    exclude: ['html-to-image'],
+  },
 })
-
-export default config
