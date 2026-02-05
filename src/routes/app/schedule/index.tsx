@@ -369,82 +369,6 @@ function SchedulePage() {
     [navigate, search, startTransition]
   );
 
-  const handleExport = useCallback(async (options: ScheduleExportOptions) => {
-    if (options.format === "ics") {
-      if (!calendarEvents.length) {
-        toast.error("No hay clases seleccionadas para exportar");
-        return;
-      }
-
-      try {
-        const ics = buildScheduleIcs({
-          events: calendarEvents,
-          term: selectedTerm,
-        });
-        const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        const dateStamp = new Date().toISOString().slice(0, 10);
-        link.href = url;
-        link.download = `horario-${dateStamp}.ics`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success("Calendario exportado correctamente");
-      } catch (error) {
-        console.error("Error exporting calendar:", error);
-        toast.error("Error al exportar el calendario");
-      }
-      return;
-    }
-
-    const calendarElement = calendarRef.current;
-    if (!calendarElement) {
-      toast.error("No se pudo encontrar el elemento del calendario");
-      return;
-    }
-
-    const exportTheme = options.transparent ? null : options.theme;
-    if (exportTheme) {
-      calendarElement.setAttribute("data-export-theme", exportTheme);
-    }
-
-    try {
-      const extension = options.format === "jpeg" ? "jpg" : "png";
-      const dateStamp = new Date().toISOString().slice(0, 10);
-      const backgroundColor = options.transparent
-        ? undefined
-        : options.theme === "dark"
-          ? "#0b0b0b"
-          : "#ffffff";
-
-      const dataUrl =
-        options.format === "jpeg"
-          ? await toJpeg(calendarElement, {
-              quality: 0.95,
-              backgroundColor,
-              pixelRatio: 2,
-            })
-          : await toPng(calendarElement, {
-              backgroundColor,
-              pixelRatio: 2,
-            });
-
-      const link = document.createElement("a");
-      link.download = `horario-${dateStamp}.${extension}`;
-      link.href = dataUrl;
-      link.click();
-
-      toast.success("Horario exportado correctamente");
-    } catch (error) {
-      console.error("Error exporting schedule:", error);
-      toast.error("Error al exportar el horario");
-    } finally {
-      if (exportTheme) {
-        calendarElement.removeAttribute("data-export-theme");
-      }
-    }
-  }, [calendarEvents, selectedTerm]);
-
   const handleUniversityChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
@@ -622,6 +546,82 @@ function SchedulePage() {
 
     return events;
   }, [selectedGroups, courseColors, weekStart, campusById, groupById]);
+
+  const handleExport = useCallback(async (options: ScheduleExportOptions) => {
+    if (options.format === "ics") {
+      if (!calendarEvents.length) {
+        toast.error("No hay clases seleccionadas para exportar");
+        return;
+      }
+
+      try {
+        const ics = buildScheduleIcs({
+          events: calendarEvents,
+          term: selectedTerm,
+        });
+        const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `horario-${dateStamp}.ics`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Calendario exportado correctamente");
+      } catch (error) {
+        console.error("Error exporting calendar:", error);
+        toast.error("Error al exportar el calendario");
+      }
+      return;
+    }
+
+    const calendarElement = calendarRef.current;
+    if (!calendarElement) {
+      toast.error("No se pudo encontrar el elemento del calendario");
+      return;
+    }
+
+    const exportTheme = options.transparent ? null : options.theme;
+    if (exportTheme) {
+      calendarElement.setAttribute("data-export-theme", exportTheme);
+    }
+
+    try {
+      const extension = options.format === "jpeg" ? "jpg" : "png";
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      const backgroundColor = options.transparent
+        ? undefined
+        : options.theme === "dark"
+          ? "#0b0b0b"
+          : "#ffffff";
+
+      const dataUrl =
+        options.format === "jpeg"
+          ? await toJpeg(calendarElement, {
+              quality: 0.95,
+              backgroundColor,
+              pixelRatio: 2,
+            })
+          : await toPng(calendarElement, {
+              backgroundColor,
+              pixelRatio: 2,
+            });
+
+      const link = document.createElement("a");
+      link.download = `horario-${dateStamp}.${extension}`;
+      link.href = dataUrl;
+      link.click();
+
+      toast.success("Horario exportado correctamente");
+    } catch (error) {
+      console.error("Error exporting schedule:", error);
+      toast.error("Error al exportar el horario");
+    } finally {
+      if (exportTheme) {
+        calendarElement.removeAttribute("data-export-theme");
+      }
+    }
+  }, [calendarEvents, selectedTerm]);
 
   const handleRemoveEvent = useCallback(
     (event: CalendarEvent) => {
