@@ -17,7 +17,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, Filter } from 'lucide-react'
+import { ChevronDown, ChevronUp, Filter, User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
 
 interface ScheduleFiltersProps {
@@ -200,29 +200,30 @@ export function ScheduleFilters({
 
   return (
     <div className="flex flex-col gap-4">
-      <button
-        type="button"
-        onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Filter className="h-4 w-4" />
-        <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
-        {isFiltersVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Filter className="h-4 w-4" />
+          <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
+          {isFiltersVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
 
-      {canUseProfileDefaults && onUseProfileDefaults && (
-        <div>
+        {canUseProfileDefaults && onUseProfileDefaults && (
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             size="sm"
             onClick={onUseProfileDefaults}
             disabled={isUsingProfileDefaults}
           >
-            Usar mi perfil
+            <User className="h-4 w-4" />
+            {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden'}`}>
       <FilterSelect
