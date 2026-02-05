@@ -288,4 +288,12 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.get_schedule_courses IS 'Unified schedule query for anonymous and authenticated users.';
+COMMENT ON FUNCTION public.get_schedule_courses(
+  UUID,
+  BIGINT,
+  BIGINT,
+  BIGINT,
+  BIGINT,
+  BOOLEAN,
+  BOOLEAN
+) IS 'Unified schedule query for anonymous and authenticated users.';
