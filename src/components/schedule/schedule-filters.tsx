@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/tooltip'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { ChevronDown, ChevronUp, Filter } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
 
@@ -46,6 +47,9 @@ interface ScheduleFiltersProps {
   showAllDisabledTooltip?: string
   showOtherCampuses?: boolean
   onShowOtherCampusesChange?: (checked: boolean) => void
+  canUseProfileDefaults?: boolean
+  isUsingProfileDefaults?: boolean
+  onUseProfileDefaults?: () => void
 }
 
 const truncateText = (text: string, maxLength = 35) => {
@@ -156,6 +160,9 @@ export function ScheduleFilters({
   showAllDisabledTooltip,
   showOtherCampuses,
   onShowOtherCampusesChange,
+  canUseProfileDefaults = false,
+  isUsingProfileDefaults = false,
+  onUseProfileDefaults,
 }: ScheduleFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
@@ -202,6 +209,20 @@ export function ScheduleFilters({
         <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
         {isFiltersVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
+
+      {canUseProfileDefaults && onUseProfileDefaults && (
+        <div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onUseProfileDefaults}
+            disabled={isUsingProfileDefaults}
+          >
+            Usar mi perfil
+          </Button>
+        </div>
+      )}
 
       <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden'}`}>
       <FilterSelect

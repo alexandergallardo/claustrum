@@ -312,46 +312,24 @@ export function useScheduleCourses(params: {
       careerId,
       planId,
       includeOtherCampuses,
-      showAllCourses,
+      userId ? showAllCourses : true,
       userId,
     ],
     queryFn: async () => {
       if (!termId || !campusId) return null;
       const sb = getSupabaseBrowserClient();
 
-      let data, error;
-
-      if (userId) {
-        ({ data, error } = await sb
-          .rpc("get_eligible_schedule_courses", {
-            p_user_id: userId,
-            p_academic_term_id: termId,
-            p_campus_id: campusId,
-            p_include_other_campuses: includeOtherCampuses,
-            p_show_all_courses: showAllCourses,
-          })
-          .select("*"));
-      } else if (planId) {
-        ({ data, error } = await sb
-          .rpc("get_schedule_courses_by_study_plan", {
-            p_academic_term_id: termId,
-            p_campus_id: campusId,
-            p_study_plan_id: planId,
-            p_include_other_campuses: includeOtherCampuses,
-          })
-          .select("*"));
-      } else if (careerId) {
-        ({ data, error } = await sb
-          .rpc("get_schedule_courses_by_academic_unit", {
-            p_academic_term_id: termId,
-            p_campus_id: campusId,
-            p_academic_unit_id: careerId,
-            p_include_other_campuses: includeOtherCampuses,
-          })
-          .select("*"));
-      } else {
-        return null;
-      }
+      const { data, error } = await sb
+        .rpc("get_schedule_courses", {
+          p_user_id: userId,
+          p_academic_term_id: termId,
+          p_campus_id: campusId,
+          p_study_plan_id: planId,
+          p_academic_unit_id: careerId,
+          p_include_other_campuses: includeOtherCampuses,
+          p_show_all_courses: userId ? showAllCourses : true,
+        })
+        .select("*");
 
       if (error) throw error;
       return (data ?? []) as import('@/lib/types').ScheduleCourse[];
