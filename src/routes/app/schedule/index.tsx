@@ -261,9 +261,7 @@ function SchedulePage() {
       search.campus === userStudyPlan.campusId &&
       search.career === userStudyPlan.academicUnitId &&
       search.plan === userStudyPlan.studyPlanId;
-    if (!matchesProfile) {
-      setIsUsingProfileDefaults(false);
-    }
+    setIsUsingProfileDefaults(matchesProfile);
   }, [isAuthenticated, search, userStudyPlan]);
 
   useEffect(() => {
@@ -533,7 +531,7 @@ function SchedulePage() {
         campus: userStudyPlan.campusId ?? undefined,
         career: userStudyPlan.academicUnitId ?? undefined,
         plan: userStudyPlan.studyPlanId ?? undefined,
-        term: undefined,
+        term: search.term ?? undefined,
       },
     });
   }, [navigate, search, userStudyPlan]);
