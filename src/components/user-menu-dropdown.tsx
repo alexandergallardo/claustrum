@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, Settings } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,16 +72,13 @@ export function UserMenuDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={async () => {
-            const { getSupabaseBrowserClient } = await import(
-              "@/lib/supabase/browser-client"
-            );
             const supabase = getSupabaseBrowserClient();
             await supabase.auth.signOut();
             navigate({ to: "/login" });
           }}
         >
           <LogOut className="h-4 w-4" />
-          Log out
+          Cerrar sesión
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

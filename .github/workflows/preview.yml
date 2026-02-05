@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy-preview:
-    name: Deploy Preview to Cloudflare Workers
+    name: Deploy Preview to Cloudflare Pages
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,10 +41,11 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: bun run build
 
-
-      - name: Deploy Preview
-        uses: cloudflare/wrangler-action@v3
+      - name: Deploy Preview to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: versions upload --preview-alias development
+          projectName: claustrum
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

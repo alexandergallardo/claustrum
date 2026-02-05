@@ -1,4 +1,5 @@
 import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import type { AcademicTerm, StudyPeriod, CatalogStudyPlan, StudyPlanCourse, StudyPlanDetail, UserProfileContextRow, DashboardStats, SemesterProgress, NextCourse } from "@/lib/types";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
@@ -6,7 +7,6 @@ export function useUniversities() {
   return useQuery({
     queryKey: ["universities"],
     queryFn: async () => {
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
         .from("v_universities")
@@ -26,7 +26,6 @@ export function useCampuses(universityId: number | null) {
     queryKey: ["campuses", universityId],
     queryFn: async () => {
       if (!universityId) return [];
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
         .rpc("get_campuses_for_university", { p_university_id: universityId })
@@ -45,7 +44,6 @@ export function useAcademicUnits(campusId: number | null) {
     queryKey: ["academicUnits", campusId],
     queryFn: async () => {
       if (!campusId) return [];
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
         .rpc("get_academic_units_for_campus", { p_campus_id: campusId })
@@ -65,7 +63,6 @@ export function useStudyPlans(academicUnitId: number | null) {
     queryFn: async () => {
       if (!academicUnitId) return [];
 
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const { data, error } = await sb
@@ -86,7 +83,6 @@ export function useProfileContext(userId: string | null) {
     queryKey: ["profile", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
         .rpc("get_user_profile_with_context", { p_user_id: userId })
@@ -104,7 +100,6 @@ export function useAuthUser() {
   return useQuery({
     queryKey: ["authUser"],
     queryFn: async () => {
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb.auth.getUser();
       if (error) return null;
@@ -179,7 +174,6 @@ export function useStudyPlanCoursesDetails(planId: number | null) {
     queryKey: ["studyPlanCourses", planId],
     queryFn: async () => {
       if (!planId) return null;
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const coursesResult = await sb.rpc("get_study_plan_courses_details", { p_study_plan_id: planId });
       if (coursesResult.error) throw coursesResult.error;
@@ -195,7 +189,6 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Cata
     queryKey: ["studyPlanDetail", planId],
     queryFn: async () => {
       if (!planId) return null;
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const [coursesResult, relationsResult] = await Promise.all([
@@ -246,7 +239,6 @@ export function useUserStudyPlan(userId: string | null, enabled = true) {
     queryKey: ["userStudyPlan", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const { data, error } = await sb
@@ -277,7 +269,6 @@ export function useAcademicTerms(campusId: number | null) {
     queryKey: ["academicTerms", campusId],
     queryFn: async () => {
       if (!campusId) return [];
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
         .rpc("get_active_academic_terms")
@@ -326,7 +317,6 @@ export function useScheduleCourses(params: {
     ],
     queryFn: async () => {
       if (!termId || !campusId) return null;
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       let data, error;
@@ -377,7 +367,6 @@ export function useSuggestedAcademicTerm(studyPlanId: number | null, enabled = t
     queryKey: ["suggestedAcademicTerm", studyPlanId],
     queryFn: async () => {
       if (!studyPlanId) return null;
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
         .rpc("get_suggested_academic_term", { p_study_plan_id: studyPlanId });
@@ -405,7 +394,6 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
         return statusMap;
       }
 
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const { data, error } = await sb
@@ -444,7 +432,6 @@ export function useUpdateCourseStatus() {
       courseId: number;
       status: "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress";
     }) => {
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       let error;
@@ -479,7 +466,6 @@ export function useCoursesByIds(courseIds: number[] | null) {
     queryFn: async () => {
       if (!courseIds || courseIds.length === 0) return [];
 
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const { data, error } = await sb
@@ -501,7 +487,6 @@ export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: n
     queryFn: async () => {
       if (!studyPlanId || !fromCourseId) return { data: [], totalCount: 0 };
 
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const { data, error } = await sb.rpc("get_course_equivalents_for_plan", {
@@ -538,7 +523,6 @@ export function useDashboardStats(userId: string | null, studyPlanId: number | n
     queryFn: async () => {
       if (!userId || !studyPlanId) return null;
 
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const sb = getSupabaseBrowserClient();
 
       const { data, error } = await sb.rpc("get_user_dashboard_stats", {

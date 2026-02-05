@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { UserIcon, PencilIcon, Loader2Icon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -151,7 +152,6 @@ function ProfilePage() {
 
     setIsSaving(true);
     try {
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const supabase = getSupabaseBrowserClient();
 
       const studyPlanId = Number(studyPlanIdDraft);

@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { useNavigate, Link } from "@tanstack/react-router"
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
+import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 
 export function LoginForm({
@@ -16,6 +17,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"form">) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -35,6 +37,9 @@ export function LoginForm({
         return
       }
 
+      // Invalidate auth query to refresh user state immediately
+      await queryClient.invalidateQueries({ queryKey: ["authUser"] })
+      
       navigate({ to: "/app" })
     } finally {
       setIsSubmitting(false)
