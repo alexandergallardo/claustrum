@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,13 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
   const [transparent, setTransparent] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (typeof document === "undefined") return;
+    const isDark = document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "dark" : "light");
+  }, [isOpen]);
 
   const handleExport = async () => {
     setIsExporting(true);
