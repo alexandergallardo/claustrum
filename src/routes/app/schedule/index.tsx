@@ -371,28 +371,46 @@ function SchedulePage() {
       return;
     }
 
-    const exportTheme = options.transparent ? null : options.theme;
-    if (exportTheme) {
-      calendarElement.setAttribute("data-export-theme", exportTheme);
-    }
+    const exportTheme = options.theme;
+    const exportWrapper = document.createElement("div");
+    const exportClone = calendarElement.cloneNode(true) as HTMLElement;
+    const calendarRect = calendarElement.getBoundingClientRect();
+    const width = Math.ceil(calendarRect.width);
+    const height = Math.ceil(calendarRect.height);
+
+    exportWrapper.style.position = "fixed";
+    exportWrapper.style.left = "-10000px";
+    exportWrapper.style.top = "0";
+    exportWrapper.style.width = `${width}px`;
+    exportWrapper.style.height = `${height}px`;
+    exportWrapper.style.pointerEvents = "none";
+    exportWrapper.style.opacity = "0";
+    exportWrapper.style.zIndex = "-1";
+    exportWrapper.setAttribute("data-export-theme", exportTheme);
+    exportWrapper.classList.toggle("dark", exportTheme === "dark");
+
+    exportClone.style.width = `${width}px`;
+    exportClone.style.height = `${height}px`;
+    exportWrapper.appendChild(exportClone);
+    document.body.appendChild(exportWrapper);
 
     try {
       const extension = options.format === "jpeg" ? "jpg" : "png";
       const dateStamp = new Date().toISOString().slice(0, 10);
       const backgroundColor = options.transparent
         ? undefined
-        : options.theme === "dark"
+        : exportTheme === "dark"
           ? "#0b0b0b"
           : "#ffffff";
 
       const dataUrl =
         options.format === "jpeg"
-          ? await toJpeg(calendarElement, {
+          ? await toJpeg(exportWrapper, {
               quality: 0.95,
               backgroundColor,
               pixelRatio: 2,
             })
-          : await toPng(calendarElement, {
+          : await toPng(exportWrapper, {
               backgroundColor,
               pixelRatio: 2,
             });
@@ -407,9 +425,7 @@ function SchedulePage() {
       console.error("Error exporting schedule:", error);
       toast.error("Error al exportar el horario");
     } finally {
-      if (exportTheme) {
-        calendarElement.removeAttribute("data-export-theme");
-      }
+      exportWrapper.remove();
     }
   }, []);
 
