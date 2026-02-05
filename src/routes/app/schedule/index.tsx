@@ -16,6 +16,7 @@ import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import Calendar from "@/components/calendar/calendar";
 import CourseList from "@/components/course-list";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
+import { buildScheduleIcs } from "@/lib/calendar/ics";
 import { startOfWeek } from "date-fns";
 import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import type { Mode, CalendarEvent } from "@/components/calendar/calendar-types";
@@ -160,6 +161,10 @@ function SchedulePage() {
   const careers = careersQuery.data ?? [];
   const plans = plansQuery.data ?? [];
   const terms = termsQuery.data ?? [];
+  const selectedTerm = useMemo(
+    () => terms.find((term) => term.id === selectedTermId) ?? null,
+    [selectedTermId, terms],
+  );
   const courses = useMemo(() => coursesQuery.data ?? [], [coursesQuery.data]);
 
   const orderedCourses = useMemo(() => {
@@ -365,6 +370,33 @@ function SchedulePage() {
   );
 
   const handleExport = useCallback(async (options: ScheduleExportOptions) => {
+    if (options.format === "ics") {
+      if (!calendarEvents.length) {
+        toast.error("No hay clases seleccionadas para exportar");
+        return;
+      }
+
+      try {
+        const ics = buildScheduleIcs({
+          events: calendarEvents,
+          term: selectedTerm,
+        });
+        const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `horario-${dateStamp}.ics`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Calendario exportado correctamente");
+      } catch (error) {
+        console.error("Error exporting calendar:", error);
+        toast.error("Error al exportar el calendario");
+      }
+      return;
+    }
+
     const calendarElement = calendarRef.current;
     if (!calendarElement) {
       toast.error("No se pudo encontrar el elemento del calendario");
@@ -411,7 +443,7 @@ function SchedulePage() {
         calendarElement.removeAttribute("data-export-theme");
       }
     }
-  }, []);
+  }, [calendarEvents, selectedTerm]);
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
