@@ -42,7 +42,7 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
       ) : (
         <div className="flex gap-3">
           <a href="/login">
-            <Button>Iniciar Sesión</Button>
+            <Button>Iniciar sesión</Button>
           </a>
           <a href="/signup">
             <Button variant="outline">Registrarse</Button>
