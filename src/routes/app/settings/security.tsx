@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ShieldIcon, LockIcon, Loader2Icon, SmartphoneIcon } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +74,6 @@ function SecurityPage() {
 
     setIsSendingPasswordReset(true);
     try {
-      const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
       const supabase = getSupabaseBrowserClient();
 
       const { error } = await supabase.auth.updateUser({
