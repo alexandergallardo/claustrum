@@ -32,14 +32,16 @@ function DashboardPage() {
 
   const isAuthenticated = !!authUser;
   const hasProfile = !!userStudyPlan?.studyPlanId;
-  const isLoading = isAuthLoading || isLoadingUserPlan || isLoadingStats;
+  const isDataLoading = isAuthenticated && (isLoadingUserPlan || isLoadingStats);
 
   return (
     <AppLayoutWrapper>
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            {isLoading ? (
+            {isAuthLoading ? (
+              <div className="px-4 py-6 lg:px-6" />
+            ) : isDataLoading ? (
               <DashboardSkeleton />
             ) : !isAuthenticated || !dashboardData?.stats ? (
               <EmptyDashboard isAuthenticated={isAuthenticated} hasProfile={hasProfile} />
