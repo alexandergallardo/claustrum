@@ -34,16 +34,15 @@ function NotFound() {
     <div className="container mx-auto px-4 py-16">
       <Empty>
         <EmptyHeader>
-          <EmptyTitle>404 - Not Found</EmptyTitle>
+          <EmptyTitle>404 - Página no encontrada</EmptyTitle>
           <EmptyDescription>
-            The page you&apos;re looking for doesn&apos;t exist. Try searching
-            for what you need below.
+            La página que buscas no existe. Intenta buscar lo que necesitas abajo.
           </EmptyDescription>
         </EmptyHeader>
 
         <EmptyContent>
           <InputGroup className="sm:w-3/4">
-            <InputGroupInput placeholder="Try searching for pages..." />
+            <InputGroupInput placeholder="Buscar páginas..." />
             <InputGroupAddon>
               <SearchIcon className="size-4" />
             </InputGroupAddon>
@@ -53,9 +52,9 @@ function NotFound() {
           </InputGroup>
 
           <EmptyDescription>
-            Need help?{' '}
+            ¿Necesitas ayuda?{' '}
             <Link to="/login" className="underline underline-offset-4">
-              Contact support
+              Contactar soporte
             </Link>
           </EmptyDescription>
         </EmptyContent>

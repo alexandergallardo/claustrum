@@ -69,7 +69,7 @@ export function UserMenu({
           </DropdownMenuItem>
           <DropdownMenuItem>
             <IconNotification />
-            Notifications
+            Notificaciones
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
@@ -81,7 +81,7 @@ export function UserMenu({
           }}
         >
           <IconLogout />
-          Log out
+          Cerrar sesión
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

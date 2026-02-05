@@ -78,7 +78,7 @@ export function UserMenuDropdown({
           }}
         >
           <LogOut className="h-4 w-4" />
-          Log out
+          Cerrar sesión
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
