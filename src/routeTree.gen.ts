@@ -17,11 +17,14 @@ import { Route as AppIndexRouteImport } from './routes/app/_index'
 import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
 import { Route as AppScheduleIndexRouteImport } from './routes/app/schedule/index'
+import { Route as AppProfessorsIndexRouteImport } from './routes/app/professors/index'
 import { Route as AppCurriculumIndexRouteImport } from './routes/app/curriculum/index'
 import { Route as AppSettingsSecurityRouteImport } from './routes/app/settings/security'
 import { Route as AppSettingsProfileRouteImport } from './routes/app/settings/profile'
 import { Route as AppSettingsAppearanceRouteImport } from './routes/app/settings/appearance'
 import { Route as AppSettingsLayoutRouteImport } from './routes/app/settings/_layout'
+import { Route as AppProfessorsModerationRouteImport } from './routes/app/professors/moderation'
+import { Route as AppProfessorsProfessorIdRouteImport } from './routes/app/professors/$professorId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
@@ -62,6 +65,11 @@ const AppScheduleIndexRoute = AppScheduleIndexRouteImport.update({
   path: '/app/schedule/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppProfessorsIndexRoute = AppProfessorsIndexRouteImport.update({
+  id: '/app/professors/',
+  path: '/app/professors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppCurriculumIndexRoute = AppCurriculumIndexRouteImport.update({
   id: '/app/curriculum/',
   path: '/app/curriculum/',
@@ -86,6 +94,17 @@ const AppSettingsLayoutRoute = AppSettingsLayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
+const AppProfessorsModerationRoute = AppProfessorsModerationRouteImport.update({
+  id: '/app/professors/moderation',
+  path: '/app/professors/moderation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppProfessorsProfessorIdRoute =
+  AppProfessorsProfessorIdRouteImport.update({
+    id: '/app/professors/$professorId',
+    path: '/app/professors/$professorId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,10 +113,13 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute
   '/signup/': typeof SignupIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
+  '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
+  '/app/professors/moderation': typeof AppProfessorsModerationRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/curriculum/': typeof AppCurriculumIndexRoute
+  '/app/professors/': typeof AppProfessorsIndexRoute
   '/app/schedule/': typeof AppScheduleIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
 }
@@ -107,11 +129,14 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute
   '/signup': typeof SignupIndexRoute
   '/verify-email': typeof VerifyEmailIndexRoute
+  '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
+  '/app/professors/moderation': typeof AppProfessorsModerationRoute
   '/app/settings': typeof AppSettingsIndexRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/curriculum': typeof AppCurriculumIndexRoute
+  '/app/professors': typeof AppProfessorsIndexRoute
   '/app/schedule': typeof AppScheduleIndexRoute
 }
 export interface FileRoutesById {
@@ -122,11 +147,14 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute
   '/signup/': typeof SignupIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
+  '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
+  '/app/professors/moderation': typeof AppProfessorsModerationRoute
   '/app/settings/_layout': typeof AppSettingsLayoutRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/curriculum/': typeof AppCurriculumIndexRoute
+  '/app/professors/': typeof AppProfessorsIndexRoute
   '/app/schedule/': typeof AppScheduleIndexRoute
   '/app/settings/': typeof AppSettingsIndexRoute
 }
@@ -139,10 +167,13 @@ export interface FileRouteTypes {
     | '/login/'
     | '/signup/'
     | '/verify-email/'
+    | '/app/professors/$professorId'
+    | '/app/professors/moderation'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
     | '/app/curriculum/'
+    | '/app/professors/'
     | '/app/schedule/'
     | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
@@ -152,11 +183,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/verify-email'
+    | '/app/professors/$professorId'
+    | '/app/professors/moderation'
     | '/app/settings'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
     | '/app/curriculum'
+    | '/app/professors'
     | '/app/schedule'
   id:
     | '__root__'
@@ -166,11 +200,14 @@ export interface FileRouteTypes {
     | '/login/'
     | '/signup/'
     | '/verify-email/'
+    | '/app/professors/$professorId'
+    | '/app/professors/moderation'
     | '/app/settings/_layout'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
     | '/app/curriculum/'
+    | '/app/professors/'
     | '/app/schedule/'
     | '/app/settings/'
   fileRoutesById: FileRoutesById
@@ -182,7 +219,10 @@ export interface RootRouteChildren {
   LoginIndexRoute: typeof LoginIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
   VerifyEmailIndexRoute: typeof VerifyEmailIndexRoute
+  AppProfessorsProfessorIdRoute: typeof AppProfessorsProfessorIdRoute
+  AppProfessorsModerationRoute: typeof AppProfessorsModerationRoute
   AppCurriculumIndexRoute: typeof AppCurriculumIndexRoute
+  AppProfessorsIndexRoute: typeof AppProfessorsIndexRoute
   AppScheduleIndexRoute: typeof AppScheduleIndexRoute
 }
 
@@ -244,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppScheduleIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/professors/': {
+      id: '/app/professors/'
+      path: '/app/professors'
+      fullPath: '/app/professors/'
+      preLoaderRoute: typeof AppProfessorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/curriculum/': {
       id: '/app/curriculum/'
       path: '/app/curriculum'
@@ -279,6 +326,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsLayoutRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
+    '/app/professors/moderation': {
+      id: '/app/professors/moderation'
+      path: '/app/professors/moderation'
+      fullPath: '/app/professors/moderation'
+      preLoaderRoute: typeof AppProfessorsModerationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/professors/$professorId': {
+      id: '/app/professors/$professorId'
+      path: '/app/professors/$professorId'
+      fullPath: '/app/professors/$professorId'
+      preLoaderRoute: typeof AppProfessorsProfessorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -308,7 +369,10 @@ const rootRouteChildren: RootRouteChildren = {
   LoginIndexRoute: LoginIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
   VerifyEmailIndexRoute: VerifyEmailIndexRoute,
+  AppProfessorsProfessorIdRoute: AppProfessorsProfessorIdRoute,
+  AppProfessorsModerationRoute: AppProfessorsModerationRoute,
   AppCurriculumIndexRoute: AppCurriculumIndexRoute,
+  AppProfessorsIndexRoute: AppProfessorsIndexRoute,
   AppScheduleIndexRoute: AppScheduleIndexRoute,
 }
 export const routeTree = rootRouteImport
