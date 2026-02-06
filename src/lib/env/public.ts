@@ -3,6 +3,7 @@ import { z } from "zod";
 const publicEnvSchema = z.object({
   VITE_SUPABASE_URL: z.string().url(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+  VITE_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
 });
 
 function formatZodError(prefix: string, error: z.ZodError): string {
@@ -47,6 +48,11 @@ export type SupabasePublicEnv = {
   supabaseUrl: string;
   supabasePublishableKey: string;
 };
+
+export function getTurnstileSiteKey(): string | null {
+  const env = getPublicEnv();
+  return env.VITE_TURNSTILE_SITE_KEY ?? null;
+}
 
 export function getSupabasePublicEnv(): SupabasePublicEnv {
   const { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } = getPublicEnv();
