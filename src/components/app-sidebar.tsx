@@ -37,6 +37,11 @@ const data = {
       url: "/app/curriculum",
       icon: IconBook,
     },
+    {
+      title: "Profesores",
+      url: "/app/professors",
+      icon: IconBook,
+    },
   ],
 };
 

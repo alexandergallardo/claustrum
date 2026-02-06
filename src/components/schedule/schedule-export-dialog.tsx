@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ImageDown } from "lucide-react";
+import { CalendarClock, ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export type ScheduleExportFormat = "png" | "jpeg";
+export type ScheduleExportFormat = "png" | "jpeg" | "ics";
 export type ScheduleExportTheme = "light" | "dark";
 
 export interface ScheduleExportOptions {
@@ -68,7 +68,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
         <DialogHeader>
           <DialogTitle>Exportar calendario</DialogTitle>
           <DialogDescription>
-            Descarga el horario en formato imagen con el estilo que prefieras.
+            Descarga el horario como imagen o archivo de calendario.
           </DialogDescription>
         </DialogHeader>
 
@@ -85,40 +85,50 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
               <SelectContent>
                 <SelectItem value="png">PNG</SelectItem>
                 <SelectItem value="jpeg">JPEG / JPG</SelectItem>
+                <SelectItem value="ics">
+                  <span className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    Calendario (.ics)
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label>Modo</Label>
-            <Select
-              value={theme}
-              onValueChange={(value) => setTheme(value as ScheduleExportTheme)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un modo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Claro</SelectItem>
-                <SelectItem value="dark">Oscuro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {format !== "ics" && (
+            <>
+              <div className="grid gap-2">
+                <Label>Modo</Label>
+                <Select
+                  value={theme}
+                  onValueChange={(value) => setTheme(value as ScheduleExportTheme)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un modo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Claro</SelectItem>
+                    <SelectItem value="dark">Oscuro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-            <div className="space-y-1">
-              <Label>Fondo transparente</Label>
-              <p className="text-sm text-muted-foreground">
-                Ideal para insertar en documentos o presentaciones.
-              </p>
-            </div>
-            <Switch checked={transparent} onCheckedChange={setTransparent} />
-          </div>
+              <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+                <div className="space-y-1">
+                  <Label>Fondo transparente</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Ideal para insertar en documentos o presentaciones.
+                  </p>
+                </div>
+                <Switch checked={transparent} onCheckedChange={setTransparent} />
+              </div>
+            </>
+          )}
         </div>
 
         <DialogFooter>
           <Button onClick={handleExport} disabled={isExporting}>
-            {isExporting ? "Exportando..." : "Exportar"}
+            {isExporting ? "Exportando..." : format === "ics" ? "Descargar" : "Exportar"}
           </Button>
         </DialogFooter>
       </DialogContent>
