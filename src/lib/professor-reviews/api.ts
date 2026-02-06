@@ -1,0 +1,142 @@
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import type {
+  ProfessorReviewModerationRow,
+  ProfessorReviewPublicRow,
+  ProfessorReviewSummary,
+  ProfessorReviewTagCount,
+  ProfessorReviewStatsRow,
+  ProfessorReviewStatus,
+  SearchProfessorReviewStatsParams,
+  SubmitProfessorReviewPayload,
+} from "@/lib/professor-reviews/types";
+
+export async function searchProfessorReviewStats(params: SearchProfessorReviewStatsParams): Promise<ProfessorReviewStatsRow[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("search_professor_review_stats", {
+    p_query: params.query.trim() === "" ? null : params.query.trim(),
+    p_min_avg_score: params.minAverageScore,
+    p_min_review_count: params.minReviewCount,
+    p_course_code: params.courseCode.trim() === "" ? null : params.courseCode.trim().toUpperCase(),
+    p_only_with_approved_reviews: params.onlyWithApprovedReviews,
+    p_limit: params.limit,
+    p_offset: params.offset,
+  });
+
+  if (error) throw error;
+  return (data ?? []) as ProfessorReviewStatsRow[];
+}
+
+export async function getProfessorReviewsPublic(
+  professorId: number,
+  limit: number,
+  offset: number,
+): Promise<ProfessorReviewPublicRow[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("get_professor_reviews_public", {
+    p_professor_id: professorId,
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) throw error;
+  return (data ?? []) as ProfessorReviewPublicRow[];
+}
+
+export async function getProfessorReviewSummary(professorId: number): Promise<ProfessorReviewSummary> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("get_professor_review_summary", {
+    p_professor_id: professorId,
+  });
+
+  if (error) throw error;
+
+  const row = (data?.[0] ?? {
+    professor_id: professorId,
+    approved_review_count: 0,
+    average_overall_score: null,
+    average_ease_score: null,
+    average_quality_score: null,
+    average_clarity_score: null,
+    average_fairness_score: null,
+    would_take_again_percentage: null,
+    tag_counts: [],
+  }) as {
+    professor_id: number;
+    approved_review_count: number;
+    average_overall_score: number | null;
+    average_ease_score: number | null;
+    average_quality_score: number | null;
+    average_clarity_score: number | null;
+    average_fairness_score: number | null;
+    would_take_again_percentage: number | null;
+    tag_counts: unknown;
+  };
+
+  const tagCounts = Array.isArray(row.tag_counts)
+    ? (row.tag_counts as ProfessorReviewTagCount[])
+    : [];
+
+  return {
+    ...row,
+    tag_counts: tagCounts,
+  };
+}
+
+export async function getProfessorById(professorId: number): Promise<{ id: number; full_name: string } | null> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .from("professor")
+    .select("id,full_name")
+    .eq("id", professorId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function submitProfessorReview(payload: SubmitProfessorReviewPayload): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase.functions.invoke("submit-professor-review", {
+    body: payload,
+  });
+
+  if (error) throw error;
+}
+
+export async function getProfessorReviewsForModeration(
+  status: ProfessorReviewStatus,
+  limit: number,
+  offset: number,
+): Promise<ProfessorReviewModerationRow[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("get_professor_reviews_for_moderation", {
+    p_status: status,
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) throw error;
+  return (data ?? []) as ProfessorReviewModerationRow[];
+}
+
+export async function moderateProfessorReview(
+  reviewId: number,
+  status: "approved" | "rejected",
+  note: string,
+): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase.rpc("moderate_professor_review", {
+    p_review_id: reviewId,
+    p_new_status: status,
+    p_moderation_note: note.trim() === "" ? null : note.trim(),
+  });
+
+  if (error) throw error;
+}
+
+export async function getCurrentUserIsAdmin(): Promise<boolean> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("is_admin");
+  if (error) throw error;
+  return Boolean(data);
+}
