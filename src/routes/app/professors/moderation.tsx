@@ -20,7 +20,7 @@ import {
   useModerateProfessorReview,
   useModerationQueue,
 } from "@/lib/hooks/use-professor-reviews";
-import { useAuthUser } from "@/lib/hooks/use-queries";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 
 export const Route = createFileRoute("/app/professors/moderation")({
   component: ModerationPage,
@@ -30,7 +30,7 @@ const PAGE_SIZE = 20;
 
 function ModerationPage() {
   const navigate = Route.useNavigate();
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+  const { authUser, isAuthLoading } = useAppAuth();
   const [page, setPage] = useState(0);
   const [moderationNote, setModerationNote] = useState<Record<number, string>>({});
   const isAdminQuery = useIsAdmin();

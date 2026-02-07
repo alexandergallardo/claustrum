@@ -8,7 +8,6 @@ import {
   useTransition,
   type CSSProperties,
 } from "react";
-import { toJpeg, toPng } from "html-to-image";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
@@ -38,6 +37,7 @@ import {
   END_HOUR,
 } from "@/components/calendar/body/day/calendar-body-day-margin";
 import { cn } from "@/lib/utils";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 import {
   useUniversities,
   useCampuses,
@@ -47,7 +47,6 @@ import {
   useScheduleCourses,
   useUserStudyPlan,
   useSuggestedAcademicTerm,
-  useAuthUser,
 } from "@/lib/hooks/use-queries";
 
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
@@ -131,7 +130,7 @@ function SchedulePage() {
   const careersQuery = useAcademicUnits(selectedCampusId);
   const plansQuery = useStudyPlans(selectedCareerId);
   const termsQuery = useAcademicTerms(selectedCampusId);
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+  const { authUser, isAuthLoading } = useAppAuth();
   const isAuthenticated = !!authUser;
   const effectiveShowAllCourses = isAuthenticated ? showAllCourses : true;
   const coursesQuery = useScheduleCourses({
@@ -587,6 +586,7 @@ function SchedulePage() {
     }
 
     try {
+      const { toJpeg, toPng } = await import("html-to-image");
       const extension = options.format === "jpeg" ? "jpg" : "png";
       const dateStamp = new Date().toISOString().slice(0, 10);
       const backgroundColor = options.transparent

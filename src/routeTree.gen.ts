@@ -22,7 +22,6 @@ import { Route as AppCurriculumIndexRouteImport } from './routes/app/curriculum/
 import { Route as AppSettingsSecurityRouteImport } from './routes/app/settings/security'
 import { Route as AppSettingsProfileRouteImport } from './routes/app/settings/profile'
 import { Route as AppSettingsAppearanceRouteImport } from './routes/app/settings/appearance'
-import { Route as AppSettingsLayoutRouteImport } from './routes/app/settings/_layout'
 import { Route as AppProfessorsModerationRouteImport } from './routes/app/professors/moderation'
 import { Route as AppProfessorsProfessorIdRouteImport } from './routes/app/professors/$professorId'
 
@@ -90,10 +89,6 @@ const AppSettingsAppearanceRoute = AppSettingsAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => AppSettingsRouteRoute,
 } as any)
-const AppSettingsLayoutRoute = AppSettingsLayoutRouteImport.update({
-  id: '/_layout',
-  getParentRoute: () => AppSettingsRouteRoute,
-} as any)
 const AppProfessorsModerationRoute = AppProfessorsModerationRouteImport.update({
   id: '/app/professors/moderation',
   path: '/app/professors/moderation',
@@ -108,7 +103,7 @@ const AppProfessorsProfessorIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app/settings': typeof AppSettingsLayoutRoute
+  '/app/settings': typeof AppSettingsRouteRouteWithChildren
   '/app': typeof AppIndexRoute
   '/login/': typeof LoginIndexRoute
   '/signup/': typeof SignupIndexRoute
@@ -131,13 +126,13 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailIndexRoute
   '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
   '/app/professors/moderation': typeof AppProfessorsModerationRoute
-  '/app/settings': typeof AppSettingsIndexRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
   '/app/curriculum': typeof AppCurriculumIndexRoute
   '/app/professors': typeof AppProfessorsIndexRoute
   '/app/schedule': typeof AppScheduleIndexRoute
+  '/app/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,7 +144,6 @@ export interface FileRoutesById {
   '/verify-email/': typeof VerifyEmailIndexRoute
   '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
   '/app/professors/moderation': typeof AppProfessorsModerationRoute
-  '/app/settings/_layout': typeof AppSettingsLayoutRoute
   '/app/settings/appearance': typeof AppSettingsAppearanceRoute
   '/app/settings/profile': typeof AppSettingsProfileRoute
   '/app/settings/security': typeof AppSettingsSecurityRoute
@@ -185,13 +179,13 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/app/professors/$professorId'
     | '/app/professors/moderation'
-    | '/app/settings'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
     | '/app/curriculum'
     | '/app/professors'
     | '/app/schedule'
+    | '/app/settings'
   id:
     | '__root__'
     | '/_index'
@@ -202,7 +196,6 @@ export interface FileRouteTypes {
     | '/verify-email/'
     | '/app/professors/$professorId'
     | '/app/professors/moderation'
-    | '/app/settings/_layout'
     | '/app/settings/appearance'
     | '/app/settings/profile'
     | '/app/settings/security'
@@ -319,13 +312,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAppearanceRouteImport
       parentRoute: typeof AppSettingsRouteRoute
     }
-    '/app/settings/_layout': {
-      id: '/app/settings/_layout'
-      path: ''
-      fullPath: '/app/settings'
-      preLoaderRoute: typeof AppSettingsLayoutRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
-    }
     '/app/professors/moderation': {
       id: '/app/professors/moderation'
       path: '/app/professors/moderation'
@@ -344,7 +330,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppSettingsRouteRouteChildren {
-  AppSettingsLayoutRoute: typeof AppSettingsLayoutRoute
   AppSettingsAppearanceRoute: typeof AppSettingsAppearanceRoute
   AppSettingsProfileRoute: typeof AppSettingsProfileRoute
   AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
@@ -352,7 +337,6 @@ interface AppSettingsRouteRouteChildren {
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
-  AppSettingsLayoutRoute: AppSettingsLayoutRoute,
   AppSettingsAppearanceRoute: AppSettingsAppearanceRoute,
   AppSettingsProfileRoute: AppSettingsProfileRoute,
   AppSettingsSecurityRoute: AppSettingsSecurityRoute,

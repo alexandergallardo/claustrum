@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { UserIcon, PencilIcon, Loader2Icon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuthUser, useUniversities, useCampuses, useAcademicUnits, useStudyPlans, useProfileContext } from "@/lib/hooks/use-queries";
+import { useUniversities, useCampuses, useAcademicUnits, useStudyPlans, useProfileContext } from "@/lib/hooks/use-queries";
 
 export const Route = createFileRoute("/app/settings/profile")({
   component: () => <ClientOnly fallback={<div className="flex items-center justify-center py-12"><Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" /></div>}><ProfilePage /></ClientOnly>,
@@ -34,7 +35,7 @@ function getErrorMessage(err: unknown): string {
 function ProfilePage() {
   const queryClient = useQueryClient();
 
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+  const { authUser, isAuthLoading } = useAppAuth();
   const { data: universities, isLoading: isUniversitiesLoading } = useUniversities();
 
   const profileContext = useProfileContext(authUser?.id ?? null);

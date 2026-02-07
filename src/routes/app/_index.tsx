@@ -1,18 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState, useLayoutEffect } from "react";
+import { Suspense, lazy, useRef, useState, useLayoutEffect } from "react";
 import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
-import { DashboardStatsCards, CourseStatusChart } from "@/components/dashboard/dashboard-stats";
 import { ProgressTimeline } from "@/components/dashboard/progress-timeline";
 import { NextCourses } from "@/components/dashboard/next-courses";
 import { EmptyDashboard, DashboardSkeleton } from "@/components/dashboard/empty-state";
-import { useAuthUser, useDashboardStats, useUserStudyPlan } from "@/lib/hooks/use-queries";
+import { useDashboardStats, useUserStudyPlan } from "@/lib/hooks/use-queries";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
+
+const DashboardStatsCards = lazy(() =>
+  import("@/components/dashboard/dashboard-stats").then((module) => ({ default: module.DashboardStatsCards })),
+);
+
+const CourseStatusChart = lazy(() =>
+  import("@/components/dashboard/dashboard-stats").then((module) => ({ default: module.CourseStatusChart })),
+);
 
 export const Route = createFileRoute("/app/_index")({
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+  const { authUser, isAuthLoading } = useAppAuth();
   const { data: userStudyPlan, isLoading: isLoadingUserPlan } = useUserStudyPlan(
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,
@@ -55,12 +63,16 @@ function DashboardPage() {
                 </div>
 
                 <div className="px-4 lg:px-6">
-                  <DashboardStatsCards stats={dashboardData.stats} />
+                  <Suspense fallback={<div className="h-[132px] w-full rounded-lg border bg-muted/20" />}>
+                    <DashboardStatsCards stats={dashboardData.stats} />
+                  </Suspense>
                 </div>
 
                 <div className="grid gap-4 px-4 lg:px-6 md:grid-cols-2 lg:grid-cols-7">
                   <div ref={distributionRef} className="w-full min-w-0 lg:col-span-4 h-fit">
-                    <CourseStatusChart stats={dashboardData.stats} />
+                    <Suspense fallback={<div className="h-[360px] w-full rounded-lg border bg-muted/20" />}>
+                      <CourseStatusChart stats={dashboardData.stats} />
+                    </Suspense>
                   </div>
                   <div 
                     className="w-full min-w-0 lg:col-span-3"
