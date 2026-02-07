@@ -20,3 +20,4 @@ supabase/.temp
 supabase/snippets/*
 supabase/config.toml
 supabase/.env
+supabase/seed.sql
