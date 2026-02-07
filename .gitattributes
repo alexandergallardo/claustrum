@@ -1,0 +1,3 @@
+supabase/migrations/** linguist-detectable=false
+supabase/seed.sql linguist-detectable=false
+src/routeTree.gen.ts linguist-generated=true
