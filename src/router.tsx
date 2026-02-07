@@ -8,6 +8,7 @@ export const getRouter = () => {
   const router = createRouter({
     routeTree,
     scrollRestoration: true,
+    defaultPreload: false,
     defaultPreloadStaleTime: 0,
     defaultStructuralSharing: true,
   })
