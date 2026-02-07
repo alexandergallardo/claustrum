@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 
 import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +39,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useAuthUser } from "@/lib/hooks/use-queries";
 import { useIsAdmin, useProfessorReviewStats } from "@/lib/hooks/use-professor-reviews";
 import { getProfessorById, getProfessorReviewSummary, getProfessorReviewsPublic } from "@/lib/professor-reviews/api";
 import type { ProfessorReviewStatsRow } from "@/lib/professor-reviews/types";
@@ -62,7 +62,7 @@ function formatDate(value: string | null): string {
 
 function ProfessorsReviewsPage() {
   const queryClient = useQueryClient();
-  const { data: authUser } = useAuthUser();
+  const { authUser } = useAppAuth();
   const { data: isAdmin } = useIsAdmin();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchInput, { wait: 300 });

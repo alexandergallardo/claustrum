@@ -20,14 +20,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useAuthUser } from "@/lib/hooks/use-queries";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 
 export const Route = createFileRoute("/app/settings/security")({
   component: SecurityPage,
 });
 
 function SecurityPage() {
-  const { data: authUser, isLoading } = useAuthUser();
+  const { authUser, isAuthLoading: isLoading } = useAppAuth();
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");

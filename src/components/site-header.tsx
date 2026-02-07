@@ -5,12 +5,12 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "@/components/theme-provider"
 import { UserMenuDropdown } from "@/components/user-menu-dropdown";
-import { useAuthUser } from "@/lib/hooks/use-queries";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 import { Link } from "@tanstack/react-router";
 
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
-  const { data: user } = useAuthUser();
+  const { authUser: user } = useAppAuth();
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";

@@ -5,13 +5,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
+import { useAppAuth } from '@/lib/auth/app-auth-context'
 import {
   useUniversities,
   useCampuses,
   useAcademicUnits,
   useStudyPlans,
   useStudyPlanDetail,
-  useAuthUser,
   useUserStudyPlan,
 } from '@/lib/hooks/use-queries'
 import type { CatalogCampus, CatalogStudyPlan } from '@/lib/types'
@@ -50,7 +50,7 @@ function PlanEstudiosPage() {
   const selectedPlanData = plansQuery.data?.find((p: CatalogStudyPlan) => p.id === selectedPlanId)
 
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData)
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser()
+  const { authUser, isAuthLoading } = useAppAuth()
   const { data: userStudyPlan } = useUserStudyPlan(
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,

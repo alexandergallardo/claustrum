@@ -18,7 +18,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "@tanstack/react-router";
-import { useAuthUser } from "@/lib/hooks/use-queries";
+import { useAppAuth } from "@/lib/auth/app-auth-context";
 
 const data = {
   navMain: [
@@ -46,7 +46,7 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { data: authUser } = useAuthUser();
+  const { authUser } = useAppAuth();
 
   const user = authUser
     ? {

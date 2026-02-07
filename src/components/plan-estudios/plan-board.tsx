@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react"
-import { useAuthUser } from "@/lib/hooks/use-queries"
+import { useAppAuth } from "@/lib/auth/app-auth-context"
 import { MemoizedCurriculumGrid } from "@/components/curriculum-grid"
 import type { StudyPlanDetail } from "@/lib/types"
 import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, GraduationCap, Calendar, BookOpen } from "lucide-react"
@@ -34,7 +34,7 @@ function getInitialPanelOpen(): boolean {
 }
 
 function PlanBoard({ planDetail }: PlanBoardProps) {
-  const { data: authUser } = useAuthUser()
+  const { authUser } = useAppAuth()
   const userId = useMemo(() => authUser?.id ?? undefined, [authUser?.id])
   const studyPlanId = useMemo(() => planDetail.plan?.id ?? undefined, [planDetail.plan?.id])
 
