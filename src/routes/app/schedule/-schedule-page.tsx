@@ -680,11 +680,8 @@ export function SchedulePage() {
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-              <div>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold">Horarios</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Visualiza y gestiona tus horarios de clases
-                </p>
               </div>
             </div>
 

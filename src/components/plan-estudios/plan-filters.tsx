@@ -14,8 +14,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { ChevronDown, ChevronUp, Filter } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan } from '@/lib/types'
+import { FiltersPanel } from '@/components/filters/filters-panel'
 
 interface PlanFiltersProps {
   universities: CatalogUniversity[]
@@ -34,6 +37,9 @@ interface PlanFiltersProps {
   isLoadingCampuses?: boolean
   isLoadingCareerPrograms: boolean
   isLoadingPlans: boolean
+  canUseProfileDefaults?: boolean
+  isUsingProfileDefaults?: boolean
+  onUseProfileDefaults?: () => void
 }
 
 const truncateText = (text: string, maxLength = 35) => {
@@ -98,7 +104,7 @@ function FilterSelect({
                       </TooltipTrigger>
                       {displayText !== fullText && (
                         <TooltipContent side="right">
-                          <p>{showCode ? normalizeText(item.name) : fullText}</p>
+                          <p>{fullText}</p>
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -138,6 +144,9 @@ export function PlanFilters({
   isLoadingCampuses = false,
   isLoadingCareerPrograms,
   isLoadingPlans,
+  canUseProfileDefaults = false,
+  isUsingProfileDefaults = false,
+  onUseProfileDefaults,
 }: PlanFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
@@ -148,28 +157,39 @@ export function PlanFilters({
 
   if (!hasUniversities && isLoadingUniversities) {
     return (
-      <div className="flex flex-wrap items-end gap-4">
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-      </div>
+      <Card className="sticky top-[calc(var(--header-height)+0.75rem)] z-30 border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-end gap-4">
+            <FilterSkeleton />
+            <FilterSkeleton />
+            <FilterSkeleton />
+            <FilterSkeleton />
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <button
-        type="button"
-        onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Filter className="w-4 h-4" />
-        <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
-        {isFiltersVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-      </button>
-
-      <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden'}`}>
+    <FiltersPanel
+      isExpanded={isFiltersVisible}
+      onExpandedChange={setIsFiltersVisible}
+      headerActions={
+        canUseProfileDefaults && onUseProfileDefaults ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onUseProfileDefaults}
+            disabled={isUsingProfileDefaults}
+          >
+            <User className="h-4 w-4" />
+            {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
+          </Button>
+        ) : null
+      }
+    >
+      <div className="flex flex-wrap items-end gap-4">
         <FilterSelect
           label="Universidad"
           value={selectedUniversityId?.toString() || ''}
@@ -211,6 +231,6 @@ export function PlanFilters({
           isVisible={!!selectedCareerProgramId}
         />
       </div>
-    </div>
+    </FiltersPanel>
   )
 }
