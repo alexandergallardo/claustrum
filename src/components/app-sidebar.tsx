@@ -1,9 +1,10 @@
 import * as React from "react";
 import {
   IconDashboard,
-  IconBook,
   IconCalendarTime,
   IconInnerShadowTop,
+  IconSchool,
+  IconUsers,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -35,12 +36,12 @@ const data = {
     {
       title: "Plan de estudios",
       url: "/app/curriculum",
-      icon: IconBook,
+      icon: IconSchool,
     },
     {
       title: "Profesores",
       url: "/app/professors",
-      icon: IconBook,
+      icon: IconUsers,
     },
   ],
 };
