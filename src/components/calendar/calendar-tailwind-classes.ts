@@ -4,12 +4,12 @@ export const colorOptions = [
     label: 'Blue',
   },
   {
-    value: 'indigo',
-    label: 'Indigo',
+    value: 'emerald',
+    label: 'Emerald',
   },
   {
-    value: 'pink',
-    label: 'Pink',
+    value: 'yellow',
+    label: 'Yellow',
   },
   {
     value: 'red',
@@ -20,11 +20,15 @@ export const colorOptions = [
     label: 'Orange',
   },
   {
-    value: 'amber',
-    label: 'Amber',
+    value: 'fuchsia',
+    label: 'Fuchsia',
   },
   {
-    value: 'emerald',
-    label: 'Emerald',
+    value: 'violet',
+    label: 'Violet',
+  },
+  {
+    value: 'slate',
+    label: 'Slate',
   },
 ]

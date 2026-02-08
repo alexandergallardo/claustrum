@@ -37,12 +37,13 @@ const formatClassroom = (classroom: string | null | undefined): string | null =>
 
 const COLOR_STYLE_MAP: Record<string, { bg: string; border: string; text: string }> = {
   blue: { bg: 'rgb(30 58 138 / 0.2)', border: 'rgb(59 130 246)', text: 'rgb(147 197 253)' },
-  indigo: { bg: 'rgb(55 48 163 / 0.2)', border: 'rgb(99 102 241)', text: 'rgb(165 180 252)' },
-  pink: { bg: 'rgb(157 23 77 / 0.2)', border: 'rgb(236 72 153)', text: 'rgb(249 168 212)' },
+  emerald: { bg: 'rgb(6 78 59 / 0.2)', border: 'rgb(16 185 129)', text: 'rgb(110 231 183)' },
+  yellow: { bg: 'rgb(113 63 18 / 0.2)', border: 'rgb(234 179 8)', text: 'rgb(254 240 138)' },
   red: { bg: 'rgb(153 27 27 / 0.2)', border: 'rgb(239 68 68)', text: 'rgb(252 165 165)' },
   orange: { bg: 'rgb(154 52 18 / 0.2)', border: 'rgb(249 115 22)', text: 'rgb(253 186 116)' },
-  amber: { bg: 'rgb(146 64 14 / 0.2)', border: 'rgb(245 158 11)', text: 'rgb(253 224 71)' },
-  emerald: { bg: 'rgb(6 78 59 / 0.2)', border: 'rgb(16 185 129)', text: 'rgb(110 231 183)' },
+  fuchsia: { bg: 'rgb(112 26 117 / 0.2)', border: 'rgb(217 70 239)', text: 'rgb(245 208 254)' },
+  violet: { bg: 'rgb(76 29 149 / 0.2)', border: 'rgb(139 92 246)', text: 'rgb(221 214 254)' },
+  slate: { bg: 'rgb(51 65 85 / 0.2)', border: 'rgb(100 116 139)', text: 'rgb(203 213 225)' },
 }
 
 const getColorStyles = (color: string) => COLOR_STYLE_MAP[color] || COLOR_STYLE_MAP.blue
