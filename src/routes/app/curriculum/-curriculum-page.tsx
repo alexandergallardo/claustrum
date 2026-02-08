@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -28,6 +28,9 @@ export function CurriculumPage() {
   const selectedCampusId = search.campus ?? null
   const selectedAcademicUnitId = search.career ?? null
   const selectedPlanId = search.plan ?? null
+  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
+    () => !search.university && !search.campus && !search.career && !search.plan,
+  )
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities()
   const campusesQuery = useCampuses(selectedUniversityId)
@@ -51,6 +54,7 @@ export function CurriculumPage() {
 
   useEffect(() => {
     if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
+      setIsUsingProfileDefaults(true)
       navigate({
         to: '/app/curriculum',
         search: {
@@ -63,7 +67,29 @@ export function CurriculumPage() {
     }
   }, [userStudyPlan, selectedUniversityId, selectedCampusId, selectedAcademicUnitId, selectedPlanId, navigate])
 
+  useEffect(() => {
+    if (!authUser) {
+      setIsUsingProfileDefaults(false)
+      return
+    }
+    if (!userStudyPlan) return
+    const hasSearch = !!search.university || !!search.campus || !!search.career || !!search.plan
+    if (!hasSearch) {
+      setIsUsingProfileDefaults(true)
+      return
+    }
+
+    const matchesProfile =
+      search.university === userStudyPlan.universityId &&
+      search.campus === userStudyPlan.campusId &&
+      search.career === userStudyPlan.academicUnitId &&
+      search.plan === userStudyPlan.studyPlanId
+
+    setIsUsingProfileDefaults(matchesProfile)
+  }, [authUser, search, userStudyPlan])
+
   const handleUniversityChange = useCallback((id: number | null) => {
+    setIsUsingProfileDefaults(false)
     navigate({
       search: {
         university: id ?? undefined,
@@ -75,6 +101,7 @@ export function CurriculumPage() {
   }, [navigate])
 
   const handleCampusChange = useCallback((id: number | null) => {
+    setIsUsingProfileDefaults(false)
     navigate({
       search: {
         ...search,
@@ -86,6 +113,7 @@ export function CurriculumPage() {
   }, [navigate, search])
 
   const handleAcademicUnitChange = useCallback((id: number | null) => {
+    setIsUsingProfileDefaults(false)
     navigate({
       search: {
         ...search,
@@ -96,6 +124,7 @@ export function CurriculumPage() {
   }, [navigate, search])
 
   const handlePlanChange = useCallback((id: number | null) => {
+    setIsUsingProfileDefaults(false)
     navigate({
       search: {
         ...search,
@@ -104,17 +133,29 @@ export function CurriculumPage() {
     })
   }, [navigate, search])
 
+  const handleUseProfileDefaults = useCallback(() => {
+    if (!userStudyPlan) return
+    setIsUsingProfileDefaults(true)
+    navigate({
+      to: '/app/curriculum',
+      search: {
+        ...search,
+        university: userStudyPlan.universityId ?? undefined,
+        campus: userStudyPlan.campusId ?? undefined,
+        career: userStudyPlan.academicUnitId ?? undefined,
+        plan: userStudyPlan.studyPlanId ?? undefined,
+      },
+    })
+  }, [navigate, search, userStudyPlan])
+
   return (
     <AppLayoutWrapper>
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-              <div>
+              <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold">Plan de estudios</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Visualiza la estructura y requisitos de tu carrera
-                </p>
               </div>
             </div>
 
@@ -136,6 +177,9 @@ export function CurriculumPage() {
                 isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
                 isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
                 isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                canUseProfileDefaults={!!authUser && !!userStudyPlan}
+                isUsingProfileDefaults={isUsingProfileDefaults}
+                onUseProfileDefaults={handleUseProfileDefaults}
               />
             </div>
 

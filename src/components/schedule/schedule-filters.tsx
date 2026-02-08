@@ -17,8 +17,10 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp, Filter, User } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
+import { FiltersPanel } from '@/components/filters/filters-panel'
 
 interface ScheduleFiltersProps {
   universities: CatalogUniversity[]
@@ -79,14 +81,16 @@ function FilterSelect({
   onChange,
   isLoading,
   isVisible,
+  showCode = false,
 }: {
   label: string
   value: string
   placeholder: string
-  items: { id: number; name: string }[]
+  items: { id: number; code?: string; name: string }[]
   onChange: (val: string) => void
   isLoading: boolean
   isVisible: boolean
+  showCode?: boolean
 }) {
   if (!isVisible) return null
 
@@ -107,7 +111,9 @@ function FilterSelect({
             <SelectGroup>
               <TooltipProvider>
                 {items.map((item) => {
-                  const fullText = normalizeText(item.name)
+                  const fullText = showCode && item.code
+                    ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+                    : normalizeText(item.name)
                   const displayText = truncateText(fullText)
                   return (
                     <Tooltip key={item.id}>
@@ -173,13 +179,17 @@ export function ScheduleFilters({
 
   if (!hasUniversities && isLoadingUniversities) {
     return (
-      <div className="flex flex-wrap items-end gap-4">
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-      </div>
+      <Card className="sticky top-[calc(var(--header-height)+0.75rem)] z-30 border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap items-end gap-4">
+            <FilterSkeleton />
+            <FilterSkeleton />
+            <FilterSkeleton />
+            <FilterSkeleton />
+            <FilterSkeleton />
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -199,19 +209,11 @@ export function ScheduleFilters({
   )
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setIsFiltersVisible(!isFiltersVisible)}
-          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Filter className="h-4 w-4" />
-          <span>{isFiltersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
-          {isFiltersVisible ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-
-        {canUseProfileDefaults && onUseProfileDefaults && (
+    <FiltersPanel
+      isExpanded={isFiltersVisible}
+      onExpandedChange={setIsFiltersVisible}
+      headerActions={
+        canUseProfileDefaults && onUseProfileDefaults ? (
           <Button
             type="button"
             variant="secondary"
@@ -222,10 +224,10 @@ export function ScheduleFilters({
             <User className="h-4 w-4" />
             {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
           </Button>
-        )}
-      </div>
-
-      <div className={`flex flex-wrap items-end gap-4 ${isFiltersVisible ? 'block' : 'hidden'}`}>
+        ) : null
+      }
+    >
+      <div className="flex flex-wrap items-end gap-4">
       <FilterSelect
         label="Universidad"
         value={selectedUniversityId?.toString() || ''}
@@ -254,6 +256,7 @@ export function ScheduleFilters({
         onChange={(val) => onCareerChange(val ? parseInt(val) : null)}
         isLoading={!careers.length && isLoadingCareers}
         isVisible={!!selectedCampusId}
+        showCode={true}
       />
 
       <FilterSelect
@@ -306,6 +309,6 @@ export function ScheduleFilters({
           </div>
         )}
       </div>
-    </div>
+    </FiltersPanel>
   )
 }
