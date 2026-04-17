@@ -203,6 +203,18 @@ export function SchedulePage() {
   );
 
   useEffect(() => {
+    if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
+      navigate({
+        to: "/app/schedule",
+        search: {
+          ...search,
+          university: universities[0].id,
+        },
+      });
+    }
+  }, [isLoadingUniversities, universities, selectedUniversityId, navigate, search]);
+
+  useEffect(() => {
     if (!isAuthenticated) return;
     if (!userStudyPlan || !isUsingProfileDefaults) return;
     if (
@@ -631,9 +643,6 @@ export function SchedulePage() {
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               <div className="px-4 lg:px-6">
-                <Skeleton className="h-8 w-48" />
-              </div>
-              <div className="px-4 lg:px-6">
                 <Skeleton className="h-12 w-full" />
               </div>
               <div className="px-4 lg:px-6">
@@ -679,12 +688,6 @@ export function SchedulePage() {
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="px-4 lg:px-6">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold">Horarios</h1>
-              </div>
-            </div>
-
             <div className="px-4 lg:px-6">
               <ScheduleFilters
                 universities={universities ?? []}

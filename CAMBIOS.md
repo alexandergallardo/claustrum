@@ -4,7 +4,7 @@ Este documento resume **todos los cambios que se aplicaron** durante la sesión 
 
 ## 1) Página Curriculum: quitar título y subtítulo
 
-**Archivo:** `src/routes/app/curriculum/index.tsx`
+**Archivo:** `src/routes/app/curriculum/-curriculum-page.tsx`
 
 ### Qué se cambió
 - Se eliminó el bloque visual con:
@@ -20,7 +20,7 @@ Este documento resume **todos los cambios que se aplicaron** durante la sesión 
 ## 2) Curriculum: ocultar selector de Universidad cuando solo hay una
 
 ### A) Auto-selección por defecto
-**Archivo:** `src/routes/app/curriculum/index.tsx`
+**Archivo:** `src/routes/app/curriculum/-curriculum-page.tsx`
 
 #### Qué se cambió
 - Si el catálogo trae exactamente 1 universidad y no hay `university` en search params, ahora se selecciona automáticamente.
@@ -67,7 +67,7 @@ Resultado:
 
 ## 4) Página Horarios: quitar título y subtítulo
 
-**Archivo:** `src/routes/app/schedule/index.tsx`
+**Archivo:** `src/routes/app/schedule/-schedule-page.tsx`
 
 ### Qué se cambió
 - Se eliminó el bloque con:
@@ -83,7 +83,7 @@ Resultado:
 ## 5) Horarios: ocultar selector de Universidad cuando solo hay una
 
 ### A) Auto-selección por defecto
-**Archivo:** `src/routes/app/schedule/index.tsx`
+**Archivo:** `src/routes/app/schedule/-schedule-page.tsx`
 
 #### Qué se cambió
 - Si solo existe una universidad y no está seleccionada, se setea automáticamente en la URL (`search params`).
@@ -110,7 +110,7 @@ Resultado:
 
 ## 6) Página Panel (Inicio): quitar título y subtítulo
 
-**Archivo:** `src/routes/app/_index.tsx`
+**Archivo:** `src/routes/app/-dashboard-page.tsx`
 
 ### Qué se cambió
 - Se eliminó el bloque con:
@@ -155,6 +155,6 @@ Compiló correctamente después de los cambios.
 - `src/components/app-sidebar.tsx`
 - `src/components/plan-estudios/plan-filters.tsx`
 - `src/components/schedule/schedule-filters.tsx`
-- `src/routes/app/_index.tsx`
-- `src/routes/app/curriculum/index.tsx`
-- `src/routes/app/schedule/index.tsx`
+- `src/routes/app/-dashboard-page.tsx`
+- `src/routes/app/curriculum/-curriculum-page.tsx`
+- `src/routes/app/schedule/-schedule-page.tsx`

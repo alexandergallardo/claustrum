@@ -53,6 +53,17 @@ export function CurriculumPage() {
   const mainCampuses = campuses.filter((c: CatalogCampus) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId)
 
   useEffect(() => {
+    if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
+      navigate({
+        search: {
+          ...search,
+          university: universities[0].id,
+        },
+      })
+    }
+  }, [isLoadingUniversities, universities, selectedUniversityId, navigate, search])
+
+  useEffect(() => {
     if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
       setIsUsingProfileDefaults(true)
       navigate({
@@ -153,12 +164,6 @@ export function CurriculumPage() {
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="px-4 lg:px-6">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold">Plan de estudios</h1>
-              </div>
-            </div>
-
             <div className="px-4 lg:px-6">
               <PlanFilters
                 universities={universities ?? []}

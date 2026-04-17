@@ -24,7 +24,7 @@ import { useAppAuth } from "@/lib/auth/app-auth-context";
 const data = {
   navMain: [
     {
-      title: "Panel",
+      title: "Inicio",
       url: "/app",
       icon: IconDashboard,
     },

@@ -52,11 +52,6 @@ export function DashboardPage() {
             ) : (
               <>
                 <div className="px-4 lg:px-6">
-                  <h1 className="text-2xl font-bold">Tu progreso academico</h1>
-                  <p className="text-muted-foreground">{userStudyPlan?.studyPlanName || "Plan de estudios"}</p>
-                </div>
-
-                <div className="px-4 lg:px-6">
                   <Suspense fallback={<div className="h-[132px] w-full rounded-lg border bg-muted/20" />}>
                     <DashboardStatsCards stats={dashboardData.stats} />
                   </Suspense>
