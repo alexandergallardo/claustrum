@@ -63,7 +63,7 @@ export function UserMenuDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link to="/app/settings/profile">
+            <Link to="/settings/profile">
               <Settings className="h-4 w-4" />
               Configuración
             </Link>

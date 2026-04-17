@@ -62,7 +62,7 @@ export function UserMenu({
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link to="/app/settings/profile">
+            <Link to="/settings/profile">
               <IconUserCircle />
               Configuración
             </Link>

@@ -20,4 +20,7 @@ supabase/.temp
 supabase/snippets/*
 supabase/config.toml
 supabase/.env
-supabase/seed.sql
+supabase/tec-data/.venv/
+supabase/tec-data/**/__pycache__/
+supabase/tec-data/.pytest_cache/
+supabase/tec-data/.ruff_cache/

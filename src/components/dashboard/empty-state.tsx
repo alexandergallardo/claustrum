@@ -21,7 +21,7 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
       ? "Selecciona tu universidad, sede, carrera y plan de estudios para ver tu progreso académico."
       : "Agrega tu universidad, sede, carrera y plan para que podamos armar tu dashboard."
 
-  const actionHref = hasProfile ? "/app/curriculum" : "/app/settings/profile"
+  const actionHref = hasProfile ? "/curriculum" : "/settings/profile"
   const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Configurar perfil"
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">

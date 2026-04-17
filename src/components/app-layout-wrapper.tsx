@@ -10,6 +10,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AppAuthProvider>
       <SidebarProvider
+        className="h-svh overflow-hidden"
         style={
           {
             "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -20,7 +21,9 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         <AppSidebar variant="inset" />
         <SidebarInset>
           <SiteHeader />
-          {children}
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </AppAuthProvider>
