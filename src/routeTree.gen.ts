@@ -10,23 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/_index'
+import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as VerifyEmailIndexRouteImport } from './routes/verify-email/index'
 import { Route as SignupIndexRouteImport } from './routes/signup/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
+import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
-import { Route as AppIndexRouteImport } from './routes/app/_index'
-import { Route as AppSettingsRouteRouteImport } from './routes/app/settings/route'
-import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
-import { Route as AppScheduleIndexRouteImport } from './routes/app/schedule/index'
-import { Route as AppProfessorsIndexRouteImport } from './routes/app/professors/index'
-import { Route as AppCurriculumIndexRouteImport } from './routes/app/curriculum/index'
-import { Route as AppSettingsSecurityRouteImport } from './routes/app/settings/security'
-import { Route as AppSettingsProfileRouteImport } from './routes/app/settings/profile'
-import { Route as AppSettingsAppearanceRouteImport } from './routes/app/settings/appearance'
-import { Route as AppProfessorsModerationRouteImport } from './routes/app/professors/moderation'
-import { Route as AppProfessorsProfessorIdRouteImport } from './routes/app/professors/$professorId'
+import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
+import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
+import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
+import { Route as ProfessorsModerationRouteImport } from './routes/professors/moderation'
+import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRouteRoute = SettingsRouteRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyEmailIndexRoute = VerifyEmailIndexRouteImport.update({
@@ -39,184 +43,166 @@ const SignupIndexRoute = SignupIndexRouteImport.update({
   path: '/signup/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRouteRoute,
+} as any)
+const ScheduleIndexRoute = ScheduleIndexRouteImport.update({
+  id: '/schedule/',
+  path: '/schedule/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfessorsIndexRoute = ProfessorsIndexRouteImport.update({
+  id: '/professors/',
+  path: '/professors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
-  id: '/app/_index',
-  path: '/app',
+const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
+  id: '/curriculum/',
+  path: '/curriculum/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppSettingsRouteRoute = AppSettingsRouteRouteImport.update({
-  id: '/app/settings',
-  path: '/app/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppSettingsRouteRoute,
-} as any)
-const AppScheduleIndexRoute = AppScheduleIndexRouteImport.update({
-  id: '/app/schedule/',
-  path: '/app/schedule/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppProfessorsIndexRoute = AppProfessorsIndexRouteImport.update({
-  id: '/app/professors/',
-  path: '/app/professors/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppCurriculumIndexRoute = AppCurriculumIndexRouteImport.update({
-  id: '/app/curriculum/',
-  path: '/app/curriculum/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppSettingsSecurityRoute = AppSettingsSecurityRouteImport.update({
+const SettingsSecurityRoute = SettingsSecurityRouteImport.update({
   id: '/security',
   path: '/security',
-  getParentRoute: () => AppSettingsRouteRoute,
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
-const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
+const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => AppSettingsRouteRoute,
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
-const AppSettingsAppearanceRoute = AppSettingsAppearanceRouteImport.update({
+const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
   id: '/appearance',
   path: '/appearance',
-  getParentRoute: () => AppSettingsRouteRoute,
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
-const AppProfessorsModerationRoute = AppProfessorsModerationRouteImport.update({
-  id: '/app/professors/moderation',
-  path: '/app/professors/moderation',
+const ProfessorsModerationRoute = ProfessorsModerationRouteImport.update({
+  id: '/professors/moderation',
+  path: '/professors/moderation',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppProfessorsProfessorIdRoute =
-  AppProfessorsProfessorIdRouteImport.update({
-    id: '/app/professors/$professorId',
-    path: '/app/professors/$professorId',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
+  id: '/professors/$professorId',
+  path: '/professors/$professorId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/app': typeof AppIndexRoute
+  '/professors/$professorId': typeof ProfessorsProfessorIdRoute
+  '/professors/moderation': typeof ProfessorsModerationRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/profile': typeof SettingsProfileRoute
+  '/settings/security': typeof SettingsSecurityRoute
+  '/curriculum/': typeof CurriculumIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/professors/': typeof ProfessorsIndexRoute
+  '/schedule/': typeof ScheduleIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/signup/': typeof SignupIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
-  '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
-  '/app/professors/moderation': typeof AppProfessorsModerationRoute
-  '/app/settings/appearance': typeof AppSettingsAppearanceRoute
-  '/app/settings/profile': typeof AppSettingsProfileRoute
-  '/app/settings/security': typeof AppSettingsSecurityRoute
-  '/app/curriculum/': typeof AppCurriculumIndexRoute
-  '/app/professors/': typeof AppProfessorsIndexRoute
-  '/app/schedule/': typeof AppScheduleIndexRoute
-  '/app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppIndexRoute
+  '/professors/$professorId': typeof ProfessorsProfessorIdRoute
+  '/professors/moderation': typeof ProfessorsModerationRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/profile': typeof SettingsProfileRoute
+  '/settings/security': typeof SettingsSecurityRoute
+  '/curriculum': typeof CurriculumIndexRoute
   '/login': typeof LoginIndexRoute
+  '/professors': typeof ProfessorsIndexRoute
+  '/schedule': typeof ScheduleIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/signup': typeof SignupIndexRoute
   '/verify-email': typeof VerifyEmailIndexRoute
-  '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
-  '/app/professors/moderation': typeof AppProfessorsModerationRoute
-  '/app/settings/appearance': typeof AppSettingsAppearanceRoute
-  '/app/settings/profile': typeof AppSettingsProfileRoute
-  '/app/settings/security': typeof AppSettingsSecurityRoute
-  '/app/curriculum': typeof AppCurriculumIndexRoute
-  '/app/professors': typeof AppProfessorsIndexRoute
-  '/app/schedule': typeof AppScheduleIndexRoute
-  '/app/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
-  '/app/settings': typeof AppSettingsRouteRouteWithChildren
-  '/app/_index': typeof AppIndexRoute
+  '/professors/$professorId': typeof ProfessorsProfessorIdRoute
+  '/professors/moderation': typeof ProfessorsModerationRoute
+  '/settings/appearance': typeof SettingsAppearanceRoute
+  '/settings/profile': typeof SettingsProfileRoute
+  '/settings/security': typeof SettingsSecurityRoute
+  '/curriculum/': typeof CurriculumIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/professors/': typeof ProfessorsIndexRoute
+  '/schedule/': typeof ScheduleIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/signup/': typeof SignupIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
-  '/app/professors/$professorId': typeof AppProfessorsProfessorIdRoute
-  '/app/professors/moderation': typeof AppProfessorsModerationRoute
-  '/app/settings/appearance': typeof AppSettingsAppearanceRoute
-  '/app/settings/profile': typeof AppSettingsProfileRoute
-  '/app/settings/security': typeof AppSettingsSecurityRoute
-  '/app/curriculum/': typeof AppCurriculumIndexRoute
-  '/app/professors/': typeof AppProfessorsIndexRoute
-  '/app/schedule/': typeof AppScheduleIndexRoute
-  '/app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/settings'
     | '/'
-    | '/app/settings'
-    | '/app'
+    | '/professors/$professorId'
+    | '/professors/moderation'
+    | '/settings/appearance'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/curriculum/'
     | '/login/'
+    | '/professors/'
+    | '/schedule/'
+    | '/settings/'
     | '/signup/'
     | '/verify-email/'
-    | '/app/professors/$professorId'
-    | '/app/professors/moderation'
-    | '/app/settings/appearance'
-    | '/app/settings/profile'
-    | '/app/settings/security'
-    | '/app/curriculum/'
-    | '/app/professors/'
-    | '/app/schedule/'
-    | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/app'
+    | '/professors/$professorId'
+    | '/professors/moderation'
+    | '/settings/appearance'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/curriculum'
     | '/login'
+    | '/professors'
+    | '/schedule'
+    | '/settings'
     | '/signup'
     | '/verify-email'
-    | '/app/professors/$professorId'
-    | '/app/professors/moderation'
-    | '/app/settings/appearance'
-    | '/app/settings/profile'
-    | '/app/settings/security'
-    | '/app/curriculum'
-    | '/app/professors'
-    | '/app/schedule'
-    | '/app/settings'
   id:
     | '__root__'
+    | '/settings'
     | '/_index'
-    | '/app/settings'
-    | '/app/_index'
+    | '/professors/$professorId'
+    | '/professors/moderation'
+    | '/settings/appearance'
+    | '/settings/profile'
+    | '/settings/security'
+    | '/curriculum/'
     | '/login/'
+    | '/professors/'
+    | '/schedule/'
+    | '/settings/'
     | '/signup/'
     | '/verify-email/'
-    | '/app/professors/$professorId'
-    | '/app/professors/moderation'
-    | '/app/settings/appearance'
-    | '/app/settings/profile'
-    | '/app/settings/security'
-    | '/app/curriculum/'
-    | '/app/professors/'
-    | '/app/schedule/'
-    | '/app/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
-  AppSettingsRouteRoute: typeof AppSettingsRouteRouteWithChildren
-  AppIndexRoute: typeof AppIndexRoute
+  ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
+  ProfessorsModerationRoute: typeof ProfessorsModerationRoute
+  CurriculumIndexRoute: typeof CurriculumIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
+  ProfessorsIndexRoute: typeof ProfessorsIndexRoute
+  ScheduleIndexRoute: typeof ScheduleIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
   VerifyEmailIndexRoute: typeof VerifyEmailIndexRoute
-  AppProfessorsProfessorIdRoute: typeof AppProfessorsProfessorIdRoute
-  AppProfessorsModerationRoute: typeof AppProfessorsModerationRoute
-  AppCurriculumIndexRoute: typeof AppCurriculumIndexRoute
-  AppProfessorsIndexRoute: typeof AppProfessorsIndexRoute
-  AppScheduleIndexRoute: typeof AppScheduleIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -226,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify-email/': {
@@ -242,6 +235,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRouteRoute
+    }
+    '/schedule/': {
+      id: '/schedule/'
+      path: '/schedule'
+      fullPath: '/schedule/'
+      preLoaderRoute: typeof ScheduleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/professors/': {
+      id: '/professors/'
+      path: '/professors'
+      fullPath: '/professors/'
+      preLoaderRoute: typeof ProfessorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login/': {
       id: '/login/'
       path: '/login'
@@ -249,115 +263,80 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/_index': {
-      id: '/app/_index'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppIndexRouteImport
+    '/curriculum/': {
+      id: '/curriculum/'
+      path: '/curriculum'
+      fullPath: '/curriculum/'
+      preLoaderRoute: typeof CurriculumIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/settings': {
-      id: '/app/settings'
-      path: '/app/settings'
-      fullPath: '/app/settings'
-      preLoaderRoute: typeof AppSettingsRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app/settings/': {
-      id: '/app/settings/'
-      path: '/'
-      fullPath: '/app/settings/'
-      preLoaderRoute: typeof AppSettingsIndexRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
-    }
-    '/app/schedule/': {
-      id: '/app/schedule/'
-      path: '/app/schedule'
-      fullPath: '/app/schedule/'
-      preLoaderRoute: typeof AppScheduleIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app/professors/': {
-      id: '/app/professors/'
-      path: '/app/professors'
-      fullPath: '/app/professors/'
-      preLoaderRoute: typeof AppProfessorsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app/curriculum/': {
-      id: '/app/curriculum/'
-      path: '/app/curriculum'
-      fullPath: '/app/curriculum/'
-      preLoaderRoute: typeof AppCurriculumIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/app/settings/security': {
-      id: '/app/settings/security'
+    '/settings/security': {
+      id: '/settings/security'
       path: '/security'
-      fullPath: '/app/settings/security'
-      preLoaderRoute: typeof AppSettingsSecurityRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof SettingsSecurityRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
-    '/app/settings/profile': {
-      id: '/app/settings/profile'
+    '/settings/profile': {
+      id: '/settings/profile'
       path: '/profile'
-      fullPath: '/app/settings/profile'
-      preLoaderRoute: typeof AppSettingsProfileRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
-    '/app/settings/appearance': {
-      id: '/app/settings/appearance'
+    '/settings/appearance': {
+      id: '/settings/appearance'
       path: '/appearance'
-      fullPath: '/app/settings/appearance'
-      preLoaderRoute: typeof AppSettingsAppearanceRouteImport
-      parentRoute: typeof AppSettingsRouteRoute
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof SettingsAppearanceRouteImport
+      parentRoute: typeof SettingsRouteRoute
     }
-    '/app/professors/moderation': {
-      id: '/app/professors/moderation'
-      path: '/app/professors/moderation'
-      fullPath: '/app/professors/moderation'
-      preLoaderRoute: typeof AppProfessorsModerationRouteImport
+    '/professors/moderation': {
+      id: '/professors/moderation'
+      path: '/professors/moderation'
+      fullPath: '/professors/moderation'
+      preLoaderRoute: typeof ProfessorsModerationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/professors/$professorId': {
-      id: '/app/professors/$professorId'
-      path: '/app/professors/$professorId'
-      fullPath: '/app/professors/$professorId'
-      preLoaderRoute: typeof AppProfessorsProfessorIdRouteImport
+    '/professors/$professorId': {
+      id: '/professors/$professorId'
+      path: '/professors/$professorId'
+      fullPath: '/professors/$professorId'
+      preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AppSettingsRouteRouteChildren {
-  AppSettingsAppearanceRoute: typeof AppSettingsAppearanceRoute
-  AppSettingsProfileRoute: typeof AppSettingsProfileRoute
-  AppSettingsSecurityRoute: typeof AppSettingsSecurityRoute
-  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+interface SettingsRouteRouteChildren {
+  SettingsAppearanceRoute: typeof SettingsAppearanceRoute
+  SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsSecurityRoute: typeof SettingsSecurityRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
-const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
-  AppSettingsAppearanceRoute: AppSettingsAppearanceRoute,
-  AppSettingsProfileRoute: AppSettingsProfileRoute,
-  AppSettingsSecurityRoute: AppSettingsSecurityRoute,
-  AppSettingsIndexRoute: AppSettingsIndexRoute,
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsAppearanceRoute: SettingsAppearanceRoute,
+  SettingsProfileRoute: SettingsProfileRoute,
+  SettingsSecurityRoute: SettingsSecurityRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 
-const AppSettingsRouteRouteWithChildren =
-  AppSettingsRouteRoute._addFileChildren(AppSettingsRouteRouteChildren)
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
-  AppSettingsRouteRoute: AppSettingsRouteRouteWithChildren,
-  AppIndexRoute: AppIndexRoute,
+  ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
+  ProfessorsModerationRoute: ProfessorsModerationRoute,
+  CurriculumIndexRoute: CurriculumIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
+  ProfessorsIndexRoute: ProfessorsIndexRoute,
+  ScheduleIndexRoute: ScheduleIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
   VerifyEmailIndexRoute: VerifyEmailIndexRoute,
-  AppProfessorsProfessorIdRoute: AppProfessorsProfessorIdRoute,
-  AppProfessorsModerationRoute: AppProfessorsModerationRoute,
-  AppCurriculumIndexRoute: AppCurriculumIndexRoute,
-  AppProfessorsIndexRoute: AppProfessorsIndexRoute,
-  AppScheduleIndexRoute: AppScheduleIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

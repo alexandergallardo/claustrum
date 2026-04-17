@@ -1,10 +1,16 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Suspense, lazy } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+
+const DashboardPage = lazy(() => import("./-dashboard-page").then((module) => ({ default: module.DashboardPage })));
 
 export const Route = createFileRoute("/_index")({
-  beforeLoad: () => {
-    throw redirect({
-      to: "/app",
-      replace: true,
-    });
-  },
+  component: AppDashboardRoute,
 });
+
+function AppDashboardRoute() {
+  return (
+    <Suspense fallback={<div className="min-h-svh bg-background" />}>
+      <DashboardPage />
+    </Suspense>
+  );
+}

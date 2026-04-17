@@ -36,7 +36,7 @@ export default function VerifyEmailPage() {
         if (session) {
           setStatus("success")
           setTimeout(() => {
-            navigate({ to: "/app" })
+            navigate({ to: "/" })
           }, 2000)
         } else {
           setStatus("pending")
@@ -57,7 +57,7 @@ export default function VerifyEmailPage() {
         }
         setStatus("success")
         setTimeout(() => {
-          navigate({ to: "/app" })
+          navigate({ to: "/" })
         }, 2000)
       }
     })

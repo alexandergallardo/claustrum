@@ -150,6 +150,8 @@ export function PlanFilters({
 }: PlanFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
+  const shouldShowUniversityFilter = universities.length > 1
+  const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities
 
   useEffect(() => {
     localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString())
@@ -197,7 +199,7 @@ export function PlanFilters({
           items={universities}
           onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
           isLoading={!hasUniversities && isLoadingUniversities}
-          isVisible={true}
+          isVisible={shouldShowUniversityFilter}
         />
 
         <FilterSelect
@@ -207,7 +209,7 @@ export function PlanFilters({
           items={campuses}
           onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
           isLoading={!campuses.length && isLoadingCampuses}
-          isVisible={!!selectedUniversityId}
+          isVisible={canSelectCampus}
         />
 
         <FilterSelect

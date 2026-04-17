@@ -24,23 +24,23 @@ import { useAppAuth } from "@/lib/auth/app-auth-context";
 const data = {
   navMain: [
     {
-      title: "Panel",
-      url: "/app",
+      title: "Inicio",
+      url: "/",
       icon: IconDashboard,
     },
     {
       title: "Horarios",
-      url: "/app/schedule",
+      url: "/schedule",
       icon: IconCalendarTime,
     },
     {
       title: "Plan de estudios",
-      url: "/app/curriculum",
+      url: "/curriculum",
       icon: IconSchool,
     },
     {
       title: "Profesores",
-      url: "/app/professors",
+      url: "/professors",
       icon: IconUsers,
     },
   ],

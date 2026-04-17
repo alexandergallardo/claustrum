@@ -40,7 +40,7 @@ export function LoginForm({
       // Invalidate auth query to refresh user state immediately
       await queryClient.invalidateQueries({ queryKey: ["authUser"] })
       
-      navigate({ to: "/app" })
+      navigate({ to: "/" })
     } finally {
       setIsSubmitting(false)
     }
