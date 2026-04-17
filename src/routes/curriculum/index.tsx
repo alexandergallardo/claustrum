@@ -13,7 +13,7 @@ const curriculumSearchSchema = z.object({
   plan: z.coerce.number().optional(),
 })
 
-export const Route = createFileRoute('/app/curriculum/')({
+export const Route = createFileRoute('/curriculum/')({
   validateSearch: curriculumSearchSchema,
   component: CurriculumRoute,
 })

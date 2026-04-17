@@ -5,7 +5,7 @@ const SecurityPage = lazy(() =>
   import("./-security-page").then((module) => ({ default: module.SecurityPage })),
 );
 
-export const Route = createFileRoute("/app/settings/security")({
+export const Route = createFileRoute("/settings/security")({
   component: SecurityRoute,
 });
 

@@ -114,7 +114,7 @@ export function ProfessorsReviewsPage() {
 
           return (
             <Link
-              to="/app/professors/$professorId"
+              to="/professors/$professorId"
               params={{ professorId: String(professorId) }}
               preload="intent"
               className="font-medium underline-offset-4 hover:underline"
@@ -161,96 +161,89 @@ export function ProfessorsReviewsPage() {
   return (
     <AppLayoutWrapper>
       <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h1 className="text-2xl font-bold">Profesores</h1>
-          <div className="flex items-center gap-2">
-          {authUser && isAdmin ? (
-              <Button asChild variant="outline" size="sm">
-                <Link to="/app/professors/moderation">Moderación</Link>
+        <Collapsible open={filtersExpanded} onOpenChange={setFiltersExpanded}>
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="professor-search" className="sr-only">
+                Buscar por nombre de profesor
+              </Label>
+              <Input
+                id="professor-search"
+                placeholder="Ej: María González"
+                aria-label="Buscar por nombre de profesor"
+                value={searchInput}
+                onChange={(event) => {
+                  setPage(0);
+                  setSearchInput(event.target.value);
+                }}
+              />
+            </div>
+            {authUser && isAdmin ? (
+              <Button asChild variant="outline" size="sm" className="mb-0.5">
+                <Link to="/professors/moderation">Moderación</Link>
               </Button>
-          ) : null}
+            ) : null}
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+              >
+                {filtersExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
           </div>
-        </div>
 
-        <Card className="sticky top-[calc(var(--header-height)+0.75rem)] z-30 border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <CardContent className="space-y-3 p-3">
-            <Collapsible open={filtersExpanded} onOpenChange={setFiltersExpanded}>
-              <div className="flex items-end gap-2">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="professor-search">Nombre del profesor</Label>
-                  <Input
-                    id="professor-search"
-                    placeholder="Ej: María González"
-                    value={searchInput}
-                    onChange={(event) => {
-                      setPage(0);
-                      setSearchInput(event.target.value);
-                    }}
-                  />
-                </div>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
-                  >
-                    {filtersExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </Button>
-                </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="grid gap-4 pt-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="min-average">Promedio mínimo</Label>
+                <Input
+                  id="min-average"
+                  type="number"
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  placeholder="0-10"
+                  value={minAverageScoreInput}
+                  onChange={(event) => {
+                    setPage(0);
+                    setMinAverageScoreInput(event.target.value);
+                  }}
+                />
               </div>
 
-              <CollapsibleContent>
-                <div className="grid gap-4 pt-3 md:grid-cols-2 lg:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="min-average">Promedio mínimo</Label>
-                    <Input
-                      id="min-average"
-                      type="number"
-                      min={0}
-                      max={10}
-                      step={0.1}
-                      placeholder="0-10"
-                      value={minAverageScoreInput}
-                      onChange={(event) => {
-                        setPage(0);
-                        setMinAverageScoreInput(event.target.value);
-                      }}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="min-reviews">Mínimo de reseñas</Label>
+                <Input
+                  id="min-reviews"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={minReviewCountInput}
+                  onChange={(event) => {
+                    setPage(0);
+                    setMinReviewCountInput(event.target.value);
+                  }}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="min-reviews">Mínimo de reseñas</Label>
-                    <Input
-                      id="min-reviews"
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={minReviewCountInput}
-                      onChange={(event) => {
-                        setPage(0);
-                        setMinReviewCountInput(event.target.value);
-                      }}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="course-code">Código de curso</Label>
-                    <Input
-                      id="course-code"
-                      placeholder="CI1230"
-                      value={courseCodeInput}
-                      onChange={(event) => {
-                        setPage(0);
-                        setCourseCodeInput(event.target.value.toUpperCase());
-                      }}
-                    />
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="course-code">Código de curso</Label>
+                <Input
+                  id="course-code"
+                  placeholder="CI1230"
+                  value={courseCodeInput}
+                  onChange={(event) => {
+                    setPage(0);
+                    setCourseCodeInput(event.target.value.toUpperCase());
+                  }}
+                />
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <Card>
           <CardContent className="p-4">
@@ -338,7 +331,7 @@ export function ProfessorsReviewsPage() {
                     <SelectTrigger className="h-8">
                       <SelectValue placeholder="Filas" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" align="end" sideOffset={4}>
                       <SelectItem value="25">25 filas</SelectItem>
                       <SelectItem value="50">50 filas</SelectItem>
                       <SelectItem value="100">100 filas</SelectItem>

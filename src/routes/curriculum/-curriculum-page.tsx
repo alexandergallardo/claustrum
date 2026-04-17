@@ -21,8 +21,8 @@ import { AlertTriangle } from 'lucide-react'
 const MAIN_CAMPUS_CODES = new Set(['AL', 'CA', 'LM', 'SC', 'SJ'])
 
 export function CurriculumPage() {
-  const search = useSearch({ from: '/app/curriculum/' })
-  const navigate = useNavigate({ from: '/app/curriculum/' })
+  const search = useSearch({ from: '/curriculum/' })
+  const navigate = useNavigate({ from: '/curriculum/' })
 
   const selectedUniversityId = search.university ?? null
   const selectedCampusId = search.campus ?? null
@@ -67,7 +67,7 @@ export function CurriculumPage() {
     if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
       setIsUsingProfileDefaults(true)
       navigate({
-        to: '/app/curriculum',
+        to: '/curriculum',
         search: {
           university: userStudyPlan.universityId ?? undefined,
           campus: userStudyPlan.campusId ?? undefined,
@@ -148,7 +148,7 @@ export function CurriculumPage() {
     if (!userStudyPlan) return
     setIsUsingProfileDefaults(true)
     navigate({
-      to: '/app/curriculum',
+      to: '/curriculum',
       search: {
         ...search,
         university: userStudyPlan.universityId ?? undefined,

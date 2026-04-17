@@ -5,7 +5,7 @@ const AppearancePage = lazy(() =>
   import("./-appearance-page").then((module) => ({ default: module.AppearancePage })),
 );
 
-export const Route = createFileRoute("/app/settings/appearance")({
+export const Route = createFileRoute("/settings/appearance")({
   component: AppearanceRoute,
 });
 

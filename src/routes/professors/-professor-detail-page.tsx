@@ -52,8 +52,8 @@ function metricLabel(value: number | null, suffix = "") {
 }
 
 export function ProfessorDetailPage() {
-  const navigate = useNavigate({ from: "/app/professors/$professorId" });
-  const params = useParams({ from: "/app/professors/$professorId" });
+  const navigate = useNavigate({ from: "/professors/$professorId" });
+  const params = useParams({ from: "/professors/$professorId" });
   const isMobile = useIsMobile();
   const professorId = Number(params.professorId);
 
@@ -166,7 +166,7 @@ export function ProfessorDetailPage() {
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => void navigate({ to: "/app/professors" })}
+              onClick={() => void navigate({ to: "/professors" })}
               aria-label="Atrás"
               title="Atrás"
             >

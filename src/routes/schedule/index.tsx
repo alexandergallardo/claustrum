@@ -18,7 +18,7 @@ const scheduleSearchSchema = z.object({
   groups: z.string().optional(),
 });
 
-export const Route = createFileRoute("/app/schedule/")({
+export const Route = createFileRoute("/schedule/")({
   validateSearch: scheduleSearchSchema,
   component: ScheduleRoute,
 });

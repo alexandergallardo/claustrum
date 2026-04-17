@@ -25,7 +25,7 @@ import { useAuthUser } from "@/lib/hooks/use-queries";
 const PAGE_SIZE = 20;
 
 export function ModerationPage() {
-  const navigate = useNavigate({ from: "/app/professors/moderation" });
+  const navigate = useNavigate({ from: "/professors/moderation" });
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const [page, setPage] = useState(0);
   const [moderationNote, setModerationNote] = useState<Record<number, string>>({});
@@ -42,7 +42,7 @@ export function ModerationPage() {
   useEffect(() => {
     if (isAuthLoading || isAdminQuery.isLoading) return;
     if (!authUser || !canModerate) {
-      void navigate({ to: "/app/professors" });
+      void navigate({ to: "/professors" });
     }
   }, [authUser, canModerate, isAdminQuery.isLoading, isAuthLoading, navigate]);
 

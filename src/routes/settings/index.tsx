@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/app/settings/")({
+export const Route = createFileRoute("/settings/")({
   beforeLoad: () => {
-    throw redirect({ to: "/app/settings/profile" });
+    throw redirect({ to: "/settings/profile" });
   },
   component: SettingsIndex,
 });

@@ -12,17 +12,17 @@ import { Card, CardContent } from "@/components/ui/card";
 const navItems = [
   {
     label: "Perfil",
-    path: "/app/settings/profile",
+    path: "/settings/profile",
     icon: UserIcon,
   },
   {
     label: "Seguridad",
-    path: "/app/settings/security",
+    path: "/settings/security",
     icon: ShieldIcon,
   },
   {
     label: "Apariencia",
-    path: "/app/settings/appearance",
+    path: "/settings/appearance",
     icon: PaletteIcon,
   },
 ];

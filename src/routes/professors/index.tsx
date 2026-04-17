@@ -5,7 +5,7 @@ const ProfessorsReviewsPage = lazy(() =>
   import("./-professors-page").then((module) => ({ default: module.ProfessorsReviewsPage })),
 );
 
-export const Route = createFileRoute("/app/professors/")({
+export const Route = createFileRoute("/professors/")({
   component: ProfessorsRoute,
 });
 

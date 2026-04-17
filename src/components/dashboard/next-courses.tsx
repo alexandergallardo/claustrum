@@ -22,7 +22,7 @@ export function NextCourses({ courses, universityId, campusId, academicUnitId, s
   const CourseLink = ({ course }: { course: NextCourse }) => {
     if (searchParams) {
       return (
-        <Link to="/app/curriculum" search={searchParams} className="block cursor-pointer">
+        <Link to="/curriculum" search={searchParams} className="block cursor-pointer">
           <div className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer">
             <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2">

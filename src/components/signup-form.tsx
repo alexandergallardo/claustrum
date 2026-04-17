@@ -59,7 +59,7 @@ export function SignupForm({
       if (data.session) {
         // Invalidate auth query to refresh user state immediately
         await queryClient.invalidateQueries({ queryKey: ["authUser"] })
-        navigate({ to: "/app" })
+        navigate({ to: "/" })
       } else {
         navigate({ to: "/verify-email" })
       }

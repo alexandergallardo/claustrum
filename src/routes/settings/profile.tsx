@@ -5,7 +5,7 @@ const ProfilePageRoute = lazy(() =>
   import("./-profile-page").then((module) => ({ default: module.ProfilePageRoute })),
 );
 
-export const Route = createFileRoute("/app/settings/profile")({
+export const Route = createFileRoute("/settings/profile")({
   component: ProfileRoute,
 });
 

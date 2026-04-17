@@ -5,7 +5,7 @@ const ProfessorDetailPage = lazy(() =>
   import("./-professor-detail-page").then((module) => ({ default: module.ProfessorDetailPage })),
 );
 
-export const Route = createFileRoute("/app/professors/$professorId")({
+export const Route = createFileRoute("/professors/$professorId")({
   component: ProfessorDetailRoute,
 });
 

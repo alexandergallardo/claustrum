@@ -55,8 +55,8 @@ const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
 const Calendar = lazy(() => import("@/components/calendar/calendar"));
 
 export function SchedulePage() {
-  const search = useSearch({ from: "/app/schedule/" });
-  const navigate = useNavigate({ from: "/app/schedule/" });
+  const search = useSearch({ from: "/schedule/" });
+  const navigate = useNavigate({ from: "/schedule/" });
 
   const selectedUniversityId = search.university ?? null;
   const selectedCampusId = search.campus ?? null;
@@ -205,7 +205,7 @@ export function SchedulePage() {
   useEffect(() => {
     if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           university: universities[0].id,
@@ -232,7 +232,7 @@ export function SchedulePage() {
       userStudyPlan.studyPlanId
     ) {
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           university: userStudyPlan.universityId ?? undefined,
           campus: userStudyPlan.campusId ?? undefined,
@@ -278,7 +278,7 @@ export function SchedulePage() {
       suggestedTermQuery.data
     ) {
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           term: suggestedTermQuery.data,
@@ -292,7 +292,7 @@ export function SchedulePage() {
       !suggestedTermQuery.data
     ) {
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           term: terms[0].id,
@@ -352,7 +352,7 @@ export function SchedulePage() {
       if (nextGroupsValue === search.groups) return;
       startTransition(() => {
         navigate({
-          to: "/app/schedule",
+          to: "/schedule",
           search: {
             ...search,
             groups: nextGroupsValue,
@@ -368,7 +368,7 @@ export function SchedulePage() {
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           university: id ?? undefined,
@@ -386,7 +386,7 @@ export function SchedulePage() {
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           campus: id ?? undefined,
@@ -403,7 +403,7 @@ export function SchedulePage() {
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           career: id ?? undefined,
@@ -419,7 +419,7 @@ export function SchedulePage() {
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           plan: id ?? undefined,
@@ -434,7 +434,7 @@ export function SchedulePage() {
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           term: id ?? undefined,
@@ -447,7 +447,7 @@ export function SchedulePage() {
   const handleOtherCampusesChange = useCallback(
     (checked: boolean) => {
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           otherCampuses: checked ?? undefined,
@@ -461,7 +461,7 @@ export function SchedulePage() {
     (checked: boolean) => {
       if (!isAuthenticated) return;
       navigate({
-        to: "/app/schedule",
+        to: "/schedule",
         search: {
           ...search,
           showAll: checked ?? undefined,
@@ -475,7 +475,7 @@ export function SchedulePage() {
     if (!userStudyPlan) return;
     setIsUsingProfileDefaults(true);
     navigate({
-      to: "/app/schedule",
+      to: "/schedule",
       search: {
         ...search,
         university: userStudyPlan.universityId ?? undefined,

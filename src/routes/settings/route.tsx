@@ -5,7 +5,7 @@ const SettingsLayout = lazy(() =>
   import("./-settings-layout").then((module) => ({ default: module.SettingsLayout })),
 );
 
-export const Route = createFileRoute("/app/settings")({
+export const Route = createFileRoute("/settings")({
   component: SettingsRoute,
 });
 
