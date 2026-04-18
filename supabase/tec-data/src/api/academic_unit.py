@@ -291,6 +291,29 @@ class AcademicUnitClient(APIClient):
 
         return files
 
+    def download_raw(
+        self, output_dir: Path, campus_codes: list[str]
+    ) -> dict[str, Path]:
+        """Download raw academic unit data for the provided campus codes."""
+        output_dir = output_dir / "academic_unit"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        combined: dict[str, Any] = {}
+        for campus_code in campus_codes:
+            try:
+                data = self.get_carreras_json(campus_code)
+            except requests.RequestException as e:
+                print(f"Error downloading academic units for campus {campus_code}: {e}")
+                continue
+
+            if isinstance(data, dict):
+                combined[campus_code] = data
+
+        output_path = output_dir / "carga_carreras_json.json"
+        output_path.write_text(json.dumps(combined, indent=2, ensure_ascii=False))
+
+        return {"json": output_path}
+
     def _parse_horario_html(self, html: str) -> list[dict[str, Any]]:
         """Parse HTML table into structured JSON format."""
         import re
@@ -354,7 +377,19 @@ class AcademicUnitClient(APIClient):
 
             return result
         except Exception as e:
-            return []
+            raise ValueError(f"Error parsing horario HTML: {e}") from e
+
+    @staticmethod
+    def _parse_required_int(value: str, field_name: str, context: str) -> int:
+        """Parse a required numeric field from schedule HTML."""
+        text = value.strip()
+        if not text or not text.isdigit():
+            msg = (
+                f"Invalid numeric value for {field_name}: {value!r} "
+                f"(context: {context})"
+            )
+            raise ValueError(msg)
+        return int(text)
 
     def _parse_horario_entry(
         self,
@@ -376,6 +411,10 @@ class AcademicUnitClient(APIClient):
         if not matches:
             return []
 
+        context = f"course={codigo}, group={grupo}, schedule={raw_horario}"
+        credits_value = self._parse_required_int(creditos, "CAN_CREDITOS", context)
+        capacity_value = self._parse_required_int(capacidad, "CAPACIDAD", context)
+
         entries = []
         for dia, time_range in matches:
             parts = time_range.split(":")
@@ -388,8 +427,8 @@ class AcademicUnitClient(APIClient):
                     "IDE_MATERIA": codigo,
                     "DSC_MATERIA": materia,
                     "IDE_GRUPO": grupo,
-                    "CAN_CREDITOS": int(creditos) if creditos.isdigit() else 0,
-                    "CAPACIDAD": int(capacidad) if capacidad.isdigit() else 0,
+                    "CAN_CREDITOS": credits_value,
+                    "CAPACIDAD": capacity_value,
                     "NOM_DIA": dia.upper(),
                     "HINICIO": h_inicio,
                     "HFIN": h_fin,

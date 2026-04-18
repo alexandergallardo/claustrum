@@ -202,6 +202,7 @@ def process_academic_unit(
         relations_path = data_dir / "academic_unit_campus" / "data.json"
         if relations_path.exists():
             existing_relations_data = json.loads(relations_path.read_text())
+            unit_campus_relations.extend(existing_relations_data)
             for rel in existing_relations_data:
                 existing_relations.add(
                     (rel.get("academic_unit_id"), rel.get("campus_id"))

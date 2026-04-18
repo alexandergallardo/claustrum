@@ -186,6 +186,8 @@ export function SchedulePage() {
           course.course_code,
           parseInt(group.group_code, 10),
           campusId,
+          course.offering_id,
+          group.group_id,
         );
         map.set(groupId, {
           course,

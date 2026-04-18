@@ -92,7 +92,13 @@ function createGroupView(
   campusById?: Map<number, string>
 ): GroupView {
   const campusId = group.campus_id ?? course.campus_id ?? null
-  const groupId = getGroupId(course.course_code, parseInt(group.group_code, 10), campusId)
+  const groupId = getGroupId(
+    course.course_code,
+    parseInt(group.group_code, 10),
+    campusId,
+    course.offering_id,
+    group.group_id
+  )
   const campusLabel = showCampus
     ? (campusId ? campusById?.get(campusId) ?? `Sede ${campusId}` : null)
     : null
@@ -113,7 +119,23 @@ function createGroupView(
 }
 
 function createCourseViewData(course: ScheduleCourse, showCampus: boolean, campusBy?: Map<number, string>): CourseViewData {
-  const groupViews = (course.groups ?? []).map(g => createGroupView(course, g, showCampus, campusBy))
+  const uniqueGroups = new Map<string, ScheduleGroup>()
+  for (const group of course.groups ?? []) {
+    const groupKey = getGroupId(
+      course.course_code,
+      parseInt(group.group_code, 10),
+      group.campus_id ?? course.campus_id,
+      course.offering_id,
+      group.group_id
+    )
+    if (!uniqueGroups.has(groupKey)) {
+      uniqueGroups.set(groupKey, group)
+    }
+  }
+
+  const groupViews = Array.from(uniqueGroups.values()).map((g) =>
+    createGroupView(course, g, showCampus, campusBy)
+  )
   return { course, groupViews }
 }
 
@@ -131,7 +153,13 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
   const length = allGroupsList.length
   for (let i = 0; i < length; i++) {
     const { course: course1, group: group1 } = allGroupsList[i]
-    const id1 = getGroupId(course1.course_code, parseInt(group1.group_code, 10), group1.campus_id)
+    const id1 = getGroupId(
+      course1.course_code,
+      parseInt(group1.group_code, 10),
+      group1.campus_id,
+      course1.offering_id,
+      group1.group_id
+    )
     const meetings1 = group1.meetings
 
     if (!meetings1) continue
@@ -142,7 +170,13 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
 
       if (!meetings2) continue
 
-      const id2 = getGroupId(course2.course_code, parseInt(group2.group_code, 10), group2.campus_id)
+      const id2 = getGroupId(
+        course2.course_code,
+        parseInt(group2.group_code, 10),
+        group2.campus_id,
+        course2.offering_id,
+        group2.group_id
+      )
 
       for (const s1 of meetings1) {
         for (const s2 of meetings2) {
@@ -276,8 +310,20 @@ export default function CourseList({
   }, [])
 
   const handleGroupToggle = useCallback(
-    (courseCode: string, groupCode: string, campusId?: number | null) => {
-      const groupId = getGroupId(courseCode, parseInt(groupCode, 10), campusId)
+    (
+      courseCode: string,
+      groupCode: string,
+      campusId?: number | null,
+      offeringId?: number | null,
+      groupDbId?: number | null
+    ) => {
+      const groupId = getGroupId(
+        courseCode,
+        parseInt(groupCode, 10),
+        campusId,
+        offeringId,
+        groupDbId
+      )
       const newSelection = new Set(selectedGroups)
 
       if (newSelection.has(groupId)) {
@@ -353,7 +399,13 @@ const CourseCard = memo(function CourseCard({
   selectedGroupIds: SelectedGroups
   disabledGroupIdSet: Set<string>
   conflictReasonsByGroupId: Map<string, string[]>
-  onGroupToggle: (courseCode: string, groupCode: string, campusId?: number | null) => void
+  onGroupToggle: (
+    courseCode: string,
+    groupCode: string,
+    campusId?: number | null,
+    offeringId?: number | null,
+    groupDbId?: number | null
+  ) => void
 }) {
   return (
     <Card className="w-full" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 280px' }}>
@@ -393,7 +445,16 @@ const CourseCard = memo(function CourseCard({
                             }
                           : undefined
                       }
-                      onClick={() => !disabled && onGroupToggle(course.course_code, groupView.group.group_code, groupView.group.campus_id ?? course.campus_id)}
+                      onClick={() =>
+                        !disabled &&
+                        onGroupToggle(
+                          course.course_code,
+                          groupView.group.group_code,
+                          groupView.group.campus_id ?? course.campus_id,
+                          course.offering_id,
+                          groupView.group.group_id
+                        )
+                      }
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <Badge

@@ -134,7 +134,10 @@ export function getConflictInfo(
   groupCode: string,
   group: ScheduleGroup,
   selectedGroups: Set<string>,
-  allGroups: Array<{ course: { course_code: string }; group: ScheduleGroup }>
+  allGroups: Array<{
+    course: { course_code: string; offering_id?: number | null }
+    group: ScheduleGroup
+  }>
 ): ConflictInfo {
   const result: ConflictInfo = {
     hasConflict: false,
@@ -142,7 +145,13 @@ export function getConflictInfo(
     conflictMessages: new Map(),
   }
 
-  const groupId = getGroupId(courseCode, parseInt(groupCode, 10), group.campus_id)
+  const groupId = getGroupId(
+    courseCode,
+    parseInt(groupCode, 10),
+    group.campus_id,
+    undefined,
+    group.group_id
+  )
   if (!selectedGroups.has(groupId)) {
     return result
   }
@@ -150,7 +159,13 @@ export function getConflictInfo(
   const selectedSessions = group.meetings || []
 
   for (const other of allGroups) {
-    const otherGroupId = getGroupId(other.course.course_code, parseInt(other.group.group_code, 10), other.group.campus_id)
+    const otherGroupId = getGroupId(
+      other.course.course_code,
+      parseInt(other.group.group_code, 10),
+      other.group.campus_id,
+      other.course.offering_id,
+      other.group.group_id
+    )
     if (otherGroupId === groupId) continue
     if (!selectedGroups.has(otherGroupId)) continue
 
@@ -197,9 +212,34 @@ function formatTime(time: string): string {
   return `${hours.padStart(2, '0')}:${minutes}`
 }
 
-export function getGroupId(courseId: string, group: number, campusId?: number | null): string {
+export function getGroupId(
+  courseId: string,
+  group: number,
+  campusId?: number | null,
+  offeringId?: number | null,
+  groupDbId?: number | null
+): string {
+  if (groupDbId !== null && groupDbId !== undefined) {
+    if (campusId !== null && campusId !== undefined) {
+      if (offeringId !== null && offeringId !== undefined) {
+        return `${courseId}-${group}-${campusId}-${offeringId}-${groupDbId}`
+      }
+      return `${courseId}-${group}-${campusId}-${groupDbId}`
+    }
+    if (offeringId !== null && offeringId !== undefined) {
+      return `${courseId}-${group}-${offeringId}-${groupDbId}`
+    }
+    return `${courseId}-${group}-${groupDbId}`
+  }
+
   if (campusId !== null && campusId !== undefined) {
+    if (offeringId !== null && offeringId !== undefined) {
+      return `${courseId}-${group}-${campusId}-${offeringId}`
+    }
     return `${courseId}-${group}-${campusId}`
+  }
+  if (offeringId !== null && offeringId !== undefined) {
+    return `${courseId}-${group}-${offeringId}`
   }
   return `${courseId}-${group}`
 }

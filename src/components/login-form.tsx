@@ -1,15 +1,19 @@
 import { cn } from "@/lib/utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNavigate, Link } from "@tanstack/react-router"
+import { normalizeAuthError } from "@/lib/auth/auth-error-messages"
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
 import { useQueryClient } from "@tanstack/react-query"
+import { AlertCircleIcon } from "lucide-react"
 import { useState } from "react"
 
 export function LoginForm({
@@ -21,11 +25,44 @@ export function LoginForm({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [credentialError, setCredentialError] = useState(false)
+
+  const validateFields = () => {
+    let hasError = false
+
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      setEmailError("Ingresa tu correo electrónico.")
+      hasError = true
+    } else if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setEmailError("Ingresa un correo electrónico válido.")
+      hasError = true
+    } else {
+      setEmailError(null)
+    }
+
+    if (!password) {
+      setPasswordError("Ingresa tu contraseña.")
+      hasError = true
+    } else {
+      setPasswordError(null)
+    }
+
+    return !hasError
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+    setFormError(null)
+    setCredentialError(false)
+
+    if (!validateFields()) {
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -33,13 +70,17 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithPassword({ email, password })
 
       if (error) {
-        setError(error.message)
+        const normalizedError = normalizeAuthError(error, "login")
+        setFormError(normalizedError.message)
+        if (normalizedError.type === "invalid_credentials") {
+          setCredentialError(true)
+        }
         return
       }
 
       // Invalidate auth query to refresh user state immediately
       await queryClient.invalidateQueries({ queryKey: ["authUser"] })
-      
+
       navigate({ to: "/" })
     } finally {
       setIsSubmitting(false)
@@ -55,6 +96,13 @@ export function LoginForm({
             Ingresa tu correo electrónico para iniciar sesión
           </p>
         </div>
+        {formError && (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertTitle>No se pudo iniciar sesión</AlertTitle>
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
         <Field>
           <FieldLabel htmlFor="email">Correo electrónico</FieldLabel>
           <Input
@@ -63,8 +111,15 @@ export function LoginForm({
             placeholder="m@ejemplo.com"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            aria-invalid={Boolean(emailError || credentialError)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setEmailError(null)
+              setFormError(null)
+              setCredentialError(false)
+            }}
           />
+          <FieldError>{emailError}</FieldError>
         </Field>
         <Field>
           <div className="flex items-center">
@@ -81,12 +136,16 @@ export function LoginForm({
             type="password"
             required
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            aria-invalid={Boolean(passwordError || credentialError)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setPasswordError(null)
+              setFormError(null)
+              setCredentialError(false)
+            }}
           />
+          <FieldError>{passwordError}</FieldError>
         </Field>
-        {error && (
-          <div className="text-sm text-destructive">{error}</div>
-        )}
         <Field>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
