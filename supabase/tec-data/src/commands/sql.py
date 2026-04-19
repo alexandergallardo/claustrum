@@ -46,6 +46,27 @@ def format_value(value: Any, target_type: str = "TEXT") -> str:
         return escape_sql_string(str(value))
 
 
+def build_upsert_clause(columns: list[str], config: dict[str, Any]) -> str:
+    """Build an ON CONFLICT clause for a table."""
+    conflict_columns = config.get("conflict_columns")
+    if conflict_columns is None:
+        conflict_columns = ["id"] if "id" in columns else []
+
+    if not conflict_columns:
+        return ""
+
+    update_assignments = config.get("update_assignments")
+    if update_assignments is None:
+        updatable_columns = [col for col in columns if col not in conflict_columns]
+        update_assignments = [f"{col} = EXCLUDED.{col}" for col in updatable_columns]
+
+    if not update_assignments:
+        return f"ON CONFLICT ({', '.join(conflict_columns)}) DO NOTHING"
+
+    updates = ",\n    ".join(update_assignments)
+    return f"ON CONFLICT ({', '.join(conflict_columns)}) DO UPDATE SET\n    {updates}"
+
+
 def generate_seed(
     data_dir: Path = Path("data/raw"),
     output_path: Path = Path("../seed.sql"),
@@ -231,6 +252,17 @@ def generate_seed(
                 "weekly_hours_snapshot": "INTEGER",
             },
             "order": 15,
+            "update_assignments": [
+                "course_id = EXCLUDED.course_id",
+                "campus_id = EXCLUDED.campus_id",
+                "academic_unit_id = EXCLUDED.academic_unit_id",
+                "academic_term_id = EXCLUDED.academic_term_id",
+                "credits_snapshot = EXCLUDED.credits_snapshot",
+                "weekly_hours_snapshot = EXCLUDED.weekly_hours_snapshot",
+                "course_type = EXCLUDED.course_type",
+                "is_active = TRUE",
+                "updated_at = NOW()",
+            ],
         },
         "course_offering_group": {
             "columns": [
@@ -246,6 +278,14 @@ def generate_seed(
                 "capacity": "INTEGER",
             },
             "order": 16,
+            "update_assignments": [
+                "course_offering_id = EXCLUDED.course_offering_id",
+                "group_code = EXCLUDED.group_code",
+                "group_type = EXCLUDED.group_type",
+                "capacity = EXCLUDED.capacity",
+                "is_active = TRUE",
+                "updated_at = NOW()",
+            ],
         },
         "course_offering_group_professor": {
             "columns": ["id", "course_offering_group_id", "professor_id"],
@@ -255,6 +295,12 @@ def generate_seed(
                 "professor_id": "BIGINT",
             },
             "order": 17,
+            "update_assignments": [
+                "course_offering_group_id = EXCLUDED.course_offering_group_id",
+                "professor_id = EXCLUDED.professor_id",
+                "is_active = TRUE",
+                "updated_at = NOW()",
+            ],
         },
         "course_offering_meeting": {
             "columns": [
@@ -273,6 +319,15 @@ def generate_seed(
                 "ends_at": "TIME",
             },
             "order": 18,
+            "update_assignments": [
+                "course_offering_group_id = EXCLUDED.course_offering_group_id",
+                "weekday = EXCLUDED.weekday",
+                "starts_at = EXCLUDED.starts_at",
+                "ends_at = EXCLUDED.ends_at",
+                "classroom = EXCLUDED.classroom",
+                "is_active = TRUE",
+                "updated_at = NOW()",
+            ],
         },
     }
 
@@ -301,8 +356,11 @@ def generate_seed(
     )
     output_lines.append("")
     output_lines.append("BEGIN;")
+    output_lines.append("SET LOCAL TIME ZONE 'UTC';")
 
     total_rows = 0
+    synced_term_ids: set[int] = set()
+    seeded_tables: list[str] = []
 
     for table_name, config in sorted_tables:
         data_path = data_dir / table_name / "data.json"
@@ -323,6 +381,14 @@ def generate_seed(
 
         output_lines.append("")
         output_lines.append(f"-- {table_name} ({len(data)} rows)")
+        seeded_tables.append(table_name)
+
+        if table_name == "course_offering":
+            for row in data:
+                term_id = row.get("academic_term_id")
+                if term_id is None:
+                    continue
+                synced_term_ids.add(int(term_id))
 
         columns = config["columns"]
         types = config.get("types", {})
@@ -339,8 +405,84 @@ def generate_seed(
                 formatted_values.append(format_value(value, col_type))
             values_lines.append(f"  ({', '.join(formatted_values)})")
 
-        output_lines.append(",\n".join(values_lines) + ";")
+        output_lines.append(",\n".join(values_lines))
+        upsert_clause = build_upsert_clause(columns, config)
+        if upsert_clause:
+            output_lines.append(upsert_clause + ";")
+        else:
+            output_lines[-1] = output_lines[-1] + ";"
         total_rows += len(data)
+
+    if synced_term_ids:
+        term_ids_literal = ", ".join(
+            str(term_id) for term_id in sorted(synced_term_ids)
+        )
+
+        output_lines.append("")
+        output_lines.append("-- Soft delete for stale schedule rows in synced terms")
+
+        output_lines.append("UPDATE public.course_offering_meeting com")
+        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append("WHERE com.is_active = true")
+        output_lines.append("  AND com.updated_at < NOW()")
+        output_lines.append("  AND EXISTS (")
+        output_lines.append("    SELECT 1")
+        output_lines.append("    FROM public.course_offering_group g")
+        output_lines.append(
+            "    JOIN public.course_offering co ON co.id = g.course_offering_id"
+        )
+        output_lines.append("    WHERE g.id = com.course_offering_group_id")
+        output_lines.append(
+            f"      AND co.academic_term_id = ANY(ARRAY[{term_ids_literal}]::BIGINT[])"
+        )
+        output_lines.append("  );")
+
+        output_lines.append("UPDATE public.course_offering_group_professor cogp")
+        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append("WHERE cogp.is_active = true")
+        output_lines.append("  AND cogp.updated_at < NOW()")
+        output_lines.append("  AND EXISTS (")
+        output_lines.append("    SELECT 1")
+        output_lines.append("    FROM public.course_offering_group g")
+        output_lines.append(
+            "    JOIN public.course_offering co ON co.id = g.course_offering_id"
+        )
+        output_lines.append("    WHERE g.id = cogp.course_offering_group_id")
+        output_lines.append(
+            f"      AND co.academic_term_id = ANY(ARRAY[{term_ids_literal}]::BIGINT[])"
+        )
+        output_lines.append("  );")
+
+        output_lines.append("UPDATE public.course_offering_group g")
+        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append("WHERE g.is_active = true")
+        output_lines.append("  AND g.updated_at < NOW()")
+        output_lines.append("  AND EXISTS (")
+        output_lines.append("    SELECT 1")
+        output_lines.append("    FROM public.course_offering co")
+        output_lines.append("    WHERE co.id = g.course_offering_id")
+        output_lines.append(
+            f"      AND co.academic_term_id = ANY(ARRAY[{term_ids_literal}]::BIGINT[])"
+        )
+        output_lines.append("  );")
+
+        output_lines.append("UPDATE public.course_offering co")
+        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append("WHERE co.is_active = true")
+        output_lines.append("  AND co.updated_at < NOW()")
+        output_lines.append(
+            f"  AND co.academic_term_id = ANY(ARRAY[{term_ids_literal}]::BIGINT[]);"
+        )
+
+    if seeded_tables:
+        output_lines.append("")
+        output_lines.append("-- Align BIGSERIAL sequences after explicit id inserts")
+        for table_name in seeded_tables:
+            output_lines.append(
+                "SELECT setval("
+                f"pg_get_serial_sequence('public.{table_name}', 'id'), "
+                f"COALESCE(MAX(id), 1), true) FROM public.{table_name};"
+            )
 
     output_lines.append("")
     output_lines.append("COMMIT;")

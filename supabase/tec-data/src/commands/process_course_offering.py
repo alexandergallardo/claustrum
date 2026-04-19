@@ -1,5 +1,6 @@
 """Process course offering data from schedule_guia and course_offer."""
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,57 @@ def remove_accents(text: str) -> str:
     for acc, plain in accents.items():
         result = result.replace(acc, plain)
     return result
+
+
+def deterministic_id(namespace: str, *parts: object) -> int:
+    """Build a stable positive BIGINT-compatible identifier."""
+    raw_key = f"{namespace}|" + "|".join(str(part).strip().upper() for part in parts)
+    digest = hashlib.blake2b(raw_key.encode("utf-8"), digest_size=8).digest()
+    identifier = int.from_bytes(digest, "big") & ((1 << 63) - 1)
+    return identifier or 1
+
+
+def normalize_group_type(raw_group_type: str) -> str:
+    """Normalize external group type values to DB enum-compatible values."""
+    normalized = remove_accents(raw_group_type.upper().strip())
+    if normalized == "GRUPO RN":
+        return "RN"
+
+    valid_group_types = {
+        "REGULAR",
+        "SEMIPRESENCIAL",
+        "VIRTUAL",
+        "ASISTIDA",
+        "TUTORIA",
+        "LABORATORIO",
+        "RN",
+    }
+    if normalized in valid_group_types:
+        return normalized
+
+    msg = f"Unknown group type: {raw_group_type!r} (normalized={normalized!r})"
+    raise ValueError(msg)
+
+
+def normalize_classroom(raw_classroom: str) -> str | None:
+    """Normalize classroom values and convert placeholders to NULL."""
+    classroom = raw_classroom.strip()
+    if not classroom:
+        return None
+    if classroom.upper() == "NO DISPONIBLE":
+        return None
+    return classroom
+
+
+def is_placeholder_professor_name(raw_name: str) -> bool:
+    """Return True when the professor name is a known placeholder value."""
+    normalized = remove_accents(raw_name.upper().strip())
+    placeholders = {
+        "SIN PROFESOR ASIGNADO",
+        "(SE IMPARTE EN IDIOMA INGLES)",
+        "SE IMPARTE EN IDIOMA INGLES",
+    }
+    return normalized in placeholders
 
 
 def run_process_course_offering(data_dir: Path, year: str) -> None:
@@ -86,8 +138,9 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
         professor_list = json.loads(professor_path.read_text())
         for p in professor_list:
             name = p["full_name"].upper()
-            professors[name] = p["id"]
-    next_professor_id = max(professors.values(), default=0) + 1
+            if is_placeholder_professor_name(name):
+                continue
+            professors[name] = deterministic_id("professor", name)
 
     updated_course_names: list[tuple[str, str]] = []
 
@@ -106,16 +159,13 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     group_professors: list[dict[str, Any]] = []
     meetings: list[dict[str, Any]] = []
 
-    next_offering_id = 1
-    next_group_id = 1
-    next_group_professor_id = 1
-    next_meeting_id = 1
-
     created_groups: dict[tuple[int, str], int] = {}
     created_gps: set[tuple[int, int]] = set()
     created_meetings: set[tuple[int, int, str, str]] = set()
+    unknown_group_types: dict[str, int] = {}
+    unknown_group_type_examples: list[str] = []
 
-    course_offer_files = list(course_offer_dir.glob("*.json"))
+    course_offer_files = sorted(course_offer_dir.glob("*.json"))
     print(f"Loading {len(course_offer_files)} course_offer files for mixing...")
 
     course_offer_data: dict[str, list[dict[str, Any]]] = {}
@@ -128,7 +178,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                     course_offer_data[code] = []
                 course_offer_data[code].append(entry)
 
-    schedule_guia_files = list(schedule_guia_dir.glob("*.json"))
+    schedule_guia_files = sorted(schedule_guia_dir.glob("*.json"))
     total_files = len(schedule_guia_files)
 
     print(f"Processing {total_files} schedule files...")
@@ -226,7 +276,13 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 course_type = entry.get("TIPO_MATERIA", "")
 
                 course_offerings[offering_key] = {
-                    "id": next_offering_id,
+                    "id": deterministic_id(
+                        "course_offering",
+                        course_id,
+                        campus_id,
+                        academic_unit_id,
+                        academic_term_id,
+                    ),
                     "course_id": course_id,
                     "campus_id": campus_id,
                     "academic_unit_id": academic_unit_id,
@@ -235,45 +291,64 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                     "weekly_hours_snapshot": weekly_hours,
                     "course_type": course_type,
                 }
-                next_offering_id += 1
 
             offering_id = course_offerings[offering_key]["id"]
 
             group_key = (offering_id, group_code)
             capacity = entry.get("CAPACIDAD", 0)
-            group_type = remove_accents(entry.get("TIPO_GRUPO", "REGULAR").upper())
+            raw_group_type = entry.get("TIPO_GRUPO", "REGULAR")
+            try:
+                group_type = normalize_group_type(raw_group_type)
+            except ValueError:
+                normalized_raw = remove_accents(str(raw_group_type).upper().strip())
+                unknown_group_types[normalized_raw] = (
+                    unknown_group_types.get(normalized_raw, 0) + 1
+                )
+                if len(unknown_group_type_examples) < 20:
+                    unknown_group_type_examples.append(
+                        (
+                            f"file={schedule_file.name}, course={course_code}, "
+                            f"group={group_code}, raw={raw_group_type!r}, "
+                            f"normalized={normalized_raw!r}"
+                        )
+                    )
+                continue
 
             if group_key not in created_groups:
+                group_id = deterministic_id(
+                    "course_offering_group", offering_id, group_code
+                )
                 group = {
-                    "id": next_group_id,
+                    "id": group_id,
                     "course_offering_id": offering_id,
                     "group_code": group_code,
                     "group_type": group_type,
                     "capacity": capacity,
                 }
                 groups.append(group)
-                created_groups[group_key] = next_group_id
-                next_group_id += 1
+                created_groups[group_key] = group_id
 
             group_id = created_groups[group_key]
 
             professor_name = entry.get("NOM_PROFESOR", "").strip().upper()
-            if professor_name and professor_name != "SIN PROFESOR ASIGNADO":
+            if professor_name and not is_placeholder_professor_name(professor_name):
                 if professor_name not in professors:
-                    professors[professor_name] = next_professor_id
-                    next_professor_id += 1
+                    professors[professor_name] = deterministic_id(
+                        "professor", professor_name
+                    )
                 professor_id = professors[professor_name]
 
                 gp_key = (group_id, professor_id)
                 if gp_key not in created_gps:
                     gp = {
-                        "id": next_group_professor_id,
+                        "id": deterministic_id(
+                            "course_offering_group_professor", group_id, professor_id
+                        ),
                         "course_offering_group_id": group_id,
                         "professor_id": professor_id,
                     }
                     group_professors.append(gp)
                     created_gps.add(gp_key)
-                    next_group_professor_id += 1
 
             day_name = entry.get("NOM_DIA", "").upper()
             weekday = day_mapping.get(day_name, 0)
@@ -282,12 +357,14 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
 
             starts_at = entry.get("HINICIO", "")
             ends_at = entry.get("HFIN", "")
-            classroom = entry.get("AULA", "")
+            classroom = normalize_classroom(entry.get("AULA", ""))
 
             meeting_key = (group_id, weekday, starts_at, ends_at)
             if meeting_key not in created_meetings:
                 meeting = {
-                    "id": next_meeting_id,
+                    "id": deterministic_id(
+                        "course_offering_meeting", group_id, weekday, starts_at, ends_at
+                    ),
                     "course_offering_group_id": group_id,
                     "weekday": weekday,
                     "starts_at": starts_at,
@@ -296,7 +373,22 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 }
                 meetings.append(meeting)
                 created_meetings.add(meeting_key)
-                next_meeting_id += 1
+
+    if unknown_group_types:
+        detected = ", ".join(
+            f"{name} ({count})"
+            for name, count in sorted(
+                unknown_group_types.items(), key=lambda item: (-item[1], item[0])
+            )
+        )
+        examples = "\n  - " + "\n  - ".join(unknown_group_type_examples)
+        msg = (
+            "Unknown TIPO_GRUPO values detected. "
+            "Add them to enum/mapping before generating seed.\n"
+            f"Detected: {detected}\n"
+            f"Examples:{examples}"
+        )
+        raise ValueError(msg)
 
     output_dir = data_dir / "course_offering"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -327,9 +419,10 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     print(f"Saved course_offering_meeting: {meeting_path} ({len(meetings)} meetings)")
 
     professor_list = [
-        {"id": pid, "full_name": name} for name, pid in professors.items()
+        {"id": professors[name], "full_name": name} for name in sorted(professors)
     ]
     professor_path = data_dir / "professor" / "data.json"
+    professor_path.parent.mkdir(parents=True, exist_ok=True)
     professor_path.write_text(json.dumps(professor_list, indent=2, ensure_ascii=False))
     print(f"Saved professor: {professor_path} ({len(professor_list)} professors)")
 

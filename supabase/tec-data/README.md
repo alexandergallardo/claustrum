@@ -196,3 +196,35 @@ O para entidades específicas:
 ```bash
 uv run tec-data sql --tables campus,university,country
 ```
+
+## Sincronización automática de oferta a una DB (local/prod)
+
+Para evitar desalineación de IDs entre ambientes, usa los scripts de sincronización de oferta:
+
+```bash
+# Local (descarga/procesa/remapea/genera/aplica)
+./sync-offering-local.sh 2026
+
+# Producción (lee .env.production.local, migra, remapea, genera y aplica)
+./sync-offering-prod.sh 2026
+```
+
+Ambos scripts:
+
+1. Ejecutan el pipeline completo (`sync-all.sh`).
+2. Remapean IDs de oferta contra la DB destino por llaves naturales (`course.code`, `campus.code`, `academic_unit.code`, `academic_term.external_key`).
+3. Recalculan IDs deterministas de `course_offering*`.
+4. Generan y aplican `seed_offering.sql` solo para tablas de oferta.
+
+Script base avanzado:
+
+```bash
+./sync-offering-to-db.sh --year 2026 --db-url "postgresql://..."
+```
+
+Opciones útiles:
+
+- `--skip-sync`: no vuelve a descargar/procesar, usa `data/raw` actual.
+- `--migrate`: corre `supabase db push` antes de aplicar seed.
+- `--no-apply`: solo genera SQL (no aplica).
+- `--keep-sql`: conserva `supabase/seed_offering.sql`.
