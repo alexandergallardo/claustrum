@@ -1,6 +1,7 @@
-import { createRootRoute, Link, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { SearchIcon } from 'lucide-react'
 import { Toaster } from '@/components/ui/sonner'
+import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
 import {
   Empty,
   EmptyContent,
@@ -21,9 +22,15 @@ export const Route = createRootRoute({
 })
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const isPublicRoute =
+    pathname === '/login' ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/verify-email')
+
   return (
     <>
-      <Outlet />
+      {isPublicRoute ? <Outlet /> : <AppLayoutWrapper><Outlet /></AppLayoutWrapper>}
       <Toaster />
     </>
   )

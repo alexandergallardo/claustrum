@@ -5,7 +5,6 @@ import { z } from "zod";
 import { ArrowLeft, PenLine } from "lucide-react";
 import { toast } from "sonner";
 
-import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -166,15 +165,12 @@ export function ProfessorDetailPage() {
 
   if (isInvalidProfessorId) {
     return (
-      <AppLayoutWrapper>
-        <div className="p-6 text-sm text-muted-foreground">ID de profesor inválido.</div>
-      </AppLayoutWrapper>
+      <div className="p-6 text-sm text-muted-foreground">ID de profesor inválido.</div>
     );
   }
 
   return (
-    <AppLayoutWrapper>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button
@@ -286,7 +282,6 @@ export function ProfessorDetailPage() {
           </Suspense>
         ) : null}
       </div>
-    </AppLayoutWrapper>
   );
 }
 

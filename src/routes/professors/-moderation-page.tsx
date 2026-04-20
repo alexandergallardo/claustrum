@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,9 +47,7 @@ export function ModerationPage() {
 
   if (isAuthLoading || isAdminQuery.isLoading) {
     return (
-      <AppLayoutWrapper>
-        <div className="p-6 text-sm text-muted-foreground">Cargando moderación...</div>
-      </AppLayoutWrapper>
+      <div className="p-6 text-sm text-muted-foreground">Cargando moderación...</div>
     );
   }
 
@@ -72,8 +69,7 @@ export function ModerationPage() {
   };
 
   return (
-    <AppLayoutWrapper>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <h1 className="text-2xl font-bold">Moderación de reseñas</h1>
           <Badge variant="outline">{totalCount} pendientes</Badge>
@@ -172,6 +168,5 @@ export function ModerationPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayoutWrapper>
   );
 }

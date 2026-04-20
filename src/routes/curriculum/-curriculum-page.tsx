@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { AppLayoutWrapper } from '@/components/app-layout-wrapper'
 import {
   useAuthUser,
   useUniversities,
@@ -160,77 +159,75 @@ export function CurriculumPage() {
   }, [navigate, search, userStudyPlan])
 
   return (
-    <AppLayoutWrapper>
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="px-4 lg:px-6">
-              <PlanFilters
-                universities={universities ?? []}
-                campuses={mainCampuses}
-                careerPrograms={academicUnits}
-                plans={plans}
-                selectedUniversityId={selectedUniversityId}
-                selectedCampusId={selectedCampusId}
-                selectedCareerProgramId={selectedAcademicUnitId}
-                selectedPlanId={selectedPlanId}
-                onUniversityChange={handleUniversityChange}
-                onCampusChange={handleCampusChange}
-                onCareerProgramChange={handleAcademicUnitChange}
-                onPlanChange={handlePlanChange}
-                isLoadingUniversities={isLoadingUniversities}
-                isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
-                isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
-                isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
-                canUseProfileDefaults={!!authUser && !!userStudyPlan}
-                isUsingProfileDefaults={isUsingProfileDefaults}
-                onUseProfileDefaults={handleUseProfileDefaults}
-              />
-            </div>
-
-            {planDetailQuery.isError && (
-              <div className="px-4 lg:px-6">
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Error al cargar el plan de estudios. Intenta de nuevo.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
-
-            {selectedPlanId && planDetailQuery.isLoading && (
-              <div className="px-4 lg:px-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-6 w-48" />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <Skeleton key={i} className="h-32 w-full" />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedPlanId && planDetailQuery.isSuccess && planDetailQuery.data && (
-              <div className="px-4 lg:px-6 min-h-0 flex-1">
-                <Card className="h-full min-h-0 overflow-auto py-0">
-                  <MemoizedPlanBoard planDetail={planDetailQuery.data} />
-                </Card>
-              </div>
-            )}
-
-            {!selectedPlanId && !planDetailQuery.isLoading && (
-              <div className="px-4 lg:px-6">
-                <Card className="flex-1 min-h-96 flex items-center justify-center">
-                  <p className="text-muted-foreground">Selecciona una carrera para visualizar el plan de estudios</p>
-                </Card>
-              </div>
-            )}
+    <div className="flex flex-1 flex-col">
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="px-4 lg:px-6">
+            <PlanFilters
+              universities={universities ?? []}
+              campuses={mainCampuses}
+              careerPrograms={academicUnits}
+              plans={plans}
+              selectedUniversityId={selectedUniversityId}
+              selectedCampusId={selectedCampusId}
+              selectedCareerProgramId={selectedAcademicUnitId}
+              selectedPlanId={selectedPlanId}
+              onUniversityChange={handleUniversityChange}
+              onCampusChange={handleCampusChange}
+              onCareerProgramChange={handleAcademicUnitChange}
+              onPlanChange={handlePlanChange}
+              isLoadingUniversities={isLoadingUniversities}
+              isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
+              isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
+              isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+              canUseProfileDefaults={!!authUser && !!userStudyPlan}
+              isUsingProfileDefaults={isUsingProfileDefaults}
+              onUseProfileDefaults={handleUseProfileDefaults}
+            />
           </div>
+
+          {planDetailQuery.isError && (
+            <div className="px-4 lg:px-6">
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Error al cargar el plan de estudios. Intenta de nuevo.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {selectedPlanId && planDetailQuery.isLoading && (
+            <div className="px-4 lg:px-6 space-y-4">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-48" />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedPlanId && planDetailQuery.isSuccess && planDetailQuery.data && (
+            <div className="px-4 lg:px-6 min-h-0 flex-1">
+              <Card className="h-full min-h-0 overflow-auto py-0">
+                <MemoizedPlanBoard planDetail={planDetailQuery.data} />
+              </Card>
+            </div>
+          )}
+
+          {!selectedPlanId && !planDetailQuery.isLoading && (
+            <div className="px-4 lg:px-6">
+              <Card className="flex-1 min-h-96 flex items-center justify-center">
+                <p className="text-muted-foreground">Selecciona una carrera para visualizar el plan de estudios</p>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
-    </AppLayoutWrapper>
+    </div>
   )
 }

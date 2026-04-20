@@ -12,7 +12,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
-import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import CourseList from "@/components/course-list";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
@@ -644,97 +643,92 @@ export function SchedulePage() {
 
   if (isInitialLoading) {
     return (
-      <AppLayoutWrapper>
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <div className="px-4 lg:px-6">
-                <Skeleton className="h-12 w-full" />
-              </div>
-              <div className="px-4 lg:px-6">
-                <div className="flex gap-4 h-[calc(100vh-16rem)]">
-                  <div className="w-96 space-y-4">
-                    <Skeleton className="h-32" />
-                    <Skeleton className="h-32" />
-                    <Skeleton className="h-32" />
-                  </div>
-                  <div className="flex-1">
-                    <Skeleton className="h-full" />
-                  </div>
+      <div className="flex flex-1 flex-col">
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <Skeleton className="h-12 w-full" />
+            </div>
+            <div className="px-4 lg:px-6">
+              <div className="flex gap-4 h-[calc(100vh-16rem)]">
+                <div className="w-96 space-y-4">
+                  <Skeleton className="h-32" />
+                  <Skeleton className="h-32" />
+                  <Skeleton className="h-32" />
+                </div>
+                <div className="flex-1">
+                  <Skeleton className="h-full" />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </AppLayoutWrapper>
+      </div>
     );
   }
 
   if (coursesQuery.isError) {
     return (
-      <AppLayoutWrapper>
-        <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-2">
-              Error al cargar el horario
-            </h2>
-            <p className="text-muted-foreground">
-              {coursesQuery.error instanceof Error
-                ? coursesQuery.error.message
-                : "Error desconocido"}
-            </p>
-          </div>
+      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">
+            Error al cargar el horario
+          </h2>
+          <p className="text-muted-foreground">
+            {coursesQuery.error instanceof Error
+              ? coursesQuery.error.message
+              : "Error desconocido"}
+          </p>
         </div>
-      </AppLayoutWrapper>
+      </div>
     );
   }
 
   return (
-    <AppLayoutWrapper>
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="px-4 lg:px-6">
-              <ScheduleFilters
-                universities={universities ?? []}
-                campuses={mainCampuses}
-                careers={careers}
-                plans={plans}
-                terms={terms}
-                selectedUniversityId={selectedUniversityId}
-                selectedCampusId={selectedCampusId}
-                selectedCareerId={selectedCareerId}
-                selectedPlanId={selectedPlanId}
-                selectedTermId={selectedTermId}
-                onUniversityChange={handleUniversityChange}
-                onCampusChange={handleCampusChange}
-                onCareerChange={handleCareerChange}
-                onPlanChange={handlePlanChange}
-                onTermChange={handleTermChange}
-                isLoadingUniversities={isLoadingUniversities}
-                isLoadingCampuses={
-                  campusesQuery.isFetching && campusesQuery.data?.length === 0
-                }
-                isLoadingCareers={
-                  careersQuery.isFetching && careersQuery.data?.length === 0
-                }
-                isLoadingPlans={
-                  plansQuery.isFetching && plansQuery.data?.length === 0
-                }
-                isLoadingTerms={
-                  termsQuery.isFetching && termsQuery.data?.length === 0
-                }
-                showAll={effectiveShowAllCourses}
-                onShowAllChange={handleShowAllChange}
-                showAllDisabled={!isAuthenticated}
-                showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
-                showOtherCampuses={showOtherCampuses}
-                onShowOtherCampusesChange={handleOtherCampusesChange}
-                canUseProfileDefaults={isAuthenticated && !!userStudyPlan}
-                isUsingProfileDefaults={isUsingProfileDefaults}
-                onUseProfileDefaults={handleUseProfileDefaults}
+    <div className="flex flex-1 flex-col">
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="px-4 lg:px-6">
+            <ScheduleFilters
+              universities={universities ?? []}
+              campuses={mainCampuses}
+              careers={careers}
+              plans={plans}
+              terms={terms}
+              selectedUniversityId={selectedUniversityId}
+              selectedCampusId={selectedCampusId}
+              selectedCareerId={selectedCareerId}
+              selectedPlanId={selectedPlanId}
+              selectedTermId={selectedTermId}
+              onUniversityChange={handleUniversityChange}
+              onCampusChange={handleCampusChange}
+              onCareerChange={handleCareerChange}
+              onPlanChange={handlePlanChange}
+              onTermChange={handleTermChange}
+              isLoadingUniversities={isLoadingUniversities}
+              isLoadingCampuses={
+                campusesQuery.isFetching && campusesQuery.data?.length === 0
+              }
+              isLoadingCareers={
+                careersQuery.isFetching && careersQuery.data?.length === 0
+              }
+              isLoadingPlans={
+                plansQuery.isFetching && plansQuery.data?.length === 0
+              }
+              isLoadingTerms={
+                termsQuery.isFetching && termsQuery.data?.length === 0
+              }
+              showAll={effectiveShowAllCourses}
+              onShowAllChange={handleShowAllChange}
+              showAllDisabled={!isAuthenticated}
+              showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
+              showOtherCampuses={showOtherCampuses}
+              onShowOtherCampusesChange={handleOtherCampusesChange}
+              canUseProfileDefaults={isAuthenticated && !!userStudyPlan}
+              isUsingProfileDefaults={isUsingProfileDefaults}
+              onUseProfileDefaults={handleUseProfileDefaults}
             />
-            </div>
+          </div>
 
             {selectedTermId &&
               !orderedCourses.length &&
@@ -856,9 +850,8 @@ export function SchedulePage() {
                 </div>
               </div>
             )}
-          </div>
         </div>
       </div>
-    </AppLayoutWrapper>
+    </div>
   );
 }
