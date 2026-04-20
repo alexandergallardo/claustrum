@@ -10,7 +10,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,8 +165,7 @@ export function ProfessorsReviewsPage() {
   });
 
   return (
-    <AppLayoutWrapper>
-      <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+    <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
         <Collapsible open={filtersExpanded} onOpenChange={setFiltersExpanded}>
           <div className="flex items-end gap-2">
             <div className="flex-1 space-y-2">
@@ -350,6 +348,5 @@ export function ProfessorsReviewsPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayoutWrapper>
   );
 }
