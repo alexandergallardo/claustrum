@@ -42,6 +42,7 @@ import { useAuthUser } from "@/lib/hooks/use-queries";
 import { useIsAdmin, useProfessorReviewStats } from "@/lib/hooks/use-professor-reviews";
 import { getProfessorById, getProfessorReviewSummary, getProfessorReviewsPublic } from "@/lib/professor-reviews/api";
 import type { ProfessorReviewStatsRow } from "@/lib/professor-reviews/types";
+import { getProfessorNameTransitionName } from "@/lib/utils/view-transition";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -98,6 +99,10 @@ export function ProfessorsReviewsPage() {
           const professorId = row.original.professor_id;
 
           const prefetchProfessorDetail = () => {
+            queryClient.setQueryData(["professorById", professorId], {
+              id: professorId,
+              full_name: row.original.professor_name,
+            });
             void queryClient.prefetchQuery({
               queryKey: ["professorById", professorId],
               queryFn: () => getProfessorById(professorId),
@@ -117,7 +122,9 @@ export function ProfessorsReviewsPage() {
               to="/professors/$professorId"
               params={{ professorId: String(professorId) }}
               preload="intent"
+              viewTransition={{ types: ["professor-open"] }}
               className="font-medium underline-offset-4 hover:underline"
+              style={{ viewTransitionName: getProfessorNameTransitionName(professorId) }}
               onMouseEnter={prefetchProfessorDetail}
               onPointerDown={prefetchProfessorDetail}
               onTouchStart={prefetchProfessorDetail}

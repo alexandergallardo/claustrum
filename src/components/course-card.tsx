@@ -9,6 +9,7 @@ interface CourseCardProps {
   isHovered: boolean
   relationType?: RelationType
   id?: string
+  transitionName?: string
 }
 
 const statusConfig: Record<CourseStatus, { label: string; bgClassName: string; borderClassName: string }> = {
@@ -57,7 +58,7 @@ const relationConfig: Record<string, { ringClass: string; icon: React.ReactNode;
   },
 }
 
-export function CourseCard({ course, isHovered, relationType, id }: CourseCardProps) {
+export function CourseCard({ course, isHovered, relationType, id, transitionName }: CourseCardProps) {
   const config = statusConfig[course.status]
   const relation = relationType ? relationConfig[relationType] : null
 
@@ -87,7 +88,12 @@ export function CourseCard({ course, isHovered, relationType, id }: CourseCardPr
       </div>
 
       <div className={cn("px-3 py-2 min-h-16 flex items-center justify-center text-center relative", config.bgClassName)}>
-        <h3 className="w-full font-semibold text-foreground text-xs leading-tight line-clamp-2">{course.name}</h3>
+        <h3
+          className="w-full font-semibold text-foreground text-xs leading-tight line-clamp-2"
+          style={transitionName ? { viewTransitionName: transitionName } : undefined}
+        >
+          {course.name}
+        </h3>
         
         {relation && (
           <div className="absolute bottom-1 right-2 text-[10px] font-medium opacity-80">

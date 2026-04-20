@@ -22,8 +22,12 @@ import type { Mode, CalendarEvent } from "@/components/calendar/calendar-types";
 import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleFilters } from "@/components/schedule/schedule-filters";
-import { ResizablePanel } from "@/components/resizable-panel";
 import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import {
   ScheduleZoomControls,
   SCHEDULE_DEFAULT_HOUR_HEIGHT,
@@ -757,8 +761,16 @@ export function SchedulePage() {
                     "--calendar-height": `${calendarHeight}px`,
                   } as CSSProperties}
                 >
-                  <ResizablePanel
-                    leftContent={
+                  <ResizablePanelGroup
+                    orientation="horizontal"
+                    className="h-full"
+                  >
+                    <ResizablePanel
+                      defaultSize="30%"
+                      minSize="20%"
+                      maxSize="50%"
+                      className="min-w-0 overflow-hidden"
+                    >
                       <div className="flex flex-col lg:h-full">
                         <div className="px-4 py-3 border-b bg-muted/30 shrink-0">
                           <div className="flex items-center gap-2">
@@ -806,8 +818,11 @@ export function SchedulePage() {
                           />
                         </div>
                       </div>
-                    }
-                    rightContent={
+                    </ResizablePanel>
+
+                    <ResizableHandle withHandle />
+
+                    <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
                       <div className="relative lg:h-full">
                         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                           <ScheduleZoomControls
@@ -836,11 +851,8 @@ export function SchedulePage() {
                           </Suspense>
                         </div>
                       </div>
-                    }
-                    initialLeftWidth={400}
-                    minLeftWidth={326}
-                    maxLeftWidth={600}
-                  />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
                 </div>
               </div>
             )}

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { ArrowLeft, PenLine } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/hooks/use-professor-reviews";
 import { REVIEW_TAG_OPTIONS, type ReviewTag } from "@/lib/professor-reviews/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getProfessorNameTransitionName } from "@/lib/utils/view-transition";
 
 const ReviewComposer = lazy(() =>
   import("./-review-composer").then((module) => ({ default: module.ReviewComposer })),
@@ -54,6 +56,7 @@ function metricLabel(value: number | null, suffix = "") {
 export function ProfessorDetailPage() {
   const navigate = useNavigate({ from: "/professors/$professorId" });
   const params = useParams({ from: "/professors/$professorId" });
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const professorId = Number(params.professorId);
 
@@ -75,11 +78,15 @@ export function ProfessorDetailPage() {
 
   const turnstileSiteKey = getTurnstileSiteKey();
   const parsedProfessorId = Number.isFinite(professorId) && professorId > 0 ? professorId : null;
+  const cachedProfessor = parsedProfessorId
+    ? queryClient.getQueryData<{ id: number; full_name: string }>(["professorById", parsedProfessorId])
+    : null;
 
   const professorQuery = useProfessorById(parsedProfessorId);
   const summaryQuery = useProfessorReviewSummary(parsedProfessorId);
   const reviewsQuery = useProfessorReviewsPublic(parsedProfessorId, page, pageSize);
   const submitMutation = useSubmitProfessorReview();
+  const headingProfessorName = professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? "Profesor";
 
   const reviewRows = reviewsQuery.data ?? [];
   const totalCount = reviewRows[0]?.total_count ?? 0;
@@ -90,6 +97,14 @@ export function ProfessorDetailPage() {
 
   const summary = summaryQuery.data;
   const isInvalidProfessorId = parsedProfessorId === null;
+
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    void navigate({ to: "/professors" });
+  };
 
   const resetComposer = () => {
     setCourseCode("");
@@ -166,13 +181,18 @@ export function ProfessorDetailPage() {
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => void navigate({ to: "/professors" })}
+              onClick={handleBack}
               aria-label="Atrás"
               title="Atrás"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl font-bold">{professorQuery.data?.full_name ?? "Profesor"}</h1>
+            <h1
+              className="text-2xl font-bold"
+              style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
+            >
+              {headingProfessorName}
+            </h1>
           </div>
           <Button type="button" onClick={() => setIsComposerOpen(true)}>
             <PenLine className="mr-2 h-4 w-4" />

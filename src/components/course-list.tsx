@@ -1,10 +1,9 @@
-import { useMemo, useRef, useCallback, memo, useEffect } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useMemo, useCallback, memo, useEffect, useRef } from 'react'
 import type { ScheduleCourse, ScheduleGroup } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { User, Clock, AlertTriangle, MapPin, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getGroupId } from '@/lib/calendar-utils'
@@ -67,22 +66,6 @@ interface GroupView {
 interface CourseViewData {
   course: ScheduleCourse
   groupViews: GroupView[]
-}
-
-const BASE_HEIGHT = 232
-const LINE_HEIGHT = 18
-const CAMPUS_LINE_SHOW = 1
-const CAMPUS_LINE_HIDE = 0
-
-function calculateEstimatedHeight(course: ScheduleCourse, showCampus: boolean): number {
-  const groups = course.groups ?? []
-  const maxMeetings = groups.reduce((max, group) => {
-    const count = group.meetings?.length ?? 0
-    return Math.max(max, count)
-  }, 0)
-  const campusLine = showCampus ? CAMPUS_LINE_SHOW : CAMPUS_LINE_HIDE
-  const estimatedLines = 3 + campusLine + maxMeetings
-  return BASE_HEIGHT + estimatedLines * LINE_HEIGHT
 }
 
 function createGroupView(
@@ -239,27 +222,21 @@ export default function CourseList({
   campusById,
   showCampus = false,
 }: CourseListProps) {
-  const scrollRef = useRef<HTMLDivElement | null>(null)
-  const itemCountRef = useRef(courses.length)
-  const measuredHeightsRef = useRef<number[]>([])
-  const conflictMapRef = useRef<Map<string, Set<string>> | null>(null)
-
-  const courseCountRef = useRef(courses.length)
+  const scrollAreaRootRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (courses.length !== itemCountRef.current) {
-      measuredHeightsRef.current = []
-      itemCountRef.current = courses.length
-    }
-    if (courses.length !== courseCountRef.current) {
-      conflictMapRef.current = null
-      courseCountRef.current = courses.length
-    }
-  }, [courses.length])
+    const viewport = scrollAreaRootRef.current?.querySelector<HTMLElement>('[data-slot="scroll-area-viewport"]')
+    const wrapper = viewport?.firstElementChild as HTMLElement | null
+    if (!wrapper) return
 
-  const estimatedHeights = useMemo(() => {
-    return courses.map(course => calculateEstimatedHeight(course, showCampus))
-  }, [courses, showCampus])
+    wrapper.style.display = 'block'
+    wrapper.style.width = '100%'
+
+    return () => {
+      wrapper.style.display = ''
+      wrapper.style.width = ''
+    }
+  }, [])
 
   const courseColors = useMemo(() => {
     const map = new Map<string, string>()
@@ -284,30 +261,12 @@ export default function CourseList({
   }, [courses, showCampus, campusById])
 
   const conflictMap = useMemo(() => {
-    if (conflictMapRef.current) return conflictMapRef.current
-    const result = calculateConflictMap(courses)
-    conflictMapRef.current = result
-    return result
+    return calculateConflictMap(courses)
   }, [courses])
 
   const { conflictReasons, disabledSet } = useMemo(() => {
     return createConflictReasons(selectedGroups, conflictMap, courses, showCampus, campusById)
   }, [selectedGroups, conflictMap, courses, showCampus, campusById])
-
-  const rowVirtualizer = useVirtualizer({
-    count: courses.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: (index) => measuredHeightsRef.current[index] ?? estimatedHeights[index] ?? 320,
-    overscan: 1,
-    getItemKey: (index) => courses[index]?.offering_id ?? index,
-  })
-
-  const handleItemMounted = useCallback((index: number, element: HTMLElement | null) => {
-    if (element && measuredHeightsRef.current[index] === undefined) {
-      const height = element.getBoundingClientRect().height
-      measuredHeightsRef.current[index] = height
-    }
-  }, [])
 
   const handleGroupToggle = useCallback(
     (
@@ -345,28 +304,16 @@ export default function CourseList({
 
   return (
     <TooltipProvider>
-      <div ref={scrollRef} className="h-full overflow-auto">
-        <div
-          className="relative w-full"
-          style={{ height: rowVirtualizer.getTotalSize() }}
-        >
-          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-            const courseData = viewData[virtualRow.index]
-            const course = courseData.course
-            const colorStyles = courseColorStyles.get(course.course_code) ?? getColorStyles('blue')
+      <div ref={scrollAreaRootRef} className="h-full">
+        <ScrollArea className="h-full w-full">
+          <div className="w-full px-4 py-2 space-y-4">
+            {viewData.map((courseData) => {
+              const course = courseData.course
+              const colorStyles = courseColorStyles.get(course.course_code) ?? getColorStyles('blue')
 
-            return (
-              <div
-                key={course.offering_id}
-                ref={(el) => {
-                  rowVirtualizer.measureElement(el)
-                  handleItemMounted(virtualRow.index, el)
-                }}
-                data-index={virtualRow.index}
-                className="absolute left-0 top-0 w-full px-4 py-2"
-                style={{ transform: `translateY(${virtualRow.start}px)` }}
-              >
+              return (
                 <CourseCard
+                  key={course.offering_id}
                   course={courseData.course}
                   groupViews={courseData.groupViews}
                   colorStyles={colorStyles}
@@ -375,10 +322,10 @@ export default function CourseList({
                   conflictReasonsByGroupId={conflictReasons}
                   onGroupToggle={handleGroupToggle}
                 />
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        </ScrollArea>
       </div>
     </TooltipProvider>
   )
@@ -419,7 +366,7 @@ const CourseCard = memo(function CourseCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="w-full" scrollbarOrientation="horizontal">
+        <ScrollArea className="w-full">
           <div className="flex gap-3 pt-1 pb-2 snap-x snap-mandatory">
             {groupViews.map((groupView) => {
               const isSelected = selectedGroupIds.has(groupView.groupId)
@@ -532,6 +479,7 @@ const CourseCard = memo(function CourseCard({
               )
             })}
           </div>
+          <ScrollBar orientation="horizontal" />
         </ScrollArea>
       </CardContent>
     </Card>
