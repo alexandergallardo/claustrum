@@ -117,6 +117,42 @@ export interface DashboardStats {
   completedCredits: number
   currentSemester: number
   progressPercentage: number
+  weightedAverage: number
+}
+
+export interface CourseAttempt {
+  id: number
+  attemptNumber: number
+  status: Exclude<CourseStatus, "not_taken">
+  grade: number | null
+  academicTermId: number | null
+  recordedAt: string
+}
+
+export interface CourseRecentProfessor {
+  professorId: number
+  professorName: string
+  lastTaughtTermId: number
+  lastTaughtTermName: string
+  lastTaughtYear: number
+  lastTaughtPeriodNumber: number
+  groupsInLastTermCount: number
+  termsTaughtCount: number
+}
+
+export interface CourseLatestTermGroup {
+  academicTermId: number
+  termDisplayName: string
+  termYear: number
+  termPeriodNumber: number
+  groupId: number
+  groupCode: string
+  groupType: string
+  capacity: number
+  campusId: number | null
+  campusName: string | null
+  professors: Array<{ id: number; name: string }>
+  meetings: ScheduleSession[]
 }
 
 export interface SemesterProgress {

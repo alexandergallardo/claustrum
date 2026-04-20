@@ -1,6 +1,19 @@
 import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import type { AcademicTerm, StudyPeriod, CatalogStudyPlan, StudyPlanCourse, StudyPlanDetail, UserProfileContextRow, DashboardStats, SemesterProgress, NextCourse } from "@/lib/types";
+import type {
+  AcademicTerm,
+  StudyPeriod,
+  CatalogStudyPlan,
+  StudyPlanCourse,
+  StudyPlanDetail,
+  UserProfileContextRow,
+  DashboardStats,
+  SemesterProgress,
+  NextCourse,
+  CourseAttempt,
+  CourseLatestTermGroup,
+  CourseRecentProfessor,
+} from "@/lib/types";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
 export function useUniversities() {
@@ -374,16 +387,15 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
 
       const sb = getSupabaseBrowserClient();
 
-      const { data, error } = await sb
-        .from("student_course_record")
-        .select("course_id, status")
-        .eq("user_id", userId)
-        .eq("study_plan_id", studyPlanId);
+      const { data, error } = await sb.rpc("get_user_course_effective_statuses", {
+        p_user_id: userId,
+        p_study_plan_id: studyPlanId,
+      });
 
       if (error) throw error;
 
-      for (const record of data ?? []) {
-        statusMap.set(record.course_id, record.status.toLowerCase() as any);
+      for (const record of (data ?? []) as Array<{ course_id: number; status: string }>) {
+        statusMap.set(record.course_id, record.status.toLowerCase() as "approved" | "failed" | "withdrawn" | "in_progress");
       }
 
       const localChanges = getLocalCourseStatusChanges();
@@ -400,7 +412,7 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
   });
 }
 
-export function useUpdateCourseStatus() {
+export function useCreateCourseAttempt() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -408,33 +420,65 @@ export function useUpdateCourseStatus() {
       userId: string;
       studyPlanId: number;
       courseId: number;
-      status: "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress";
+      status: "approved" | "failed" | "withdrawn" | "in_progress";
+      grade: number | null;
+      academicTermId?: number | null;
     }) => {
       const sb = getSupabaseBrowserClient();
 
-      let error;
-
-      if (params.status === "not_taken") {
-        ({ error } = await sb.rpc("delete_student_course_status", {
-          p_user_id: params.userId,
-          p_study_plan_id: params.studyPlanId,
-          p_course_id: params.courseId,
-        }));
-      } else {
-        ({ error } = await sb.rpc("update_student_course_status", {
-          p_user_id: params.userId,
-          p_study_plan_id: params.studyPlanId,
-          p_course_id: params.courseId,
-          p_status: params.status.toUpperCase() as any,
-        }));
-      }
+      const { error } = await sb.rpc("insert_student_course_attempt", {
+        p_user_id: params.userId,
+        p_study_plan_id: params.studyPlanId,
+        p_course_id: params.courseId,
+        p_status: params.status.toUpperCase(),
+        p_grade: params.grade,
+        p_academic_term_id: params.academicTermId ?? null,
+      });
 
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId] })
       queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats", variables.userId, variables.studyPlanId] })
+      queryClient.invalidateQueries({ queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId] })
     },
+  });
+}
+
+export function useCourseAttempts(userId: string | null, studyPlanId: number | null, courseId: number | null) {
+  return useQuery({
+    queryKey: ["courseAttempts", userId, studyPlanId, courseId],
+    queryFn: async () => {
+      if (!userId || !studyPlanId || !courseId) return [] as CourseAttempt[];
+
+      const sb = getSupabaseBrowserClient();
+      const { data, error } = await sb.rpc("get_student_course_attempts", {
+        p_user_id: userId,
+        p_study_plan_id: studyPlanId,
+        p_course_id: courseId,
+      });
+
+      if (error) throw error;
+
+      return (data ?? []).map((attempt: {
+        id: number;
+        attempt_number: number;
+        status: string;
+        grade: number | null;
+        academic_term_id: number | null;
+        recorded_at: string;
+      }) => ({
+        id: attempt.id,
+        attemptNumber: attempt.attempt_number,
+        status: attempt.status.toLowerCase() as CourseAttempt["status"],
+        grade: attempt.grade,
+        academicTermId: attempt.academic_term_id,
+        recordedAt: attempt.recorded_at,
+      } satisfies CourseAttempt));
+    },
+    enabled: !!userId && !!studyPlanId && !!courseId,
+    staleTime: 30 * 1000,
   });
 }
 
@@ -492,6 +536,103 @@ export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: n
     },
     enabled: !!studyPlanId && !!fromCourseId,
     placeholderData: (previous) => previous,
+  });
+}
+
+export function useCourseRecentProfessors(
+  courseId: number | null,
+  campusId: number | null,
+  academicUnitId: number | null,
+) {
+  return useQuery({
+    queryKey: ["courseRecentProfessors", courseId, campusId, academicUnitId],
+    queryFn: async () => {
+      if (!courseId) return [] as CourseRecentProfessor[];
+
+      const sb = getSupabaseBrowserClient();
+      const { data, error } = await sb.rpc("get_course_recent_professors", {
+        p_course_id: courseId,
+        p_campus_id: campusId,
+        p_academic_unit_id: academicUnitId,
+        p_year_window: 2,
+      });
+
+      if (error) throw error;
+
+      return (data ?? []).map((row: {
+        professor_id: number;
+        professor_name: string;
+        last_taught_term_id: number;
+        last_taught_term_name: string;
+        last_taught_year: number;
+        last_taught_period_number: number;
+        groups_in_last_term_count: number;
+        terms_taught_count: number;
+      }) => ({
+        professorId: row.professor_id,
+        professorName: row.professor_name,
+        lastTaughtTermId: row.last_taught_term_id,
+        lastTaughtTermName: row.last_taught_term_name,
+        lastTaughtYear: row.last_taught_year,
+        lastTaughtPeriodNumber: row.last_taught_period_number,
+        groupsInLastTermCount: row.groups_in_last_term_count,
+        termsTaughtCount: row.terms_taught_count,
+      } satisfies CourseRecentProfessor));
+    },
+    enabled: !!courseId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCourseLatestTermGroups(
+  courseId: number | null,
+  campusId: number | null,
+  academicUnitId: number | null,
+) {
+  return useQuery({
+    queryKey: ["courseLatestTermGroups", courseId, campusId, academicUnitId],
+    queryFn: async () => {
+      if (!courseId) return [] as CourseLatestTermGroup[];
+
+      const sb = getSupabaseBrowserClient();
+      const { data, error } = await sb.rpc("get_course_latest_term_groups", {
+        p_course_id: courseId,
+        p_campus_id: campusId,
+        p_academic_unit_id: academicUnitId,
+      });
+
+      if (error) throw error;
+
+      return (data ?? []).map((row: {
+        academic_term_id: number;
+        term_display_name: string;
+        term_year: number;
+        term_period_number: number;
+        group_id: number;
+        group_code: string;
+        group_type: string;
+        capacity: number;
+        campus_id: number | null;
+        campus_name: string | null;
+        professors: Array<{ id: number; name: string }> | null;
+        meetings: Array<{ weekday: number; starts_at: string; ends_at: string; classroom: string | null }> | null;
+      }) => ({
+        academicTermId: row.academic_term_id,
+        termDisplayName: row.term_display_name,
+        termYear: row.term_year,
+        termPeriodNumber: row.term_period_number,
+        groupId: row.group_id,
+        groupCode: row.group_code,
+        groupType: row.group_type,
+        capacity: row.capacity,
+        campusId: row.campus_id,
+        campusName: row.campus_name,
+        professors: row.professors ?? [],
+        meetings: row.meetings ?? [],
+      } satisfies CourseLatestTermGroup));
+    },
+    enabled: !!courseId,
+    staleTime: 2 * 60 * 1000,
   });
 }
 

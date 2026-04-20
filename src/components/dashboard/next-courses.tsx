@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { NextCourse } from "@/lib/types"
-import { BookOpen } from "lucide-react"
 import { Link } from "@tanstack/react-router"
 
 interface NextCoursesProps {
@@ -60,9 +59,8 @@ export function NextCourses({ courses, universityId, campusId, academicUnitId, s
 
   return (
     <Card className="h-full w-full flex flex-col overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 shrink-0">
+      <CardHeader className="pb-2 shrink-0">
         <CardTitle className="text-base">Próximos cursos</CardTitle>
-        <BookOpen className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent className="flex-1 pt-0 min-h-0">
         {courses.length === 0 ? (

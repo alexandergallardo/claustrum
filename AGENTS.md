@@ -107,3 +107,8 @@ src/routes/
 - Do not add comments unless explicitly requested
 - Ask for clarification when requirements are unclear
 - Report errors clearly with relevant context
+
+## Agent Editing Workflow
+- **Do not use shell commands to edit files** (e.g., heredoc writes, `sed -i`, `perl -pi`, `cat > file`).
+- Always use the agent's file editing tools for code/document changes.
+- Use shell commands only for execution tasks (builds, git, migrations, checks), not for file content editing.

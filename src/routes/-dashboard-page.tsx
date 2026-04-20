@@ -29,9 +29,21 @@ export function DashboardPage() {
   const [distributionHeight, setDistributionHeight] = useState<number | null>(null);
 
   useLayoutEffect(() => {
-    if (distributionRef.current) {
-      setDistributionHeight(distributionRef.current.offsetHeight);
-    }
+    const element = distributionRef.current;
+    if (!element) return;
+
+    const updateHeight = () => {
+      setDistributionHeight(element.offsetHeight);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
   }, [dashboardData]);
 
   const isAuthenticated = !!authUser;
@@ -63,7 +75,7 @@ export function DashboardPage() {
                       <CourseStatusChart stats={dashboardData.stats} />
                     </Suspense>
                   </div>
-                  <div className="w-full min-w-0 lg:col-span-3" style={distributionHeight ? { maxHeight: distributionHeight } : undefined}>
+                  <div className="w-full min-w-0 lg:col-span-3" style={distributionHeight ? { height: distributionHeight } : undefined}>
                     <NextCourses
                       courses={dashboardData.nextCourses}
                       universityId={userStudyPlan?.universityId ?? null}

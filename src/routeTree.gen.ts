@@ -23,6 +23,7 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as ProfessorsModerationRouteImport } from './routes/professors/moderation'
 import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
+import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
@@ -93,10 +94,16 @@ const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
   path: '/professors/$professorId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
+  id: '/curriculum/$courseId',
+  path: '/curriculum/$courseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
+  '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/settings'
     | '/'
+    | '/curriculum/$courseId'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/curriculum/$courseId'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/settings'
     | '/_index'
+    | '/curriculum/$courseId'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -195,6 +207,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
+  CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   ProfessorsModerationRoute: typeof ProfessorsModerationRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/curriculum/$courseId': {
+      id: '/curriculum/$courseId'
+      path: '/curriculum/$courseId'
+      fullPath: '/curriculum/$courseId'
+      preLoaderRoute: typeof CurriculumCourseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -329,6 +349,7 @@ const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
+  CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   ProfessorsModerationRoute: ProfessorsModerationRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,

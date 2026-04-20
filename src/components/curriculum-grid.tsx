@@ -1,13 +1,11 @@
 "use client"
 
-import React, { useState, useCallback, useRef, useEffect, useMemo } from "react"
-import { useQueryClient } from "@tanstack/react-query"
-import { useStudentCourseStatuses, useUpdateCourseStatus } from "@/lib/hooks/use-queries"
+import React, { useState, useCallback, useRef, useEffect } from "react"
+import { useNavigate, useSearch } from "@tanstack/react-router"
+import { useStudentCourseStatuses } from "@/lib/hooks/use-queries"
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel"
-import { saveLocalCourseStatus } from "@/lib/utils/local-storage-utils"
 import { CourseCard, type RelationType } from "./course-card"
-import { CourseDetails } from "./course-details"
-import type { StudyPlanDetail, Course, CourseStatus } from "@/lib/types"
+import type { StudyPlanDetail } from "@/lib/types"
 import { Lock, Unlock, Link } from "lucide-react"
 
 interface CurriculumGridProps {
@@ -18,15 +16,14 @@ interface CurriculumGridProps {
 }
 
 function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: CurriculumGridProps) {
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null)
   const [contentHeight, setContentHeight] = useState<number | null>(null)
   const [contentWidth, setContentWidth] = useState<number | null>(null)
   const scaledContentRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate({ from: "/curriculum/" })
+  const search = useSearch({ from: "/curriculum/" })
 
-  const queryClient = useQueryClient()
   const { data: statusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null)
-  const updateCourseStatus = useUpdateCourseStatus()
   const { semesters, courseById } = useCurriculumViewModel(planDetail, statusMap)
 
   useEffect(() => {
@@ -50,33 +47,16 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
     return null
   }, [courseById])
 
-  const handleCourseClick = useCallback((course: Course) => {
-    setSelectedCourse(course)
-  }, [])
-
-  const handleStatusChange = useCallback(async (courseId: string, newStatus: CourseStatus) => {
-    if (!userId || !studyPlanId) {
-      saveLocalCourseStatus(parseInt(courseId), studyPlanId ?? null, newStatus)
-      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses"] })
-      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] })
-      return "local"
-    }
-
-    try {
-      await updateCourseStatus.mutateAsync({
-        userId,
-        studyPlanId,
-        courseId: parseInt(courseId),
-        status: newStatus,
-      })
-      return "success"
-    } catch (error) {
-      throw error
-    }
-  }, [userId, studyPlanId, updateCourseStatus, queryClient])
-
-  const modalityName = useMemo(() => planDetail?.plan?.modality_name, [planDetail?.plan?.modality_name])
-  const handleCloseDetails = useCallback(() => setSelectedCourse(null), [])
+  const handleCourseClick = useCallback((courseId: string) => {
+    void navigate({
+      to: "/curriculum/$courseId",
+      params: { courseId },
+      search,
+      viewTransition: {
+        types: ["course-open"],
+      },
+    })
+  }, [navigate, search])
 
   return (
     <div className="flex flex-col h-full min-w-0">
@@ -103,11 +83,12 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
                       key={course.id}
                       onMouseEnter={() => setHoveredCourse(course.id)}
                       onMouseLeave={() => setHoveredCourse(null)}
-                      onClick={() => handleCourseClick(course)}
+                      onClick={() => handleCourseClick(course.id)}
                     >
                       <CourseCard
                         id={`course-${course.id}`}
                         course={course}
+                        transitionName={`course-name-${course.id}`}
                         isHovered={hoveredCourse === course.id}
                         relationType={hoveredCourse ? getRelationType(hoveredCourse, course.id) : null}
                       />
@@ -173,15 +154,6 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
           </div>
         </div>
       </div>
-
-      <CourseDetails
-        course={selectedCourse}
-        courseById={courseById}
-        studyPlanId={planDetail?.plan?.id}
-        modalityName={modalityName}
-        onClose={handleCloseDetails}
-        onStatusChange={handleStatusChange}
-      />
     </div>
   )
 }

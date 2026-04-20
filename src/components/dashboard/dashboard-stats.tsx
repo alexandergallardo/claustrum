@@ -94,22 +94,25 @@ function MiniBarCard({
   value,
   total,
   segments,
+  percentageLabel = "del total",
   color,
 }: {
   title: string;
   value: number;
   total: number;
   segments?: { value: number; color: string; label: string }[];
+  percentageLabel?: string;
   color: string;
 }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+  const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(2);
   
   return (
     <Card className="flex flex-col">
       <CardContent className="flex flex-col gap-2 p-4">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold tracking-tight">{value}</span>
+          <span className="text-2xl font-bold tracking-tight">{displayValue}</span>
           <span className="text-sm text-muted-foreground">/ {total}</span>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -138,7 +141,7 @@ function MiniBarCard({
               />
             )}
           </div>
-          <span className="text-xs text-muted-foreground">{percentage}% del total</span>
+          <span className="text-xs text-muted-foreground">{percentage}% {percentageLabel}</span>
         </div>
       </CardContent>
     </Card>
@@ -186,6 +189,7 @@ function SemesterCard({
 export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
   const totalCredits = stats.totalCredits || 1;
   const creditsPercentage = Math.round((stats.completedCredits / totalCredits) * 100);
+  const pendingCourses = Math.max(stats.totalCourses - stats.completedCourses, 0);
 
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
@@ -214,14 +218,16 @@ export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
       <MiniBarCard
         title="En curso"
         value={stats.inProgressCourses}
-        total={stats.totalCourses}
+        total={pendingCourses}
+        percentageLabel="de pendientes"
         color="var(--color-blue-500)"
       />
       <MiniBarCard
-        title="Reprobados"
-        value={stats.failedCourses}
-        total={stats.totalCourses}
-        color="var(--color-red-500)"
+        title="Promedio ponderado"
+        value={stats.weightedAverage}
+        total={100}
+        percentageLabel="sobre 100"
+        color="var(--color-indigo-500)"
       />
       <SemesterCard
         currentSemester={stats.currentSemester}
