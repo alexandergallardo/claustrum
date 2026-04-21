@@ -3,6 +3,7 @@ import {
   IconDashboard,
   IconCalendarTime,
   IconInnerShadowTop,
+  IconFileDescription,
   IconSchool,
   IconUsers,
 } from "@tabler/icons-react";
@@ -44,6 +45,13 @@ const data = {
       icon: IconUsers,
     },
   ],
+  navSecondary: [
+    {
+      title: "Reglamento y políticas",
+      url: "/policies",
+      icon: IconFileDescription,
+    },
+  ],
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -78,6 +86,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
+        <SidebarMenu>
+          {data.navSecondary.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild tooltip={item.title}>
+                <Link to={item.url} preload="intent">
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
         <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
