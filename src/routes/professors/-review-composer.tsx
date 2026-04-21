@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import {
   Sheet,
@@ -96,7 +97,7 @@ export function ReviewComposer({
     : 4;
 
   const form = (
-    <div className={`space-y-4 overflow-y-auto ${isMobile ? "px-4 pb-4" : "px-0 pb-2"}`}>
+    <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-0 pb-2"}`}>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="composer-course-code">Código de curso</Label>
@@ -131,13 +132,21 @@ export function ReviewComposer({
           </Button>
         </div>
         {showReviewExample ? (
-          <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Ejemplo de reseña útil</p>
-            <p className="mt-1">
-              "Su método de enseñanza se basa en clase invertida. La teoría se revisa antes y en clase se trabaja con
-              problemas aplicados. La retroalimentación fue clara y me ayudó a corregir errores rápido. Recomiendo
-              llegar con la lectura hecha y practicar ejercicios cada semana."
-            </p>
+          <div className="grid gap-2">
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm">
+              <p className="font-medium text-emerald-700 dark:text-emerald-400">Buen ejemplo</p>
+              <p className="mt-1 text-emerald-900 dark:text-emerald-100">
+                "Usa clase invertida, así que conviene llegar con la lectura hecha y en clase se enfoca en resolver
+                problemas aplicados; además, la retroalimentación fue clara y rápida, por lo que pude corregir errores
+                a tiempo y entender mejor cómo estudiar para los exámenes."
+              </p>
+            </div>
+            <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm">
+              <p className="font-medium text-red-700 dark:text-red-400">Mal ejemplo</p>
+              <p className="mt-1 text-red-900 dark:text-red-100">
+                "Es buena profe, me gustó mucho, todo bien, recomiendo llevarla."
+              </p>
+            </div>
           </div>
         ) : null}
         <Textarea
@@ -262,7 +271,9 @@ export function ReviewComposer({
             <SheetTitle>Enviar reseña</SheetTitle>
             <SheetDescription>Tu reseña es anónima y requiere aprobación antes de publicarse.</SheetDescription>
           </SheetHeader>
-          {form}
+          <ScrollArea className="min-h-0 flex-1">
+            {form}
+          </ScrollArea>
         </SheetContent>
       </Sheet>
     );
@@ -276,12 +287,14 @@ export function ReviewComposer({
         if (!nextOpen) onCloseReset();
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Enviar reseña</DialogTitle>
           <DialogDescription>Tu reseña es anónima y requiere aprobación antes de publicarse.</DialogDescription>
         </DialogHeader>
-        {form}
+        <ScrollArea className="min-h-0">
+          {form}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
