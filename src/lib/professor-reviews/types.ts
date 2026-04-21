@@ -1,10 +1,10 @@
 export const REVIEW_TAG_OPTIONS = [
-  "Da buena retroalimentacion",
-  "Tomaria su clase nuevamente",
+  "Da buena retroalimentación",
+  "Tomaría su clase nuevamente",
   "Brinda apoyo",
   "Explica con claridad",
-  "Examenes retadores",
-  "Proyecto util",
+  "Exámenes retadores",
+  "Proyecto útil",
 ] as const;
 
 export type ReviewTag = (typeof REVIEW_TAG_OPTIONS)[number];
