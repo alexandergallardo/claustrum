@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
 import {
   Sheet,
   SheetContent,
@@ -88,9 +90,13 @@ export function ReviewComposer({
   handleTagToggle,
 }: ReviewComposerProps) {
   const [showReviewExample, setShowReviewExample] = useState(false);
+  const parsedEngagementLevel = Number(engagementLevel);
+  const clampedEngagementLevel = Number.isFinite(parsedEngagementLevel)
+    ? Math.min(5, Math.max(1, Math.round(parsedEngagementLevel)))
+    : 4;
 
   const form = (
-    <div className="space-y-4 overflow-y-auto px-1 pb-2">
+    <div className={`space-y-4 overflow-y-auto ${isMobile ? "px-4 pb-4" : "px-0 pb-2"}`}>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="composer-course-code">Código de curso</Label>
@@ -152,35 +158,44 @@ export function ReviewComposer({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="composer-engagement-level">Interés en la clase (1-5)</Label>
-          <Input
-            id="composer-engagement-level"
-            type="number"
-            min={1}
-            max={5}
-            step={1}
-            value={engagementLevel}
-            onChange={(event) => setEngagementLevel(event.target.value)}
-          />
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="composer-engagement-level">Interés en la clase</Label>
+            <span className={`text-sm font-medium ${clampedEngagementLevel >= 4 ? "text-green-600" : clampedEngagementLevel <= 2 ? "text-red-600" : "text-amber-600"}`}>
+              {clampedEngagementLevel <= 2 ? "Bajo" : clampedEngagementLevel >= 4 ? "Alto" : "Medio"}
+            </span>
+          </div>
+          <div className="flex h-9 items-center">
+            <Slider
+              className="-translate-y-px w-full [&_[data-slot=slider-track]]:bg-gradient-to-r [&_[data-slot=slider-track]]:from-red-500 [&_[data-slot=slider-track]]:to-green-500 [&_[data-slot=slider-range]]:bg-transparent"
+              id="composer-engagement-level"
+              min={1}
+              max={5}
+              step={1}
+              value={[clampedEngagementLevel]}
+              onValueChange={(value) => setEngagementLevel(String(value[0] ?? 4))}
+            />
+          </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-2">
           <Label className="block">Asistencia obligatoria</Label>
-          <RadioGroup
-            value={attendanceRequired ? "yes" : "no"}
-            onValueChange={(value) => setAttendanceRequired(value === "yes")}
-            className="flex gap-4"
-          >
-            <label className="inline-flex items-center gap-2 text-sm">
-              <RadioGroupItem value="yes" id="composer-attendance-yes" />
-              Sí
-            </label>
-            <label className="inline-flex items-center gap-2 text-sm">
-              <RadioGroupItem value="no" id="composer-attendance-no" />
-              No
-            </label>
-          </RadioGroup>
+          <div className="flex h-9 items-center">
+            <RadioGroup
+              value={attendanceRequired ? "yes" : "no"}
+              onValueChange={(value) => setAttendanceRequired(value === "yes")}
+              className="flex items-center gap-4"
+            >
+              <label className="inline-flex items-center gap-2 text-sm">
+                <RadioGroupItem value="yes" id="composer-attendance-yes" />
+                Sí
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <RadioGroupItem value="no" id="composer-attendance-no" />
+                No
+              </label>
+            </RadioGroup>
+          </div>
         </div>
       </div>
 
@@ -225,9 +240,11 @@ export function ReviewComposer({
         </div>
       </div>
 
-      <Button onClick={onSubmit} disabled={submitMutationPending || !turnstileSiteKey || !turnstileToken}>
-        {submitMutationPending ? "Enviando..." : "Enviar reseña"}
-      </Button>
+      <div className="flex justify-end">
+        <Button onClick={onSubmit} disabled={submitMutationPending || !turnstileSiteKey || !turnstileToken}>
+          {submitMutationPending ? "Enviando..." : "Enviar reseña"}
+        </Button>
+      </div>
     </div>
   );
 
@@ -279,10 +296,71 @@ function ScoreInput({
   value: string;
   onChange: (nextValue: string) => void;
 }) {
+  const handleValueChange = (nextValue: string) => {
+    if (nextValue === "") {
+      onChange("");
+      return;
+    }
+
+    if (!/^\d{0,2}(\.\d?)?$/.test(nextValue)) {
+      return;
+    }
+
+    const parsed = Number(nextValue);
+    if (Number.isNaN(parsed)) return;
+
+    onChange(String(Math.min(10, Math.max(0, parsed))));
+  };
+
+  const handleStep = (delta: number) => {
+    const currentValue = value.trim() === "" ? 0 : Number(value);
+    if (Number.isNaN(currentValue)) {
+      onChange("0");
+      return;
+    }
+
+    const nextValue = Math.min(10, Math.max(0, Math.round((currentValue + delta) * 10) / 10));
+    onChange(String(nextValue));
+  };
+
+  const parsedValue = Number(value);
+  const currentValue = Number.isNaN(parsedValue) ? 0 : Math.min(10, Math.max(0, parsedValue));
+  const isAtMin = currentValue <= 0;
+  const isAtMax = currentValue >= 10;
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input type="number" min={0} max={10} step={0.1} value={value} onChange={(event) => onChange(event.target.value)} />
+      <div className="border-input focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] flex h-9 w-full items-center overflow-hidden rounded-md border bg-transparent transition-[color,box-shadow]">
+        <Input
+          className="h-full w-full rounded-none border-0 bg-transparent px-2 text-center tabular-nums shadow-none focus-visible:ring-0"
+          type="text"
+          inputMode="decimal"
+          value={value}
+          onChange={(event) => handleValueChange(event.target.value)}
+          placeholder="0-10"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          className="border-input text-muted-foreground hover:text-foreground h-full w-8 cursor-pointer rounded-none border-l p-0"
+          onClick={() => handleStep(-0.1)}
+          disabled={isAtMin}
+          aria-label={`Disminuir ${label.toLowerCase()}`}
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="border-input text-muted-foreground hover:text-foreground h-full w-8 cursor-pointer rounded-none border-l p-0"
+          onClick={() => handleStep(0.1)}
+          disabled={isAtMax}
+          aria-label={`Aumentar ${label.toLowerCase()}`}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     </div>
   );
 }
