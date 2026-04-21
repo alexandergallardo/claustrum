@@ -30,6 +30,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { ChevronLeft, ChevronRight, Clock, MapPin, Minus, Plus, User, Users } from "lucide-react"
 import { getProfessorNameTransitionName } from "@/lib/utils/view-transition"
+import { ExamList } from "@/components/exams/exam-list"
+import { ExamUploadDialog } from "@/components/exams/exam-upload-dialog"
 
 interface CourseDetailsProps {
   course: Course
@@ -132,6 +134,7 @@ export function CourseDetails({
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [equivalentsPage, setEquivalentsPage] = useState(0)
+  const [isExamUploadOpen, setIsExamUploadOpen] = useState(false)
   const EQUIVALENTS_PER_PAGE = 10
 
   useEffect(() => {
@@ -658,6 +661,21 @@ export function CourseDetails({
             </Table>
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold text-foreground">Exámenes y evaluaciones</h3>
+          <Button variant="outline" size="sm" onClick={() => setIsExamUploadOpen(true)}>
+            Subir examen
+          </Button>
+        </div>
+        <ExamList courseId={parseInt(course.id)} />
+        <ExamUploadDialog
+          courseId={parseInt(course.id)}
+          open={isExamUploadOpen}
+          onOpenChange={setIsExamUploadOpen}
+        />
       </section>
 
       <section>
