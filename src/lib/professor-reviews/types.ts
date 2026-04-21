@@ -73,6 +73,12 @@ export type ProfessorReviewTagCount = {
   count: number;
 };
 
+export type ProfessorReviewCourseOption = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export type ProfessorReviewSummary = {
   professor_id: number;
   approved_review_count: number;

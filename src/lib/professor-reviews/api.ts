@@ -1,5 +1,6 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import type {
+  ProfessorReviewCourseOption,
   ProfessorReviewModerationRow,
   ProfessorReviewPublicRow,
   ProfessorReviewSummary,
@@ -9,6 +10,10 @@ import type {
   SearchProfessorReviewStatsParams,
   SubmitProfessorReviewPayload,
 } from "@/lib/professor-reviews/types";
+
+function escapeIlikeQuery(value: string) {
+  return value.replace(/[,%]/g, " ").trim();
+}
 
 export async function searchProfessorReviewStats(params: SearchProfessorReviewStatsParams): Promise<ProfessorReviewStatsRow[]> {
   const supabase = getSupabaseBrowserClient();
@@ -92,6 +97,24 @@ export async function getProfessorById(professorId: number): Promise<{ id: numbe
 
   if (error) throw error;
   return data;
+}
+
+export async function searchProfessorReviewCourses(query: string): Promise<ProfessorReviewCourseOption[]> {
+  const normalizedQuery = escapeIlikeQuery(query);
+
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("search_professor_review_courses", {
+    p_query: normalizedQuery,
+    p_limit: 8,
+  });
+
+  if (error) throw error;
+
+  return (data ?? []) as ProfessorReviewCourseOption[];
 }
 
 export async function submitProfessorReview(payload: SubmitProfessorReviewPayload): Promise<void> {

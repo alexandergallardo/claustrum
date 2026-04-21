@@ -1,6 +1,7 @@
-import { lazy, Suspense, useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Minus, Plus, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useDebouncedValue } from "@tanstack/react-pacer";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,7 +26,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useProfessorReviewCourseSearch } from "@/lib/hooks/use-professor-reviews";
 import { REVIEW_TAG_OPTIONS, type ReviewTag } from "@/lib/professor-reviews/types";
+import { cn } from "@/lib/utils";
 
 const Turnstile = lazy(() => import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })));
 
@@ -92,24 +97,118 @@ export function ReviewComposer({
   handleTagToggle,
 }: ReviewComposerProps) {
   const [showReviewExample, setShowReviewExample] = useState(false);
+  const [courseQuery, setCourseQuery] = useState(courseCode);
+  const [isCourseSearchFocused, setIsCourseSearchFocused] = useState(false);
   const parsedEngagementLevel = Number(engagementLevel);
   const clampedEngagementLevel = Number.isFinite(parsedEngagementLevel)
     ? Math.min(5, Math.max(1, Math.round(parsedEngagementLevel)))
     : 4;
+  const [debouncedCourseQuery, courseQueryDebouncer] = useDebouncedValue(
+    courseQuery,
+    { wait: 300 },
+    (state) => ({ isPending: state.isPending }),
+  );
+  const courseSearchQuery = useProfessorReviewCourseSearch(debouncedCourseQuery);
+  const courseOptions = courseSearchQuery.data ?? [];
+  const normalizedCourseQuery = courseQuery.trim();
+  const showCourseOptions =
+    isCourseSearchFocused &&
+    normalizedCourseQuery.length >= 2 &&
+    (courseSearchQuery.isFetching || courseQueryDebouncer.state.isPending || courseOptions.length > 0);
+
+  useEffect(() => {
+    if (!courseCode) return;
+    if (courseCode === courseQuery) return;
+    setCourseQuery(courseCode);
+  }, [courseCode, courseQuery]);
+
+  const handleCourseQueryChange = (value: string) => {
+    const normalizedValue = value.toUpperCase();
+    const matchedCourseCode = normalizedValue.match(/^[A-Z]{2,4}\d{3,4}/)?.[0] ?? "";
+
+    setIsCourseSearchFocused(true);
+    setCourseQuery(normalizedValue);
+    setCourseCode(matchedCourseCode);
+  };
+
+  const handleCourseSelect = (selectedCourse: { code: string; name: string }) => {
+    setCourseCode(selectedCourse.code);
+    setCourseQuery(`${selectedCourse.code}: ${selectedCourse.name}`);
+    setIsCourseSearchFocused(false);
+  };
 
   const form = (
     <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-1 pb-2"}`}>
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="composer-course-code">Código de curso</Label>
-          <Input
-            id="composer-course-code"
-            placeholder="CI1230"
-            value={courseCode}
-            onChange={(event) => setCourseCode(event.target.value.toUpperCase())}
-          />
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="composer-course-code">Curso</Label>
+          <div className="relative">
+            <InputGroup className="h-10">
+              <InputGroupInput
+                id="composer-course-code"
+                className="text-sm md:text-sm"
+                placeholder="Busca por código o nombre del curso"
+                value={courseQuery}
+                onFocus={() => setIsCourseSearchFocused(true)}
+                onBlur={() => {
+                  window.setTimeout(() => setIsCourseSearchFocused(false), 100);
+                }}
+                onChange={(event) => handleCourseQueryChange(event.target.value)}
+                autoComplete="off"
+              />
+              <InputGroupAddon>
+                <Search className="size-4" />
+              </InputGroupAddon>
+            </InputGroup>
+
+            {showCourseOptions ? (
+              <div className="bg-popover text-popover-foreground absolute top-[calc(100%+0.5rem)] z-20 max-h-52 w-full overflow-hidden rounded-md border shadow-md">
+                <ScrollArea
+                  className={cn(
+                    "max-h-52",
+                    courseOptions.length >= 6 || courseQueryDebouncer.state.isPending || courseSearchQuery.isFetching
+                      ? "h-52"
+                      : "h-auto",
+                  )}
+                >
+                  {courseQueryDebouncer.state.isPending || courseSearchQuery.isFetching ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">Buscando cursos...</div>
+                  ) : null}
+
+                  {!courseQueryDebouncer.state.isPending && !courseSearchQuery.isFetching
+                    ? courseOptions.map((course) => (
+                        <Tooltip key={course.id}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="hover:bg-accent hover:text-accent-foreground flex w-full items-center px-3 py-2 text-left text-sm"
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => handleCourseSelect(course)}
+                            >
+                              <span className="truncate">{course.code}: {course.name}</span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8}>
+                            {course.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))
+                    : null}
+
+                  {!courseQueryDebouncer.state.isPending &&
+                  !courseSearchQuery.isFetching &&
+                  courseOptions.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No se encontraron cursos con ese criterio.
+                    </div>
+                  ) : null}
+                </ScrollArea>
+              </div>
+            ) : null}
+          </div>
         </div>
-        <div className="space-y-2">
+
+        <div className="space-y-2 md:col-span-2">
           <Label htmlFor="composer-grade-received">Calificación obtenida (opcional)</Label>
           <Input
             id="composer-grade-received"

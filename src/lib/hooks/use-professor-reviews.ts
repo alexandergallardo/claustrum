@@ -7,6 +7,7 @@ import {
   getProfessorReviewsForModeration,
   getProfessorReviewsPublic,
   moderateProfessorReview,
+  searchProfessorReviewCourses,
   searchProfessorReviewStats,
   submitProfessorReview,
 } from "@/lib/professor-reviews/api";
@@ -46,6 +47,16 @@ export function useProfessorById(professorId: number | null) {
     queryKey: ["professorById", professorId],
     queryFn: () => getProfessorById(professorId!),
     enabled: professorId !== null,
+  });
+}
+
+export function useProfessorReviewCourseSearch(query: string) {
+  return useQuery({
+    queryKey: ["professorReviewCourses", query],
+    queryFn: () => searchProfessorReviewCourses(query),
+    enabled: query.trim().length >= 2,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }
 
