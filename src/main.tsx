@@ -7,6 +7,21 @@ import { queryClient } from '@/lib/query-client'
 import { getRouter } from './router'
 import './styles.css'
 
+const CHUNK_RELOAD_KEY = 'vite-chunk-reload'
+
+window.addEventListener('vite:preloadError', () => {
+  if (sessionStorage.getItem(CHUNK_RELOAD_KEY) === '1') {
+    return
+  }
+
+  sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+  window.location.reload()
+})
+
+window.addEventListener('pageshow', () => {
+  sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+})
+
 const router = getRouter()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
