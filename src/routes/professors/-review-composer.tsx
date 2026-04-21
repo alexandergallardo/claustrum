@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { Minus, Plus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -269,7 +270,22 @@ export function ReviewComposer({
         <SheetContent side="bottom" className="max-h-[90vh] overflow-hidden">
           <SheetHeader>
             <SheetTitle>Enviar reseña</SheetTitle>
-            <SheetDescription>Tu reseña es anónima y requiere aprobación antes de publicarse.</SheetDescription>
+            <SheetDescription className="space-y-2">
+              <span className="block">
+                Tu reseña es anónima y requiere aprobación antes de publicarse.
+              </span>
+              <Button asChild className="h-auto p-0" variant="link">
+                <Link
+                  to="/policies"
+                  hash="politica-de-resenas-y-opiniones-sobre-docentes"
+                  preload="intent"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Ver reglamento de reseñas
+                </Link>
+              </Button>
+            </SheetDescription>
           </SheetHeader>
           <ScrollArea className="min-h-0 flex-1">
             {form}
@@ -290,7 +306,22 @@ export function ReviewComposer({
       <DialogContent className="max-w-3xl max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Enviar reseña</DialogTitle>
-          <DialogDescription>Tu reseña es anónima y requiere aprobación antes de publicarse.</DialogDescription>
+          <DialogDescription className="space-y-2">
+            <span className="block">
+              Tu reseña es anónima y requiere aprobación antes de publicarse.
+            </span>
+            <Button asChild className="h-auto p-0" variant="link">
+              <Link
+                to="/policies"
+                hash="politica-de-resenas-y-opiniones-sobre-docentes"
+                preload="intent"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ver reglamento de reseñas
+              </Link>
+            </Button>
+          </DialogDescription>
         </DialogHeader>
         <ScrollArea className="min-h-0">
           {form}

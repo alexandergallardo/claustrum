@@ -16,6 +16,7 @@ import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
+import { Route as PoliciesIndexRouteImport } from './routes/policies/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
@@ -57,6 +58,11 @@ const ScheduleIndexRoute = ScheduleIndexRouteImport.update({
 const ProfessorsIndexRoute = ProfessorsIndexRouteImport.update({
   id: '/professors/',
   path: '/professors/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliciesIndexRoute = PoliciesIndexRouteImport.update({
+  id: '/policies/',
+  path: '/policies/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum': typeof CurriculumIndexRoute
   '/login': typeof LoginIndexRoute
+  '/policies': typeof PoliciesIndexRoute
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
   '/login/': typeof LoginIndexRoute
+  '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/settings/security'
     | '/curriculum/'
     | '/login/'
+    | '/policies/'
     | '/professors/'
     | '/schedule/'
     | '/settings/'
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/settings/security'
     | '/curriculum'
     | '/login'
+    | '/policies'
     | '/professors'
     | '/schedule'
     | '/settings'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/settings/security'
     | '/curriculum/'
     | '/login/'
+    | '/policies/'
     | '/professors/'
     | '/schedule/'
     | '/settings/'
@@ -212,6 +224,7 @@ export interface RootRouteChildren {
   ProfessorsModerationRoute: typeof ProfessorsModerationRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
+  PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
   SignupIndexRoute: typeof SignupIndexRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/professors'
       fullPath: '/professors/'
       preLoaderRoute: typeof ProfessorsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policies/': {
+      id: '/policies/'
+      path: '/policies'
+      fullPath: '/policies/'
+      preLoaderRoute: typeof PoliciesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login/': {
@@ -354,6 +374,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfessorsModerationRoute: ProfessorsModerationRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
+  PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
   SignupIndexRoute: SignupIndexRoute,
