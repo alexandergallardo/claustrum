@@ -98,7 +98,7 @@ export function ReviewComposer({
     : 4;
 
   const form = (
-    <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-0 pb-2"}`}>
+    <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-1 pb-2"}`}>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="composer-course-code">Código de curso</Label>
@@ -135,7 +135,7 @@ export function ReviewComposer({
         {showReviewExample ? (
           <div className="grid gap-2">
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm">
-              <p className="font-medium text-emerald-700 dark:text-emerald-400">Buen ejemplo</p>
+              <p className="font-medium text-emerald-700 dark:text-emerald-400">Ejemplo de buena reseña</p>
               <p className="mt-1 text-emerald-900 dark:text-emerald-100">
                 "Usa clase invertida, así que conviene llegar con la lectura hecha y en clase se enfoca en resolver
                 problemas aplicados; además, la retroalimentación fue clara y rápida, por lo que pude corregir errores
@@ -143,9 +143,9 @@ export function ReviewComposer({
               </p>
             </div>
             <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm">
-              <p className="font-medium text-red-700 dark:text-red-400">Mal ejemplo</p>
+              <p className="font-medium text-red-700 dark:text-red-400">Ejemplo de mala reseña</p>
               <p className="mt-1 text-red-900 dark:text-red-100">
-                "Es buena profe, me gustó mucho, todo bien, recomiendo llevarla."
+                "Ese profe es un inútil, da asco y no le crean nada de lo que dice."
               </p>
             </div>
           </div>
