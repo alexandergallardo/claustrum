@@ -180,7 +180,7 @@ export function EvaluationViewPage() {
 
       {numPages > 0 && (
         <div className="absolute bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <div className="flex items-center gap-1 rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
+          <div className="flex flex-nowrap items-center gap-1 rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
             <Button
               variant="ghost"
               size="icon"
@@ -191,7 +191,7 @@ export function EvaluationViewPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="px-2 text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+            <span className="shrink-0 whitespace-nowrap px-2 text-sm text-muted-foreground tabular-nums">
               {pageNumber} de {numPages}
             </span>
             <Button
