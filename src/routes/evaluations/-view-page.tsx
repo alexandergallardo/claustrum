@@ -168,9 +168,9 @@ export function EvaluationViewPage() {
 
       <div className="absolute left-4 top-4 z-50">
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
-          className="cursor-pointer rounded-full bg-background/90 shadow-lg backdrop-blur-sm"
+          className="cursor-pointer rounded-full border bg-background/95 shadow-lg backdrop-blur-sm"
           onClick={() => window.history.back()}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
