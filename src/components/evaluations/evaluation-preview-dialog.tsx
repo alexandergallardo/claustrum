@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,8 @@ export function EvaluationPreviewDialog({ fileKey, onClose }: EvaluationPreviewD
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(720);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (fileKey) {
@@ -36,6 +38,24 @@ export function EvaluationPreviewDialog({ fileKey, onClose }: EvaluationPreviewD
       setNumPages(0);
       setPdfError(null);
     }
+  }, [fileKey]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateWidth = () => {
+      setContainerWidth(el.clientWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+    };
   }, [fileKey]);
 
   const isOpen = !!fileKey;
@@ -50,17 +70,19 @@ export function EvaluationPreviewDialog({ fileKey, onClose }: EvaluationPreviewD
     setPdfError(error.message);
   }
 
+  const pageWidth = Math.max(200, containerWidth - 32);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="flex flex-row items-center justify-between">
+      <DialogContent className="max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="text-base">Vista previa de la evaluación</DialogTitle>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
-          </Button>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto flex flex-col items-center min-h-0">
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-y-auto flex flex-col items-center px-4 pb-6 min-h-0"
+        >
           {isUrlLoading ? (
             <div className="py-12 text-sm text-muted-foreground">
               Cargando documento...
@@ -83,7 +105,7 @@ export function EvaluationPreviewDialog({ fileKey, onClose }: EvaluationPreviewD
               >
                 <Page
                   pageNumber={pageNumber}
-                  width={Math.min(720, typeof window !== "undefined" ? window.innerWidth - 64 : 720)}
+                  width={pageWidth}
                   renderTextLayer
                   renderAnnotationLayer
                 />

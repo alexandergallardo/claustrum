@@ -64,7 +64,7 @@ import {
 import { useIsAdmin } from "@/lib/hooks/use-professor-reviews"
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog"
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations"
-import { formatEvaluationTypeLabel } from "@/lib/evaluations/types"
+
 import { EvaluationPreviewDialog } from "@/components/evaluations/evaluation-preview-dialog"
 import { CourseRelationFlow } from "@/components/course-relation-flow"
 
@@ -399,10 +399,28 @@ function ScheduleGroupCard({
   )
 }
 
+function formatEvaluationFileName(
+  courseCode: string,
+  evaluation_type: import("@/lib/evaluations/types").EvaluationType,
+  evaluation_number: number | null,
+  custom_name: string | null,
+): string {
+  const typeUpper = evaluation_type.toUpperCase()
+  if (evaluation_type === "otro" && custom_name) {
+    return `${courseCode}-${custom_name}.pdf`
+  }
+  if (evaluation_number && evaluation_number > 0) {
+    return `${courseCode}-${typeUpper}-${evaluation_number}.pdf`
+  }
+  return `${courseCode}-${typeUpper}.pdf`
+}
+
 function EvaluationDocument({
+  courseCode,
   evaluation,
   onPreview,
 }: {
+  courseCode: string
   evaluation: {
     id: number
     file_key: string
@@ -419,6 +437,13 @@ function EvaluationDocument({
   }
   onPreview: (key: string) => void
 }) {
+  const fileName = formatEvaluationFileName(
+    courseCode,
+    evaluation.evaluation_type,
+    evaluation.evaluation_number,
+    evaluation.custom_name,
+  )
+
   return (
     <div className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-accent/30">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
@@ -426,22 +451,16 @@ function EvaluationDocument({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 mb-0.5">
-          <Badge variant="secondary" className="text-[10px]">
-            {formatEvaluationTypeLabel(
-              evaluation.evaluation_type,
-              evaluation.evaluation_number,
-              evaluation.custom_name,
-            )}
-          </Badge>
-          {evaluation.is_catedra ? (
-            <Badge variant="outline" className="text-[10px]">
-              Cátedra
-            </Badge>
-          ) : null}
-        </div>
+        <button
+          type="button"
+          onClick={() => onPreview(evaluation.file_key)}
+          className="text-left text-sm font-medium hover:underline underline-offset-4 cursor-pointer"
+        >
+          {fileName}
+        </button>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+          {evaluation.is_catedra ? <span>Cátedra</span> : null}
           {evaluation.term_display_name ? <span>{evaluation.term_display_name}</span> : null}
           {evaluation.professor_name ? <span>{evaluation.professor_name}</span> : null}
           <span className="font-mono">{formatFileSize(evaluation.file_size)}</span>
@@ -891,6 +910,7 @@ export function CourseDetails({
             {evaluations.map((evaluation) => (
               <EvaluationDocument
                 key={evaluation.id}
+                courseCode={course.code}
                 evaluation={evaluation}
                 onPreview={setPreviewKey}
               />
