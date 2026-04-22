@@ -24,6 +24,7 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as ProfessorsModerationRouteImport } from './routes/professors/moderation'
 import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
+import { Route as EvaluationsViewRouteImport } from './routes/evaluations/view'
 import { Route as EvaluationsModerationRouteImport } from './routes/evaluations/moderation'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 
@@ -101,6 +102,11 @@ const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
   path: '/professors/$professorId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EvaluationsViewRoute = EvaluationsViewRouteImport.update({
+  id: '/evaluations/view',
+  path: '/evaluations/view',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EvaluationsModerationRoute = EvaluationsModerationRouteImport.update({
   id: '/evaluations/moderation',
   path: '/evaluations/moderation',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
+  '/evaluations/view': typeof EvaluationsViewRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
+  '/evaluations/view': typeof EvaluationsViewRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/_index': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
+  '/evaluations/view': typeof EvaluationsViewRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
+    | '/evaluations/view'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
+    | '/evaluations/view'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/_index'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
+    | '/evaluations/view'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   EvaluationsModerationRoute: typeof EvaluationsModerationRoute
+  EvaluationsViewRoute: typeof EvaluationsViewRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   ProfessorsModerationRoute: typeof ProfessorsModerationRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/evaluations/view': {
+      id: '/evaluations/view'
+      path: '/evaluations/view'
+      fullPath: '/evaluations/view'
+      preLoaderRoute: typeof EvaluationsViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/evaluations/moderation': {
       id: '/evaluations/moderation'
       path: '/evaluations/moderation'
@@ -391,6 +411,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   EvaluationsModerationRoute: EvaluationsModerationRoute,
+  EvaluationsViewRoute: EvaluationsViewRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   ProfessorsModerationRoute: ProfessorsModerationRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/table";
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
 import { formatEvaluationTypeLabel } from "@/lib/evaluations/types";
-import { EvaluationPreviewDialog } from "@/components/evaluations/evaluation-preview-dialog";
 
 interface EvaluationListProps {
   courseId: number;
@@ -27,7 +26,7 @@ function formatFileSize(bytes: number): string {
 
 export function EvaluationList({ courseId }: EvaluationListProps) {
   const { data: evaluations, isLoading } = useCourseEvaluations(courseId);
-  const [previewKey, setPreviewKey] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -92,7 +91,12 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setPreviewKey(evaluation.file_key)}
+                  onClick={() =>
+                    void navigate({
+                      to: "/evaluations/view",
+                      search: { key: evaluation.file_key },
+                    })
+                  }
                   aria-label="Vista previa"
                 >
                   <Eye className="h-4 w-4" />
@@ -102,11 +106,6 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
           ))}
         </TableBody>
       </Table>
-
-      <EvaluationPreviewDialog
-        fileKey={previewKey}
-        onClose={() => setPreviewKey(null)}
-      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
   BookOpen,
   ChevronLeft,
@@ -65,7 +65,6 @@ import { useIsAdmin } from "@/lib/hooks/use-professor-reviews"
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog"
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations"
 
-import { EvaluationPreviewDialog } from "@/components/evaluations/evaluation-preview-dialog"
 import { CourseRelationFlow } from "@/components/course-relation-flow"
 
 /* ------------------------------------------------------------------ */
@@ -510,7 +509,7 @@ export function CourseDetails({
   const [isSaving, setIsSaving] = useState(false)
   const [equivalentsPage, setEquivalentsPage] = useState(0)
   const [isExamUploadOpen, setIsExamUploadOpen] = useState(false)
-  const [previewKey, setPreviewKey] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const EQUIVALENTS_PER_PAGE = 10
 
@@ -912,13 +911,17 @@ export function CourseDetails({
                 key={evaluation.id}
                 courseCode={course.code}
                 evaluation={evaluation}
-                onPreview={setPreviewKey}
+                onPreview={(key) =>
+                  void navigate({
+                    to: "/evaluations/view",
+                    search: { key },
+                  })
+                }
               />
             ))}
           </div>
         )}
 
-        <EvaluationPreviewDialog fileKey={previewKey} onClose={() => setPreviewKey(null)} />
         <EvaluationUploadDialog
           courseId={parseInt(course.id)}
           academicTerms={academicTerms}
