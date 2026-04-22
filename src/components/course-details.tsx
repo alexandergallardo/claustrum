@@ -1251,13 +1251,6 @@ export function CourseDetails({
 
           <div className="space-y-4">
             <div>
-              <Label className="text-sm">Estado del intento</Label>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {editingAttempt ? statusLabels[editingAttempt.status] : "-"}
-              </p>
-            </div>
-
-            <div>
               <Label htmlFor="edit-attempt-term" className="text-sm">
                 Periodo
               </Label>
