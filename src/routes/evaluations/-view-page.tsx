@@ -171,7 +171,7 @@ export function EvaluationViewPage() {
       </div>
 
       {numPages > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+        <div className="absolute bottom-6 left-1/2 z-50 -translate-x-1/2">
           <div className="flex items-center gap-1 rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
             <Button
               variant="ghost"
