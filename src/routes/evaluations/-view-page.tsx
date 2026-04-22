@@ -24,9 +24,8 @@ export function EvaluationViewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
-  const [displayPage, setDisplayPage] = useState(1);
-  const [displayZoom, setDisplayZoom] = useState(1);
-  const [pendingState, setPendingState] = useState<{ page: number; zoom: number } | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     if (!key) {
@@ -87,9 +86,8 @@ export function EvaluationViewPage() {
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
-    setDisplayPage(1);
-    setDisplayZoom(1);
-    setPendingState(null);
+    setPageNumber(1);
+    setZoom(1);
   }
 
   function onDocumentLoadError(err: Error) {
@@ -98,16 +96,14 @@ export function EvaluationViewPage() {
 
   function handlePageChange(newPage: number) {
     if (newPage < 1 || newPage > numPages) return;
-    const current = pendingState ?? { page: displayPage, zoom: displayZoom };
-    if (newPage === current.page) return;
-    setPendingState({ page: newPage, zoom: current.zoom });
+    if (newPage === pageNumber) return;
+    setPageNumber(newPage);
   }
 
   function handleZoomChange(delta: number) {
-    const current = pendingState ?? { page: displayPage, zoom: displayZoom };
-    const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Number((current.zoom + delta).toFixed(1))));
-    if (nextZoom === current.zoom) return;
-    setPendingState({ page: current.page, zoom: nextZoom });
+    const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Number((zoom + delta).toFixed(1))));
+    if (nextZoom === zoom) return;
+    setZoom(nextZoom);
   }
 
   if (isLoading) {
@@ -150,24 +146,14 @@ export function EvaluationViewPage() {
               <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
             }
           >
-            <div className="relative w-full max-w-5xl [&_.react-pdf__Page]:w-full [&_.react-pdf__Page]:max-w-full [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:!w-full">
-              <Page pageNumber={displayPage} scale={displayZoom} renderTextLayer={false} renderAnnotationLayer={false} />
-
-              {pendingState !== null && (pendingState.page !== displayPage || pendingState.zoom !== displayZoom) && (
-                <div className="pointer-events-none absolute inset-0 opacity-0">
-                  <Page
-                    pageNumber={pendingState.page}
-                    scale={pendingState.zoom}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    onRenderSuccess={() => {
-                      setDisplayPage(pendingState.page);
-                      setDisplayZoom(pendingState.zoom);
-                      setPendingState(null);
-                    }}
-                  />
-                </div>
-              )}
+            <div className="w-full max-w-5xl [&_.react-pdf__Page]:w-full [&_.react-pdf__Page]:max-w-full [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:!w-full">
+              <Page
+                pageNumber={pageNumber}
+                scale={zoom}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                loading={null}
+              />
             </div>
           </Document>
         </div>
@@ -180,21 +166,21 @@ export function EvaluationViewPage() {
               variant="ghost"
               size="icon"
               className="h-8 w-8 cursor-pointer"
-              onClick={() => handlePageChange(displayPage - 1)}
-              disabled={displayPage <= 1}
+              onClick={() => handlePageChange(pageNumber - 1)}
+              disabled={pageNumber <= 1}
               aria-label="Página anterior"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="px-2 text-sm text-muted-foreground tabular-nums">
-              {displayPage} de {numPages}
+              {pageNumber} de {numPages}
             </span>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 cursor-pointer"
-              onClick={() => handlePageChange(displayPage + 1)}
-              disabled={displayPage >= numPages}
+              onClick={() => handlePageChange(pageNumber + 1)}
+              disabled={pageNumber >= numPages}
               aria-label="Página siguiente"
             >
               <ChevronRight className="h-4 w-4" />
@@ -205,20 +191,20 @@ export function EvaluationViewPage() {
               size="icon"
               className="h-8 w-8 cursor-pointer"
               onClick={() => handleZoomChange(-ZOOM_STEP)}
-              disabled={displayZoom <= MIN_ZOOM}
+              disabled={zoom <= MIN_ZOOM}
               aria-label="Reducir zoom"
             >
               <Minus className="h-4 w-4" />
             </Button>
             <span className="w-12 text-center text-sm text-muted-foreground tabular-nums">
-              {Math.round(displayZoom * 100)}%
+              {Math.round(zoom * 100)}%
             </span>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 cursor-pointer"
               onClick={() => handleZoomChange(ZOOM_STEP)}
-              disabled={displayZoom >= MAX_ZOOM}
+              disabled={zoom >= MAX_ZOOM}
               aria-label="Aumentar zoom"
             >
               <Plus className="h-4 w-4" />
