@@ -4,6 +4,7 @@ const publicEnvSchema = z.object({
   VITE_SUPABASE_URL: z.string().url(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
   VITE_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+  VITE_EVALUATION_WORKER_URL: z.string().url().optional(),
 });
 
 function formatZodError(prefix: string, error: z.ZodError): string {
@@ -52,6 +53,11 @@ export type SupabasePublicEnv = {
 export function getTurnstileSiteKey(): string | null {
   const env = getPublicEnv();
   return env.VITE_TURNSTILE_SITE_KEY ?? null;
+}
+
+export function getEvaluationWorkerUrl(): string | null {
+  const env = getPublicEnv();
+  return env.VITE_EVALUATION_WORKER_URL ?? null;
 }
 
 export function getSupabasePublicEnv(): SupabasePublicEnv {

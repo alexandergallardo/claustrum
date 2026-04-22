@@ -1,0 +1,112 @@
+import { useState } from "react";
+import { Eye } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
+import { formatEvaluationTypeLabel } from "@/lib/evaluations/types";
+import { EvaluationPreviewDialog } from "@/components/evaluations/evaluation-preview-dialog";
+
+interface EvaluationListProps {
+  courseId: number;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function EvaluationList({ courseId }: EvaluationListProps) {
+  const { data: evaluations, isLoading } = useCourseEvaluations(courseId);
+  const [previewKey, setPreviewKey] = useState<string | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-md border">
+        <div className="p-4 text-sm text-muted-foreground">Cargando evaluaciones...</div>
+      </div>
+    );
+  }
+
+  if (!evaluations || evaluations.length === 0) {
+    return (
+      <div className="rounded-md border">
+        <div className="p-4 text-sm text-muted-foreground">
+          Aún no hay evaluaciones publicadas para este curso.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Período</TableHead>
+            <TableHead>Profesor</TableHead>
+            <TableHead>Cátedra</TableHead>
+            <TableHead>Respuestas</TableHead>
+            <TableHead>Tamaño</TableHead>
+            <TableHead className="w-24" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {evaluations.map((evaluation) => (
+            <TableRow key={evaluation.id}>
+              <TableCell>
+                <Badge variant="secondary" className="text-xs">
+                  {formatEvaluationTypeLabel(evaluation.evaluation_type, evaluation.evaluation_number, evaluation.custom_name)}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm">
+                {evaluation.term_display_name ?? "—"}
+              </TableCell>
+              <TableCell className="text-sm">
+                {evaluation.professor_name ?? "—"}
+              </TableCell>
+              <TableCell className="text-sm">
+                {evaluation.is_catedra ? "Sí" : "No"}
+              </TableCell>
+              <TableCell className="text-sm">
+                {evaluation.has_separate_answers
+                  ? "Archivo aparte"
+                  : evaluation.includes_answers
+                    ? "Incluidas"
+                    : "No"}
+              </TableCell>
+              <TableCell className="text-sm font-mono">
+                {formatFileSize(evaluation.file_size)}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPreviewKey(evaluation.file_key)}
+                  aria-label="Vista previa"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <EvaluationPreviewDialog
+        fileKey={previewKey}
+        onClose={() => setPreviewKey(null)}
+      />
+    </div>
+  );
+}
