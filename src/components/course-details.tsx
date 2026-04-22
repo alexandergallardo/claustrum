@@ -1220,14 +1220,6 @@ export function CourseDetails({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsRegisterDialogOpen(false)}
-              disabled={isSaving}
-            >
-              Cancelar
-            </Button>
             <Button type="button" onClick={handleRegisterNote} disabled={isSaving}>
               {isSaving ? "Guardando..." : "Guardar"}
             </Button>
@@ -1310,14 +1302,6 @@ export function CourseDetails({
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditingAttempt(null)}
-              disabled={updateCourseAttempt.isPending}
-            >
-              Cancelar
-            </Button>
             <Button
               type="button"
               onClick={handleSaveAttemptEdit}
