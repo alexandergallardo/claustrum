@@ -143,13 +143,6 @@ export function EvaluationViewPage() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl bg-background">
-      <div className="shrink-0 border-b px-4 py-2">
-        <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver
-        </Button>
-      </div>
-
       <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto overscroll-contain">
         <div className="flex justify-center px-4 py-6">
           <Document
@@ -171,6 +164,18 @@ export function EvaluationViewPage() {
             </div>
           </Document>
         </div>
+      </div>
+
+      <div className="absolute left-4 top-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer rounded-full bg-background/90 shadow-lg backdrop-blur-sm"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver
+        </Button>
       </div>
 
       {numPages > 0 && (
