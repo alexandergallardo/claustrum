@@ -233,9 +233,19 @@ async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
     if (!admin) return badRequest("No tienes acceso a esta evaluación");
   }
 
-  // Generate signed URL (1 hour)
-  const signedUrl = await env.EVALUATIONS_BUCKET.createSignedUrl(fileKey, 3600);
-  return ok({ signedUrl: signedUrl.url });
+  // Stream PDF directly from R2
+  const object = await env.EVALUATIONS_BUCKET.get(fileKey);
+  if (!object) return badRequest("Archivo no encontrado");
+
+  return new Response(object.body, {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": object.httpMetadata?.contentType ?? "application/pdf",
+      "Content-Length": String(object.size),
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
 }
 
 async function handleModerate(request: Request, env: Env): Promise<Response> {

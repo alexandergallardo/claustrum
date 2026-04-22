@@ -125,8 +125,8 @@ export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
     throw new Error(body.error ?? `Error ${response.status}`);
   }
 
-  const result = (await response.json()) as { signedUrl: string };
-  return result.signedUrl;
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }
 
 export async function moderateEvaluation(

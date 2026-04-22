@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -18,12 +19,35 @@ export function useCourseEvaluations(courseId: number | null) {
 }
 
 export function useEvaluationSignedUrl(fileKey: string | null) {
-  return useQuery({
+  const prevUrlRef = useRef<string | null>(null);
+
+  const query = useQuery({
     queryKey: ["evaluationSignedUrl", fileKey],
     queryFn: () => getEvaluationSignedUrl(fileKey!),
     enabled: !!fileKey,
     staleTime: 55 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (query.data && query.data !== prevUrlRef.current) {
+      const oldUrl = prevUrlRef.current;
+      prevUrlRef.current = query.data;
+      if (oldUrl) {
+        URL.revokeObjectURL(oldUrl);
+      }
+    }
+  }, [query.data]);
+
+  useEffect(() => {
+    return () => {
+      if (prevUrlRef.current) {
+        URL.revokeObjectURL(prevUrlRef.current);
+        prevUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  return query;
 }
 
 export function useUploadEvaluation() {
