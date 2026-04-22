@@ -39,15 +39,34 @@ export function EvaluationViewPage() {
     let cancelled = false;
     let objectUrl: string | null = null;
 
+    const isDirectUrl =
+      key.startsWith("/") ||
+      key.startsWith("http://") ||
+      key.startsWith("https://");
+
     async function load() {
       try {
-        const url = await getEvaluationSignedUrl(key);
-        if (cancelled) {
-          URL.revokeObjectURL(url);
-          return;
+        if (isDirectUrl) {
+          // Local file or external URL: fetch as blob to create object URL
+          const response = await fetch(key);
+          if (!response.ok) throw new Error("No se pudo cargar el PDF");
+          const blob = await response.blob();
+          objectUrl = URL.createObjectURL(blob);
+          if (cancelled) {
+            URL.revokeObjectURL(objectUrl);
+            return;
+          }
+          setBlobUrl(objectUrl);
+        } else {
+          // R2 file key: go through worker
+          const url = await getEvaluationSignedUrl(key);
+          if (cancelled) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          objectUrl = url;
+          setBlobUrl(url);
         }
-        objectUrl = url;
-        setBlobUrl(url);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "No se pudo cargar el PDF");
