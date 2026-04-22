@@ -65,7 +65,7 @@ async function isAdmin(userId: string, env: Env): Promise<boolean> {
   const supabase = getSupabase(env);
   const { data, error } = await supabase
     .from("user_role")
-    .select("id", { head: true })
+    .select("id")
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
