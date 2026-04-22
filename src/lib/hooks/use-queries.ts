@@ -296,6 +296,35 @@ export function useAcademicTerms(campusId: number | null) {
   });
 }
 
+export function useCourseInferredAcademicTerms(
+  courseId: number | null,
+  campusId: number | null,
+  academicUnitId: number | null,
+) {
+  return useQuery({
+    queryKey: ["courseInferredAcademicTerms", courseId, campusId, academicUnitId],
+    queryFn: async () => {
+      if (!courseId) return [];
+
+      const sb = getSupabaseBrowserClient();
+      const { data, error } = await sb
+        .rpc("get_course_active_academic_terms", {
+          p_course_id: courseId,
+          p_campus_id: campusId,
+          p_academic_unit_id: academicUnitId,
+        })
+        .select("*")
+        .order("year", { ascending: false })
+        .order("period_number", { ascending: false });
+
+      if (error) throw error;
+      return (data ?? []) as AcademicTerm[];
+    },
+    enabled: !!courseId,
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useScheduleCourses(params: {
   termId: number | null;
   campusId: number | null;

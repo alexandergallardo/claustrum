@@ -19,7 +19,7 @@ import {
   Users,
 } from "lucide-react"
 import {
-  useAcademicTerms,
+  useCourseInferredAcademicTerms,
   useCourseAttempts,
   useCourseEquivalents,
   useCourseLatestTermGroups,
@@ -502,8 +502,8 @@ export function CourseDetails({
     setEquivalentsPage(0)
   }, [course.id])
 
-  const termsQuery = useAcademicTerms(campusId ?? null)
-  const academicTerms = termsQuery.data ?? []
+  const inferredTermsQuery = useCourseInferredAcademicTerms(parseInt(course.id), campusId ?? null, null)
+  const academicTerms = inferredTermsQuery.data ?? []
 
   useEffect(() => {
     if (!academicTermId && academicTerms.length > 0) {
@@ -740,7 +740,7 @@ export function CourseDetails({
           <Select value={academicTermId} onValueChange={setAcademicTermId}>
             <SelectTrigger id="quick-status-term" className="mt-1.5 w-full">
               <SelectValue
-                placeholder={termsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
+                placeholder={inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
               />
             </SelectTrigger>
             <SelectContent position="popper" align="start" sideOffset={4}>
@@ -1072,7 +1072,7 @@ export function CourseDetails({
               <Select value={academicTermId} onValueChange={setAcademicTermId}>
                 <SelectTrigger id="dialog-attempt-term" className="mt-2 w-full">
                   <SelectValue
-                    placeholder={termsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
+                    placeholder={inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
                   />
                 </SelectTrigger>
                 <SelectContent position="popper" align="start" sideOffset={4}>
