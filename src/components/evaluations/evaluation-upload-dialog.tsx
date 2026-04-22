@@ -99,7 +99,7 @@ export function EvaluationUploadDialog({
     setCustomName("");
     setAcademicTermId("");
     setProfessorId("");
-    setIsCatedra(true);
+    setIsCatedra(false);
     setIncludesAnswers(false);
     setHasSeparateAnswers(false);
   }, []);

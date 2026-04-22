@@ -44,20 +44,6 @@ jobs:
           VITE_EVALUATION_WORKER_URL: ${{ secrets.VITE_EVALUATION_WORKER_URL }}
         run: bun run build
 
-      - name: Deploy Evaluation Upload Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers/evaluation-upload
-          command: deploy
-          secrets: |
-            SUPABASE_URL
-            SUPABASE_SECRET_KEY
-        env:
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-
       - name: Deploy Preview to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
