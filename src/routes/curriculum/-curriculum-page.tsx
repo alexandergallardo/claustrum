@@ -63,7 +63,13 @@ export function CurriculumPage() {
   }, [isLoadingUniversities, universities, selectedUniversityId, navigate, search])
 
   useEffect(() => {
-    if (!selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId && userStudyPlan) {
+    if (!userStudyPlan) return
+
+    const hasAnySearch = !!selectedUniversityId || !!selectedCampusId || !!selectedAcademicUnitId || !!selectedPlanId
+    const isEmptySearch = !selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId
+
+    // Case 1: no params at all → load full profile
+    if (isEmptySearch) {
       setIsUsingProfileDefaults(true)
       navigate({
         to: '/curriculum',
@@ -74,8 +80,30 @@ export function CurriculumPage() {
           plan: userStudyPlan.studyPlanId ?? undefined,
         },
       })
+      return
     }
-  }, [userStudyPlan, selectedUniversityId, selectedCampusId, selectedAcademicUnitId, selectedPlanId, navigate])
+
+    // Case 2: some params exist, university matches profile, but missing campus/career/plan
+    // → fill in the missing ones from profile
+    if (hasAnySearch && selectedUniversityId === userStudyPlan.universityId) {
+      const missingCampus = !selectedCampusId && userStudyPlan.campusId
+      const missingCareer = !selectedAcademicUnitId && userStudyPlan.academicUnitId
+      const missingPlan = !selectedPlanId && userStudyPlan.studyPlanId
+
+      if (missingCampus || missingCareer || missingPlan) {
+        setIsUsingProfileDefaults(true)
+        navigate({
+          to: '/curriculum',
+          search: {
+            ...search,
+            campus: selectedCampusId ?? userStudyPlan.campusId ?? undefined,
+            career: selectedAcademicUnitId ?? userStudyPlan.academicUnitId ?? undefined,
+            plan: selectedPlanId ?? userStudyPlan.studyPlanId ?? undefined,
+          },
+        })
+      }
+    }
+  }, [userStudyPlan, selectedUniversityId, selectedCampusId, selectedAcademicUnitId, selectedPlanId, navigate, search])
 
   useEffect(() => {
     if (!authUser) {
