@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Eye,
   FileText,
   GraduationCap,
   MapPin,
@@ -55,12 +54,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { useIsAdmin } from "@/lib/hooks/use-professor-reviews"
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog"
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations"
@@ -450,37 +443,27 @@ function EvaluationDocument({
       </div>
 
       <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={() => onPreview(evaluation.file_key)}
-          className="text-left text-sm font-medium hover:underline underline-offset-4 cursor-pointer"
-        >
-          {fileName}
-        </button>
+        <div className="flex items-start justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => onPreview(evaluation.file_key)}
+            className="min-w-0 truncate text-left text-sm font-medium hover:underline underline-offset-4 cursor-pointer"
+          >
+            {fileName}
+          </button>
+          {evaluation.term_display_name ? (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {evaluation.term_display_name}
+            </span>
+          ) : null}
+        </div>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {evaluation.is_catedra ? <span>Cátedra</span> : null}
-          {evaluation.term_display_name ? <span>{evaluation.term_display_name}</span> : null}
           {evaluation.professor_name ? <span>{evaluation.professor_name}</span> : null}
           <span className="font-mono">{formatFileSize(evaluation.file_size)}</span>
         </div>
       </div>
-
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => onPreview(evaluation.file_key)}
-            >
-              <Eye className="size-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Vista previa</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
     </div>
   )
 }
