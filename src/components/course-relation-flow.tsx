@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import {
   BaseEdge,
   ReactFlow,
@@ -12,6 +12,7 @@ import {
   type Node,
   type Edge,
   type EdgeProps,
+  type ReactFlowInstance,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { CourseCard } from "@/components/course-card"
@@ -160,6 +161,20 @@ export function CourseRelationFlow({
   corequisites,
   dependents,
 }: CourseRelationFlowProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const flowInstanceRef = useRef<
+    ReactFlowInstance<Node<CourseNodeData>, Edge<RelationEdgeData>> | null
+  >(null)
+
+  const fitFlow = useCallback(() => {
+    const instance = flowInstanceRef.current
+    if (!instance) return
+
+    requestAnimationFrame(() => {
+      void instance.fitView({ padding: 0.24, minZoom: 0.1 })
+    })
+  }, [])
+
   const { nodes, edges } = useMemo(() => {
     const nodeList: Node<CourseNodeData>[] = []
     const edgeList: Edge<RelationEdgeData>[] = []
@@ -282,8 +297,35 @@ export function CourseRelationFlow({
     return { nodes: nodeList, edges: edgeList }
   }, [course, prerequisites, corequisites, dependents])
 
+  useEffect(() => {
+    fitFlow()
+  }, [fitFlow, nodes, edges])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    let rafId = 0
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        fitFlow()
+      })
+    })
+
+    observer.observe(el)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      observer.disconnect()
+    }
+  }, [fitFlow])
+
   return (
-    <div className="h-[500px] w-full overflow-hidden rounded-xl border border-border bg-card/30">
+    <div
+      ref={containerRef}
+      className="w-full aspect-[3/2] min-h-[240px] max-h-[500px] overflow-hidden rounded-xl border border-border bg-card/30"
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -292,7 +334,8 @@ export function CourseRelationFlow({
         fitView
         fitViewOptions={{ padding: 0.24, minZoom: 0.1 }}
         onInit={(instance) => {
-          void instance.fitView({ padding: 0.24, minZoom: 0.1 })
+          flowInstanceRef.current = instance
+          fitFlow()
         }}
         minZoom={0.1}
         maxZoom={2}

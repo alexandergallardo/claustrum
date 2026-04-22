@@ -366,7 +366,7 @@ export function ReviewComposer({
           if (!nextOpen) onCloseReset();
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90vh] overflow-hidden">
+        <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
           <SheetHeader>
             <SheetTitle>Enviar reseña</SheetTitle>
             <SheetDescription className="space-y-2">

@@ -21,6 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,6 +46,7 @@ import {
 } from "@/lib/evaluations/types";
 import type { CourseRecentProfessor } from "@/lib/types";
 import type { AcademicTerm } from "@/lib/types";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const Turnstile = lazy(() =>
@@ -71,6 +79,7 @@ export function EvaluationUploadDialog({
   onOpenChange,
 }: EvaluationUploadDialogProps) {
   const uploadMutation = useUploadEvaluation();
+  const isMobile = useIsMobile();
   const turnstileSiteKey = getTurnstileSiteKey();
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
   const termTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -218,18 +227,8 @@ export function EvaluationUploadDialog({
   const selectedTerm = academicTerms.find((t) => String(t.id) === academicTermId) ?? null;
   const selectedProfessor = recentProfessors.find((p) => String(p.professorId) === professorId) ?? null;
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
-        <DialogHeader>
-          <DialogTitle>Subir evaluación</DialogTitle>
-          <DialogDescription>
-            Comparte material de estudio con otros estudiantes.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-5">
+  const formFields = (
+    <div className="space-y-5">
           {/* Evaluation file drop zone */}
           <div className="space-y-2">
             <Label>Archivo de la evaluación</Label>
@@ -314,7 +313,7 @@ export function EvaluationUploadDialog({
                     <Minus className="h-4 w-4" />
                   </Button>
                   <Input
-                    className="text-center"
+                    className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
                     type="text"
                     inputMode="numeric"
                     value={evaluationNumberInput}
@@ -336,6 +335,7 @@ export function EvaluationUploadDialog({
               {showCustomNameInput && (
                 <div className="flex items-center gap-2 flex-1">
                   <Input
+                    className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
                     value={customName}
                     onChange={(event) => setCustomName(event.target.value)}
                     placeholder="Nombre de la evaluación"
@@ -554,6 +554,44 @@ export function EvaluationUploadDialog({
             </div>
           </div>
         </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={handleClose}>
+        <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
+          <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
+          <SheetHeader>
+            <SheetTitle>Subir evaluación</SheetTitle>
+            <SheetDescription>
+              Comparte material de estudio con otros estudiantes.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            {formFields}
+            <div className="mt-5">
+              <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">
+                {uploadMutation.isPending ? "Subiendo..." : "Subir evaluación"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
+        <DialogHeader>
+          <DialogTitle>Subir evaluación</DialogTitle>
+          <DialogDescription>
+            Comparte material de estudio con otros estudiantes.
+          </DialogDescription>
+        </DialogHeader>
+
+        {formFields}
 
         <DialogFooter>
           <Button onClick={handleSubmit} disabled={!canSubmit}>
