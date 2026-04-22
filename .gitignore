@@ -11,6 +11,7 @@ count.txt
 .output
 .vinxi
 todos.json
+.playwright-cli/
 
 .dev.vars*
 !.dev.vars.example
@@ -20,6 +21,8 @@ supabase/.temp
 supabase/snippets/*
 supabase/config.toml
 supabase/.env
+supabase/seed.sql
+supabase/tec-data/data/
 supabase/tec-data/.venv/
 supabase/tec-data/**/__pycache__/
 supabase/tec-data/.pytest_cache/
