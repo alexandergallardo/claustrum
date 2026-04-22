@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearch } from "@tanstack/react-router";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -26,6 +26,7 @@ export function EvaluationViewPage() {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!key) {
@@ -106,6 +107,19 @@ export function EvaluationViewPage() {
     setZoom(nextZoom);
   }
 
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const centerX = () => {
+      const target = Math.max(0, (container.scrollWidth - container.clientWidth) / 2);
+      container.scrollLeft = target;
+    };
+
+    const raf = requestAnimationFrame(centerX);
+    return () => cancelAnimationFrame(raf);
+  }, [zoom, pageNumber]);
+
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
@@ -136,7 +150,7 @@ export function EvaluationViewPage() {
         </Button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto overscroll-contain">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto overscroll-contain">
         <div className="flex justify-center px-4 py-6">
           <Document
             file={blobUrl}
@@ -146,7 +160,7 @@ export function EvaluationViewPage() {
               <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
             }
           >
-            <div className="w-full max-w-5xl [&_.react-pdf__Page]:w-full [&_.react-pdf__Page]:max-w-full [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:!w-full">
+            <div className="relative inline-block [&_.react-pdf__Page]:mx-auto [&_.react-pdf__Page__canvas]:!h-auto">
               <Page
                 pageNumber={pageNumber}
                 scale={zoom}
