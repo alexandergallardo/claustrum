@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearch } from "@tanstack/react-router";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
 
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,18 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export function EvaluationViewPage() {
+  const MIN_ZOOM = 0.6;
+  const MAX_ZOOM = 2;
+  const ZOOM_STEP = 0.2;
+
   const { key } = useSearch({ from: "/evaluations/view" });
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [displayPage, setDisplayPage] = useState(1);
-  const [pendingPage, setPendingPage] = useState<number | null>(null);
+  const [displayZoom, setDisplayZoom] = useState(1);
+  const [pendingState, setPendingState] = useState<{ page: number; zoom: number } | null>(null);
 
   useEffect(() => {
     if (!key) {
@@ -83,7 +88,8 @@ export function EvaluationViewPage() {
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setDisplayPage(1);
-    setPendingPage(null);
+    setDisplayZoom(1);
+    setPendingState(null);
   }
 
   function onDocumentLoadError(err: Error) {
@@ -92,8 +98,16 @@ export function EvaluationViewPage() {
 
   function handlePageChange(newPage: number) {
     if (newPage < 1 || newPage > numPages) return;
-    if (newPage === displayPage) return;
-    setPendingPage(newPage);
+    const current = pendingState ?? { page: displayPage, zoom: displayZoom };
+    if (newPage === current.page) return;
+    setPendingState({ page: newPage, zoom: current.zoom });
+  }
+
+  function handleZoomChange(delta: number) {
+    const current = pendingState ?? { page: displayPage, zoom: displayZoom };
+    const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Number((current.zoom + delta).toFixed(1))));
+    if (nextZoom === current.zoom) return;
+    setPendingState({ page: current.page, zoom: nextZoom });
   }
 
   if (isLoading) {
@@ -118,7 +132,7 @@ export function EvaluationViewPage() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl bg-background">
       <div className="shrink-0 border-b px-4 py-2">
         <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -137,21 +151,19 @@ export function EvaluationViewPage() {
             }
           >
             <div className="relative w-full max-w-5xl [&_.react-pdf__Page]:w-full [&_.react-pdf__Page]:max-w-full [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:!w-full">
-              <Page
-                pageNumber={displayPage}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-              />
+              <Page pageNumber={displayPage} scale={displayZoom} renderTextLayer={false} renderAnnotationLayer={false} />
 
-              {pendingPage !== null && pendingPage !== displayPage && (
+              {pendingState !== null && (pendingState.page !== displayPage || pendingState.zoom !== displayZoom) && (
                 <div className="pointer-events-none absolute inset-0 opacity-0">
                   <Page
-                    pageNumber={pendingPage}
+                    pageNumber={pendingState.page}
+                    scale={pendingState.zoom}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                     onRenderSuccess={() => {
-                      setDisplayPage(pendingPage);
-                      setPendingPage(null);
+                      setDisplayPage(pendingState.page);
+                      setDisplayZoom(pendingState.zoom);
+                      setPendingState(null);
                     }}
                   />
                 </div>
@@ -186,6 +198,30 @@ export function EvaluationViewPage() {
               aria-label="Página siguiente"
             >
               <ChevronRight className="h-4 w-4" />
+            </Button>
+            <div className="mx-1 h-4 w-px bg-border" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 cursor-pointer"
+              onClick={() => handleZoomChange(-ZOOM_STEP)}
+              disabled={displayZoom <= MIN_ZOOM}
+              aria-label="Reducir zoom"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="w-12 text-center text-sm text-muted-foreground tabular-nums">
+              {Math.round(displayZoom * 100)}%
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 cursor-pointer"
+              onClick={() => handleZoomChange(ZOOM_STEP)}
+              disabled={displayZoom >= MAX_ZOOM}
+              aria-label="Aumentar zoom"
+            >
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
