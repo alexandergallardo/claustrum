@@ -14,11 +14,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-function getInitialContainerWidth(): number {
-  if (typeof window === "undefined") return 800;
-  return Math.max(200, window.innerWidth - 48);
-}
-
 export function EvaluationViewPage() {
   const { key } = useSearch({ from: "/evaluations/view" });
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -26,7 +21,8 @@ export function EvaluationViewPage() {
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(1);
-  const [containerWidth, setContainerWidth] = useState<number>(getInitialContainerWidth);
+  const [pageRenderState, setPageRenderState] = useState<"idle" | "loading" | "ready">("idle");
+  const [containerWidth, setContainerWidth] = useState<number>(800);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,7 +43,6 @@ export function EvaluationViewPage() {
     async function load() {
       try {
         if (isDirectUrl) {
-          // Local file or external URL: fetch as blob to create object URL
           const response = await fetch(key);
           if (!response.ok) throw new Error("No se pudo cargar el PDF");
           const blob = await response.blob();
@@ -58,7 +53,6 @@ export function EvaluationViewPage() {
           }
           setBlobUrl(objectUrl);
         } else {
-          // R2 file key: go through worker
           const url = await getEvaluationSignedUrl(key);
           if (cancelled) {
             URL.revokeObjectURL(url);
@@ -106,6 +100,12 @@ export function EvaluationViewPage() {
     };
   }, [blobUrl]);
 
+  useEffect(() => {
+    if (numPages > 0) {
+      setPageRenderState("loading");
+    }
+  }, [pageNumber, numPages]);
+
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setPageNumber(1);
@@ -115,9 +115,14 @@ export function EvaluationViewPage() {
     setError(err.message);
   }
 
+  function handlePageChange(newPage: number) {
+    if (newPage < 1 || newPage > numPages) return;
+    setPageNumber(newPage);
+  }
+
   if (isLoading) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-4">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         <p className="text-sm text-muted-foreground">Cargando documento...</p>
       </div>
@@ -126,7 +131,7 @@ export function EvaluationViewPage() {
 
   if (error || !blobUrl) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-4 px-4">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
         <p className="text-sm text-destructive">{error ?? "No se pudo cargar el documento"}</p>
         <Button variant="outline" onClick={() => window.history.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -139,7 +144,7 @@ export function EvaluationViewPage() {
   const pageWidth = Math.max(200, containerWidth - 32);
 
   return (
-    <div className="flex h-dvh flex-col bg-background overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 bg-background relative">
       <div className="flex items-center gap-2 border-b px-4 py-2 shrink-0">
         <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -149,7 +154,7 @@ export function EvaluationViewPage() {
 
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto"
+        className="flex-1 min-h-0 overflow-auto"
       >
         <div className="flex justify-center px-4 py-6">
           <Document
@@ -160,12 +165,24 @@ export function EvaluationViewPage() {
               <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
             }
           >
-            <Page
-              pageNumber={pageNumber}
-              width={pageWidth}
-              renderTextLayer
-              renderAnnotationLayer
-            />
+            <div className="relative">
+              <div
+                className={`transition-opacity duration-200 ${pageRenderState === "ready" ? "opacity-100" : "opacity-0"}`}
+              >
+                <Page
+                  pageNumber={pageNumber}
+                  width={pageWidth}
+                  renderTextLayer
+                  renderAnnotationLayer
+                  onRenderSuccess={() => setPageRenderState("ready")}
+                />
+              </div>
+              {pageRenderState === "loading" && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
           </Document>
         </div>
       </div>
@@ -176,8 +193,8 @@ export function EvaluationViewPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+              className="h-8 w-8 cursor-pointer"
+              onClick={() => handlePageChange(pageNumber - 1)}
               disabled={pageNumber <= 1}
               aria-label="Página anterior"
             >
@@ -189,8 +206,8 @@ export function EvaluationViewPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
-              onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+              className="h-8 w-8 cursor-pointer"
+              onClick={() => handlePageChange(pageNumber + 1)}
               disabled={pageNumber >= numPages}
               aria-label="Página siguiente"
             >

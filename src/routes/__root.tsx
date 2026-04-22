@@ -26,8 +26,7 @@ function RootComponent() {
   const isPublicRoute =
     pathname === '/login' ||
     pathname.startsWith('/signup') ||
-    pathname.startsWith('/verify-email') ||
-    pathname.startsWith('/evaluations/view')
+    pathname.startsWith('/verify-email')
 
   return (
     <>
