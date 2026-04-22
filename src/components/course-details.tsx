@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Link, useNavigate } from "@tanstack/react-router"
@@ -49,12 +49,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox"
 import { Separator } from "@/components/ui/separator"
 import { useIsAdmin } from "@/lib/hooks/use-professor-reviews"
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog"
@@ -511,6 +513,10 @@ export function CourseDetails({
   const [editingAttempt, setEditingAttempt] = useState<CourseAttempt | null>(null)
   const [editAcademicTermId, setEditAcademicTermId] = useState<string>("")
   const [editGradeInput, setEditGradeInput] = useState("")
+  const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null)
+  const quickTermTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const registerTermTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const editTermTriggerRef = useRef<HTMLButtonElement | null>(null)
   const navigate = useNavigate()
   const updateCourseAttempt = useUpdateCourseAttempt()
 
@@ -575,6 +581,9 @@ export function CourseDetails({
   const termLabelById = new Map<number, string>(
     academicTerms.map((term: AcademicTerm) => [term.id, term.display_name]),
   )
+  const selectedQuickTerm = academicTerms.find((term) => String(term.id) === academicTermId) ?? null
+  const selectedRegisterTerm = selectedQuickTerm
+  const selectedEditTerm = academicTerms.find((term) => String(term.id) === editAcademicTermId) ?? null
 
   /* --- handlers (preserved) --- */
 
@@ -829,20 +838,32 @@ export function CourseDetails({
           <Label htmlFor="quick-status-term" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Periodo
           </Label>
-          <Select value={academicTermId} onValueChange={setAcademicTermId}>
-            <SelectTrigger id="quick-status-term" className="mt-1.5 w-full">
-              <SelectValue
-                placeholder={inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
-              />
-            </SelectTrigger>
-            <SelectContent position="popper" align="start" sideOffset={4}>
-              {academicTerms.map((term: AcademicTerm) => (
-                <SelectItem key={term.id} value={String(term.id)}>
-                  {term.display_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            items={academicTerms}
+            value={selectedQuickTerm}
+            onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
+            itemToStringValue={(term) => term.display_name}
+          >
+            <ComboboxTrigger
+              ref={quickTermTriggerRef}
+              render={<Button id="quick-status-term" variant="outline" className="mt-1.5 w-full justify-between font-normal" />}
+            >
+              <span className={`block min-w-0 flex-1 truncate text-left ${!selectedQuickTerm ? "text-muted-foreground" : ""}`}>
+                {selectedQuickTerm?.display_name ?? (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent anchor={quickTermTriggerRef} className="w-72">
+              <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
+              <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
+              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(term) => (
+                  <ComboboxItem key={term.id} value={term}>
+                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -1131,6 +1152,7 @@ export function CourseDetails({
       {/* ========== REGISTER DIALOG (preserved) ========== */}
       <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
         <DialogContent>
+          <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <DialogHeader>
             <DialogTitle>Registrar nota</DialogTitle>
             <DialogDescription>
@@ -1167,20 +1189,36 @@ export function CourseDetails({
               <Label htmlFor="dialog-attempt-term" className="text-sm">
                 Periodo
               </Label>
-              <Select value={academicTermId} onValueChange={setAcademicTermId}>
-                <SelectTrigger id="dialog-attempt-term" className="mt-2 w-full">
-                  <SelectValue
-                    placeholder={inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
-                  />
-                </SelectTrigger>
-                <SelectContent position="popper" align="start" sideOffset={4}>
-                  {academicTerms.map((term: AcademicTerm) => (
-                    <SelectItem key={term.id} value={String(term.id)}>
-                      {term.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={academicTerms}
+                value={selectedRegisterTerm}
+                onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
+                itemToStringValue={(term) => term.display_name}
+              >
+                <ComboboxTrigger
+                  ref={registerTermTriggerRef}
+                  render={<Button id="dialog-attempt-term" variant="outline" className="mt-2 w-full justify-between font-normal" />}
+                >
+                  <span className={`block min-w-0 flex-1 truncate text-left ${!selectedRegisterTerm ? "text-muted-foreground" : ""}`}>
+                    {selectedRegisterTerm?.display_name ?? (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+                  </span>
+                </ComboboxTrigger>
+                <ComboboxContent
+                  anchor={registerTermTriggerRef}
+                  container={comboboxPortalContainerRef}
+                  className="w-72"
+                >
+                  <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
+                  <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
+                  <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {(term) => (
+                      <ComboboxItem key={term.id} value={term}>
+                        <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </div>
 
             <div>
@@ -1234,6 +1272,7 @@ export function CourseDetails({
         }}
       >
         <DialogContent>
+          <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <DialogHeader>
             <DialogTitle>Editar intento</DialogTitle>
             <DialogDescription>
@@ -1246,20 +1285,36 @@ export function CourseDetails({
               <Label htmlFor="edit-attempt-term" className="text-sm">
                 Periodo
               </Label>
-              <Select value={editAcademicTermId} onValueChange={setEditAcademicTermId}>
-                <SelectTrigger id="edit-attempt-term" className="mt-2 w-full">
-                  <SelectValue
-                    placeholder={inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
-                  />
-                </SelectTrigger>
-                <SelectContent position="popper" align="start" sideOffset={4}>
-                  {academicTerms.map((term: AcademicTerm) => (
-                    <SelectItem key={term.id} value={String(term.id)}>
-                      {term.display_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                items={academicTerms}
+                value={selectedEditTerm}
+                onValueChange={(term) => setEditAcademicTermId(term ? String(term.id) : "")}
+                itemToStringValue={(term) => term.display_name}
+              >
+                <ComboboxTrigger
+                  ref={editTermTriggerRef}
+                  render={<Button id="edit-attempt-term" variant="outline" className="mt-2 w-full justify-between font-normal" />}
+                >
+                  <span className={`block min-w-0 flex-1 truncate text-left ${!selectedEditTerm ? "text-muted-foreground" : ""}`}>
+                    {selectedEditTerm?.display_name ?? (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+                  </span>
+                </ComboboxTrigger>
+                <ComboboxContent
+                  anchor={editTermTriggerRef}
+                  container={comboboxPortalContainerRef}
+                  className="w-72"
+                >
+                  <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
+                  <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
+                  <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                    {(term) => (
+                      <ComboboxItem key={term.id} value={term}>
+                        <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </div>
 
             <div>
