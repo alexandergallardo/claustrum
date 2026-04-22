@@ -13,6 +13,7 @@ import {
   GraduationCap,
   MapPin,
   Minus,
+  Pencil,
   Plus,
   User,
   Users,
@@ -23,6 +24,7 @@ import {
   useCourseEquivalents,
   useCourseLatestTermGroups,
   useCourseRecentProfessors,
+  useUpdateCourseAttempt,
 } from "@/lib/hooks/use-queries"
 import type {
   AcademicTerm,
@@ -204,9 +206,11 @@ function SectionHeader({
 function TimelineItem({
   attempt,
   termLabel,
+  onEdit,
 }: {
   attempt: CourseAttempt
   termLabel: string
+  onEdit: (attempt: CourseAttempt) => void
 }) {
   const cfg = statusConfig[attempt.status]
   const date = new Date(attempt.recordedAt)
@@ -226,13 +230,25 @@ function TimelineItem({
 
       {/* content */}
       <div className="pb-6 flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="text-sm font-semibold text-foreground">
-            {statusLabels[attempt.status]}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {date.toLocaleDateString()}
-          </span>
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              {statusLabels[attempt.status]}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {date.toLocaleDateString()}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            onClick={() => onEdit(attempt)}
+            aria-label="Editar intento"
+          >
+            <Pencil className="size-3.5" />
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {gradeText ? (
@@ -492,7 +508,11 @@ export function CourseDetails({
   const [isSaving, setIsSaving] = useState(false)
   const [equivalentsPage, setEquivalentsPage] = useState(0)
   const [isExamUploadOpen, setIsExamUploadOpen] = useState(false)
+  const [editingAttempt, setEditingAttempt] = useState<CourseAttempt | null>(null)
+  const [editAcademicTermId, setEditAcademicTermId] = useState<string>("")
+  const [editGradeInput, setEditGradeInput] = useState("")
   const navigate = useNavigate()
+  const updateCourseAttempt = useUpdateCourseAttempt()
 
   const EQUIVALENTS_PER_PAGE = 10
 
@@ -659,6 +679,77 @@ export function CourseDetails({
     setGradeInput(String(next))
   }
 
+  const handleEditGradeInputChange = (value: string) => {
+    if (value === "") {
+      setEditGradeInput("")
+      return
+    }
+    if (!/^\d{0,3}(\.\d{0,2})?$/.test(value)) return
+    const parsed = Number(value)
+    if (Number.isNaN(parsed)) return
+    setEditGradeInput(String(Math.min(100, Math.max(0, parsed))))
+  }
+
+  const handleEditGradeStep = (delta: number) => {
+    const current = editGradeInput.trim() === "" ? 0 : Number(editGradeInput)
+    if (Number.isNaN(current)) {
+      setEditGradeInput("0")
+      return
+    }
+    const next = Math.min(100, Math.max(0, Math.round((current + delta) * 100) / 100))
+    setEditGradeInput(String(next))
+  }
+
+  const openEditAttempt = (attempt: CourseAttempt) => {
+    setEditingAttempt(attempt)
+    setEditAcademicTermId(attempt.academicTermId ? String(attempt.academicTermId) : "")
+    setEditGradeInput(attempt.grade === null ? "" : String(attempt.grade))
+  }
+
+  const handleSaveAttemptEdit = async () => {
+    if (!editingAttempt) return
+    if (!userId || !studyPlanId) {
+      toast.error("Debes iniciar sesión para editar intentos")
+      return
+    }
+
+    const parsedAcademicTermId = Number(editAcademicTermId)
+    if (!Number.isInteger(parsedAcademicTermId) || parsedAcademicTermId <= 0) {
+      toast.error("Debes seleccionar un periodo")
+      return
+    }
+
+    const requiresGrade = editingAttempt.status === "approved" || editingAttempt.status === "failed"
+    const parsedGrade = editGradeInput.trim() === "" ? null : Number(editGradeInput)
+
+    if (requiresGrade) {
+      if (parsedGrade === null || Number.isNaN(parsedGrade)) {
+        toast.error("Debes ingresar una nota")
+        return
+      }
+      if (parsedGrade < 0 || parsedGrade > 100) {
+        toast.error("La nota debe estar entre 0 y 100")
+        return
+      }
+    }
+
+    try {
+      await updateCourseAttempt.mutateAsync({
+        userId,
+        studyPlanId,
+        courseId: Number(course.id),
+        attemptId: editingAttempt.id,
+        academicTermId: parsedAcademicTermId,
+        grade: requiresGrade ? parsedGrade : null,
+      })
+      toast.success("Intento actualizado")
+      setEditingAttempt(null)
+      attemptsQuery.refetch()
+    } catch {
+      toast.error("No se pudo actualizar el intento")
+    }
+  }
+
   const seedProfessorNameInCache = (professorId: number, professorName: string) => {
     queryClient.setQueryData(["professorById", professorId], {
       id: professorId,
@@ -820,6 +911,7 @@ export function CourseDetails({
                 <TimelineItem
                   key={attempt.id}
                   attempt={attempt}
+                  onEdit={openEditAttempt}
                   termLabel={
                     attempt.academicTermId
                       ? (termLabelById.get(attempt.academicTermId) ?? `#${attempt.academicTermId}`)
@@ -1138,6 +1230,107 @@ export function CourseDetails({
             </Button>
             <Button type="button" onClick={handleRegisterNote} disabled={isSaving}>
               {isSaving ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!editingAttempt}
+        onOpenChange={(open) => {
+          if (!open) setEditingAttempt(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar intento</DialogTitle>
+            <DialogDescription>
+              Actualiza el periodo y la nota del intento seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Estado del intento</Label>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {editingAttempt ? statusLabels[editingAttempt.status] : "-"}
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-attempt-term" className="text-sm">
+                Periodo
+              </Label>
+              <Select value={editAcademicTermId} onValueChange={setEditAcademicTermId}>
+                <SelectTrigger id="edit-attempt-term" className="mt-2 w-full">
+                  <SelectValue
+                    placeholder={inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo"}
+                  />
+                </SelectTrigger>
+                <SelectContent position="popper" align="start" sideOffset={4}>
+                  {academicTerms.map((term: AcademicTerm) => (
+                    <SelectItem key={term.id} value={String(term.id)}>
+                      {term.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-attempt-grade" className="text-sm">
+                Nota
+              </Label>
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleEditGradeStep(-1)}
+                  aria-label="Disminuir nota"
+                  disabled={updateCourseAttempt.isPending}
+                >
+                  <Minus className="size-4" />
+                </Button>
+                <Input
+                  id="edit-attempt-grade"
+                  className="text-center"
+                  type="text"
+                  inputMode="decimal"
+                  value={editGradeInput}
+                  onChange={(event) => handleEditGradeInputChange(event.target.value)}
+                  placeholder="0-100"
+                  disabled={updateCourseAttempt.isPending}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleEditGradeStep(1)}
+                  aria-label="Aumentar nota"
+                  disabled={updateCourseAttempt.isPending}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditingAttempt(null)}
+              disabled={updateCourseAttempt.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveAttemptEdit}
+              disabled={updateCourseAttempt.isPending}
+            >
+              {updateCourseAttempt.isPending ? "Guardando..." : "Guardar cambios"}
             </Button>
           </DialogFooter>
         </DialogContent>

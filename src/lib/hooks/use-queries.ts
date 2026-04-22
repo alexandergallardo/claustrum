@@ -475,6 +475,37 @@ export function useCreateCourseAttempt() {
   });
 }
 
+export function useUpdateCourseAttempt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      userId: string;
+      studyPlanId: number;
+      courseId: number;
+      attemptId: number;
+      grade: number | null;
+      academicTermId: number;
+    }) => {
+      const sb = getSupabaseBrowserClient();
+
+      const { error } = await sb.rpc("update_student_course_attempt", {
+        p_attempt_id: params.attemptId,
+        p_academic_term_id: params.academicTermId,
+        p_grade: params.grade,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId] });
+      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats", variables.userId, variables.studyPlanId] });
+      queryClient.invalidateQueries({ queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId] });
+    },
+  });
+}
+
 export function useCourseAttempts(userId: string | null, studyPlanId: number | null, courseId: number | null) {
   return useQuery({
     queryKey: ["courseAttempts", userId, studyPlanId, courseId],
