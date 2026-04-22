@@ -191,7 +191,7 @@ export function EvaluationViewPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="px-2 text-sm text-muted-foreground tabular-nums">
+            <span className="px-2 text-sm text-muted-foreground tabular-nums whitespace-nowrap">
               {pageNumber} de {numPages}
             </span>
             <Button
