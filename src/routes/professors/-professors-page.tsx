@@ -184,14 +184,9 @@ export function ProfessorsReviewsPage() {
               />
             </div>
             {authUser && isAdmin ? (
-              <>
-                <Button asChild variant="outline" size="sm" className="mb-0.5">
-                  <Link to="/professors/moderation">Moderar reseñas</Link>
-                </Button>
-                <Button asChild variant="outline" size="sm" className="mb-0.5">
-                  <Link to="/evaluations/moderation">Moderar evaluaciones</Link>
-                </Button>
-              </>
+              <Button asChild variant="outline">
+                <Link to="/professors/moderation">Moderar reseñas</Link>
+              </Button>
             ) : null}
             <CollapsibleTrigger asChild>
               <Button
