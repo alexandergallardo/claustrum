@@ -121,37 +121,11 @@ export function EvaluationViewPage() {
 
   return (
     <div className="flex h-dvh flex-col bg-background overflow-hidden">
-      <div className="flex items-center justify-between gap-2 border-b px-4 py-2 shrink-0">
+      <div className="flex items-center gap-2 border-b px-4 py-2 shrink-0">
         <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver
         </Button>
-
-        {numPages > 0 && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
-              disabled={pageNumber <= 1}
-              aria-label="Página anterior"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {pageNumber} / {numPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
-              disabled={pageNumber >= numPages}
-              aria-label="Página siguiente"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </div>
 
       <div
@@ -176,6 +150,36 @@ export function EvaluationViewPage() {
           </Document>
         </div>
       </div>
+
+      {numPages > 0 && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+          <div className="flex items-center gap-1 rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+              disabled={pageNumber <= 1}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground tabular-nums px-2">
+              {pageNumber} de {numPages}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPageNumber((p) => Math.min(numPages, p + 1))}
+              disabled={pageNumber >= numPages}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
