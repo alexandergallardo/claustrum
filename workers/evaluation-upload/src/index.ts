@@ -4,6 +4,7 @@ export interface Env {
   EVALUATIONS_BUCKET: R2Bucket;
   SUPABASE_URL: string;
   SUPABASE_SECRET_KEY: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 const corsHeaders = {
@@ -28,6 +29,25 @@ function ok(data: unknown) {
 
 function getSupabase(env: Env) {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY);
+}
+
+async function verifyTurnstileToken(token: string, env: Env, remoteIp: string | null): Promise<boolean> {
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      secret: env.TURNSTILE_SECRET_KEY,
+      response: token,
+      ...(remoteIp ? { remoteip: remoteIp } : {}),
+    }),
+  });
+
+  if (!response.ok) return false;
+
+  const data = await response.json() as { success?: boolean };
+  return data.success === true;
 }
 
 async function verifyAuth(request: Request, env: Env): Promise<string | null> {
@@ -100,6 +120,21 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const isCatedra = formData.get("isCatedra") === "true";
   const includesAnswers = formData.get("includesAnswers") === "true";
   const hasSeparateAnswers = formData.get("hasSeparateAnswers") === "true";
+  const turnstileToken = formData.get("turnstileToken");
+
+  if (typeof turnstileToken !== "string" || turnstileToken.trim() === "") {
+    return badRequest("Se requiere completar la verificación humana");
+  }
+
+  if (!env.TURNSTILE_SECRET_KEY) {
+    return badRequest("Turnstile no está configurado en el servidor");
+  }
+
+  const remoteIp = request.headers.get("CF-Connecting-IP");
+  const isHuman = await verifyTurnstileToken(turnstileToken, env, remoteIp);
+  if (!isHuman) {
+    return badRequest("No se pudo verificar el captcha");
+  }
 
   if (!evaluationFile || evaluationFile.type !== "application/pdf") {
     return badRequest("Se requiere un archivo PDF válido");

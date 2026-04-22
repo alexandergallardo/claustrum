@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { FileUp, Minus, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useUploadEvaluation } from "@/lib/hooks/use-evaluations";
+import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
   EVALUATION_TYPE_LABELS,
   EVALUATION_TYPES_WITH_NUMBER,
@@ -39,6 +40,10 @@ import {
 import type { CourseRecentProfessor } from "@/lib/types";
 import type { AcademicTerm } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const Turnstile = lazy(() =>
+  import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
+);
 
 interface EvaluationUploadDialogProps {
   courseId: number;
@@ -66,6 +71,7 @@ export function EvaluationUploadDialog({
   onOpenChange,
 }: EvaluationUploadDialogProps) {
   const uploadMutation = useUploadEvaluation();
+  const turnstileSiteKey = getTurnstileSiteKey();
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
   const termTriggerRef = useRef<HTMLButtonElement | null>(null);
   const professorTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -80,6 +86,7 @@ export function EvaluationUploadDialog({
   const [isCatedra, setIsCatedra] = useState(false);
   const [includesAnswers, setIncludesAnswers] = useState(false);
   const [hasSeparateAnswers, setHasSeparateAnswers] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const showNumberInput = EVALUATION_TYPES_WITH_NUMBER.includes(evaluationType);
@@ -88,8 +95,9 @@ export function EvaluationUploadDialog({
   const canSubmit = useMemo(() => {
     if (!evaluationFile || !evaluationType || uploadMutation.isPending) return false;
     if (showCustomNameInput && customName.trim() === "") return false;
+    if (!turnstileSiteKey || !turnstileToken) return false;
     return true;
-  }, [evaluationFile, evaluationType, uploadMutation.isPending, showCustomNameInput, customName]);
+  }, [evaluationFile, evaluationType, uploadMutation.isPending, showCustomNameInput, customName, turnstileSiteKey, turnstileToken]);
 
   const resetForm = useCallback(() => {
     setEvaluationFile(null);
@@ -102,6 +110,7 @@ export function EvaluationUploadDialog({
     setIsCatedra(false);
     setIncludesAnswers(false);
     setHasSeparateAnswers(false);
+    setTurnstileToken(null);
   }, []);
 
   const handleClose = useCallback(
@@ -194,6 +203,7 @@ export function EvaluationUploadDialog({
         isCatedra,
         includesAnswers,
         hasSeparateAnswers,
+        turnstileToken: turnstileToken ?? "",
         evaluationFile,
         answersFile: hasSeparateAnswers ? answersFile : null,
       });
@@ -520,6 +530,29 @@ export function EvaluationUploadDialog({
               />
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label>Verificación humana</Label>
+            <div className="min-h-[70px]">
+              {turnstileSiteKey ? (
+                <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
+                  <Suspense fallback={<span className="text-sm text-muted-foreground">Cargando verificación...</span>}>
+                    <Turnstile
+                      siteKey={turnstileSiteKey}
+                      options={{ language: "es", size: "normal" }}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                      onError={() => setTurnstileToken(null)}
+                      onExpire={() => setTurnstileToken(null)}
+                    />
+                  </Suspense>
+                </div>
+              ) : (
+                <p className="text-sm text-amber-600">
+                  Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar envío.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <DialogFooter>

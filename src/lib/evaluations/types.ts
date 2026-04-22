@@ -99,6 +99,7 @@ export type UploadEvaluationPayload = {
   isCatedra: boolean;
   includesAnswers: boolean;
   hasSeparateAnswers: boolean;
+  turnstileToken: string;
   evaluationFile: File;
   answersFile: File | null;
 };

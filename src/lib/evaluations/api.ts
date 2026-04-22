@@ -78,6 +78,7 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
   formData.append("isCatedra", String(payload.isCatedra));
   formData.append("includesAnswers", String(payload.includesAnswers));
   formData.append("hasSeparateAnswers", String(payload.hasSeparateAnswers));
+  formData.append("turnstileToken", payload.turnstileToken);
   formData.append("fileSha256", fileSha256);
   if (payload.answersFile) {
     formData.append("answersFileSha256", answersFileSha256);
