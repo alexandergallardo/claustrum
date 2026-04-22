@@ -63,9 +63,14 @@ async function verifyAuth(request: Request, env: Env): Promise<string | null> {
 
 async function isAdmin(userId: string, env: Env): Promise<boolean> {
   const supabase = getSupabase(env);
-  const { data, error } = await supabase.rpc("is_admin");
+  const { data, error } = await supabase
+    .from("user_role")
+    .select("id", { head: true })
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (error) return false;
-  return Boolean(data);
+  return !!data;
 }
 
 export default {
