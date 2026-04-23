@@ -1185,7 +1185,7 @@ export function CourseDetails({
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold tracking-tight">
-              Equivalencias {totalEquivalents > 0 ? `(${totalEquivalents})` : ""}
+              Equivalencias
             </h2>
             {totalPages > 1 && (
               <div className="flex items-center gap-1">
