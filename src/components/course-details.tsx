@@ -52,7 +52,6 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -68,6 +67,7 @@ import {
 } from "@/components/ui/combobox"
 import { Separator } from "@/components/ui/separator"
 import { useIsAdmin } from "@/lib/hooks/use-professor-reviews"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog"
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations"
@@ -510,6 +510,7 @@ export function CourseDetails({
   transitionName,
   onCreateAttempt,
 }: CourseDetailsProps) {
+  const isMobile = useIsMobile()
   const queryClient = useQueryClient()
   const { data: isAdmin } = useIsAdmin()
 
@@ -759,6 +760,118 @@ export function CourseDetails({
 
   /* --- derived state for hero --- */
   const currentStatus = course.status
+  const requiresProgressGrade = progressStatus === "approved" || progressStatus === "failed"
+
+  const progressForm = (
+    <div className="space-y-6">
+      <div>
+        <Label className="text-sm">Periodo</Label>
+        <Combobox
+          items={academicTerms}
+          value={selectedQuickTerm}
+          onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
+          itemToStringValue={(term) => term.display_name}
+        >
+          <ComboboxTrigger
+            ref={progressTermTriggerRef}
+            render={<Button variant="outline" className="mt-2 w-full justify-between font-normal" />}
+          >
+            <span className={`block min-w-0 flex-1 truncate text-left ${!selectedQuickTerm ? "text-muted-foreground" : ""}`}>
+              {selectedQuickTerm?.display_name ?? (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+            </span>
+          </ComboboxTrigger>
+          <ComboboxContent
+            anchor={progressTermTriggerRef}
+            container={comboboxPortalContainerRef}
+            className="w-72"
+          >
+            <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
+            <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
+            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {(term) => (
+                <ComboboxItem key={term.id} value={term}>
+                  <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+
+      <div>
+        <Label className="text-sm">Estado</Label>
+        <RadioGroup
+          className="mt-3 grid grid-cols-2 gap-2"
+          value={progressStatus}
+          onValueChange={(value) => setProgressStatus(value as Exclude<CourseStatus, "not_taken">)}
+        >
+          {(
+            [
+              { value: "approved", label: "Aprobado" },
+              { value: "failed", label: "Reprobado" },
+              { value: "in_progress", label: "En curso" },
+              { value: "withdrawn", label: "Retirado" },
+            ] as const
+          ).map((option) => {
+            const cfg = statusConfig[option.value]
+            const isSelected = progressStatus === option.value
+            return (
+              <label
+                key={option.value}
+                htmlFor={`progress-status-${option.value}`}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-lg border p-3 transition-colors",
+                  isSelected
+                    ? `${cfg.bg} ${cfg.ring} ring-1`
+                    : "border-border hover:bg-accent/50"
+                )}
+              >
+                <RadioGroupItem id={`progress-status-${option.value}`} value={option.value} />
+                <div className="flex items-center gap-1.5">
+                  <span className={`size-2 rounded-full ${cfg.dot}`} />
+                  <span className="text-sm font-medium">{option.label}</span>
+                </div>
+              </label>
+            )
+          })}
+        </RadioGroup>
+      </div>
+
+      {requiresProgressGrade ? (
+        <div>
+          <Label className="text-sm">Nota</Label>
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => handleGradeStep(-1)}
+              aria-label="Disminuir nota"
+            >
+              <Minus className="size-4" />
+            </Button>
+            <Input
+              className="text-center"
+              type="text"
+              inputMode="decimal"
+              value={gradeInput}
+              onChange={(event) => handleGradeInputChange(event.target.value)}
+              placeholder="0-100"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => handleGradeStep(1)}
+              aria-label="Aumentar nota"
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
 
   return (
     <div className="flex min-w-0 flex-col gap-10">
@@ -821,141 +934,10 @@ export function CourseDetails({
           <SectionHeader
             title="Historial de intentos"
             action={
-              <Sheet open={isProgressSheetOpen} onOpenChange={setIsProgressSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button type="button" size="sm" variant="outline">
-                    <Plus className="size-4 mr-1.5" />
-                    Registrar progreso
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="sm:max-w-md w-full">
-                  <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
-                  <SheetHeader>
-                    <SheetTitle>Registrar progreso</SheetTitle>
-                    <SheetDescription>
-                      Guarda el estado de este curso para el periodo seleccionado.
-                    </SheetDescription>
-                  </SheetHeader>
-
-                  <div className="mt-6 space-y-6">
-                    {/* Period */}
-                    <div>
-                      <Label className="text-sm">Periodo</Label>
-                      <Combobox
-                        items={academicTerms}
-                        value={selectedQuickTerm}
-                        onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
-                        itemToStringValue={(term) => term.display_name}
-                      >
-                        <ComboboxTrigger
-                          ref={progressTermTriggerRef}
-                          render={<Button variant="outline" className="mt-2 w-full justify-between font-normal" />}
-                        >
-                          <span className={`block min-w-0 flex-1 truncate text-left ${!selectedQuickTerm ? "text-muted-foreground" : ""}`}>
-                            {selectedQuickTerm?.display_name ?? (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
-                          </span>
-                        </ComboboxTrigger>
-                        <ComboboxContent
-                          anchor={progressTermTriggerRef}
-                          container={comboboxPortalContainerRef}
-                          className="w-72"
-                        >
-                          <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
-                          <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-                          <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                            {(term) => (
-                              <ComboboxItem key={term.id} value={term}>
-                                <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                              </ComboboxItem>
-                            )}
-                          </ComboboxList>
-                        </ComboboxContent>
-                      </Combobox>
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <Label className="text-sm">Estado</Label>
-                      <RadioGroup
-                        className="mt-3 grid grid-cols-2 gap-2"
-                        value={progressStatus}
-                        onValueChange={(value) => setProgressStatus(value as Exclude<CourseStatus, "not_taken">)}
-                      >
-                        {(
-                          [
-                            { value: "approved", label: "Aprobado" },
-                            { value: "failed", label: "Reprobado" },
-                            { value: "in_progress", label: "En curso" },
-                            { value: "withdrawn", label: "Retirado" },
-                          ] as const
-                        ).map((option) => {
-                          const cfg = statusConfig[option.value]
-                          const isSelected = progressStatus === option.value
-                          return (
-                            <label
-                              key={option.value}
-                              htmlFor={`progress-status-${option.value}`}
-                              className={cn(
-                                "flex cursor-pointer items-center gap-2 rounded-lg border p-3 transition-colors",
-                                isSelected
-                                  ? `${cfg.bg} ${cfg.ring} ring-1`
-                                  : "border-border hover:bg-accent/50"
-                              )}
-                            >
-                              <RadioGroupItem id={`progress-status-${option.value}`} value={option.value} />
-                              <div className="flex items-center gap-1.5">
-                                <span className={`size-2 rounded-full ${cfg.dot}`} />
-                                <span className="text-sm font-medium">{option.label}</span>
-                              </div>
-                            </label>
-                          )
-                        })}
-                      </RadioGroup>
-                    </div>
-
-                    {/* Grade (conditional) */}
-                    {(progressStatus === "approved" || progressStatus === "failed") && (
-                      <div>
-                        <Label className="text-sm">Nota</Label>
-                        <div className="mt-2 flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleGradeStep(-1)}
-                            aria-label="Disminuir nota"
-                          >
-                            <Minus className="size-4" />
-                          </Button>
-                          <Input
-                            className="text-center"
-                            type="text"
-                            inputMode="decimal"
-                            value={gradeInput}
-                            onChange={(event) => handleGradeInputChange(event.target.value)}
-                            placeholder="0-100"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => handleGradeStep(1)}
-                            aria-label="Aumentar nota"
-                          >
-                            <Plus className="size-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <SheetFooter className="mt-6">
-                    <Button type="button" onClick={handleSaveProgress} disabled={isSaving || !academicTermId} className="w-full">
-                      {isSaving ? "Guardando..." : "Guardar progreso"}
-                    </Button>
-                  </SheetFooter>
-                </SheetContent>
-              </Sheet>
+              <Button type="button" size="sm" variant="outline" onClick={() => setIsProgressSheetOpen(true)}>
+                <Plus className="size-4 mr-1.5" />
+                Registrar progreso
+              </Button>
             }
           />
           {attemptsQuery.isLoading ? (
@@ -996,6 +978,53 @@ export function CourseDetails({
           )}
         </section>
       ) : null}
+
+      {isMobile ? (
+        <Sheet open={isProgressSheetOpen} onOpenChange={setIsProgressSheetOpen}>
+          <SheetContent side="bottom" className="h-[86vh] overflow-hidden p-0">
+            <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
+            <SheetHeader>
+              <SheetTitle>Registrar progreso</SheetTitle>
+              <SheetDescription>
+                Guarda el estado de este curso para el periodo seleccionado.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+              {progressForm}
+            </div>
+            <SheetFooter className="border-t px-4 pb-4 pt-3">
+              <Button
+                type="button"
+                onClick={handleSaveProgress}
+                disabled={isSaving || !academicTermId}
+                className="w-full"
+              >
+                {isSaving ? "Guardando..." : "Guardar progreso"}
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isProgressSheetOpen} onOpenChange={setIsProgressSheetOpen}>
+          <DialogContent className="max-h-[90vh] sm:max-w-lg overflow-hidden">
+            <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
+            <DialogHeader>
+              <DialogTitle>Registrar progreso</DialogTitle>
+              <DialogDescription>
+                Guarda el estado de este curso para el periodo seleccionado.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-6 px-1 pb-1">
+              {progressForm}
+            </div>
+            <DialogFooter>
+              <Button type="button" onClick={handleSaveProgress} disabled={isSaving || !academicTermId}>
+                {isSaving ? "Guardando..." : "Guardar progreso"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* ========== COURSE RELATIONS ========== */}
       {(prerequisites.length > 0 || corequisites.length > 0 || isPrerequisiteFor.length > 0) && (
