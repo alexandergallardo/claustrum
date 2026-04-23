@@ -580,10 +580,26 @@ export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: n
 
       if (error) throw error;
 
-      const equivalents: Array<{ id: number; code: string | null; name: string | null; totalCount: number }> = (data ?? []).map((item: { to_course_id: number; to_course_code: string | null; to_course_name: string | null; total_count: number | null }) => ({
+      const equivalents: Array<{
+        id: number
+        code: string | null
+        name: string | null
+        credits: number | null
+        weeklyHours: number | null
+        totalCount: number
+      }> = (data ?? []).map((item: {
+        to_course_id: number
+        to_course_code: string | null
+        to_course_name: string | null
+        to_course_credits: number | null
+        to_course_weekly_hours: number | null
+        total_count: number | null
+      }) => ({
         id: item.to_course_id,
         code: item.to_course_code,
         name: item.to_course_name,
+        credits: item.to_course_credits,
+        weeklyHours: item.to_course_weekly_hours,
         totalCount: item.total_count ?? 0,
       }));
 

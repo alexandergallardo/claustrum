@@ -1213,18 +1213,31 @@ export function CourseDetails({
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {equivalents.map((eq: { id: number; code: string | null; name: string | null }) => (
-              <Badge
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {equivalents.map((eq: {
+              id: number
+              code: string | null
+              name: string | null
+              credits: number | null
+              weeklyHours: number | null
+            }) => (
+              <div
                 key={eq.id}
-                variant="secondary"
-                className="px-3 py-1.5 text-xs font-normal"
+                className="overflow-hidden rounded-lg border-2 border-border bg-card shadow-sm transition-all duration-200 hover:border-primary/40"
               >
-                {eq.name || eq.code || "Sin nombre"}
-                {eq.code && eq.name ? (
-                  <span className="ml-1.5 font-mono text-muted-foreground">{eq.code}</span>
-                ) : null}
-              </Badge>
+                <div className="border-b border-border bg-card px-3 py-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                    <span className="min-w-[3ch] text-right">{eq.credits ?? 0} cr</span>
+                    <span className="flex-1 px-2 text-center font-semibold">{eq.code || "SIN-CODIGO"}</span>
+                    <span className="min-w-[4ch] text-left">{eq.weeklyHours ?? 0} h</span>
+                  </div>
+                </div>
+                <div className="flex min-h-16 items-center justify-center bg-muted px-3 py-2 text-center">
+                  <p className="line-clamp-2 text-xs font-semibold leading-tight text-foreground">
+                    {eq.name || "Sin nombre"}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </section>
