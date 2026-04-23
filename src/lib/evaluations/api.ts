@@ -107,16 +107,16 @@ export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
   const supabase = getSupabaseBrowserClient();
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
-  if (!accessToken) {
-    throw new Error("Debes iniciar sesión para ver evaluaciones");
+
+  const headers = new Headers();
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
   const response = await fetch(
     `${workerUrl}/signed-url?key=${encodeURIComponent(fileKey)}`,
     {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers,
     },
   );
 

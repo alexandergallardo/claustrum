@@ -206,12 +206,6 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
 
 async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
   const userId = await verifyAuth(request, env);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: corsHeaders,
-    });
-  }
 
   const url = new URL(request.url);
   const fileKey = url.searchParams.get("key");
@@ -228,9 +222,18 @@ async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
   if (!evaluation) return badRequest("Evaluación no encontrada");
 
   // Check access: approved evaluations are public, pending/rejected only for owner or admin
-  if (evaluation.status !== "approved" && evaluation.uploaded_by !== userId) {
-    const admin = await isAdmin(userId, env);
-    if (!admin) return badRequest("No tienes acceso a esta evaluación");
+  if (evaluation.status !== "approved") {
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: corsHeaders,
+      });
+    }
+
+    if (evaluation.uploaded_by !== userId) {
+      const admin = await isAdmin(userId, env);
+      if (!admin) return badRequest("No tienes acceso a esta evaluación");
+    }
   }
 
   // Stream PDF directly from R2
