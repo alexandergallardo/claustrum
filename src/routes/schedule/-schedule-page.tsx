@@ -40,6 +40,7 @@ import {
   END_HOUR,
 } from "@/components/calendar/body/day/calendar-body-day-margin";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   useAuthUser,
   useUniversities,
@@ -58,6 +59,7 @@ const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
 const Calendar = lazy(() => import("@/components/calendar/calendar"));
 
 export function SchedulePage() {
+  const isMobile = useIsMobile();
   const search = useSearch({ from: "/schedule/" });
   const navigate = useNavigate({ from: "/schedule/" });
 
@@ -755,18 +757,10 @@ export function SchedulePage() {
                     "--calendar-height": `${calendarHeight}px`,
                   } as CSSProperties}
                 >
-                  <ResizablePanelGroup
-                    orientation="horizontal"
-                    className="h-full"
-                  >
-                    <ResizablePanel
-                      defaultSize="30%"
-                      minSize="20%"
-                      maxSize="50%"
-                      className="min-w-0 overflow-hidden"
-                    >
-                      <div className="flex flex-col lg:h-full">
-                        <div className="px-4 py-3 border-b bg-muted/30 shrink-0">
+                  {isMobile ? (
+                    <div className="flex flex-col">
+                      <div className="flex flex-col border-b">
+                        <div className="px-4 py-3 bg-muted/30 shrink-0">
                           <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold">
                               {orderedCourses.length} curso
@@ -777,15 +771,13 @@ export function SchedulePage() {
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              className="ml-auto lg:hidden"
+                              className="ml-auto"
                               aria-label={
                                 isCourseListOpen
                                   ? "Contraer cursos disponibles"
                                   : "Mostrar cursos disponibles"
                               }
-                              onClick={() =>
-                                setIsCourseListOpen((open) => !open)
-                              }
+                              onClick={() => setIsCourseListOpen((open) => !open)}
                             >
                               <ChevronDown
                                 className={cn(
@@ -796,12 +788,7 @@ export function SchedulePage() {
                             </Button>
                           </div>
                         </div>
-                        <div
-                          className={cn(
-                            "overflow-hidden px-3 h-[60vh] lg:flex-1 lg:h-auto lg:px-0",
-                            !isCourseListOpen && "hidden lg:block",
-                          )}
-                        >
+                        <div className={cn("overflow-hidden px-3 h-[50vh]", !isCourseListOpen && "hidden")}> 
                           <CourseList
                             key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
                             courses={orderedCourses}
@@ -812,12 +799,8 @@ export function SchedulePage() {
                           />
                         </div>
                       </div>
-                    </ResizablePanel>
 
-                    <ResizableHandle withHandle />
-
-                    <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
-                      <div className="relative lg:h-full">
+                      <div className="relative min-h-[65vh]">
                         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                           <ScheduleZoomControls
                             hourHeight={hourHeight}
@@ -828,7 +811,7 @@ export function SchedulePage() {
                         </div>
                         <div
                           ref={calendarRef}
-                          className="lg:h-full overflow-hidden border-t border-border/50 p-0"
+                          className="overflow-hidden border-t border-border/50 p-0"
                         >
                           <Suspense fallback={<div className="h-full w-full bg-muted/20" />}>
                             <Calendar
@@ -845,8 +828,74 @@ export function SchedulePage() {
                           </Suspense>
                         </div>
                       </div>
-                    </ResizablePanel>
-                  </ResizablePanelGroup>
+                    </div>
+                  ) : (
+                    <ResizablePanelGroup
+                      orientation="horizontal"
+                      className="h-full"
+                    >
+                      <ResizablePanel
+                        defaultSize="30%"
+                        minSize="20%"
+                        maxSize="50%"
+                        className="min-w-0 overflow-hidden"
+                      >
+                        <div className="flex flex-col lg:h-full">
+                          <div className="px-4 py-3 border-b bg-muted/30 shrink-0">
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-lg font-semibold">
+                                {orderedCourses.length} curso
+                                {orderedCourses.length !== 1 ? "s" : ""} disponible
+                                {orderedCourses.length !== 1 ? "s" : ""}
+                              </h2>
+                            </div>
+                          </div>
+                          <div className="overflow-hidden px-3 h-[60vh] lg:flex-1 lg:h-auto lg:px-0">
+                            <CourseList
+                              courses={orderedCourses}
+                              selectedGroups={selectedGroups}
+                              onSelectionChange={updateSelectedGroups}
+                              campusById={campusById}
+                              showCampus={showOtherCampuses}
+                            />
+                          </div>
+                        </div>
+                      </ResizablePanel>
+
+                      <ResizableHandle withHandle />
+
+                      <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
+                        <div className="relative lg:h-full">
+                          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+                            <ScheduleZoomControls
+                              hourHeight={hourHeight}
+                              setHourHeight={setHourHeight}
+                              isFloating={false}
+                            />
+                            <ScheduleExportDialog onExport={handleExport} />
+                          </div>
+                          <div
+                            ref={calendarRef}
+                            className="lg:h-full overflow-hidden border-t border-border/50 p-0"
+                          >
+                            <Suspense fallback={<div className="h-full w-full bg-muted/20" />}>
+                              <Calendar
+                                events={calendarEvents}
+                                setEvents={() => {}}
+                                mode={mode}
+                                setMode={() => {}}
+                                date={date}
+                                setDate={() => {}}
+                                onRemoveEvent={handleRemoveEvent}
+                                hourHeight={hourHeight}
+                                setHourHeight={setHourHeight}
+                              />
+                            </Suspense>
+                          </div>
+                        </div>
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
+                  )}
                 </div>
               </div>
             )}

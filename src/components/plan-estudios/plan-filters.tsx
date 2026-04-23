@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Select,
   SelectContent,
@@ -16,6 +16,15 @@ import {
 } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '@/components/ui/combobox'
 import { User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan } from '@/lib/types'
 import { FiltersPanel } from '@/components/filters/filters-panel'
@@ -50,7 +59,7 @@ const truncateText = (text: string, maxLength = 35) => {
 const normalizeText = (text: string) => text.toUpperCase()
 
 function FilterSkeleton() {
-  return <Skeleton className="h-10 w-[200px]" />
+  return <Skeleton className="h-10 w-full sm:w-[200px]" />
 }
 
 function FilterSelect({
@@ -78,14 +87,17 @@ function FilterSelect({
   const showSkeleton = isLoading && !hasData
 
   return (
-    <div className={`flex flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
+    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
       <label className="text-sm font-medium">{label}</label>
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
         <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
-            <SelectValue placeholder={placeholder} />
+          <SelectTrigger className="w-full min-w-0 sm:min-w-[200px] sm:max-w-[500px]">
+            <SelectValue
+              placeholder={placeholder}
+              className="block min-w-0 max-w-full truncate text-left"
+            />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
             <SelectGroup>
@@ -114,6 +126,86 @@ function FilterSelect({
             </SelectGroup>
           </SelectContent>
         </Select>
+      )}
+    </div>
+  )
+}
+
+function FilterCombobox({
+  label,
+  value,
+  placeholder,
+  items,
+  onChange,
+  isLoading,
+  isVisible,
+  showCode = false,
+}: {
+  label: string
+  value: string
+  placeholder: string
+  items: { id: number; code?: string; name: string }[]
+  onChange: (val: string) => void
+  isLoading: boolean
+  isVisible: boolean
+  showCode?: boolean
+}) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+
+  if (!isVisible) return null
+
+  const hasData = items.length > 0
+  const showSkeleton = isLoading && !hasData
+  const selectedItem = items.find((item) => item.id.toString() === value) ?? null
+  const selectedText = selectedItem
+    ? (showCode && selectedItem.code
+      ? `${normalizeText(selectedItem.code)} - ${normalizeText(selectedItem.name)}`
+      : normalizeText(selectedItem.name))
+    : null
+
+  return (
+    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
+      <label className="text-sm font-medium">{label}</label>
+      {showSkeleton ? (
+        <FilterSkeleton />
+      ) : (
+        <Combobox
+          items={items}
+          value={selectedItem}
+          onValueChange={(item) => onChange(item ? String(item.id) : '')}
+          itemToStringValue={(item) =>
+            showCode && item.code
+              ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+              : normalizeText(item.name)
+          }
+        >
+          <ComboboxTrigger
+            ref={triggerRef}
+            render={<Button variant="outline" className="w-full min-w-0 justify-between font-normal sm:min-w-[200px] sm:max-w-[500px]" />}
+          >
+            <span className={`block min-w-0 flex-1 truncate text-left ${!selectedText ? 'text-muted-foreground' : ''}`}>
+              {selectedText ?? placeholder}
+            </span>
+          </ComboboxTrigger>
+          <ComboboxContent
+            anchor={triggerRef}
+            className="w-[var(--anchor-width)] min-w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)]"
+          >
+            <ComboboxInput showTrigger={false} placeholder="Buscar" />
+            <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {(item) => (
+                <ComboboxItem key={item.id} value={item}>
+                  <span className="block w-full min-w-0 truncate">
+                    {showCode && item.code
+                      ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+                      : normalizeText(item.name)}
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       )}
     </div>
   )
@@ -191,7 +283,7 @@ export function PlanFilters({
         ) : null
       }
     >
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <FilterSelect
           label="Universidad"
           value={selectedUniversityId?.toString() || ''}
@@ -212,7 +304,7 @@ export function PlanFilters({
           isVisible={canSelectCampus}
         />
 
-        <FilterSelect
+        <FilterCombobox
           label="Carrera"
           value={selectedCareerProgramId?.toString() || ''}
           placeholder="Selecciona una carrera"
@@ -223,7 +315,7 @@ export function PlanFilters({
           showCode={true}
         />
 
-        <FilterSelect
+        <FilterCombobox
           label="Plan de estudios"
           value={selectedPlanId?.toString() || ''}
           placeholder="Selecciona un plan"

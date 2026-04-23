@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -18,6 +18,15 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from '@/components/ui/combobox'
 import { User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
 import { FiltersPanel } from '@/components/filters/filters-panel'
@@ -54,11 +63,6 @@ interface ScheduleFiltersProps {
   onUseProfileDefaults?: () => void
 }
 
-const truncateText = (text: string, maxLength = 35) => {
-  if (text.length <= maxLength) return text
-  return text.substring(0, maxLength).trim() + '...'
-}
-
 const normalizeText = (text: string) => text.toUpperCase()
 
 const FILTERS_PANEL_STORAGE_KEY = 'schedule-filters-panel-open'
@@ -70,7 +74,87 @@ function getInitialFiltersPanelOpen(): boolean {
 }
 
 function FilterSkeleton() {
-  return <Skeleton className="h-10 w-[200px]" />
+  return <Skeleton className="h-10 w-full sm:w-[200px]" />
+}
+
+function FilterCombobox({
+  label,
+  value,
+  placeholder,
+  items,
+  onChange,
+  isLoading,
+  isVisible,
+  showCode = false,
+}: {
+  label: string
+  value: string
+  placeholder: string
+  items: { id: number; code?: string; name: string }[]
+  onChange: (val: string) => void
+  isLoading: boolean
+  isVisible: boolean
+  showCode?: boolean
+}) {
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+
+  if (!isVisible) return null
+
+  const hasData = items.length > 0
+  const showSkeleton = isLoading && !hasData
+  const selectedItem = items.find((item) => item.id.toString() === value) ?? null
+  const selectedText = selectedItem
+    ? (showCode && selectedItem.code
+      ? `${normalizeText(selectedItem.code)} - ${normalizeText(selectedItem.name)}`
+      : normalizeText(selectedItem.name))
+    : null
+
+  return (
+    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
+      <label className="text-sm font-medium">{label}</label>
+      {showSkeleton ? (
+        <FilterSkeleton />
+      ) : (
+        <Combobox
+          items={items}
+          value={selectedItem}
+          onValueChange={(item) => onChange(item ? String(item.id) : '')}
+          itemToStringValue={(item) =>
+            showCode && item.code
+              ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+              : normalizeText(item.name)
+          }
+        >
+          <ComboboxTrigger
+            ref={triggerRef}
+            render={<Button variant="outline" className="w-full min-w-0 justify-between font-normal sm:min-w-[200px] sm:max-w-[500px]" />}
+          >
+            <span className={`block min-w-0 flex-1 truncate text-left ${!selectedText ? 'text-muted-foreground' : ''}`}>
+              {selectedText ?? placeholder}
+            </span>
+          </ComboboxTrigger>
+          <ComboboxContent
+            anchor={triggerRef}
+            className="w-[var(--anchor-width)] min-w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)]"
+          >
+            <ComboboxInput showTrigger={false} placeholder="Buscar" />
+            <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {(item) => (
+                <ComboboxItem key={item.id} value={item}>
+                  <span className="block w-full min-w-0 truncate">
+                    {showCode && item.code
+                      ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+                      : normalizeText(item.name)}
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      )}
+    </div>
+  )
 }
 
 function FilterSelect({
@@ -98,39 +182,26 @@ function FilterSelect({
   const showSkeleton = isLoading && !hasData
 
   return (
-    <div className={`flex flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
+    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
       <label className="text-sm font-medium">{label}</label>
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
         <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger className="w-auto min-w-[200px] max-w-[500px]">
-            <SelectValue placeholder={placeholder} />
+          <SelectTrigger className="w-full min-w-0 sm:min-w-[200px] sm:max-w-[500px]">
+            <SelectValue placeholder={placeholder} className="block min-w-0 max-w-full truncate text-left" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
             <SelectGroup>
-              <TooltipProvider>
-                {items.map((item) => {
-                  const fullText = showCode && item.code
-                    ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
-                    : normalizeText(item.name)
-                  const displayText = truncateText(fullText)
-                  return (
-                    <Tooltip key={item.id}>
-                      <TooltipTrigger asChild>
-                        <SelectItem value={item.id.toString()}>
-                          {displayText}
-                        </SelectItem>
-                      </TooltipTrigger>
-                      {displayText !== fullText && (
-                        <TooltipContent side="right">
-                          <p>{fullText}</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  )
-                })}
-              </TooltipProvider>
+              {items.map((item) => (
+                <SelectItem key={item.id} value={item.id.toString()}>
+                  <span className="block w-full min-w-0 truncate">
+                    {showCode && item.code
+                      ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
+                      : normalizeText(item.name)}
+                  </span>
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -199,7 +270,7 @@ export function ScheduleFilters({
   const isShowAllDisabled = !!showAllDisabled
 
   const showAllControl = (
-    <div className="flex items-center space-x-2 pb-2">
+    <div className="flex items-center space-x-2">
       <Switch
         id="showAll"
         checked={showAll ?? true}
@@ -229,8 +300,8 @@ export function ScheduleFilters({
         ) : null
       }
     >
-      <div className="flex flex-wrap items-end gap-4">
-      <FilterSelect
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <FilterCombobox
         label="Universidad"
         value={selectedUniversityId?.toString() || ''}
         placeholder="Selecciona una universidad"
@@ -250,7 +321,7 @@ export function ScheduleFilters({
         isVisible={canSelectCampus}
       />
 
-      <FilterSelect
+      <FilterCombobox
         label="Carrera"
         value={selectedCareerId?.toString() || ''}
         placeholder="Selecciona una carrera"
@@ -261,7 +332,7 @@ export function ScheduleFilters({
         showCode={true}
       />
 
-      <FilterSelect
+      <FilterCombobox
         label="Plan de estudios"
         value={selectedPlanId?.toString() || ''}
         placeholder="Selecciona un plan"
@@ -271,7 +342,7 @@ export function ScheduleFilters({
         isVisible={!!selectedCareerId}
       />
 
-      <FilterSelect
+      <FilterCombobox
         label="Período académico"
         value={selectedTermId?.toString() || ''}
         placeholder="Selecciona un período"
@@ -281,33 +352,37 @@ export function ScheduleFilters({
         isVisible={!!selectedCampusId}
       />
 
-        {showSwitches && onShowAllChange !== undefined && (
-          isShowAllDisabled && showAllDisabledTooltip ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    {showAllControl}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p>{showAllDisabledTooltip}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            showAllControl
-          )
-        )}
+        {(showSwitches && (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined)) && (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:col-span-2 xl:col-span-5">
+            {onShowAllChange !== undefined && (
+              isShowAllDisabled && showAllDisabledTooltip ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        {showAllControl}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>{showAllDisabledTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                showAllControl
+              )
+            )}
 
-        {showSwitches && onShowOtherCampusesChange !== undefined && (
-          <div className="flex items-center space-x-2 pb-2">
-            <Switch
-              id="otherCampuses"
-              checked={showOtherCampuses ?? false}
-              onCheckedChange={onShowOtherCampusesChange}
-            />
-            <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
+            {onShowOtherCampusesChange !== undefined && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="otherCampuses"
+                  checked={showOtherCampuses ?? false}
+                  onCheckedChange={onShowOtherCampusesChange}
+                />
+                <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
+              </div>
+            )}
           </div>
         )}
       </div>

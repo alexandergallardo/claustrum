@@ -133,22 +133,22 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
             <h3 className="text-sm font-semibold text-foreground mb-3">Relaciones</h3>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-background border-2 border-amber-500 text-amber-600 shadow-sm">
-                  <Lock className="w-3 h-3" />
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-background border-2 border-amber-500 text-amber-600 shadow-sm">
+                  <Lock className="size-3 shrink-0" />
                 </div>
-                <span className="text-sm text-muted-foreground">Requisito (necesario)</span>
+                <span className="text-sm text-muted-foreground">Requisito</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-background border-2 border-blue-500 text-blue-600 shadow-sm">
-                  <Link className="w-3 h-3" />
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-background border-2 border-blue-500 text-blue-600 shadow-sm">
+                  <Link className="size-3 shrink-0" />
                 </div>
-                <span className="text-sm text-muted-foreground">Correquisito (simultáneo)</span>
+                <span className="text-sm text-muted-foreground">Correquisito</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-background border-2 border-emerald-500 text-emerald-600 shadow-sm">
-                  <Unlock className="w-3 h-3" />
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-background border-2 border-emerald-500 text-emerald-600 shadow-sm">
+                  <Unlock className="size-3 shrink-0" />
                 </div>
-                <span className="text-sm text-muted-foreground">Desbloquea (siguiente)</span>
+                <span className="text-sm text-muted-foreground">Desbloquea</span>
               </div>
             </div>
           </div>
