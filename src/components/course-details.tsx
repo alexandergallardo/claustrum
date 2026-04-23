@@ -469,17 +469,17 @@ function EvaluationDocument({
           >
             {fileName}
           </button>
-          {evaluation.term_display_name ? (
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {evaluation.term_display_name}
-            </span>
-          ) : null}
+          <div className="shrink-0 text-right text-xs text-muted-foreground">
+            {evaluation.term_display_name ? (
+              <div>{evaluation.term_display_name}</div>
+            ) : null}
+            <div className="font-mono">{formatFileSize(evaluation.file_size)}</div>
+          </div>
         </div>
 
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
           {evaluation.is_catedra ? <span>Cátedra</span> : null}
           {evaluation.professor_name ? <span>{evaluation.professor_name}</span> : null}
-          <span className="font-mono">{formatFileSize(evaluation.file_size)}</span>
         </div>
       </div>
     </div>
