@@ -306,7 +306,7 @@ export default function CourseList({
     <TooltipProvider>
       <div ref={scrollAreaRootRef} className="h-full">
         <ScrollArea className="h-full w-full">
-          <div className="w-full px-4 py-2 space-y-4">
+          <div className="w-full p-4 space-y-4">
             {viewData.map((courseData) => {
               const course = courseData.course
               const colorStyles = courseColorStyles.get(course.course_code) ?? getColorStyles('blue')

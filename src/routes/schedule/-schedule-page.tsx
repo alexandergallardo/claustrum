@@ -788,7 +788,7 @@ export function SchedulePage() {
                             </Button>
                           </div>
                         </div>
-                        <div className={cn("overflow-hidden px-3 h-[50vh]", !isCourseListOpen && "hidden")}> 
+                        <div className={cn("overflow-hidden h-[50vh]", !isCourseListOpen && "hidden")}> 
                           <CourseList
                             key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
                             courses={orderedCourses}
@@ -850,7 +850,7 @@ export function SchedulePage() {
                               </h2>
                             </div>
                           </div>
-                          <div className="overflow-hidden px-3 h-[60vh] lg:flex-1 lg:h-auto lg:px-0">
+                          <div className="overflow-hidden h-[60vh] lg:flex-1 lg:h-auto">
                             <CourseList
                               courses={orderedCourses}
                               selectedGroups={selectedGroups}
