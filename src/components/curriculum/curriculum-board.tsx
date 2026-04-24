@@ -4,20 +4,24 @@ import { MemoizedCurriculumGrid } from "@/components/curriculum-grid"
 import type { StudyPlanDetail } from "@/lib/types"
 import { ZoomIn, ZoomOut, RotateCcw, ChevronDown, ChevronUp, GraduationCap, Calendar, BookOpen } from "lucide-react"
 
-interface PlanBoardProps {
+interface CurriculumBoardProps {
   planDetail: StudyPlanDetail
 }
 
 const ZOOM_MIN = 0.7
 const ZOOM_MAX = 1.0
 const ZOOM_STEP = 0.05
-const ZOOM_STORAGE_KEY = "plan-board-zoom"
+const CURRICULUM_ZOOM_STORAGE_KEY = "curriculum-board-zoom"
+const LEGACY_ZOOM_STORAGE_KEY = "plan-board-zoom"
 const ZOOM_DEFAULT = 0.85
-const PANEL_OPEN_STORAGE_KEY = "plan-board-panel-open"
+const CURRICULUM_PANEL_OPEN_STORAGE_KEY = "curriculum-board-panel-open"
+const LEGACY_PANEL_OPEN_STORAGE_KEY = "plan-board-panel-open"
 
 function getInitialZoom(): number {
   if (typeof window === "undefined") return ZOOM_DEFAULT
-  const stored = localStorage.getItem(ZOOM_STORAGE_KEY)
+  const stored =
+    localStorage.getItem(CURRICULUM_ZOOM_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_ZOOM_STORAGE_KEY)
   if (stored) {
     const zoom = parseFloat(stored)
     if (!isNaN(zoom) && zoom >= ZOOM_MIN && zoom <= ZOOM_MAX) {
@@ -29,11 +33,13 @@ function getInitialZoom(): number {
 
 function getInitialPanelOpen(): boolean {
   if (typeof window === "undefined") return true
-  const stored = localStorage.getItem(PANEL_OPEN_STORAGE_KEY)
+  const stored =
+    localStorage.getItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_PANEL_OPEN_STORAGE_KEY)
   return stored !== "false"
 }
 
-function PlanBoard({ planDetail }: PlanBoardProps) {
+function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
   const { authUser } = useAppAuth()
   const userId = useMemo(() => authUser?.id ?? undefined, [authUser?.id])
   const studyPlanId = useMemo(() => planDetail.plan?.id ?? undefined, [planDetail.plan?.id])
@@ -46,13 +52,16 @@ function PlanBoard({ planDetail }: PlanBoardProps) {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(PANEL_OPEN_STORAGE_KEY, isPanelOpen.toString())
+    localStorage.setItem(
+      CURRICULUM_PANEL_OPEN_STORAGE_KEY,
+      isPanelOpen.toString(),
+    )
   }, [isPanelOpen])
 
   const handleZoomIn = () => {
     setZoom((prev) => {
       const newZoom = Math.min(prev + ZOOM_STEP, ZOOM_MAX)
-      localStorage.setItem(ZOOM_STORAGE_KEY, newZoom.toString())
+      localStorage.setItem(CURRICULUM_ZOOM_STORAGE_KEY, newZoom.toString())
       return newZoom
     })
   }
@@ -60,14 +69,14 @@ function PlanBoard({ planDetail }: PlanBoardProps) {
   const handleZoomOut = () => {
     setZoom((prev) => {
       const newZoom = Math.max(prev - ZOOM_STEP, ZOOM_MIN)
-      localStorage.setItem(ZOOM_STORAGE_KEY, newZoom.toString())
+      localStorage.setItem(CURRICULUM_ZOOM_STORAGE_KEY, newZoom.toString())
       return newZoom
     })
   }
 
   const handleReset = () => {
     setZoom(ZOOM_DEFAULT)
-    localStorage.setItem(ZOOM_STORAGE_KEY, ZOOM_DEFAULT.toString())
+    localStorage.setItem(CURRICULUM_ZOOM_STORAGE_KEY, ZOOM_DEFAULT.toString())
   }
 
   const canZoomIn = zoom >= ZOOM_MAX
@@ -145,5 +154,5 @@ function PlanBoard({ planDetail }: PlanBoardProps) {
   )
 }
 
-export const MemoizedPlanBoard = React.memo(PlanBoard)
+export const MemoizedCurriculumBoard = React.memo(CurriculumBoard)
 

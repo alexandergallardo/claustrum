@@ -13,9 +13,10 @@ import {
   useUserStudyPlan,
 } from '@/lib/hooks/use-queries'
 import type { CatalogCampus, CatalogStudyPlan } from '@/lib/types'
-import { PlanFilters } from '@/components/plan-estudios/plan-filters'
-import { MemoizedPlanBoard } from '@/components/plan-estudios/plan-board'
-import { AlertTriangle } from 'lucide-react'
+import { CurriculumFilters } from '@/components/curriculum/curriculum-filters'
+import { MemoizedCurriculumBoard } from '@/components/curriculum/curriculum-board'
+import { AlertTriangle, User } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const MAIN_CAMPUS_CODES = new Set(['AL', 'CA', 'LM', 'SC', 'SJ'])
 
@@ -191,27 +192,41 @@ export function CurriculumPage() {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <PlanFilters
-              universities={universities ?? []}
-              campuses={mainCampuses}
-              careerPrograms={academicUnits}
-              plans={plans}
-              selectedUniversityId={selectedUniversityId}
-              selectedCampusId={selectedCampusId}
-              selectedCareerProgramId={selectedAcademicUnitId}
-              selectedPlanId={selectedPlanId}
-              onUniversityChange={handleUniversityChange}
-              onCampusChange={handleCampusChange}
-              onCareerProgramChange={handleAcademicUnitChange}
-              onPlanChange={handlePlanChange}
-              isLoadingUniversities={isLoadingUniversities}
-              isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
-              isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
-              isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
-              canUseProfileDefaults={!!authUser && !!userStudyPlan}
-              isUsingProfileDefaults={isUsingProfileDefaults}
-              onUseProfileDefaults={handleUseProfileDefaults}
-            />
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <CurriculumFilters
+                  universities={universities ?? []}
+                  campuses={mainCampuses}
+                  careerPrograms={academicUnits}
+                  plans={plans}
+                  selectedUniversityId={selectedUniversityId}
+                  selectedCampusId={selectedCampusId}
+                  selectedCareerProgramId={selectedAcademicUnitId}
+                  selectedPlanId={selectedPlanId}
+                  onUniversityChange={handleUniversityChange}
+                  onCampusChange={handleCampusChange}
+                  onCareerProgramChange={handleAcademicUnitChange}
+                  onPlanChange={handlePlanChange}
+                  isLoadingUniversities={isLoadingUniversities}
+                  isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
+                  isLoadingCareerPrograms={academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0}
+                  isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                />
+              </div>
+              {!!authUser && !!userStudyPlan && (
+                <Button
+                  type="button"
+                  variant={isUsingProfileDefaults ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={handleUseProfileDefaults}
+                  disabled={isUsingProfileDefaults}
+                  className="shrink-0 h-8 text-xs gap-1.5"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
+                </Button>
+              )}
+            </div>
           </div>
 
           {planDetailQuery.isError && (
@@ -242,7 +257,7 @@ export function CurriculumPage() {
           {selectedPlanId && planDetailQuery.isSuccess && planDetailQuery.data && (
             <div className="px-4 lg:px-6 min-h-0 flex-1">
               <Card className="h-full min-h-0 overflow-auto py-0">
-                <MemoizedPlanBoard planDetail={planDetailQuery.data} />
+                <MemoizedCurriculumBoard planDetail={planDetailQuery.data} />
               </Card>
             </div>
           )}

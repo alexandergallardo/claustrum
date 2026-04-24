@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Tooltip,
@@ -14,8 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+
 import {
   Combobox,
   ComboboxContent,
@@ -25,11 +25,10 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '@/components/ui/combobox'
-import { User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan } from '@/lib/types'
 import { FiltersPanel } from '@/components/filters/filters-panel'
 
-interface PlanFiltersProps {
+interface CurriculumFiltersProps {
   universities: CatalogUniversity[]
   campuses: CatalogCampus[]
   careerPrograms: CatalogCareerProgram[]
@@ -59,11 +58,10 @@ const truncateText = (text: string, maxLength = 35) => {
 const normalizeText = (text: string) => text.toUpperCase()
 
 function FilterSkeleton() {
-  return <Skeleton className="h-10 w-full sm:w-[200px]" />
+  return <Skeleton className="h-8 w-full sm:w-[160px]" />
 }
 
 function FilterSelect({
-  label,
   value,
   placeholder,
   items,
@@ -72,7 +70,6 @@ function FilterSelect({
   isVisible,
   showCode = false,
 }: {
-  label: string
   value: string
   placeholder: string
   items: { id: number; code?: string; name: string }[]
@@ -87,13 +84,12 @@ function FilterSelect({
   const showSkeleton = isLoading && !hasData
 
   return (
-    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
-      <label className="text-sm font-medium">{label}</label>
+    <div className={`min-w-0 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
         <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger className="w-full min-w-0 sm:min-w-[200px] sm:max-w-[500px]">
+          <SelectTrigger className="w-full min-w-0 h-8 text-xs sm:min-w-[160px] sm:max-w-[280px]">
             <SelectValue
               placeholder={placeholder}
               className="block min-w-0 max-w-full truncate text-left"
@@ -132,7 +128,6 @@ function FilterSelect({
 }
 
 function FilterCombobox({
-  label,
   value,
   placeholder,
   items,
@@ -141,7 +136,6 @@ function FilterCombobox({
   isVisible,
   showCode = false,
 }: {
-  label: string
   value: string
   placeholder: string
   items: { id: number; code?: string; name: string }[]
@@ -164,8 +158,7 @@ function FilterCombobox({
     : null
 
   return (
-    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
-      <label className="text-sm font-medium">{label}</label>
+    <div className={`min-w-0 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
@@ -181,7 +174,7 @@ function FilterCombobox({
         >
           <ComboboxTrigger
             ref={triggerRef}
-            render={<Button variant="outline" className="w-full min-w-0 justify-between font-normal sm:min-w-[200px] sm:max-w-[500px]" />}
+            render={<Button variant="outline" className="w-full min-w-0 justify-between font-normal h-8 text-xs sm:min-w-[160px] sm:max-w-[280px]" />}
           >
             <span className={`block min-w-0 flex-1 truncate text-left ${!selectedText ? 'text-muted-foreground' : ''}`}>
               {selectedText ?? placeholder}
@@ -211,15 +204,18 @@ function FilterCombobox({
   )
 }
 
-const FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open"
+const CURRICULUM_FILTERS_PANEL_STORAGE_KEY = "curriculum-filters-panel-open"
+const LEGACY_FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open"
 
 function getInitialFiltersPanelOpen(): boolean {
   if (typeof window === "undefined") return true
-  const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY)
+  const stored =
+    localStorage.getItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY) ??
+    localStorage.getItem(LEGACY_FILTERS_PANEL_STORAGE_KEY)
   return stored !== "false"
 }
 
-export function PlanFilters({
+export function CurriculumFilters({
   universities,
   campuses,
   careerPrograms,
@@ -236,31 +232,27 @@ export function PlanFilters({
   isLoadingCampuses = false,
   isLoadingCareerPrograms,
   isLoadingPlans,
-  canUseProfileDefaults = false,
-  isUsingProfileDefaults = false,
-  onUseProfileDefaults,
-}: PlanFiltersProps) {
+}: CurriculumFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
   const shouldShowUniversityFilter = universities.length > 1
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities
 
   useEffect(() => {
-    localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString())
+    localStorage.setItem(
+      CURRICULUM_FILTERS_PANEL_STORAGE_KEY,
+      isFiltersVisible.toString(),
+    )
   }, [isFiltersVisible])
 
   if (!hasUniversities && isLoadingUniversities) {
     return (
-      <Card className="sticky top-[calc(var(--header-height)+0.75rem)] z-30 border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <CardContent className="p-3">
-          <div className="flex flex-wrap items-end gap-4">
-            <FilterSkeleton />
-            <FilterSkeleton />
-            <FilterSkeleton />
-            <FilterSkeleton />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-center gap-2.5 bg-muted/30 rounded-lg px-3 py-2">
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+      </div>
     )
   }
 
@@ -268,63 +260,43 @@ export function PlanFilters({
     <FiltersPanel
       isExpanded={isFiltersVisible}
       onExpandedChange={setIsFiltersVisible}
-      headerActions={
-        canUseProfileDefaults && onUseProfileDefaults ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onUseProfileDefaults}
-            disabled={isUsingProfileDefaults}
-          >
-            <User className="h-4 w-4" />
-            {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
-          </Button>
-        ) : null
-      }
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <FilterSelect
-          label="Universidad"
-          value={selectedUniversityId?.toString() || ''}
-          placeholder="Selecciona una universidad"
-          items={universities}
-          onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
-          isLoading={!hasUniversities && isLoadingUniversities}
-          isVisible={shouldShowUniversityFilter}
-        />
+      <FilterSelect
+        value={selectedUniversityId?.toString() || ''}
+        placeholder="Universidad"
+        items={universities}
+        onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
+        isLoading={!hasUniversities && isLoadingUniversities}
+        isVisible={shouldShowUniversityFilter}
+      />
 
-        <FilterSelect
-          label="Sede"
-          value={selectedCampusId?.toString() || ''}
-          placeholder="Selecciona una sede"
-          items={campuses}
-          onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
-          isLoading={!campuses.length && isLoadingCampuses}
-          isVisible={canSelectCampus}
-        />
+      <FilterSelect
+        value={selectedCampusId?.toString() || ''}
+        placeholder="Sede"
+        items={campuses}
+        onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
+        isLoading={!campuses.length && isLoadingCampuses}
+        isVisible={canSelectCampus}
+      />
 
-        <FilterCombobox
-          label="Carrera"
-          value={selectedCareerProgramId?.toString() || ''}
-          placeholder="Selecciona una carrera"
-          items={careerPrograms}
-          onChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}
-          isLoading={!careerPrograms.length && isLoadingCareerPrograms}
-          isVisible={!!selectedCampusId}
-          showCode={true}
-        />
+      <FilterCombobox
+        value={selectedCareerProgramId?.toString() || ''}
+        placeholder="Carrera"
+        items={careerPrograms}
+        onChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}
+        isLoading={!careerPrograms.length && isLoadingCareerPrograms}
+        isVisible={!!selectedCampusId}
+        showCode={true}
+      />
 
-        <FilterCombobox
-          label="Plan de estudios"
-          value={selectedPlanId?.toString() || ''}
-          placeholder="Selecciona un plan"
-          items={plans}
-          onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
-          isLoading={!plans.length && isLoadingPlans}
-          isVisible={!!selectedCareerProgramId}
-        />
-      </div>
+      <FilterCombobox
+        value={selectedPlanId?.toString() || ''}
+        placeholder="Plan de estudios"
+        items={plans}
+        onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
+        isLoading={!plans.length && isLoadingPlans}
+        isVisible={!!selectedCareerProgramId}
+      />
     </FiltersPanel>
   )
 }

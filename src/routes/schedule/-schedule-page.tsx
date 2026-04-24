@@ -11,7 +11,7 @@ import {
   type CSSProperties,
 } from "react";
 import { toast } from "sonner";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, User } from "lucide-react";
 import CourseList from "@/components/course-list";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
@@ -691,45 +691,59 @@ export function SchedulePage() {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
-            <ScheduleFilters
-              universities={universities ?? []}
-              campuses={mainCampuses}
-              careers={careers}
-              plans={plans}
-              terms={terms}
-              selectedUniversityId={selectedUniversityId}
-              selectedCampusId={selectedCampusId}
-              selectedCareerId={selectedCareerId}
-              selectedPlanId={selectedPlanId}
-              selectedTermId={selectedTermId}
-              onUniversityChange={handleUniversityChange}
-              onCampusChange={handleCampusChange}
-              onCareerChange={handleCareerChange}
-              onPlanChange={handlePlanChange}
-              onTermChange={handleTermChange}
-              isLoadingUniversities={isLoadingUniversities}
-              isLoadingCampuses={
-                campusesQuery.isFetching && campusesQuery.data?.length === 0
-              }
-              isLoadingCareers={
-                careersQuery.isFetching && careersQuery.data?.length === 0
-              }
-              isLoadingPlans={
-                plansQuery.isFetching && plansQuery.data?.length === 0
-              }
-              isLoadingTerms={
-                termsQuery.isFetching && termsQuery.data?.length === 0
-              }
-              showAll={effectiveShowAllCourses}
-              onShowAllChange={handleShowAllChange}
-              showAllDisabled={!isAuthenticated}
-              showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
-              showOtherCampuses={showOtherCampuses}
-              onShowOtherCampusesChange={handleOtherCampusesChange}
-              canUseProfileDefaults={isAuthenticated && !!userStudyPlan}
-              isUsingProfileDefaults={isUsingProfileDefaults}
-              onUseProfileDefaults={handleUseProfileDefaults}
-            />
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <ScheduleFilters
+                  universities={universities ?? []}
+                  campuses={mainCampuses}
+                  careers={careers}
+                  plans={plans}
+                  terms={terms}
+                  selectedUniversityId={selectedUniversityId}
+                  selectedCampusId={selectedCampusId}
+                  selectedCareerId={selectedCareerId}
+                  selectedPlanId={selectedPlanId}
+                  selectedTermId={selectedTermId}
+                  onUniversityChange={handleUniversityChange}
+                  onCampusChange={handleCampusChange}
+                  onCareerChange={handleCareerChange}
+                  onPlanChange={handlePlanChange}
+                  onTermChange={handleTermChange}
+                  isLoadingUniversities={isLoadingUniversities}
+                  isLoadingCampuses={
+                    campusesQuery.isFetching && campusesQuery.data?.length === 0
+                  }
+                  isLoadingCareers={
+                    careersQuery.isFetching && careersQuery.data?.length === 0
+                  }
+                  isLoadingPlans={
+                    plansQuery.isFetching && plansQuery.data?.length === 0
+                  }
+                  isLoadingTerms={
+                    termsQuery.isFetching && termsQuery.data?.length === 0
+                  }
+                  showAll={effectiveShowAllCourses}
+                  onShowAllChange={handleShowAllChange}
+                  showAllDisabled={!isAuthenticated}
+                  showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
+                  showOtherCampuses={showOtherCampuses}
+                  onShowOtherCampusesChange={handleOtherCampusesChange}
+                />
+              </div>
+              {isAuthenticated && userStudyPlan && (
+                <Button
+                  type="button"
+                  variant={isUsingProfileDefaults ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={handleUseProfileDefaults}
+                  disabled={isUsingProfileDefaults}
+                  className="shrink-0 h-8 text-xs gap-1.5"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
+                </Button>
+              )}
+            </div>
           </div>
 
             {selectedTermId &&
@@ -760,9 +774,9 @@ export function SchedulePage() {
                   {isMobile ? (
                     <div className="flex flex-col">
                       <div className="flex flex-col border-b">
-                        <div className="px-4 py-3 bg-muted/30 shrink-0">
+                        <div className="px-4 h-[33px] bg-muted/30 shrink-0 flex items-center">
                           <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-semibold">
+                            <h2 className="text-base font-semibold leading-none">
                               {orderedCourses.length} curso
                               {orderedCourses.length !== 1 ? "s" : ""} disponible
                               {orderedCourses.length !== 1 ? "s" : ""}
@@ -811,7 +825,7 @@ export function SchedulePage() {
                         </div>
                         <div
                           ref={calendarRef}
-                          className="overflow-hidden border-t border-border/50 p-0"
+                          className="overflow-hidden p-0"
                         >
                           <Suspense fallback={<div className="h-full w-full bg-muted/20" />}>
                             <Calendar
@@ -841,9 +855,9 @@ export function SchedulePage() {
                         className="min-w-0 overflow-hidden"
                       >
                         <div className="flex flex-col lg:h-full">
-                          <div className="px-4 py-3 border-b bg-muted/30 shrink-0">
+                          <div className="px-4 h-[33px] border-b bg-muted/30 shrink-0 flex items-center">
                             <div className="flex items-center gap-2">
-                              <h2 className="text-lg font-semibold">
+                              <h2 className="text-base font-semibold leading-none">
                                 {orderedCourses.length} curso
                                 {orderedCourses.length !== 1 ? "s" : ""} disponible
                                 {orderedCourses.length !== 1 ? "s" : ""}
@@ -876,7 +890,7 @@ export function SchedulePage() {
                           </div>
                           <div
                             ref={calendarRef}
-                            className="lg:h-full overflow-hidden border-t border-border/50 p-0"
+                            className="lg:h-full overflow-hidden p-0"
                           >
                             <Suspense fallback={<div className="h-full w-full bg-muted/20" />}>
                               <Calendar

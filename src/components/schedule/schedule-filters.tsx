@@ -17,7 +17,6 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Combobox,
   ComboboxContent,
@@ -27,7 +26,6 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '@/components/ui/combobox'
-import { User } from 'lucide-react'
 import type { CatalogUniversity, CatalogCampus, CatalogCareerProgram, CatalogStudyPlan, AcademicTerm } from '@/lib/types'
 import { FiltersPanel } from '@/components/filters/filters-panel'
 
@@ -58,9 +56,6 @@ interface ScheduleFiltersProps {
   showAllDisabledTooltip?: string
   showOtherCampuses?: boolean
   onShowOtherCampusesChange?: (checked: boolean) => void
-  canUseProfileDefaults?: boolean
-  isUsingProfileDefaults?: boolean
-  onUseProfileDefaults?: () => void
 }
 
 const normalizeText = (text: string) => text.toUpperCase()
@@ -74,7 +69,7 @@ function getInitialFiltersPanelOpen(): boolean {
 }
 
 function FilterSkeleton() {
-  return <Skeleton className="h-10 w-full sm:w-[200px]" />
+  return <Skeleton className="h-8 w-full sm:w-[160px]" />
 }
 
 function FilterCombobox({
@@ -110,8 +105,7 @@ function FilterCombobox({
     : null
 
   return (
-    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
-      <label className="text-sm font-medium">{label}</label>
+    <div className={`min-w-0 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
@@ -127,7 +121,7 @@ function FilterCombobox({
         >
           <ComboboxTrigger
             ref={triggerRef}
-            render={<Button variant="outline" className="w-full min-w-0 justify-between font-normal sm:min-w-[200px] sm:max-w-[500px]" />}
+            render={<Button variant="outline" className="w-full min-w-0 justify-between font-normal h-8 text-xs sm:min-w-[160px] sm:max-w-[280px]" />}
           >
             <span className={`block min-w-0 flex-1 truncate text-left ${!selectedText ? 'text-muted-foreground' : ''}`}>
               {selectedText ?? placeholder}
@@ -137,7 +131,7 @@ function FilterCombobox({
             anchor={triggerRef}
             className="w-[var(--anchor-width)] min-w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)]"
           >
-            <ComboboxInput showTrigger={false} placeholder="Buscar" />
+            <ComboboxInput showTrigger={false} placeholder={`Buscar ${label.toLowerCase()}`} />
             <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
             <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(item) => (
@@ -158,7 +152,6 @@ function FilterCombobox({
 }
 
 function FilterSelect({
-  label,
   value,
   placeholder,
   items,
@@ -167,7 +160,6 @@ function FilterSelect({
   isVisible,
   showCode = false,
 }: {
-  label: string
   value: string
   placeholder: string
   items: { id: number; code?: string; name: string }[]
@@ -182,13 +174,12 @@ function FilterSelect({
   const showSkeleton = isLoading && !hasData
 
   return (
-    <div className={`flex min-w-0 flex-col gap-2 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
-      <label className="text-sm font-medium">{label}</label>
+    <div className={`min-w-0 ${showSkeleton ? 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200' : ''}`}>
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
         <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger className="w-full min-w-0 sm:min-w-[200px] sm:max-w-[500px]">
+          <SelectTrigger className="w-full min-w-0 h-8 text-xs sm:min-w-[160px] sm:max-w-[280px]">
             <SelectValue placeholder={placeholder} className="block min-w-0 max-w-full truncate text-left" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
@@ -237,9 +228,6 @@ export function ScheduleFilters({
   showAllDisabledTooltip,
   showOtherCampuses,
   onShowOtherCampusesChange,
-  canUseProfileDefaults = false,
-  isUsingProfileDefaults = false,
-  onUseProfileDefaults,
 }: ScheduleFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen)
   const hasUniversities = universities.length > 0
@@ -252,17 +240,13 @@ export function ScheduleFilters({
 
   if (!hasUniversities && isLoadingUniversities) {
     return (
-      <Card className="sticky top-[calc(var(--header-height)+0.75rem)] z-30 border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <CardContent className="p-3">
-          <div className="flex flex-wrap items-end gap-4">
-            <FilterSkeleton />
-            <FilterSkeleton />
-            <FilterSkeleton />
-            <FilterSkeleton />
-            <FilterSkeleton />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-center gap-2.5 bg-muted/30 rounded-lg px-3 py-2">
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+        <FilterSkeleton />
+      </div>
     )
   }
 
@@ -270,14 +254,14 @@ export function ScheduleFilters({
   const isShowAllDisabled = !!showAllDisabled
 
   const showAllControl = (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center gap-2">
       <Switch
         id="showAll"
         checked={showAll ?? true}
         onCheckedChange={onShowAllChange}
         disabled={isShowAllDisabled}
       />
-      <Label htmlFor="showAll">Mostrar todos los cursos</Label>
+      <Label htmlFor="showAll" className="text-xs font-normal cursor-pointer">Todos los cursos</Label>
     </div>
   )
 
@@ -285,26 +269,11 @@ export function ScheduleFilters({
     <FiltersPanel
       isExpanded={isFiltersVisible}
       onExpandedChange={setIsFiltersVisible}
-      headerActions={
-        canUseProfileDefaults && onUseProfileDefaults ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onUseProfileDefaults}
-            disabled={isUsingProfileDefaults}
-          >
-            <User className="h-4 w-4" />
-            {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
-          </Button>
-        ) : null
-      }
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
       <FilterCombobox
         label="Universidad"
         value={selectedUniversityId?.toString() || ''}
-        placeholder="Selecciona una universidad"
+        placeholder="Universidad"
         items={universities}
         onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
         isLoading={!hasUniversities && isLoadingUniversities}
@@ -312,9 +281,8 @@ export function ScheduleFilters({
       />
 
       <FilterSelect
-        label="Sede"
         value={selectedCampusId?.toString() || ''}
-        placeholder="Selecciona una sede"
+        placeholder="Sede"
         items={campuses}
         onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
         isLoading={!campuses.length && isLoadingCampuses}
@@ -324,7 +292,7 @@ export function ScheduleFilters({
       <FilterCombobox
         label="Carrera"
         value={selectedCareerId?.toString() || ''}
-        placeholder="Selecciona una carrera"
+        placeholder="Carrera"
         items={careers}
         onChange={(val) => onCareerChange(val ? parseInt(val) : null)}
         isLoading={!careers.length && isLoadingCareers}
@@ -333,9 +301,9 @@ export function ScheduleFilters({
       />
 
       <FilterCombobox
-        label="Plan de estudios"
+        label="Plan"
         value={selectedPlanId?.toString() || ''}
-        placeholder="Selecciona un plan"
+        placeholder="Plan de estudios"
         items={plans}
         onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
         isLoading={!plans.length && isLoadingPlans}
@@ -343,49 +311,48 @@ export function ScheduleFilters({
       />
 
       <FilterCombobox
-        label="Período académico"
+        label="Período"
         value={selectedTermId?.toString() || ''}
-        placeholder="Selecciona un período"
+        placeholder="Período académico"
         items={terms.map(t => ({ id: t.id, name: t.display_name }))}
         onChange={(val) => onTermChange(val ? parseInt(val) : null)}
         isLoading={!terms.length && isLoadingTerms}
         isVisible={!!selectedCampusId}
       />
 
-        {(showSwitches && (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined)) && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:col-span-2 xl:col-span-5">
-            {onShowAllChange !== undefined && (
-              isShowAllDisabled && showAllDisabledTooltip ? (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>
-                        {showAllControl}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p>{showAllDisabledTooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                showAllControl
-              )
-            )}
+      {showSwitches && (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {onShowAllChange !== undefined && (
+            isShowAllDisabled && showAllDisabledTooltip ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      {showAllControl}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{showAllDisabledTooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              showAllControl
+            )
+          )}
 
-            {onShowOtherCampusesChange !== undefined && (
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="otherCampuses"
-                  checked={showOtherCampuses ?? false}
-                  onCheckedChange={onShowOtherCampusesChange}
-                />
-                <Label htmlFor="otherCampuses">Mostrar grupos de otras sedes</Label>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+          {onShowOtherCampusesChange !== undefined && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="otherCampuses"
+                checked={showOtherCampuses ?? false}
+                onCheckedChange={onShowOtherCampusesChange}
+              />
+              <Label htmlFor="otherCampuses" className="text-xs font-normal cursor-pointer">Otras sedes</Label>
+            </div>
+          )}
+        </div>
+      )}
     </FiltersPanel>
   )
 }
