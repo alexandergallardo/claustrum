@@ -178,7 +178,7 @@ function FilterSelect({
       {showSkeleton ? (
         <FilterSkeleton />
       ) : (
-        <Select value={value || undefined} onValueChange={onChange}>
+        <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="w-full min-w-0 h-8 text-xs sm:min-w-[160px] sm:max-w-[280px]">
             <SelectValue placeholder={placeholder} className="block min-w-0 max-w-full truncate text-left" />
           </SelectTrigger>
