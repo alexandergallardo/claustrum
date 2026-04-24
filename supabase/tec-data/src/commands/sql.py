@@ -85,26 +85,70 @@ def generate_seed(
             "columns": ["id", "name", "iso2_code"],
             "types": {"id": "BIGINT"},
             "order": 1,
+            "conflict_columns": ["iso2_code"],
+            "update_assignments": [
+                "name = EXCLUDED.name",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "university": {
             "columns": ["id", "country_id", "name", "short_name"],
             "types": {"id": "BIGINT", "country_id": "BIGINT"},
             "order": 2,
+            "conflict_columns": ["id"],
+            "update_assignments": [
+                "country_id = EXCLUDED.country_id",
+                "name = EXCLUDED.name",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "campus": {
             "columns": ["id", "university_id", "code", "name"],
             "types": {"id": "BIGINT", "university_id": "BIGINT"},
             "order": 3,
+            "conflict_columns": ["code"],
+            "update_assignments": [
+                "university_id = EXCLUDED.university_id",
+                "name = EXCLUDED.name",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "academic_unit": {
             "columns": ["id", "university_id", "code", "name"],
             "types": {"id": "BIGINT", "university_id": "BIGINT"},
             "order": 4,
+            "conflict_columns": ["code"],
+            "update_assignments": [
+                "university_id = EXCLUDED.university_id",
+                "name = EXCLUDED.name",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "academic_modality": {
             "columns": ["id", "code", "name", "periods_per_year"],
             "types": {"id": "BIGINT", "periods_per_year": "INTEGER"},
             "order": 5,
+            "conflict_columns": ["code"],
+            "update_assignments": [
+                "name = EXCLUDED.name",
+                "periods_per_year = EXCLUDED.periods_per_year",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "academic_term": {
             "columns": [
@@ -126,6 +170,19 @@ def generate_seed(
                 "ends_on": "DATE",
             },
             "order": 6,
+            "conflict_columns": ["external_key"],
+            "update_assignments": [
+                "academic_modality_id = EXCLUDED.academic_modality_id",
+                "year = EXCLUDED.year",
+                "period_number = EXCLUDED.period_number",
+                "display_name = EXCLUDED.display_name",
+                "starts_on = EXCLUDED.starts_on",
+                "ends_on = EXCLUDED.ends_on",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "academic_unit_campus": {
             "columns": ["id", "academic_unit_id", "campus_id"],
@@ -135,6 +192,13 @@ def generate_seed(
                 "campus_id": "BIGINT",
             },
             "order": 7,
+            "conflict_columns": ["academic_unit_id", "campus_id"],
+            "update_assignments": [
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "study_plan": {
             "columns": [
@@ -155,6 +219,17 @@ def generate_seed(
                 "academic_degree": "TEXT",
             },
             "order": 8,
+            "conflict_columns": ["academic_unit_id", "external_plan_id"],
+            "update_assignments": [
+                "academic_modality_id = EXCLUDED.academic_modality_id",
+                "name = EXCLUDED.name",
+                "academic_degree = EXCLUDED.academic_degree",
+                "first_level_number = EXCLUDED.first_level_number",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "study_plan_campus": {
             "columns": ["id", "study_plan_id", "campus_id", "valid_from", "valid_to"],
@@ -166,6 +241,15 @@ def generate_seed(
                 "valid_to": "DATE",
             },
             "order": 9,
+            "conflict_columns": ["study_plan_id", "campus_id"],
+            "update_assignments": [
+                "valid_from = EXCLUDED.valid_from",
+                "valid_to = EXCLUDED.valid_to",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "study_plan_level": {
             "columns": ["id", "study_plan_id", "level_number", "level_label"],
@@ -175,6 +259,14 @@ def generate_seed(
                 "level_number": "INTEGER",
             },
             "order": 10,
+            "conflict_columns": ["study_plan_id", "level_number"],
+            "update_assignments": [
+                "level_label = EXCLUDED.level_label",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "course": {
             "columns": [
@@ -190,6 +282,16 @@ def generate_seed(
                 "default_weekly_hours": "INTEGER",
             },
             "order": 11,
+            "conflict_columns": ["code"],
+            "update_assignments": [
+                "name = EXCLUDED.name",
+                "default_credits = EXCLUDED.default_credits",
+                "default_weekly_hours = EXCLUDED.default_weekly_hours",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "study_plan_level_course": {
             "columns": [
@@ -209,6 +311,16 @@ def generate_seed(
                 "sort_order": "INTEGER",
             },
             "order": 12,
+            "conflict_columns": ["study_plan_level_id", "course_id"],
+            "update_assignments": [
+                "credits = EXCLUDED.credits",
+                "weekly_hours = EXCLUDED.weekly_hours",
+                "sort_order = EXCLUDED.sort_order",
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "course_relation": {
             "columns": [
@@ -225,11 +337,30 @@ def generate_seed(
                 "to_course_id": "BIGINT",
             },
             "order": 13,
+            "conflict_columns": [
+                "study_plan_id",
+                "from_course_id",
+                "to_course_id",
+                "relation_type",
+            ],
+            "update_assignments": [
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "professor": {
             "columns": ["id", "full_name"],
             "types": {"id": "BIGINT"},
             "order": 14,
+            "conflict_columns": ["full_name"],
+            "update_assignments": [
+                "is_active = TRUE",
+                "deactivated_at = NULL",
+                "updated_at = NOW()",
+            ],
+            "supports_soft_delete": True,
         },
         "course_offering": {
             "columns": [
@@ -252,6 +383,12 @@ def generate_seed(
                 "weekly_hours_snapshot": "INTEGER",
             },
             "order": 15,
+            "conflict_columns": [
+                "course_id",
+                "campus_id",
+                "academic_unit_id",
+                "academic_term_id",
+            ],
             "update_assignments": [
                 "course_id = EXCLUDED.course_id",
                 "campus_id = EXCLUDED.campus_id",
@@ -261,8 +398,10 @@ def generate_seed(
                 "weekly_hours_snapshot = EXCLUDED.weekly_hours_snapshot",
                 "course_type = EXCLUDED.course_type",
                 "is_active = TRUE",
+                "deactivated_at = NULL",
                 "updated_at = NOW()",
             ],
+            "supports_soft_delete": True,
         },
         "course_offering_group": {
             "columns": [
@@ -278,14 +417,17 @@ def generate_seed(
                 "capacity": "INTEGER",
             },
             "order": 16,
+            "conflict_columns": ["course_offering_id", "group_code"],
             "update_assignments": [
                 "course_offering_id = EXCLUDED.course_offering_id",
                 "group_code = EXCLUDED.group_code",
                 "group_type = EXCLUDED.group_type",
                 "capacity = EXCLUDED.capacity",
                 "is_active = TRUE",
+                "deactivated_at = NULL",
                 "updated_at = NOW()",
             ],
+            "supports_soft_delete": True,
         },
         "course_offering_group_professor": {
             "columns": ["id", "course_offering_group_id", "professor_id"],
@@ -295,12 +437,15 @@ def generate_seed(
                 "professor_id": "BIGINT",
             },
             "order": 17,
+            "conflict_columns": ["course_offering_group_id", "professor_id"],
             "update_assignments": [
                 "course_offering_group_id = EXCLUDED.course_offering_group_id",
                 "professor_id = EXCLUDED.professor_id",
                 "is_active = TRUE",
+                "deactivated_at = NULL",
                 "updated_at = NOW()",
             ],
+            "supports_soft_delete": True,
         },
         "course_offering_meeting": {
             "columns": [
@@ -319,6 +464,12 @@ def generate_seed(
                 "ends_at": "TIME",
             },
             "order": 18,
+            "conflict_columns": [
+                "course_offering_group_id",
+                "weekday",
+                "starts_at",
+                "ends_at",
+            ],
             "update_assignments": [
                 "course_offering_group_id = EXCLUDED.course_offering_group_id",
                 "weekday = EXCLUDED.weekday",
@@ -326,8 +477,10 @@ def generate_seed(
                 "ends_at = EXCLUDED.ends_at",
                 "classroom = EXCLUDED.classroom",
                 "is_active = TRUE",
+                "deactivated_at = NULL",
                 "updated_at = NOW()",
             ],
+            "supports_soft_delete": True,
         },
     }
 
@@ -422,7 +575,9 @@ def generate_seed(
         output_lines.append("-- Soft delete for stale schedule rows in synced terms")
 
         output_lines.append("UPDATE public.course_offering_meeting com")
-        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append(
+            "SET is_active = false, deactivated_at = NOW(), updated_at = NOW()"
+        )
         output_lines.append("WHERE com.is_active = true")
         output_lines.append("  AND com.updated_at < NOW()")
         output_lines.append("  AND EXISTS (")
@@ -438,7 +593,9 @@ def generate_seed(
         output_lines.append("  );")
 
         output_lines.append("UPDATE public.course_offering_group_professor cogp")
-        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append(
+            "SET is_active = false, deactivated_at = NOW(), updated_at = NOW()"
+        )
         output_lines.append("WHERE cogp.is_active = true")
         output_lines.append("  AND cogp.updated_at < NOW()")
         output_lines.append("  AND EXISTS (")
@@ -454,7 +611,9 @@ def generate_seed(
         output_lines.append("  );")
 
         output_lines.append("UPDATE public.course_offering_group g")
-        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append(
+            "SET is_active = false, deactivated_at = NOW(), updated_at = NOW()"
+        )
         output_lines.append("WHERE g.is_active = true")
         output_lines.append("  AND g.updated_at < NOW()")
         output_lines.append("  AND EXISTS (")
@@ -467,12 +626,31 @@ def generate_seed(
         output_lines.append("  );")
 
         output_lines.append("UPDATE public.course_offering co")
-        output_lines.append("SET is_active = false, updated_at = NOW()")
+        output_lines.append(
+            "SET is_active = false, deactivated_at = NOW(), updated_at = NOW()"
+        )
         output_lines.append("WHERE co.is_active = true")
         output_lines.append("  AND co.updated_at < NOW()")
         output_lines.append(
             f"  AND co.academic_term_id = ANY(ARRAY[{term_ids_literal}]::BIGINT[]);"
         )
+
+    soft_delete_tables = [
+        table_name
+        for table_name, config in sorted_tables
+        if config.get("supports_soft_delete") and table_name in seeded_tables
+    ]
+    for table_name in soft_delete_tables:
+        if table_name.startswith("course_offering"):
+            continue
+        output_lines.append("")
+        output_lines.append(f"-- Soft delete stale rows in {table_name}")
+        output_lines.append(f"UPDATE public.{table_name}")
+        output_lines.append(
+            "SET is_active = false, deactivated_at = NOW(), updated_at = NOW()"
+        )
+        output_lines.append("WHERE is_active = true")
+        output_lines.append("  AND updated_at < NOW();")
 
     if seeded_tables:
         output_lines.append("")

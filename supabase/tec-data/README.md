@@ -197,34 +197,32 @@ O para entidades específicas:
 uv run tec-data sql --tables campus,university,country
 ```
 
-## Sincronización automática de oferta a una DB (local/prod)
+## Sincronización unificada de catálogo + oferta (local/prod)
 
-Para evitar desalineación de IDs entre ambientes, usa los scripts de sincronización de oferta:
-
-```bash
-# Local (descarga/procesa/remapea/genera/aplica)
-./sync-offering-local.sh 2026
-
-# Producción (lee .env.production.local, migra, remapea, genera y aplica)
-./sync-offering-prod.sh 2026
-```
-
-Ambos scripts:
-
-1. Ejecutan el pipeline completo (`sync-all.sh`).
-2. Remapean IDs de oferta contra la DB destino por llaves naturales (`course.code`, `campus.code`, `academic_unit.code`, `academic_term.external_key`).
-3. Recalculan IDs deterministas de `course_offering*`.
-4. Generan y aplican `seed_offering.sql` solo para tablas de oferta.
-
-Script base avanzado:
+Para ejecutar una sincronización idempotente completa (catálogo, planes, cursos, relaciones,
+profesores y oferta), usa el comando unificado `sync`:
 
 ```bash
-./sync-offering-to-db.sh --year 2026 --db-url "postgresql://..."
+# Local (usa postgres local de Supabase)
+uv run tec-data sync --target local --years 2026
+
+# Remoto (lee .env.production.local)
+uv run tec-data sync --target remote --years 2026 --env-file ../../.env.production.local
+
+# DB URL explícita
+uv run tec-data sync --target db-url --db-url "postgresql://..." --years 2026
 ```
+
+Qué hace `sync`:
+
+1. Ejecuta el pipeline completo de `download + process`.
+2. Remapea IDs de todas las tablas sincronizadas por llaves naturales contra la DB destino.
+3. Genera SQL full idempotente con upsert por llaves naturales.
+4. Aplica el seed generado en la DB destino.
+5. Ejecuta verificaciones post-sync.
 
 Opciones útiles:
 
-- `--skip-sync`: no vuelve a descargar/procesar, usa `data/raw` actual.
-- `--migrate`: corre `supabase db push` antes de aplicar seed.
+- `--skip-pipeline`: no vuelve a descargar/procesar; usa `data/raw` actual.
 - `--no-apply`: solo genera SQL (no aplica).
-- `--keep-sql`: conserva `supabase/seed_offering.sql`.
+- `--keep-sql`: conserva el archivo SQL generado.

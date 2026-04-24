@@ -7,6 +7,7 @@ import typer
 from src.commands.download import download
 from src.commands.process import run_process
 from src.commands.sql import run_sql
+from src.commands.sync import sync_cmd
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 
@@ -78,6 +79,67 @@ def sql_cmd(
 ) -> None:
     """Generate SQL inserts from processed data."""
     run_sql(data_dir=data_dir, output=output, tables=tables)
+
+
+@app.command("sync")
+def sync_cli(
+    data_dir: Path = typer.Option(
+        Path("data/raw"), "--data-dir", "-d", help="Data directory for processed files"
+    ),
+    target: str = typer.Option(
+        "local", "--target", help="Destination target: local, remote, db-url"
+    ),
+    db_url: str | None = typer.Option(
+        None, "--db-url", help="Destination Postgres URL (required for target=db-url)"
+    ),
+    env_file: Path = typer.Option(
+        Path("../../.env.production.local"),
+        "--env-file",
+        help="Env file used when target=remote",
+    ),
+    years: str = typer.Option(
+        "2026", "--years", "-y", help="Comma-separated years for offering sync"
+    ),
+    skip_pipeline: bool = typer.Option(
+        False,
+        "--skip-pipeline",
+        help="Skip download/process pipeline and reuse current data/raw",
+    ),
+    apply_seed: bool = typer.Option(
+        True,
+        "--apply/--no-apply",
+        help="Apply generated SQL seed",
+    ),
+    verify: bool = typer.Option(
+        True,
+        "--verify/--no-verify",
+        help="Run verification queries after apply",
+    ),
+    output: Path = typer.Option(
+        Path("../seed_sync.sql"),
+        "--output",
+        "-o",
+        help="Output SQL path",
+    ),
+    keep_sql: bool = typer.Option(
+        False,
+        "--keep-sql",
+        help="Keep generated SQL file after command finishes",
+    ),
+) -> None:
+    """Run a full idempotent synchronization against local or remote DB."""
+    sync_cmd(
+        data_dir=data_dir,
+        target=target,
+        db_url=db_url,
+        env_file=env_file,
+        years=years,
+        skip_pipeline=skip_pipeline,
+        apply_seed=apply_seed,
+        verify=verify,
+        output=output,
+        keep_sql=keep_sql,
+    )
 
 
 if __name__ == "__main__":
