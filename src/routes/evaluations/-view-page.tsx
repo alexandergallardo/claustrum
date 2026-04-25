@@ -132,6 +132,8 @@ export function EvaluationViewPage() {
     };
   }, [isLoading]);
 
+  const isReady = containerWidth > 0 && numPages > 0;
+
   const pageWidth =
     containerWidth > 0
       ? Math.max(220, Math.floor((containerWidth - 32) * zoom))
@@ -206,7 +208,7 @@ export function EvaluationViewPage() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-none bg-background sm:rounded-b-xl">
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto overscroll-contain">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 w-full overflow-auto overscroll-contain">
         <div className="flex justify-start py-4">
           <Document
             file={blobUrl}
@@ -216,18 +218,22 @@ export function EvaluationViewPage() {
               <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
             }
           >
-            <div className="flex min-w-full w-max flex-col items-start gap-4 px-4 [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:max-w-none [&_.react-pdf__Page__canvas]:rounded-md [&_.react-pdf__Page__canvas]:shadow-lg">
-              {Array.from({ length: numPages }, (_, index) => (
-                <Page
-                  key={`page_${index + 1}`}
-                  pageNumber={index + 1}
-                  width={pageWidth}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  loading={null}
-                />
-              ))}
-            </div>
+            {isReady ? (
+              <div className="flex min-w-full w-max flex-col items-start gap-4 px-4 [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:max-w-none [&_.react-pdf__Page__canvas]:rounded-md [&_.react-pdf__Page__canvas]:shadow-lg">
+                {Array.from({ length: numPages }, (_, index) => (
+                  <Page
+                    key={`page_${index + 1}`}
+                    pageNumber={index + 1}
+                    width={pageWidth}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    loading={null}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
+            )}
           </Document>
         </div>
       </div>
