@@ -21,7 +21,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         <AppSidebar variant="inset" />
         <SidebarInset>
           <SiteHeader />
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
             {children}
           </div>
         </SidebarInset>
