@@ -51,11 +51,6 @@ function formatScore(score: number | null): string {
   return score.toFixed(2);
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString();
-}
-
 export function ProfessorsReviewsPage() {
   const queryClient = useQueryClient();
   const { data: authUser } = useAuthUser();
@@ -143,16 +138,6 @@ export function ProfessorsReviewsPage() {
         accessorKey: "average_overall_score",
         header: "Promedio general",
         cell: ({ row }) => formatScore(row.original.average_overall_score),
-      },
-      {
-        accessorKey: "courses_reviewed_count",
-        header: "Cursos reseñados",
-        cell: ({ row }) => row.original.courses_reviewed_count,
-      },
-      {
-        accessorKey: "last_approved_review_at",
-        header: "Última reseña",
-        cell: ({ row }) => formatDate(row.original.last_approved_review_at),
       },
     ],
     [queryClient],
