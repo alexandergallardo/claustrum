@@ -42,6 +42,27 @@ export function formatEvaluationTypeLabel(
   return base;
 }
 
+export function formatEvaluationFileName(
+  courseCode: string,
+  type: EvaluationType,
+  number: number | null,
+  customName: string | null,
+): string {
+  const normalizedCourseCode = courseCode.trim();
+  const normalizedCustomName = customName?.trim() ?? null;
+
+  if (type === "otro" && normalizedCustomName) {
+    return `${normalizedCourseCode}-${normalizedCustomName}.pdf`;
+  }
+
+  const typeUpper = type.toUpperCase();
+  if (number && number > 0) {
+    return `${normalizedCourseCode}-${typeUpper}-${number}.pdf`;
+  }
+
+  return `${normalizedCourseCode}-${typeUpper}.pdf`;
+}
+
 export type EvaluationRow = {
   id: number;
   course_id: number;

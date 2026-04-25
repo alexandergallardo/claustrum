@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "@tanstack/react-router";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Minus, Plus } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 
 import { Button } from "@/components/ui/button";
 import { getEvaluationSignedUrl } from "@/lib/evaluations/api";
+import { formatEvaluationFileName } from "@/lib/evaluations/types";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -19,14 +21,16 @@ export function EvaluationViewPage() {
   const MAX_ZOOM = 2;
   const ZOOM_STEP = 0.2;
 
-  const { key } = useSearch({ from: "/evaluations/view" });
+  const { key, courseCode, evaluationType, evaluationNumber, customName } = useSearch({ from: "/evaluations/view" });
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
-  const [pageNumber, setPageNumber] = useState(1);
   const [zoom, setZoom] = useState(1);
+  const [containerWidth, setContainerWidth] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const pendingCenterRatioRef = useRef<number | null>(null);
+  const shouldCenterOnLoadRef = useRef(true);
 
   useEffect(() => {
     if (!key) {
@@ -85,9 +89,10 @@ export function EvaluationViewPage() {
     };
   }, [key]);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+  function onDocumentLoadSuccess({ numPages }: PDFDocumentProxy) {
     setNumPages(numPages);
-    setPageNumber(1);
+    pendingCenterRatioRef.current = 0.5;
+    shouldCenterOnLoadRef.current = true;
     setZoom(1);
   }
 
@@ -95,15 +100,17 @@ export function EvaluationViewPage() {
     setError(err.message);
   }
 
-  function handlePageChange(newPage: number) {
-    if (newPage < 1 || newPage > numPages) return;
-    if (newPage === pageNumber) return;
-    setPageNumber(newPage);
-  }
-
   function handleZoomChange(delta: number) {
     const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Number((zoom + delta).toFixed(1))));
     if (nextZoom === zoom) return;
+
+    const container = scrollContainerRef.current;
+    if (container) {
+      const viewportCenter = container.scrollLeft + container.clientWidth / 2;
+      pendingCenterRatioRef.current =
+        container.scrollWidth > 0 ? viewportCenter / container.scrollWidth : 0.5;
+    }
+
     setZoom(nextZoom);
   }
 
@@ -111,14 +118,70 @@ export function EvaluationViewPage() {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const centerX = () => {
-      const target = Math.max(0, (container.scrollWidth - container.clientWidth) / 2);
-      container.scrollLeft = target;
+    const updateWidth = () => {
+      setContainerWidth(container.clientWidth);
     };
 
-    const raf = requestAnimationFrame(centerX);
+    updateWidth();
+
+    const resizeObserver = new ResizeObserver(updateWidth);
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isLoading]);
+
+  const pageWidth =
+    containerWidth > 0
+      ? Math.max(220, Math.floor((containerWidth - 32) * zoom))
+      : undefined;
+
+  const downloadFileName = useMemo(() => {
+    if (courseCode && evaluationType) {
+      return formatEvaluationFileName(
+        courseCode,
+        evaluationType,
+        evaluationNumber ?? null,
+        customName ?? null,
+      );
+    }
+
+    if (!key) {
+      return "evaluacion.pdf";
+    }
+
+    const cleanKey = key.split("?")[0] ?? key;
+    const lastSegment = cleanKey.split("/").filter(Boolean).pop();
+
+    if (!lastSegment) {
+      return "evaluacion.pdf";
+    }
+
+    const decoded = decodeURIComponent(lastSegment);
+    return decoded.toLowerCase().endsWith(".pdf") ? decoded : `${decoded}.pdf`;
+  }, [courseCode, customName, evaluationNumber, evaluationType, key]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || numPages === 0) return;
+
+    const ratio = pendingCenterRatioRef.current;
+    const shouldCenter = ratio !== null || shouldCenterOnLoadRef.current;
+    if (!shouldCenter) return;
+
+    const centerRatio = ratio ?? 0.5;
+
+    const raf = requestAnimationFrame(() => {
+      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+      const target = centerRatio * container.scrollWidth - container.clientWidth / 2;
+      container.scrollLeft = Math.min(maxScrollLeft, Math.max(0, target));
+      pendingCenterRatioRef.current = null;
+      shouldCenterOnLoadRef.current = false;
+    });
+
     return () => cancelAnimationFrame(raf);
-  }, [zoom, pageNumber]);
+  }, [numPages, pageWidth]);
 
   if (isLoading) {
     return (
@@ -142,9 +205,9 @@ export function EvaluationViewPage() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl bg-background">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-none bg-background sm:rounded-b-xl">
       <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto overscroll-contain">
-        <div className="flex justify-center px-4 py-6">
+        <div className="flex justify-start py-4">
           <Document
             file={blobUrl}
             onLoadSuccess={onDocumentLoadSuccess}
@@ -153,58 +216,42 @@ export function EvaluationViewPage() {
               <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
             }
           >
-            <div className="relative inline-block [&_.react-pdf__Page]:mx-auto [&_.react-pdf__Page__canvas]:!h-auto">
-              <Page
-                pageNumber={pageNumber}
-                scale={zoom}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                loading={null}
-              />
+            <div className="flex min-w-full w-max flex-col items-start gap-4 px-4 [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:max-w-none [&_.react-pdf__Page__canvas]:rounded-md [&_.react-pdf__Page__canvas]:shadow-lg">
+              {Array.from({ length: numPages }, (_, index) => (
+                <Page
+                  key={`page_${index + 1}`}
+                  pageNumber={index + 1}
+                  width={pageWidth}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  loading={null}
+                />
+              ))}
             </div>
           </Document>
         </div>
       </div>
 
-      <div className="absolute left-4 top-4 z-50">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="cursor-pointer rounded-full border bg-background/95 shadow-lg backdrop-blur-sm"
-          onClick={() => window.history.back()}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver
-        </Button>
-      </div>
-
       {numPages > 0 && (
-        <div className="absolute bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <div className="flex flex-nowrap items-center gap-1 rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
+        <div className="absolute inset-x-0 bottom-6 z-50 flex justify-center px-2">
+          <div className="flex max-w-full flex-nowrap items-center gap-1 overflow-x-auto rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 cursor-pointer"
-              onClick={() => handlePageChange(pageNumber - 1)}
-              disabled={pageNumber <= 1}
-              aria-label="Página anterior"
+              onClick={() => window.history.back()}
+              aria-label="Volver"
+              title="Volver"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="shrink-0 whitespace-nowrap px-2 text-sm text-muted-foreground tabular-nums">
-              {pageNumber} de {numPages}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 cursor-pointer"
-              onClick={() => handlePageChange(pageNumber + 1)}
-              disabled={pageNumber >= numPages}
-              aria-label="Página siguiente"
-            >
-              <ChevronRight className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="mx-1 h-4 w-px bg-border" />
+            <div className="hidden items-center min-[430px]:flex">
+              <span className="shrink-0 whitespace-nowrap px-2 text-sm text-muted-foreground tabular-nums">
+                {numPages} páginas
+              </span>
+              <div className="mx-1 h-4 w-px bg-border" />
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -227,6 +274,17 @@ export function EvaluationViewPage() {
               aria-label="Aumentar zoom"
             >
               <Plus className="h-4 w-4" />
+            </Button>
+            <div className="mx-1 h-4 w-px bg-border" />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 cursor-pointer"
+            >
+              <a href={blobUrl} download={downloadFileName} aria-label="Descargar PDF" title="Descargar PDF">
+                <Download className="h-4 w-4" />
+              </a>
             </Button>
           </div>
         </div>
