@@ -8,6 +8,10 @@ const EvaluationViewPage = lazy(() =>
 
 const viewSearchSchema = z.object({
   key: z.string().min(1),
+  courseCode: z.string().min(1).optional(),
+  evaluationType: z.enum(["parcial", "quiz", "final", "reposicion", "tarea", "proyecto", "otro"]).optional(),
+  evaluationNumber: z.number().int().positive().optional(),
+  customName: z.string().optional(),
 });
 
 export const Route = createFileRoute("/evaluations/view")({

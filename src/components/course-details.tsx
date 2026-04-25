@@ -68,6 +68,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { useIsAdmin } from "@/lib/hooks/use-professor-reviews"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { formatEvaluationFileName, type EvaluationType } from "@/lib/evaluations/types"
 import { cn } from "@/lib/utils"
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog"
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations"
@@ -419,22 +420,6 @@ function ScheduleGroupCard({
   )
 }
 
-function formatEvaluationFileName(
-  courseCode: string,
-  evaluation_type: import("@/lib/evaluations/types").EvaluationType,
-  evaluation_number: number | null,
-  custom_name: string | null,
-): string {
-  const typeUpper = evaluation_type.toUpperCase()
-  if (evaluation_type === "otro" && custom_name) {
-    return `${courseCode}-${custom_name}.pdf`
-  }
-  if (evaluation_number && evaluation_number > 0) {
-    return `${courseCode}-${typeUpper}-${evaluation_number}.pdf`
-  }
-  return `${courseCode}-${typeUpper}.pdf`
-}
-
 function EvaluationDocument({
   courseCode,
   evaluation,
@@ -444,7 +429,7 @@ function EvaluationDocument({
   evaluation: {
     id: number
     file_key: string
-    evaluation_type: import("@/lib/evaluations/types").EvaluationType
+    evaluation_type: EvaluationType
     evaluation_number: number | null
     custom_name: string | null
     term_display_name: string | null
@@ -455,7 +440,13 @@ function EvaluationDocument({
     file_size: number
     status: string
   }
-  onPreview: (key: string) => void
+  onPreview: (payload: {
+    key: string
+    courseCode: string
+    evaluationType: EvaluationType
+    evaluationNumber: number | null
+    customName: string | null
+  }) => void
 }) {
   const fileName = formatEvaluationFileName(
     courseCode,
@@ -474,7 +465,15 @@ function EvaluationDocument({
         <div className="flex items-start justify-between gap-2">
           <button
             type="button"
-            onClick={() => onPreview(evaluation.file_key)}
+            onClick={() =>
+              onPreview({
+                key: evaluation.file_key,
+                courseCode,
+                evaluationType: evaluation.evaluation_type,
+                evaluationNumber: evaluation.evaluation_number,
+                customName: evaluation.custom_name,
+              })
+            }
             className="min-w-0 truncate text-left text-sm font-medium hover:underline underline-offset-4 cursor-pointer"
           >
             {fileName}
@@ -1090,10 +1089,16 @@ export function CourseDetails({
                 key={evaluation.id}
                 courseCode={course.code}
                 evaluation={evaluation}
-                onPreview={(key) =>
+                onPreview={({ key, courseCode, evaluationType, evaluationNumber, customName }) =>
                   void navigate({
                     to: "/evaluations/view",
-                    search: { key },
+                    search: {
+                      key,
+                      courseCode,
+                      evaluationType,
+                      evaluationNumber: evaluationNumber ?? undefined,
+                      customName: customName ?? undefined,
+                    },
                   })
                 }
               />
