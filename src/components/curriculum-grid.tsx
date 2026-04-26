@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useRef, useEffect } from "react"
+import { flushSync } from "react-dom"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { useStudentCourseStatuses } from "@/lib/hooks/use-queries"
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel"
@@ -17,6 +18,7 @@ interface CurriculumGridProps {
 
 function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: CurriculumGridProps) {
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null)
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
   const [contentHeight, setContentHeight] = useState<number | null>(null)
   const [contentWidth, setContentWidth] = useState<number | null>(null)
   const scaledContentRef = useRef<HTMLDivElement>(null)
@@ -48,6 +50,10 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
   }, [courseById])
 
   const handleCourseClick = useCallback((courseId: string) => {
+    flushSync(() => {
+      setSelectedCourseId(courseId)
+    })
+
     void navigate({
       to: "/curriculum/$courseId",
       params: { courseId },
@@ -88,7 +94,7 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
                       <CourseCard
                         id={`course-${course.id}`}
                         course={course}
-                        transitionName={`course-name-${course.id}`}
+                        transitionName={selectedCourseId === course.id ? `course-name-${course.id}` : undefined}
                         isHovered={hoveredCourse === course.id}
                         relationType={hoveredCourse ? getRelationType(hoveredCourse, course.id) : null}
                       />
