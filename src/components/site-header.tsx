@@ -30,10 +30,22 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">Claustrum</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Notificaciones"
+            title="Notificaciones"
+            disabled
+          >
             <Bell className="h-[1.2rem] w-[1.2rem]" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+          >
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
