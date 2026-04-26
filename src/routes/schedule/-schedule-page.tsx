@@ -775,7 +775,7 @@ export function SchedulePage() {
                     <div className="flex flex-col">
                       <div className="flex flex-col border-b">
                         <div className="px-4 h-[33px] bg-muted/30 shrink-0 flex items-center">
-                          <div className="flex items-center gap-2">
+                          <div className="flex w-full items-center justify-between gap-2">
                             <h2 className="text-base font-semibold leading-none">
                               {orderedCourses.length} curso
                               {orderedCourses.length !== 1 ? "s" : ""} disponible
@@ -785,7 +785,6 @@ export function SchedulePage() {
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              className="ml-auto"
                               aria-label={
                                 isCourseListOpen
                                   ? "Contraer cursos disponibles"
