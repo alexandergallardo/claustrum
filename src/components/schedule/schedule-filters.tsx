@@ -179,7 +179,7 @@ function FilterSelect({
         <FilterSkeleton />
       ) : (
         <Select value={value} onValueChange={onChange}>
-          <SelectTrigger className="w-full min-w-0 h-8 text-xs sm:min-w-[160px] sm:max-w-[280px]">
+          <SelectTrigger size="sm" className="w-full min-w-0 text-xs sm:min-w-[160px] sm:max-w-[280px]">
             <SelectValue placeholder={placeholder} className="block min-w-0 max-w-full truncate text-left" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
