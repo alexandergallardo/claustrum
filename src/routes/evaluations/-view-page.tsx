@@ -28,11 +28,18 @@ export function EvaluationViewPage() {
   const [numPages, setNumPages] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [documentLoaded, setDocumentLoaded] = useState(false);
+  const [firstPageRendered, setFirstPageRendered] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const pendingCenterRatioRef = useRef<number | null>(null);
   const shouldCenterOnLoadRef = useRef(true);
 
   useEffect(() => {
+    setDocumentLoaded(false);
+    setFirstPageRendered(false);
+    setNumPages(0);
+    setZoom(1);
+
     if (!key) {
       setError("No se especificó un archivo");
       setIsLoading(false);
@@ -91,6 +98,7 @@ export function EvaluationViewPage() {
 
   function onDocumentLoadSuccess({ numPages }: PDFDocumentProxy) {
     setNumPages(numPages);
+    setDocumentLoaded(true);
     pendingCenterRatioRef.current = 0.5;
     shouldCenterOnLoadRef.current = true;
     setZoom(1);
@@ -98,6 +106,10 @@ export function EvaluationViewPage() {
 
   function onDocumentLoadError(err: Error) {
     setError(err.message);
+  }
+
+  function onFirstPageRenderSuccess() {
+    setFirstPageRendered((current) => current || true);
   }
 
   function handleZoomChange(delta: number) {
@@ -132,7 +144,8 @@ export function EvaluationViewPage() {
     };
   }, [isLoading]);
 
-  const isReady = containerWidth > 0 && numPages > 0;
+  const isReady = documentLoaded && containerWidth > 0 && numPages > 0;
+  const isViewerReady = isReady && firstPageRendered;
 
   const pageWidth =
     containerWidth > 0
@@ -207,16 +220,21 @@ export function EvaluationViewPage() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-none bg-background sm:rounded-b-xl">
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 w-full overflow-auto overscroll-contain">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+      {!isViewerReady && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Cargando documento...</p>
+        </div>
+      )}
+
+      <div ref={scrollContainerRef} className={`flex-1 min-h-0 w-full overflow-auto overscroll-contain ${isViewerReady ? "opacity-100 transition-opacity duration-300" : "opacity-0"}`}>
         <div className="py-4">
           <Document
             file={blobUrl}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
-            loading={
-              <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
-            }
+            loading={null}
           >
             {isReady ? (
               <div className="mx-auto flex w-max flex-col items-center gap-4 px-4 [&_.react-pdf__Page__canvas]:!h-auto [&_.react-pdf__Page__canvas]:max-w-none [&_.react-pdf__Page__canvas]:rounded-md [&_.react-pdf__Page__canvas]:shadow-lg">
@@ -225,15 +243,14 @@ export function EvaluationViewPage() {
                     key={`page_${index + 1}`}
                     pageNumber={index + 1}
                     width={pageWidth}
+                    onRenderSuccess={index === 0 ? onFirstPageRenderSuccess : undefined}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
                     loading={null}
                   />
                 ))}
               </div>
-            ) : (
-              <div className="py-12 text-sm text-muted-foreground">Cargando PDF...</div>
-            )}
+            ) : null}
           </Document>
         </div>
       </div>

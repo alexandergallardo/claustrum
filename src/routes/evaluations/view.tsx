@@ -21,7 +21,7 @@ export const Route = createFileRoute("/evaluations/view")({
 
 function EvaluationViewRoute() {
   return (
-    <Suspense fallback={<div className="min-h-svh bg-background" />}>
+    <Suspense fallback={<div className="flex-1 bg-background" />}>
       <EvaluationViewPage />
     </Suspense>
   );

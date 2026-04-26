@@ -20,7 +20,7 @@ export const Route = createFileRoute("/curriculum/$courseId")({
 
 function CourseDetailRoute() {
   return (
-    <Suspense fallback={<div className="min-h-svh bg-background" />}>
+    <Suspense fallback={<div className="flex-1 bg-background" />}>
       <CourseDetailPage />
     </Suspense>
   )
