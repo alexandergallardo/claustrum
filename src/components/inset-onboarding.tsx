@@ -217,7 +217,7 @@ export function InsetOnboardingPage() {
               ) : null}
 
               {step === 2 ? (
-                <Field>
+              <Field>
                   <FieldLabel>Carrera</FieldLabel>
                   <Combobox
                     items={academicUnits.data ?? []}
@@ -228,20 +228,22 @@ export function InsetOnboardingPage() {
                       setStudyPlanId("");
                       setShowStepError(false);
                     }}
-                    itemToStringValue={(item) => item.name}
+                    itemToStringValue={(item) => `${item.code} - ${item.name}`}
                   >
                     <ComboboxTrigger
                       ref={academicUnitTriggerRef}
                       render={<Button variant="outline" className={cn("w-full justify-between font-normal", showAcademicUnitError && "border-destructive text-destructive")} />}
                     >
                       <span className={`block min-w-0 flex-1 truncate text-left ${!academicUnitId ? "text-muted-foreground" : ""}`}>
-                        {(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)?.name ?? "Selecciona una carrera"}
+                        {(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)
+                          ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)!.code} - ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)!.name}`
+                          : "Selecciona una carrera"}
                       </span>
                     </ComboboxTrigger>
                     <ComboboxContent anchor={academicUnitTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
                       <ComboboxInput showTrigger={false} placeholder="Buscar carrera" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.name}</ComboboxItem>}</ComboboxList>
+                      <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.code} - {item.name}</ComboboxItem>}</ComboboxList>
                     </ComboboxContent>
                   </Combobox>
                   <FieldError>{showAcademicUnitError ? currentStepError : null}</FieldError>
