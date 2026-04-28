@@ -209,7 +209,13 @@ export function InsetOnboardingPage() {
                     <ComboboxContent anchor={campusTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
                       <ComboboxInput showTrigger={false} placeholder="Buscar sede" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.name}</ComboboxItem>}</ComboboxList>
+                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {(item) => (
+                          <ComboboxItem key={item.id} value={item}>
+                            <span className="block w-full min-w-0 truncate">{item.name}</span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
                     </ComboboxContent>
                   </Combobox>
                   <FieldError>{showCampusError ? currentStepError : null}</FieldError>
@@ -243,7 +249,13 @@ export function InsetOnboardingPage() {
                     <ComboboxContent anchor={academicUnitTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
                       <ComboboxInput showTrigger={false} placeholder="Buscar carrera" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.code} - {item.name}</ComboboxItem>}</ComboboxList>
+                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {(item) => (
+                          <ComboboxItem key={item.id} value={item}>
+                            <span className="block w-full min-w-0 truncate">{item.code} - {item.name}</span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
                     </ComboboxContent>
                   </Combobox>
                   <FieldError>{showAcademicUnitError ? currentStepError : null}</FieldError>
@@ -273,7 +285,13 @@ export function InsetOnboardingPage() {
                     <ComboboxContent anchor={studyPlanTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
                       <ComboboxInput showTrigger={false} placeholder="Buscar plan" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.name}</ComboboxItem>}</ComboboxList>
+                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                        {(item) => (
+                          <ComboboxItem key={item.id} value={item}>
+                            <span className="block w-full min-w-0 truncate">{item.name}</span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxList>
                     </ComboboxContent>
                   </Combobox>
                   <FieldError>{showStudyPlanError ? currentStepError : null}</FieldError>
