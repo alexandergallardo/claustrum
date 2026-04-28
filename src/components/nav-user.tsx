@@ -30,7 +30,7 @@ export function NavUser({
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <Link to="/login">
+            <Link to="/auth/signin">
               <LogIn className="h-4 w-4" />
               <span className="flex-1 text-left">Iniciar sesión</span>
             </Link>

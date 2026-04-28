@@ -11,13 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
-import { Route as VerifyEmailIndexRouteImport } from './routes/verify-email/index'
-import { Route as SignupIndexRouteImport } from './routes/signup/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
 import { Route as PoliciesIndexRouteImport } from './routes/policies/index'
-import { Route as LoginIndexRouteImport } from './routes/login/index'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
@@ -27,6 +25,9 @@ import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$
 import { Route as EvaluationsViewRouteImport } from './routes/evaluations/view'
 import { Route as EvaluationsModerationRouteImport } from './routes/evaluations/moderation'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
+import { Route as AuthVerifyEmailIndexRouteImport } from './routes/auth/verify-email/index'
+import { Route as AuthSignupIndexRouteImport } from './routes/auth/signup/index'
+import { Route as AuthSigninIndexRouteImport } from './routes/auth/signin/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
@@ -35,16 +36,6 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VerifyEmailIndexRoute = VerifyEmailIndexRouteImport.update({
-  id: '/verify-email/',
-  path: '/verify-email/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupIndexRoute = SignupIndexRouteImport.update({
-  id: '/signup/',
-  path: '/signup/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -67,9 +58,9 @@ const PoliciesIndexRoute = PoliciesIndexRouteImport.update({
   path: '/policies/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginIndexRoute = LoginIndexRouteImport.update({
-  id: '/login/',
-  path: '/login/',
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
@@ -117,6 +108,21 @@ const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
   path: '/curriculum/$courseId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthVerifyEmailIndexRoute = AuthVerifyEmailIndexRouteImport.update({
+  id: '/auth/verify-email/',
+  path: '/auth/verify-email/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignupIndexRoute = AuthSignupIndexRouteImport.update({
+  id: '/auth/signup/',
+  path: '/auth/signup/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSigninIndexRoute = AuthSigninIndexRouteImport.update({
+  id: '/auth/signin/',
+  path: '/auth/signin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteRouteWithChildren
@@ -130,13 +136,14 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
-  '/login/': typeof LoginIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/signup/': typeof SignupIndexRoute
-  '/verify-email/': typeof VerifyEmailIndexRoute
+  '/auth/signin/': typeof AuthSigninIndexRoute
+  '/auth/signup/': typeof AuthSignupIndexRoute
+  '/auth/verify-email/': typeof AuthVerifyEmailIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,13 +156,14 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum': typeof CurriculumIndexRoute
-  '/login': typeof LoginIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/policies': typeof PoliciesIndexRoute
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
-  '/signup': typeof SignupIndexRoute
-  '/verify-email': typeof VerifyEmailIndexRoute
+  '/auth/signin': typeof AuthSigninIndexRoute
+  '/auth/signup': typeof AuthSignupIndexRoute
+  '/auth/verify-email': typeof AuthVerifyEmailIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -170,13 +178,14 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
-  '/login/': typeof LoginIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/signup/': typeof SignupIndexRoute
-  '/verify-email/': typeof VerifyEmailIndexRoute
+  '/auth/signin/': typeof AuthSigninIndexRoute
+  '/auth/signup/': typeof AuthSignupIndexRoute
+  '/auth/verify-email/': typeof AuthVerifyEmailIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -192,13 +201,14 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
-    | '/login/'
+    | '/onboarding/'
     | '/policies/'
     | '/professors/'
     | '/schedule/'
     | '/settings/'
-    | '/signup/'
-    | '/verify-email/'
+    | '/auth/signin/'
+    | '/auth/signup/'
+    | '/auth/verify-email/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -211,13 +221,14 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum'
-    | '/login'
+    | '/onboarding'
     | '/policies'
     | '/professors'
     | '/schedule'
     | '/settings'
-    | '/signup'
-    | '/verify-email'
+    | '/auth/signin'
+    | '/auth/signup'
+    | '/auth/verify-email'
   id:
     | '__root__'
     | '/settings'
@@ -231,13 +242,14 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
-    | '/login/'
+    | '/onboarding/'
     | '/policies/'
     | '/professors/'
     | '/schedule/'
     | '/settings/'
-    | '/signup/'
-    | '/verify-email/'
+    | '/auth/signin/'
+    | '/auth/signup/'
+    | '/auth/verify-email/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -249,12 +261,13 @@ export interface RootRouteChildren {
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   ProfessorsModerationRoute: typeof ProfessorsModerationRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
-  LoginIndexRoute: typeof LoginIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
   PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
-  SignupIndexRoute: typeof SignupIndexRoute
-  VerifyEmailIndexRoute: typeof VerifyEmailIndexRoute
+  AuthSigninIndexRoute: typeof AuthSigninIndexRoute
+  AuthSignupIndexRoute: typeof AuthSignupIndexRoute
+  AuthVerifyEmailIndexRoute: typeof AuthVerifyEmailIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,20 +284,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/verify-email/': {
-      id: '/verify-email/'
-      path: '/verify-email'
-      fullPath: '/verify-email/'
-      preLoaderRoute: typeof VerifyEmailIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup/': {
-      id: '/signup/'
-      path: '/signup'
-      fullPath: '/signup/'
-      preLoaderRoute: typeof SignupIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -315,11 +314,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoliciesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login/': {
-      id: '/login/'
-      path: '/login'
-      fullPath: '/login/'
-      preLoaderRoute: typeof LoginIndexRouteImport
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/curriculum/': {
@@ -385,6 +384,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CurriculumCourseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/verify-email/': {
+      id: '/auth/verify-email/'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email/'
+      preLoaderRoute: typeof AuthVerifyEmailIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signup/': {
+      id: '/auth/signup/'
+      path: '/auth/signup'
+      fullPath: '/auth/signup/'
+      preLoaderRoute: typeof AuthSignupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signin/': {
+      id: '/auth/signin/'
+      path: '/auth/signin'
+      fullPath: '/auth/signin/'
+      preLoaderRoute: typeof AuthSigninIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -415,12 +435,13 @@ const rootRouteChildren: RootRouteChildren = {
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   ProfessorsModerationRoute: ProfessorsModerationRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
-  LoginIndexRoute: LoginIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
   PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
-  SignupIndexRoute: SignupIndexRoute,
-  VerifyEmailIndexRoute: VerifyEmailIndexRoute,
+  AuthSigninIndexRoute: AuthSigninIndexRoute,
+  AuthSignupIndexRoute: AuthSignupIndexRoute,
+  AuthVerifyEmailIndexRoute: AuthVerifyEmailIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

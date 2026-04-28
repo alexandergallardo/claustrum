@@ -48,7 +48,7 @@ export function SecurityPage() {
               Necesitas estar autenticado para cambiar tu contraseña y configurar opciones de seguridad.
             </p>
             <Button asChild>
-              <a href="/login">Iniciar sesión</a>
+              <a href="/auth/signin">Iniciar sesión</a>
             </Button>
           </div>
         </CardContent>

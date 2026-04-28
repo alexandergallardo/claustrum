@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Mail, CheckCircle, RefreshCw } from "lucide-react"
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
 
-export const Route = createFileRoute("/verify-email/")({
+export const Route = createFileRoute("/auth/verify-email/")({
   component: VerifyEmailPage,
 })
 
@@ -47,7 +48,7 @@ export default function VerifyEmailPage() {
       }
     }
 
-    checkSession()
+    void checkSession()
 
     const supabase = getSupabaseBrowserClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -88,7 +89,7 @@ export default function VerifyEmailPage() {
       } else {
         setResendSuccess(true)
       }
-    } catch (err) {
+    } catch (_err) {
       setResendError("Ocurrió un error inesperado")
     } finally {
       setResending(false)
@@ -169,7 +170,7 @@ export default function VerifyEmailPage() {
 
           {isPending && (
             <div className="flex items-center justify-center gap-2 pt-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/auth/signin" })}>
                 Volver a inicio de sesión
               </Button>
             </div>
