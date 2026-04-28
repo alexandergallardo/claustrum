@@ -122,6 +122,25 @@ export function useAuthUser() {
   });
 }
 
+export function useOnboardingStatus(userId: string | null) {
+  return useQuery({
+    queryKey: ["onboardingStatus", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const sb = getSupabaseBrowserClient();
+      const { data, error } = await sb
+        .from("user")
+        .select("onboarding_dismissed_at,onboarding_completed_at")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export type UniversityRow = {
   id: number;
   name: string;

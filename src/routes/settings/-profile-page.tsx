@@ -12,15 +12,18 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthUser, useUniversities, useCampuses, useAcademicUnits, useStudyPlans, useProfileContext } from "@/lib/hooks/use-queries";
+import { useRef } from "react";
 
 export function ProfilePageRoute() {
   return (
@@ -57,6 +60,9 @@ function ProfilePage() {
   const [carnetDraft, setCarnetDraft] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const campusTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const academicUnitTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const studyPlanTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const universityId = profileContext.data?.university_id ?? null;
   const campusId = profileContext.data?.campus_id ?? null;
@@ -105,6 +111,13 @@ function ProfilePage() {
     }
   }, [profileContext.isSuccess, profileContext.data, universityIdDraft, campusIdDraft]);
 
+  useEffect(() => {
+    if (!isEditing) return;
+    if (universityIdDraft) return;
+    if (!universities || universities.length === 0) return;
+    setUniversityIdDraft(String(universities[0].id));
+  }, [isEditing, universities, universityIdDraft]);
+
   const hasUnsavedChanges = authUser && profileContext.data && (
     (profileContext.data.university_id !== null && String(profileContext.data.university_id) !== universityIdDraft) ||
     (profileContext.data.campus_id !== null && String(profileContext.data.campus_id) !== campusIdDraft) ||
@@ -113,14 +126,6 @@ function ProfilePage() {
     (profileContext.data.carnet !== null && profileContext.data.carnet !== carnetDraft) ||
     (profileContext.data.university_id === null && universityIdDraft !== "")
   );
-
-  async function handleUniversityChange(universityId: string) {
-    setFormError(null);
-    setUniversityIdDraft(universityId);
-    setCampusIdDraft("");
-    setAcademicUnitIdDraft("");
-    setStudyPlanIdDraft("");
-  }
 
   function handleCampusChange(campusId: string) {
     setFormError(null);
@@ -267,7 +272,7 @@ function ProfilePage() {
               Necesitas estar autenticado para ver y editar tu información académica.
             </p>
             <Button asChild>
-              <a href="/login">Iniciar sesión</a>
+              <a href="/auth/signin">Iniciar sesión</a>
             </Button>
           </div>
         </CardContent>
@@ -310,7 +315,7 @@ function ProfilePage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Información académica</CardTitle>
-            <CardDescription>Tu contexto académico en la institución</CardDescription>
+            <CardDescription />
           </div>
           {!isEditing && (
             <Button variant="outline" size="sm" onClick={startEditing}>
@@ -327,111 +332,86 @@ function ProfilePage() {
           )}
 
           <Field>
-            <FieldLabel>Universidad</FieldLabel>
-            <Select
-              value={universityIdDraft}
-              onValueChange={(v) => void handleUniversityChange(v)}
-              disabled={!isEditing}
-            >
-              <SelectTrigger>
-                {isUniversitiesLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2Icon className="h-4 w-4 animate-spin" />
-                    Cargando...
-                  </span>
-                ) : (
-                  <SelectValue placeholder="Selecciona tu universidad" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {universities?.map((u) => (
-                  <SelectItem key={u.id} value={String(u.id)}>
-                    {u.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-
-          <Field>
             <FieldLabel>Sede</FieldLabel>
-            <Select
-              value={campusIdDraft}
-              onValueChange={(v) => void handleCampusChange(v)}
-              disabled={!isEditing || !universityIdDraft}
+            <Combobox
+              items={campuses.data ?? []}
+              value={(campuses.data ?? []).find((item) => String(item.id) === campusIdDraft) ?? null}
+              onValueChange={(item) => void handleCampusChange(item ? String(item.id) : "")}
+              itemToStringValue={(item) => item.name}
+              disabled={!isEditing || !effectiveUniversityId || campuses.isLoading}
             >
-              <SelectTrigger>
-                {campuses.isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2Icon className="h-4 w-4 animate-spin" />
-                    Cargando...
-                  </span>
-                ) : (
-                  <SelectValue placeholder="Selecciona tu sede" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {campuses.data?.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ComboboxTrigger
+                ref={campusTriggerRef}
+                render={<Button variant="outline" className="w-full justify-between font-normal" />}
+              >
+                <span className={`block min-w-0 flex-1 truncate text-left ${!campusIdDraft ? "text-muted-foreground" : ""}`}>
+                  {campuses.isLoading
+                    ? "Cargando..."
+                    : (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)?.name ?? "Selecciona tu sede"}
+                </span>
+              </ComboboxTrigger>
+              <ComboboxContent anchor={campusTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+                <ComboboxInput showTrigger={false} placeholder="Buscar sede" />
+                <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+                <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.name}</ComboboxItem>}</ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </Field>
 
           <Field>
             <FieldLabel>Escuela</FieldLabel>
-            <Select
-              value={academicUnitIdDraft}
-              onValueChange={(v) => void handleAcademicUnitChange(v)}
-              disabled={!isEditing || !campusIdDraft}
+            <Combobox
+              items={academicUnits.data ?? []}
+              value={(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft) ?? null}
+              onValueChange={(item) => void handleAcademicUnitChange(item ? String(item.id) : "")}
+              itemToStringValue={(item) => `${item.code} - ${item.name}`}
+              disabled={!isEditing || !campusIdDraft || academicUnits.isLoading}
             >
-              <SelectTrigger>
-                {academicUnits.isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2Icon className="h-4 w-4 animate-spin" />
-                    Cargando...
-                  </span>
-                ) : (
-                  <SelectValue placeholder="Selecciona tu escuela" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {academicUnits.data?.map((au) => (
-                  <SelectItem key={au.id} value={String(au.id)}>
-                    {au.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ComboboxTrigger
+                ref={academicUnitTriggerRef}
+                render={<Button variant="outline" className="w-full justify-between font-normal" />}
+              >
+                <span className={`block min-w-0 flex-1 truncate text-left ${!academicUnitIdDraft ? "text-muted-foreground" : ""}`}>
+                  {academicUnits.isLoading
+                    ? "Cargando..."
+                    : ((academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)
+                      ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.code} - ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.name}`
+                      : "Selecciona tu escuela")}
+                </span>
+              </ComboboxTrigger>
+              <ComboboxContent anchor={academicUnitTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+                <ComboboxInput showTrigger={false} placeholder="Buscar escuela" />
+                <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+                <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.code} - {item.name}</ComboboxItem>}</ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </Field>
 
           <Field>
             <FieldLabel>Plan de estudios</FieldLabel>
-            <Select
-              value={studyPlanIdDraft}
-              onValueChange={(v) => void handleStudyPlanChange(v)}
-              disabled={!isEditing || !academicUnitIdDraft}
+            <Combobox
+              items={studyPlans.data ?? []}
+              value={(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft) ?? null}
+              onValueChange={(item) => void handleStudyPlanChange(item ? String(item.id) : "")}
+              itemToStringValue={(item) => item.name}
+              disabled={!isEditing || !academicUnitIdDraft || studyPlans.isLoading}
             >
-              <SelectTrigger>
-                {studyPlans.isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2Icon className="h-4 w-4 animate-spin" />
-                    Cargando...
-                  </span>
-                ) : (
-                  <SelectValue placeholder="Selecciona tu plan" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {studyPlans.data?.map((sp) => (
-                  <SelectItem key={sp.id} value={String(sp.id)}>
-                    {sp.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ComboboxTrigger
+                ref={studyPlanTriggerRef}
+                render={<Button variant="outline" className="w-full justify-between font-normal" />}
+              >
+                <span className={`block min-w-0 flex-1 truncate text-left ${!studyPlanIdDraft ? "text-muted-foreground" : ""}`}>
+                  {studyPlans.isLoading
+                    ? "Cargando..."
+                    : (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)?.name ?? "Selecciona tu plan"}
+                </span>
+              </ComboboxTrigger>
+              <ComboboxContent anchor={studyPlanTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+                <ComboboxInput showTrigger={false} placeholder="Buscar plan" />
+                <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+                <ComboboxList>{(item) => <ComboboxItem key={item.id} value={item}>{item.name}</ComboboxItem>}</ComboboxList>
+              </ComboboxContent>
+            </Combobox>
           </Field>
 
           <Field>

@@ -71,7 +71,7 @@ export function SiteHeader() {
             />
           ) : (
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">
+              <Link to="/auth/signin">
                 <LogIn className="h-4 w-4 mr-1" />
                 Iniciar sesión
               </Link>

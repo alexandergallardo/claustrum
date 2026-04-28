@@ -74,7 +74,7 @@ export function UserMenuDropdown({
           onClick={async () => {
             const supabase = getSupabaseBrowserClient();
             await supabase.auth.signOut();
-            navigate({ to: "/login" });
+            navigate({ to: "/auth/signin" });
           }}
         >
           <LogOut className="h-4 w-4" />
