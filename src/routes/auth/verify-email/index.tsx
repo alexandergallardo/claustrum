@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Mail, CheckCircle, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardDescription } from "@/components/ui/card"
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
 
 export const Route = createFileRoute("/auth/verify-email/")({
@@ -108,9 +108,8 @@ export default function VerifyEmailPage() {
       : "Enviamos un enlace de verificación a"
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background p-6 md:p-10">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+    <>
+      <div className="w-full text-center">
           <div
             className={`mx-auto mb-4 flex size-14 items-center justify-center rounded-full ${
               isSuccess ? "bg-emerald-500/10" : "bg-primary/10"
@@ -124,7 +123,7 @@ export default function VerifyEmailPage() {
               <Mail className="size-7 text-primary" />
             )}
           </div>
-          <CardTitle className="text-2xl">{title}</CardTitle>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <CardDescription className="text-center">
             {isPending ? (
               <>
@@ -134,8 +133,7 @@ export default function VerifyEmailPage() {
               description
             )}
           </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <div className="mt-4 flex flex-col gap-4">
           {isPending && (
             <p className="mx-auto max-w-sm text-center text-sm text-muted-foreground">
               ¿No lo recibiste? Revisa spam o promociones.
@@ -175,8 +173,8 @@ export default function VerifyEmailPage() {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </>
   )
 }

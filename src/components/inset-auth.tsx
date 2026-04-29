@@ -31,34 +31,36 @@ import { cn } from "@/lib/utils";
 /* ------------------------------------------------------------------ */
 
 export function InsetSigninPage() {
+  const [email, setEmail] = useState("");
+
   return (
-    <AuthLayout>
+    <>
       <Heading title="Bienvenido de nuevo" subtitle="Inicia sesión para continuar." />
       <OAuthRow />
-      <MagicLinkButton />
+      <MagicLinkButton email={email} />
       <OrSeparator />
-      <SignInForm />
-      <div className="mt-5 flex items-baseline justify-between gap-4 text-sm">
-        <p className="whitespace-nowrap text-muted-foreground">
+      <SignInForm email={email} setEmail={setEmail} />
+      <div className="mt-5 flex flex-col gap-2 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+        <p className="text-muted-foreground">
           ¿No tienes cuenta?{" "}
           <Link to="/auth/signup" className="text-foreground hover:underline">
             Regístrate
           </Link>
         </p>
-        <a
-          href="#"
-          className="whitespace-nowrap text-muted-foreground hover:text-foreground hover:underline"
+        <Link
+          to="/auth/reset-password"
+          className="text-muted-foreground hover:text-foreground hover:underline"
         >
           ¿Olvidaste tu contraseña?
-        </a>
+        </Link>
       </div>
-    </AuthLayout>
+    </>
   );
 }
 
 export function InsetSignupPage() {
   return (
-    <AuthLayout>
+    <>
       <Heading title="Crea tu cuenta" subtitle="Completa el formulario para registrarte." />
       <OAuthRow mode="signup" />
       <MagicLinkButton />
@@ -70,23 +72,7 @@ export function InsetSignupPage() {
           Inicia sesión
         </Link>
       </div>
-    </AuthLayout>
-  );
-}
-
-function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative h-screen overflow-hidden bg-background text-foreground">
-      <PageBackdrop />
-      <div className="relative grid h-screen w-full grid-cols-1 lg:grid-cols-[1fr_minmax(440px,560px)]">
-        <LeftPanel />
-        <div className="relative flex h-full flex-col overflow-y-auto bg-card text-foreground">
-          <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-8 lg:py-10">
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -495,11 +481,54 @@ function GoogleOAuthButton({ mode = "signin" }: { mode?: "signin" | "signup" }) 
   );
 }
 
-function MagicLinkButton() {
+const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
+
+function MagicLinkButton({ email = "" }: { email?: string }) {
+  const navigate = useNavigate();
+  const [pending, setPending] = useState(false);
+
+  const onSendMagicLink = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      navigate({ to: "/auth/magic-link" });
+      return;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      return;
+    }
+
+    setPending(true);
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmedEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/signin`,
+      },
+    });
+
+    if (error) {
+      alert(normalizeAuthError(error, "login").message);
+      setPending(false);
+      return;
+    }
+
+    window.sessionStorage.setItem(MAGIC_LINK_EMAIL_KEY, trimmedEmail);
+    navigate({ to: "/auth/magic-link" });
+    setPending(false);
+  };
+
   return (
-    <Button variant="outline" size="lg" className="mt-2 w-full" disabled>
+    <Button
+      variant="outline"
+      size="lg"
+      className="mt-2 w-full"
+      type="button"
+      disabled={pending}
+      onClick={onSendMagicLink}
+    >
       <MailIcon />
-      Entrar con Magic Link
+      {pending ? "Enviando enlace..." : "Continuar con enlace mágico"}
     </Button>
   );
 }
@@ -541,10 +570,9 @@ function GoogleIcon() {
 /*  Formulario de Sign In                                              */
 /* ------------------------------------------------------------------ */
 
-function SignInForm() {
+function SignInForm({ email, setEmail }: { email: string; setEmail: (value: string) => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [reveal, setReveal] = useState(false);
   const [pending, setPending] = useState(false);

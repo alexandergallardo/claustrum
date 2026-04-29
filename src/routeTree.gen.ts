@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
@@ -28,6 +29,8 @@ import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$cou
 import { Route as AuthVerifyEmailIndexRouteImport } from './routes/auth/verify-email/index'
 import { Route as AuthSignupIndexRouteImport } from './routes/auth/signup/index'
 import { Route as AuthSigninIndexRouteImport } from './routes/auth/signin/index'
+import { Route as AuthResetPasswordIndexRouteImport } from './routes/auth/reset-password/index'
+import { Route as AuthMagicLinkIndexRouteImport } from './routes/auth/magic-link/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
@@ -36,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRouteRoute = AuthRouteRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -109,22 +117,33 @@ const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthVerifyEmailIndexRoute = AuthVerifyEmailIndexRouteImport.update({
-  id: '/auth/verify-email/',
-  path: '/auth/verify-email/',
-  getParentRoute: () => rootRouteImport,
+  id: '/verify-email/',
+  path: '/verify-email/',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthSignupIndexRoute = AuthSignupIndexRouteImport.update({
-  id: '/auth/signup/',
-  path: '/auth/signup/',
-  getParentRoute: () => rootRouteImport,
+  id: '/signup/',
+  path: '/signup/',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthSigninIndexRoute = AuthSigninIndexRouteImport.update({
-  id: '/auth/signin/',
-  path: '/auth/signin/',
-  getParentRoute: () => rootRouteImport,
+  id: '/signin/',
+  path: '/signin/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthResetPasswordIndexRoute = AuthResetPasswordIndexRouteImport.update({
+  id: '/reset-password/',
+  path: '/reset-password/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthMagicLinkIndexRoute = AuthMagicLinkIndexRouteImport.update({
+  id: '/magic-link/',
+  path: '/magic-link/',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
@@ -141,11 +160,14 @@ export interface FileRoutesByFullPath {
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
+  '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/auth/signin/': typeof AuthSigninIndexRoute
   '/auth/signup/': typeof AuthSignupIndexRoute
   '/auth/verify-email/': typeof AuthVerifyEmailIndexRoute
 }
 export interface FileRoutesByTo {
+  '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
@@ -161,12 +183,15 @@ export interface FileRoutesByTo {
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/auth/magic-link': typeof AuthMagicLinkIndexRoute
+  '/auth/reset-password': typeof AuthResetPasswordIndexRoute
   '/auth/signin': typeof AuthSigninIndexRoute
   '/auth/signup': typeof AuthSignupIndexRoute
   '/auth/verify-email': typeof AuthVerifyEmailIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
@@ -183,6 +208,8 @@ export interface FileRoutesById {
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
+  '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/auth/signin/': typeof AuthSigninIndexRoute
   '/auth/signup/': typeof AuthSignupIndexRoute
   '/auth/verify-email/': typeof AuthVerifyEmailIndexRoute
@@ -190,6 +217,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/auth'
     | '/settings'
     | '/'
     | '/curriculum/$courseId'
@@ -206,11 +234,14 @@ export interface FileRouteTypes {
     | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/auth/magic-link/'
+    | '/auth/reset-password/'
     | '/auth/signin/'
     | '/auth/signup/'
     | '/auth/verify-email/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/auth'
     | '/'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
@@ -226,11 +257,14 @@ export interface FileRouteTypes {
     | '/professors'
     | '/schedule'
     | '/settings'
+    | '/auth/magic-link'
+    | '/auth/reset-password'
     | '/auth/signin'
     | '/auth/signup'
     | '/auth/verify-email'
   id:
     | '__root__'
+    | '/auth'
     | '/settings'
     | '/_index'
     | '/curriculum/$courseId'
@@ -247,12 +281,15 @@ export interface FileRouteTypes {
     | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/auth/magic-link/'
+    | '/auth/reset-password/'
     | '/auth/signin/'
     | '/auth/signup/'
     | '/auth/verify-email/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
@@ -265,9 +302,6 @@ export interface RootRouteChildren {
   PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
-  AuthSigninIndexRoute: typeof AuthSigninIndexRoute
-  AuthSignupIndexRoute: typeof AuthSignupIndexRoute
-  AuthVerifyEmailIndexRoute: typeof AuthVerifyEmailIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -284,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -386,27 +427,61 @@ declare module '@tanstack/react-router' {
     }
     '/auth/verify-email/': {
       id: '/auth/verify-email/'
-      path: '/auth/verify-email'
+      path: '/verify-email'
       fullPath: '/auth/verify-email/'
       preLoaderRoute: typeof AuthVerifyEmailIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/auth/signup/': {
       id: '/auth/signup/'
-      path: '/auth/signup'
+      path: '/signup'
       fullPath: '/auth/signup/'
       preLoaderRoute: typeof AuthSignupIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
     '/auth/signin/': {
       id: '/auth/signin/'
-      path: '/auth/signin'
+      path: '/signin'
       fullPath: '/auth/signin/'
       preLoaderRoute: typeof AuthSigninIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/auth/reset-password/': {
+      id: '/auth/reset-password/'
+      path: '/reset-password'
+      fullPath: '/auth/reset-password/'
+      preLoaderRoute: typeof AuthResetPasswordIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/auth/magic-link/': {
+      id: '/auth/magic-link/'
+      path: '/magic-link'
+      fullPath: '/auth/magic-link/'
+      preLoaderRoute: typeof AuthMagicLinkIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
     }
   }
 }
+
+interface AuthRouteRouteChildren {
+  AuthMagicLinkIndexRoute: typeof AuthMagicLinkIndexRoute
+  AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
+  AuthSigninIndexRoute: typeof AuthSigninIndexRoute
+  AuthSignupIndexRoute: typeof AuthSignupIndexRoute
+  AuthVerifyEmailIndexRoute: typeof AuthVerifyEmailIndexRoute
+}
+
+const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  AuthMagicLinkIndexRoute: AuthMagicLinkIndexRoute,
+  AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
+  AuthSigninIndexRoute: AuthSigninIndexRoute,
+  AuthSignupIndexRoute: AuthSignupIndexRoute,
+  AuthVerifyEmailIndexRoute: AuthVerifyEmailIndexRoute,
+}
+
+const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
+  AuthRouteRouteChildren,
+)
 
 interface SettingsRouteRouteChildren {
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
@@ -427,6 +502,7 @@ const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
@@ -439,9 +515,6 @@ const rootRouteChildren: RootRouteChildren = {
   PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
-  AuthSigninIndexRoute: AuthSigninIndexRoute,
-  AuthSignupIndexRoute: AuthSignupIndexRoute,
-  AuthVerifyEmailIndexRoute: AuthVerifyEmailIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

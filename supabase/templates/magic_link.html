@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Your magic link</title>
+  <title>Tu enlace mágico</title>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -19,7 +19,7 @@
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
     body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
-    a { color: #10b981; text-decoration: none; }
+    a { color: #171717; text-decoration: none; }
     a:hover { text-decoration: underline; }
     @media screen and (max-width: 600px) {
       .email-container { width: 100% !important; }
@@ -31,7 +31,7 @@
 <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
 
   <div style="display: none; max-height: 0; overflow: hidden;">
-    Sign in with your magic link - one-click access to your account.
+    Inicia sesión con tu enlace mágico.
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   </div>
 
@@ -42,18 +42,11 @@
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-container" width="600" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); max-width: 600px;">
 
           <tr>
-            <td style="padding: 40px 40px 24px 40px; text-align: center;">
+            <td style="padding: 40px 40px 20px 40px; text-align: center;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td align="center" style="padding-bottom: 20px;">
-                    <div style="width: 56px; height: 56px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; display: inline-block; line-height: 56px; font-size: 24px;">
-                      <span style="color: #ffffff;">✨</span>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
                   <td style="text-align: center;">
-                    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #171717;">Your magic link</h1>
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #171717;">Tu enlace mágico</h1>
                   </td>
                 </tr>
               </table>
@@ -66,10 +59,10 @@
                 <tr>
                   <td style="text-align: center; padding-bottom: 24px;">
                     <p style="margin: 0 0 8px 0; font-size: 16px; line-height: 1.6; color: #525252;">
-                      Sign in to your account by clicking the button below. No password needed!
+                      Inicia sesión con un clic. No necesitas contraseña.
                     </p>
                     <p style="margin: 0; font-size: 14px; color: #737373;">
-                      This link is for: <strong>{{ .Email }}</strong>
+                      Este enlace es para: <strong>{{ .Email }}</strong>
                     </p>
                   </td>
                 </tr>
@@ -78,9 +71,9 @@
                   <td align="center" style="padding-bottom: 24px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td align="center" style="border-radius: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <td align="center" style="border-radius: 8px; background: #171717;">
                           <a href="{{ .ConfirmationURL }}" target="_blank" class="button" style="font-size: 16px; font-weight: 500; color: #ffffff; text-decoration: none; padding: 14px 32px; display: inline-block; border-radius: 8px;">
-                            Sign in
+                            Iniciar sesión
                           </a>
                         </td>
                       </tr>
@@ -91,8 +84,8 @@
                 <tr>
                   <td style="text-align: center;">
                     <p style="margin: 0; font-size: 14px; color: #737373; line-height: 1.5;">
-                      If the button doesn't work, copy and paste this link into your browser:<br>
-                      <a href="{{ .ConfirmationURL }}" target="_blank" style="color: #10b981; word-break: break-all; font-size: 12px;">{{ .ConfirmationURL }}</a>
+                       Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+                      <a href="{{ .ConfirmationURL }}" target="_blank" style="color: #171717; word-break: break-all; font-size: 12px;">{{ .ConfirmationURL }}</a>
                     </p>
                   </td>
                 </tr>
@@ -116,10 +109,10 @@
                 <tr>
                   <td style="text-align: center;">
                     <p style="margin: 0 0 8px 0; font-size: 14px; color: #525252;">
-                      This link will expire in 1 hour for your security.
+                       Este enlace expirará en 1 hora por seguridad.
                     </p>
                     <p style="margin: 0; font-size: 13px; color: #a3a3a3;">
-                      If you didn't request this magic link, you can safely ignore this email.
+                       Si no solicitaste este enlace, puedes ignorar este correo.
                     </p>
                   </td>
                 </tr>
@@ -133,7 +126,7 @@
           <tr>
             <td style="padding: 30px 0; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: #a3a3a3;">
-                © 2025 Horarios. All rights reserved.
+                © 2026 Claustrum. Todos los derechos reservados.
               </p>
             </td>
           </tr>
