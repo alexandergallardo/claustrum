@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { CardDescription } from "@/components/ui/card"
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"
 
+const VERIFY_EMAIL_KEY = "claustrum.auth.verify_email"
+
 export const Route = createFileRoute("/auth/verify-email/")({
   component: VerifyEmailPage,
 })
@@ -19,6 +21,11 @@ export default function VerifyEmailPage() {
   const [email, setEmail] = useState<string | null>(null)
 
   useEffect(() => {
+    const storedEmail = window.sessionStorage.getItem(VERIFY_EMAIL_KEY)
+    if (storedEmail) {
+      setEmail(storedEmail)
+    }
+
     const checkSession = async () => {
       try {
         const supabase = getSupabaseBrowserClient()
@@ -32,6 +39,7 @@ export default function VerifyEmailPage() {
 
         if (session?.user?.email) {
           setEmail(session.user.email)
+          window.sessionStorage.setItem(VERIFY_EMAIL_KEY, session.user.email)
         }
 
         if (session) {
@@ -55,6 +63,7 @@ export default function VerifyEmailPage() {
       if (session) {
         if (session.user?.email) {
           setEmail(session.user.email)
+          window.sessionStorage.setItem(VERIFY_EMAIL_KEY, session.user.email)
         }
         setStatus("success")
         setTimeout(() => {
@@ -79,9 +88,10 @@ export default function VerifyEmailPage() {
 
     try {
       const supabase = getSupabaseBrowserClient()
+      const trimmedEmail = email.trim()
       const { error } = await supabase.auth.resend({
         type: "signup",
-        email,
+        email: trimmedEmail,
       })
 
       if (error) {

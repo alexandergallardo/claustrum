@@ -482,6 +482,19 @@ function GoogleOAuthButton({ mode = "signin" }: { mode?: "signin" | "signup" }) 
 }
 
 const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
+const VERIFY_EMAIL_KEY = "claustrum.auth.verify_email";
+
+async function invalidateAuthFlowQueries(queryClient: ReturnType<typeof useQueryClient>, userId?: string) {
+  await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+  if (userId) {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["onboardingStatus", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["userStudyPlan", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats", userId] }),
+    ]);
+  }
+}
 
 function MagicLinkButton({ email = "" }: { email?: string }) {
   const navigate = useNavigate();
@@ -585,20 +598,13 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: "/" });
+        navigate({ to: "/", replace: true });
       }
     };
 
     void bootstrapSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: "/" });
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return undefined;
   }, [navigate, queryClient]);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -619,8 +625,11 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
       return;
     }
 
-    await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-    navigate({ to: "/" });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await invalidateAuthFlowQueries(queryClient, user?.id);
+    navigate({ to: "/", replace: true });
     setPending(false);
   };
 
@@ -752,20 +761,13 @@ function SignUpForm() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: "/" });
+        navigate({ to: "/", replace: true });
       }
     };
 
     void bootstrapSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: "/" });
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return undefined;
   }, [navigate, queryClient]);
 
   const validateFields = () => {
@@ -836,10 +838,11 @@ function SignUpForm() {
     }
 
     if (data.session) {
-      await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-      navigate({ to: "/" });
+      await invalidateAuthFlowQueries(queryClient, data.session.user.id);
+      navigate({ to: "/", replace: true });
     } else {
-      navigate({ to: "/auth/verify-email" });
+      window.sessionStorage.setItem(VERIFY_EMAIL_KEY, email.trim());
+      navigate({ to: "/auth/verify-email", replace: true });
     }
     setPending(false);
   };

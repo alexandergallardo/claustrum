@@ -30,44 +30,67 @@ function RootComponent() {
   const profileContext = useProfileContext(authUser?.id ?? null)
   const onboardingStatus = useOnboardingStatus(authUser?.id ?? null)
 
-  const isPublicRoute = pathname.startsWith('/auth/') || pathname.startsWith('/onboarding')
+  const isAuthRoute = pathname === '/auth' || pathname.startsWith('/auth/')
+  const isPublicRoute = isAuthRoute || pathname.startsWith('/onboarding')
+
+  const completed = !!onboardingStatus.data?.onboarding_completed_at
+  const dismissedAtRaw = onboardingStatus.data?.onboarding_dismissed_at
+  const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null
+  const oneDayMs = 24 * 60 * 60 * 1000
+  const isDismissedCooldownActive = dismissedAt
+    ? (Date.now() - dismissedAt.getTime()) < oneDayMs
+    : false
+  const hasAcademicSetup = !!profileContext.data?.study_plan_id
+  const canEvaluateOnboarding =
+    !isAuthLoading &&
+    !!authUser &&
+    !profileContext.isLoading &&
+    !onboardingStatus.isLoading &&
+    !profileContext.isError &&
+    !onboardingStatus.isError
+
+  const needsOnboardingRedirect =
+    !isPublicRoute &&
+    canEvaluateOnboarding &&
+    !completed &&
+    !isDismissedCooldownActive &&
+    !hasAcademicSetup
+
+  const shouldLeaveOnboarding =
+    pathname.startsWith('/onboarding') &&
+    canEvaluateOnboarding &&
+    (completed || isDismissedCooldownActive || hasAcademicSetup)
+
+  const shouldHoldPrivateRender =
+    !isPublicRoute &&
+    (isAuthLoading || (!!authUser && (profileContext.isLoading || onboardingStatus.isLoading)) || needsOnboardingRedirect)
 
   useEffect(() => {
-    if (isAuthLoading) return
-    if (!authUser) return
-    if (pathname.startsWith('/auth/') || pathname.startsWith('/onboarding')) return
-    if (profileContext.isLoading) return
-    if (onboardingStatus.isLoading) return
+    if (needsOnboardingRedirect) {
+      navigate({ to: '/onboarding', replace: true })
+      return
+    }
 
-    const completed = !!onboardingStatus.data?.onboarding_completed_at
-    if (completed) return
-
-    const dismissedAtRaw = onboardingStatus.data?.onboarding_dismissed_at
-    const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null
-    const now = new Date()
-    const oneDayMs = 24 * 60 * 60 * 1000
-    const isDismissedCooldownActive = dismissedAt ? (now.getTime() - dismissedAt.getTime()) < oneDayMs : false
-    if (isDismissedCooldownActive) return
-
-    const hasAcademicSetup = !!profileContext.data?.study_plan_id
-    if (!hasAcademicSetup) {
-      navigate({ to: '/onboarding' })
+    if (shouldLeaveOnboarding) {
+      navigate({ to: '/', replace: true })
     }
   }, [
-    authUser,
-    isAuthLoading,
     navigate,
-    onboardingStatus.data?.onboarding_completed_at,
-    onboardingStatus.data?.onboarding_dismissed_at,
-    onboardingStatus.isLoading,
-    pathname,
-    profileContext.data?.study_plan_id,
-    profileContext.isLoading,
+    needsOnboardingRedirect,
+    shouldLeaveOnboarding,
   ])
 
   return (
     <>
-      {isPublicRoute ? <Outlet /> : <AppLayoutWrapper><Outlet /></AppLayoutWrapper>}
+      {isPublicRoute ? (
+        <Outlet />
+      ) : shouldHoldPrivateRender ? (
+        <AppLayoutWrapper>
+          <div className="flex-1 bg-background" />
+        </AppLayoutWrapper>
+      ) : (
+        <AppLayoutWrapper><Outlet /></AppLayoutWrapper>
+      )}
       <Toaster />
     </>
   )
