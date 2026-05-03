@@ -23,7 +23,6 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as ProfessorsModerationRouteImport } from './routes/professors/moderation'
 import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
-import { Route as EvaluationsViewRouteImport } from './routes/evaluations/view'
 import { Route as EvaluationsModerationRouteImport } from './routes/evaluations/moderation'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as AuthVerifyEmailIndexRouteImport } from './routes/auth/verify-email/index'
@@ -31,6 +30,7 @@ import { Route as AuthSignupIndexRouteImport } from './routes/auth/signup/index'
 import { Route as AuthSigninIndexRouteImport } from './routes/auth/signin/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/auth/reset-password/index'
 import { Route as AuthMagicLinkIndexRouteImport } from './routes/auth/magic-link/index'
+import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
@@ -101,11 +101,6 @@ const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
   path: '/professors/$professorId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EvaluationsViewRoute = EvaluationsViewRouteImport.update({
-  id: '/evaluations/view',
-  path: '/evaluations/view',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const EvaluationsModerationRoute = EvaluationsModerationRouteImport.update({
   id: '/evaluations/moderation',
   path: '/evaluations/moderation',
@@ -141,6 +136,12 @@ const AuthMagicLinkIndexRoute = AuthMagicLinkIndexRouteImport.update({
   path: '/magic-link/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const EvaluationsViewEvaluationSlugRoute =
+  EvaluationsViewEvaluationSlugRouteImport.update({
+    id: '/evaluations/view/$evaluationSlug',
+    path: '/evaluations/view/$evaluationSlug',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
@@ -148,7 +149,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
-  '/evaluations/view': typeof EvaluationsViewRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -160,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
   '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/auth/signin/': typeof AuthSigninIndexRoute
@@ -171,7 +172,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
-  '/evaluations/view': typeof EvaluationsViewRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -183,6 +183,7 @@ export interface FileRoutesByTo {
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/magic-link': typeof AuthMagicLinkIndexRoute
   '/auth/reset-password': typeof AuthResetPasswordIndexRoute
   '/auth/signin': typeof AuthSigninIndexRoute
@@ -196,7 +197,6 @@ export interface FileRoutesById {
   '/_index': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/evaluations/moderation': typeof EvaluationsModerationRoute
-  '/evaluations/view': typeof EvaluationsViewRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -208,6 +208,7 @@ export interface FileRoutesById {
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
   '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/auth/signin/': typeof AuthSigninIndexRoute
@@ -222,7 +223,6 @@ export interface FileRouteTypes {
     | '/'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
-    | '/evaluations/view'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -234,6 +234,7 @@ export interface FileRouteTypes {
     | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/evaluations/view/$evaluationSlug'
     | '/auth/magic-link/'
     | '/auth/reset-password/'
     | '/auth/signin/'
@@ -245,7 +246,6 @@ export interface FileRouteTypes {
     | '/'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
-    | '/evaluations/view'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -257,6 +257,7 @@ export interface FileRouteTypes {
     | '/professors'
     | '/schedule'
     | '/settings'
+    | '/evaluations/view/$evaluationSlug'
     | '/auth/magic-link'
     | '/auth/reset-password'
     | '/auth/signin'
@@ -269,7 +270,6 @@ export interface FileRouteTypes {
     | '/_index'
     | '/curriculum/$courseId'
     | '/evaluations/moderation'
-    | '/evaluations/view'
     | '/professors/$professorId'
     | '/professors/moderation'
     | '/settings/appearance'
@@ -281,6 +281,7 @@ export interface FileRouteTypes {
     | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/evaluations/view/$evaluationSlug'
     | '/auth/magic-link/'
     | '/auth/reset-password/'
     | '/auth/signin/'
@@ -294,7 +295,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   EvaluationsModerationRoute: typeof EvaluationsModerationRoute
-  EvaluationsViewRoute: typeof EvaluationsViewRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   ProfessorsModerationRoute: typeof ProfessorsModerationRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
@@ -302,6 +302,7 @@ export interface RootRouteChildren {
   PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
+  EvaluationsViewEvaluationSlugRoute: typeof EvaluationsViewEvaluationSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -404,13 +405,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/evaluations/view': {
-      id: '/evaluations/view'
-      path: '/evaluations/view'
-      fullPath: '/evaluations/view'
-      preLoaderRoute: typeof EvaluationsViewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/evaluations/moderation': {
       id: '/evaluations/moderation'
       path: '/evaluations/moderation'
@@ -460,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthMagicLinkIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/evaluations/view/$evaluationSlug': {
+      id: '/evaluations/view/$evaluationSlug'
+      path: '/evaluations/view/$evaluationSlug'
+      fullPath: '/evaluations/view/$evaluationSlug'
+      preLoaderRoute: typeof EvaluationsViewEvaluationSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -507,7 +508,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   EvaluationsModerationRoute: EvaluationsModerationRoute,
-  EvaluationsViewRoute: EvaluationsViewRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   ProfessorsModerationRoute: ProfessorsModerationRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
@@ -515,6 +515,7 @@ const rootRouteChildren: RootRouteChildren = {
   PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
+  EvaluationsViewEvaluationSlugRoute: EvaluationsViewEvaluationSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

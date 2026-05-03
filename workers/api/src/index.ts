@@ -12,6 +12,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Expose-Headers": "Content-Disposition",
 };
 
 const REVIEW_TAGS = [
@@ -126,8 +127,9 @@ export default {
         return await handleEvaluationUpload(request, env);
       }
 
-      if (path === "/evaluations/file" && request.method === "GET") {
-        return await handleEvaluationFile(request, env);
+      const fileMatch = path.match(/^\/evaluations\/(\d+)\/file$/);
+      if (fileMatch && request.method === "GET") {
+        return await handleEvaluationFileById(request, env, parseInt(fileMatch[1], 10));
       }
 
       if (path === "/evaluations/moderate" && request.method === "POST") {
@@ -244,21 +246,31 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
   return ok({ success: true, message: "Evaluacion subida correctamente" });
 }
 
-async function handleEvaluationFile(request: Request, env: Env): Promise<Response> {
-  const userId = await verifyAuth(request, env);
+function formatFileName(courseCode: string | null, evaluationType: string | null, evaluationNumber: number | null, customName: string | null): string {
+  if (evaluationType === "otro" && customName && customName.trim() !== "") {
+    return `${courseCode ?? "evaluacion"}-${customName.trim()}.pdf`;
+  }
 
-  const url = new URL(request.url);
-  const fileKey = url.searchParams.get("key");
-  if (!fileKey) return badRequest("Se requiere file key");
+  if (!evaluationType) return `${courseCode ?? "evaluacion"}.pdf`;
 
+  const base = `${courseCode ?? "evaluacion"}-${evaluationType.toUpperCase()}`;
+  if (evaluationNumber && evaluationNumber > 0) {
+    return `${base}-${evaluationNumber}.pdf`;
+  }
+  return `${base}.pdf`;
+}
+
+async function handleEvaluationFileById(request: Request, env: Env, evaluationId: number): Promise<Response> {
   const supabase = getSupabase(env);
-  const { data: evaluation } = await supabase
+  const { data: evaluation, error } = await supabase
     .from("course_evaluations")
-    .select("id, status, uploaded_by")
-    .eq("file_key", fileKey)
+    .select("id, status, uploaded_by, file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)")
+    .eq("id", evaluationId)
     .single();
 
-  if (!evaluation) return badRequest("Evaluacion no encontrada");
+  if (error || !evaluation) return badRequest("Evaluacion no encontrada");
+
+  const userId = await verifyAuth(request, env);
 
   if (evaluation.status !== "approved") {
     if (!userId) {
@@ -274,15 +286,19 @@ async function handleEvaluationFile(request: Request, env: Env): Promise<Respons
     }
   }
 
-  const object = await env.EVALUATIONS_BUCKET.get(fileKey);
+  const object = await env.EVALUATIONS_BUCKET.get(evaluation.file_key);
   if (!object) return badRequest("Archivo no encontrado");
+
+  const courseCode = (evaluation.course as { code: string } | null)?.code ?? null;
+  const fileName = formatFileName(courseCode, evaluation.evaluation_type, evaluation.evaluation_number, evaluation.custom_name);
 
   return new Response(object.body, {
     status: 200,
     headers: {
       ...corsHeaders,
-      "Content-Type": object.httpMetadata?.contentType ?? "application/pdf",
+      "Content-Type": "application/pdf",
       "Content-Length": String(object.size),
+      "Content-Disposition": `inline; filename="${fileName}"`,
       "Cache-Control": "private, max-age=3600",
     },
   });

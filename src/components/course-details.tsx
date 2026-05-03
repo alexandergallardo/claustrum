@@ -440,13 +440,7 @@ function EvaluationDocument({
     file_size: number
     status: string
   }
-  onPreview: (payload: {
-    key: string
-    courseCode: string
-    evaluationType: EvaluationType
-    evaluationNumber: number | null
-    customName: string | null
-  }) => void
+  onPreview: (payload: { id: number }) => void
 }) {
   const fileName = formatEvaluationFileName(
     courseCode,
@@ -467,11 +461,7 @@ function EvaluationDocument({
             type="button"
             onClick={() =>
               onPreview({
-                key: evaluation.file_key,
-                courseCode,
-                evaluationType: evaluation.evaluation_type,
-                evaluationNumber: evaluation.evaluation_number,
-                customName: evaluation.custom_name,
+                id: evaluation.id,
               })
             }
             className="min-w-0 truncate text-left text-sm font-medium hover:underline underline-offset-4 cursor-pointer"
@@ -1089,16 +1079,10 @@ export function CourseDetails({
                 key={evaluation.id}
                 courseCode={course.code}
                 evaluation={evaluation}
-                onPreview={({ key, courseCode, evaluationType, evaluationNumber, customName }) =>
+                onPreview={({ id }) =>
                   void navigate({
-                    to: "/evaluations/view",
-                    search: {
-                      key,
-                      courseCode,
-                      evaluationType,
-                      evaluationNumber: evaluationNumber ?? undefined,
-                      customName: customName ?? undefined,
-                    },
+                    to: "/evaluations/view/$evaluationSlug",
+                    params: { evaluationSlug: `${id}.pdf` },
                   })
                 }
               />

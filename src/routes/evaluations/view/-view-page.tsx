@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearch } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "@tanstack/react-router";
 import { ArrowLeft, Download, Loader2, Minus, Plus } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
-import type { PDFDocumentProxy } from "pdfjs-dist";
 
 import { Button } from "@/components/ui/button";
-import { getEvaluationSignedUrl } from "@/lib/evaluations/api";
-import { formatEvaluationFileName } from "@/lib/evaluations/types";
+import { getEvaluationDocument } from "@/lib/evaluations/api";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -21,8 +19,12 @@ export function EvaluationViewPage() {
   const MAX_ZOOM = 2;
   const ZOOM_STEP = 0.2;
 
-  const { key, courseCode, evaluationType, evaluationNumber, customName } = useSearch({ from: "/evaluations/view" });
+  const { evaluationSlug } = useParams({ from: "/evaluations/view/$evaluationSlug" });
+  const match = evaluationSlug.match(/^(\d+)\.pdf$/);
+  const evaluationId = match ? parseInt(match[1], 10) : null;
+
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string>("evaluacion.pdf");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
@@ -40,49 +42,29 @@ export function EvaluationViewPage() {
     setNumPages(0);
     setZoom(1);
 
-    if (!key) {
-      setError("No se especificó un archivo");
+    if (!evaluationId) {
+      setError("URL inválida");
       setIsLoading(false);
       return;
     }
 
+    const id: number = evaluationId;
     let cancelled = false;
     let objectUrl: string | null = null;
 
-    const isDirectUrl =
-      key.startsWith("/") ||
-      key.startsWith("http://") ||
-      key.startsWith("https://");
-
     async function load() {
       try {
-        if (isDirectUrl) {
-          const response = await fetch(key);
-          if (!response.ok) throw new Error("No se pudo cargar el PDF");
-          const blob = await response.blob();
-          objectUrl = URL.createObjectURL(blob);
-          if (cancelled) {
-            URL.revokeObjectURL(objectUrl);
-            return;
-          }
-          setBlobUrl(objectUrl);
-        } else {
-          const url = await getEvaluationSignedUrl(key);
-          if (cancelled) {
-            URL.revokeObjectURL(url);
-            return;
-          }
-          objectUrl = url;
-          setBlobUrl(url);
-        }
+        const result = await getEvaluationDocument(id);
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(result.blob);
+        setBlobUrl(objectUrl);
+        setFileName(result.fileName);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "No se pudo cargar el PDF");
         }
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     }
 
@@ -90,13 +72,11 @@ export function EvaluationViewPage() {
 
     return () => {
       cancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [key]);
+  }, [evaluationId]);
 
-  function onDocumentLoadSuccess({ numPages }: PDFDocumentProxy) {
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
     setDocumentLoaded(true);
     pendingCenterRatioRef.current = 0.5;
@@ -130,18 +110,12 @@ export function EvaluationViewPage() {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const updateWidth = () => {
-      setContainerWidth(container.clientWidth);
-    };
-
+    const updateWidth = () => setContainerWidth(container.clientWidth);
     updateWidth();
 
     const resizeObserver = new ResizeObserver(updateWidth);
     resizeObserver.observe(container);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver.disconnect();
   }, [isLoading]);
 
   const isReady = documentLoaded && containerWidth > 0 && numPages > 0;
@@ -151,31 +125,6 @@ export function EvaluationViewPage() {
     containerWidth > 0
       ? Math.max(220, Math.floor((containerWidth - 32) * zoom))
       : undefined;
-
-  const downloadFileName = useMemo(() => {
-    if (courseCode && evaluationType) {
-      return formatEvaluationFileName(
-        courseCode,
-        evaluationType,
-        evaluationNumber ?? null,
-        customName ?? null,
-      );
-    }
-
-    if (!key) {
-      return "evaluacion.pdf";
-    }
-
-    const cleanKey = key.split("?")[0] ?? key;
-    const lastSegment = cleanKey.split("/").filter(Boolean).pop();
-
-    if (!lastSegment) {
-      return "evaluacion.pdf";
-    }
-
-    const decoded = decodeURIComponent(lastSegment);
-    return decoded.toLowerCase().endsWith(".pdf") ? decoded : `${decoded}.pdf`;
-  }, [courseCode, customName, evaluationNumber, evaluationType, key]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -305,7 +254,7 @@ export function EvaluationViewPage() {
               size="icon"
               className="h-8 w-8 cursor-pointer"
             >
-              <a href={blobUrl} download={downloadFileName} aria-label="Descargar PDF" title="Descargar PDF">
+              <a href={blobUrl} download={fileName} aria-label="Descargar PDF" title="Descargar PDF">
                 <Download className="h-4 w-4" />
               </a>
             </Button>

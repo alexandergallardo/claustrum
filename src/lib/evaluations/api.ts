@@ -98,7 +98,7 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
   }
 }
 
-export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
+export async function getEvaluationDocument(evaluationId: number): Promise<{ blob: Blob; fileName: string }> {
   const apiBaseUrl = getApiBaseUrl();
   if (!apiBaseUrl) {
     throw new Error("API Worker URL no configurado");
@@ -113,12 +113,9 @@ export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
 
-  const response = await fetch(
-    `${apiBaseUrl}/evaluations/file?key=${encodeURIComponent(fileKey)}`,
-    {
-      headers,
-    },
-  );
+  const response = await fetch(`${apiBaseUrl}/evaluations/${evaluationId}/file`, {
+    headers,
+  });
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: "Error desconocido" }));
@@ -126,7 +123,15 @@ export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
   }
 
   const blob = await response.blob();
-  return URL.createObjectURL(blob);
+
+  const disposition = response.headers.get("Content-Disposition");
+  let fileName = `evaluacion-${evaluationId}.pdf`;
+  if (disposition) {
+    const nameMatch = disposition.match(/filename="?(.+?)"?$/);
+    if (nameMatch) fileName = nameMatch[1];
+  }
+
+  return { blob, fileName };
 }
 
 export async function moderateEvaluation(

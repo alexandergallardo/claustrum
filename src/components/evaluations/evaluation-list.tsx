@@ -93,8 +93,8 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
                   size="icon"
                   onClick={() =>
                     void navigate({
-                      to: "/evaluations/view",
-                      search: { key: evaluation.file_key },
+                      to: "/evaluations/view/$evaluationSlug",
+                      params: { evaluationSlug: `${evaluation.id}.pdf` },
                     })
                   }
                   aria-label="Vista previa"
