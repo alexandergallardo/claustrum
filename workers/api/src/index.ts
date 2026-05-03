@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 export interface Env {
   EVALUATIONS_BUCKET: R2Bucket;
@@ -12,6 +13,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
+
+const REVIEW_TAGS = [
+  "Da buena retroalimentacion",
+  "Tomaria su clase nuevamente",
+  "Brinda apoyo",
+  "Explica con claridad",
+  "Examenes retadores",
+  "Proyecto util",
+] as const;
+
+const professorReviewSchema = z.object({
+  professorId: z.number().int().positive(),
+  courseCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .min(3)
+    .max(16)
+    .regex(/^[A-Z]{2,4}\d{3,4}$/),
+  comment: z.string().trim().min(5).max(1000),
+  easeScore: z.number().min(0).max(10),
+  qualityScore: z.number().min(0).max(10),
+  clarityScore: z.number().min(0).max(10),
+  fairnessScore: z.number().min(0).max(10),
+  attendanceRequired: z.boolean(),
+  gradeReceived: z.string().trim().max(32).optional(),
+  engagementLevel: z.number().int().min(1).max(5),
+  tags: z.array(z.enum(REVIEW_TAGS)).max(6),
+  turnstileToken: z.string().min(1),
+});
+
+function isRealProfessorName(fullName: string): boolean {
+  const normalized = fullName.trim().toLowerCase();
+  if (normalized.length === 0) return false;
+  if (/sin\s+profesor\s+asignado/i.test(fullName)) return false;
+  if (/se\s+imparte\s+en\s+idioma\s+ingles/i.test(fullName)) return false;
+  return true;
+}
 
 function badRequest(message: string) {
   return new Response(JSON.stringify({ error: message }), {
@@ -83,16 +122,20 @@ export default {
     const path = url.pathname;
 
     try {
-      if (path === "/upload" && request.method === "POST") {
-        return await handleUpload(request, env);
+      if (path === "/evaluations/upload" && request.method === "POST") {
+        return await handleEvaluationUpload(request, env);
       }
 
-      if (path === "/signed-url" && request.method === "GET") {
-        return await handleSignedUrl(request, env);
+      if (path === "/evaluations/file" && request.method === "GET") {
+        return await handleEvaluationFile(request, env);
       }
 
-      if (path === "/moderate" && request.method === "POST") {
-        return await handleModerate(request, env);
+      if (path === "/evaluations/moderate" && request.method === "POST") {
+        return await handleEvaluationModerate(request, env);
+      }
+
+      if (path === "/professor-reviews" && request.method === "POST") {
+        return await handleSubmitProfessorReview(request, env);
       }
 
       return badRequest("Not found");
@@ -103,7 +146,7 @@ export default {
   },
 };
 
-async function handleUpload(request: Request, env: Env): Promise<Response> {
+async function handleEvaluationUpload(request: Request, env: Env): Promise<Response> {
   const userId = await verifyAuth(request, env);
   if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -128,11 +171,11 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   const turnstileToken = formData.get("turnstileToken");
 
   if (typeof turnstileToken !== "string" || turnstileToken.trim() === "") {
-    return badRequest("Se requiere completar la verificación humana");
+    return badRequest("Se requiere completar la verificacion humana");
   }
 
   if (!env.TURNSTILE_SECRET_KEY) {
-    return badRequest("Turnstile no está configurado en el servidor");
+    return badRequest("Turnstile no esta configurado en el servidor");
   }
 
   const remoteIp = request.headers.get("CF-Connecting-IP");
@@ -142,14 +185,13 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   }
 
   if (!evaluationFile || evaluationFile.type !== "application/pdf") {
-    return badRequest("Se requiere un archivo PDF válido");
+    return badRequest("Se requiere un archivo PDF valido");
   }
 
   if (evaluationFile.size > 10 * 1024 * 1024) {
-    return badRequest("El archivo excede el límite de 10 MB");
+    return badRequest("El archivo excede el limite de 10 MB");
   }
 
-  // Upload to R2
   const fileKey = `evaluations/${courseId}/${crypto.randomUUID()}.pdf`;
   await env.EVALUATIONS_BUCKET.put(fileKey, evaluationFile.stream(), {
     httpMetadata: { contentType: "application/pdf" },
@@ -161,7 +203,7 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
       return badRequest("El archivo de respuestas debe ser PDF");
     }
     if (answersFile.size > 10 * 1024 * 1024) {
-      return badRequest("El archivo de respuestas excede el límite de 10 MB");
+      return badRequest("El archivo de respuestas excede el limite de 10 MB");
     }
     answersKey = `evaluations/${courseId}/${crypto.randomUUID()}_answers.pdf`;
     await env.EVALUATIONS_BUCKET.put(answersKey, answersFile.stream(), {
@@ -169,7 +211,6 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
     });
   }
 
-  // Save to Supabase
   const fileSha256 = formData.get("fileSha256") as string | null;
   const answersFileSha256 = formData.get("answersFileSha256") as string | null;
 
@@ -195,23 +236,21 @@ async function handleUpload(request: Request, env: Env): Promise<Response> {
   });
 
   if (dbError) {
-    // Cleanup R2
     await env.EVALUATIONS_BUCKET.delete(fileKey);
     if (answersKey) await env.EVALUATIONS_BUCKET.delete(answersKey);
     throw dbError;
   }
 
-  return ok({ success: true, message: "Evaluación subida correctamente" });
+  return ok({ success: true, message: "Evaluacion subida correctamente" });
 }
 
-async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
+async function handleEvaluationFile(request: Request, env: Env): Promise<Response> {
   const userId = await verifyAuth(request, env);
 
   const url = new URL(request.url);
   const fileKey = url.searchParams.get("key");
   if (!fileKey) return badRequest("Se requiere file key");
 
-  // Verify user has access to this evaluation
   const supabase = getSupabase(env);
   const { data: evaluation } = await supabase
     .from("course_evaluations")
@@ -219,9 +258,8 @@ async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
     .eq("file_key", fileKey)
     .single();
 
-  if (!evaluation) return badRequest("Evaluación no encontrada");
+  if (!evaluation) return badRequest("Evaluacion no encontrada");
 
-  // Check access: approved evaluations are public, pending/rejected only for owner or admin
   if (evaluation.status !== "approved") {
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -232,11 +270,10 @@ async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
 
     if (evaluation.uploaded_by !== userId) {
       const admin = await isAdmin(userId, env);
-      if (!admin) return badRequest("No tienes acceso a esta evaluación");
+      if (!admin) return badRequest("No tienes acceso a esta evaluacion");
     }
   }
 
-  // Stream PDF directly from R2
   const object = await env.EVALUATIONS_BUCKET.get(fileKey);
   if (!object) return badRequest("Archivo no encontrado");
 
@@ -251,7 +288,7 @@ async function handleSignedUrl(request: Request, env: Env): Promise<Response> {
   });
 }
 
-async function handleModerate(request: Request, env: Env): Promise<Response> {
+async function handleEvaluationModerate(request: Request, env: Env): Promise<Response> {
   const userId = await verifyAuth(request, env);
   if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -283,4 +320,116 @@ async function handleModerate(request: Request, env: Env): Promise<Response> {
 
   if (error) throw error;
   return ok({ success: true });
+}
+
+async function handleSubmitProfessorReview(request: Request, env: Env): Promise<Response> {
+  const body = await request.json();
+  const parsed = professorReviewSchema.safeParse(body);
+  if (!parsed.success) {
+    return badRequest("Invalid review payload");
+  }
+
+  if (!env.TURNSTILE_SECRET_KEY) {
+    return new Response(JSON.stringify({ error: "Missing Turnstile secret configuration" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const ip = request.headers.get("cf-connecting-ip") ?? undefined;
+  const turnstileBody = new URLSearchParams({
+    secret: env.TURNSTILE_SECRET_KEY,
+    response: parsed.data.turnstileToken,
+  });
+  if (ip) turnstileBody.set("remoteip", ip);
+
+  const turnstileVerification = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    body: turnstileBody,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
+
+  if (!turnstileVerification.ok) {
+    return new Response(JSON.stringify({ error: "Could not verify anti-spam token" }), {
+      status: 502,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const turnstileJson = (await turnstileVerification.json()) as { success: boolean; "error-codes"?: string[] };
+  if (!turnstileJson.success) {
+    return badRequest("Invalid anti-spam token");
+  }
+
+  const supabase = getSupabase(env);
+
+  const { data: course, error: courseError } = await supabase
+    .from("course")
+    .select("id,code")
+    .eq("code", parsed.data.courseCode)
+    .maybeSingle();
+
+  if (courseError) {
+    return new Response(JSON.stringify({ error: courseError.message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (!course) {
+    return badRequest("Course code does not exist");
+  }
+
+  const { data: professorExists, error: professorError } = await supabase
+    .from("professor")
+    .select("id,full_name")
+    .eq("id", parsed.data.professorId)
+    .maybeSingle();
+
+  if (professorError) {
+    return new Response(JSON.stringify({ error: professorError.message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (!professorExists) {
+    return badRequest("Professor does not exist");
+  }
+
+  if (!isRealProfessorName(professorExists.full_name)) {
+    return badRequest("Professor is not eligible for reviews");
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("professor_review")
+    .insert({
+      professor_id: parsed.data.professorId,
+      course_id: course.id,
+      course_code_snapshot: course.code,
+      course_name_snapshot: "",
+      comment: parsed.data.comment,
+      ease_score: parsed.data.easeScore,
+      quality_score: parsed.data.qualityScore,
+      clarity_score: parsed.data.clarityScore,
+      fairness_score: parsed.data.fairnessScore,
+      attendance_required: parsed.data.attendanceRequired,
+      grade_received: parsed.data.gradeReceived ?? null,
+      engagement_level: parsed.data.engagementLevel,
+      tags: parsed.data.tags,
+      status: "pending",
+    })
+    .select("id,status,created_at")
+    .single();
+
+  if (insertError) {
+    return new Response(JSON.stringify({ error: insertError.message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  return ok({ success: true, review: inserted });
 }

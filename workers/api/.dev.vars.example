@@ -1,0 +1,6 @@
+# Variables locales para el API Worker
+# Copiar a .dev.vars y llenar valores
+
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=
+TURNSTILE_SECRET_KEY=

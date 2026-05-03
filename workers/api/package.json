@@ -1,5 +1,5 @@
 {
-  "name": "claustrum-evaluation-upload",
+  "name": "claustrum-api",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -7,6 +7,7 @@
     "deploy": "wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.90.1"
+    "@supabase/supabase-js": "^2.90.1",
+    "zod": "^4.3.5"
   }
 }
