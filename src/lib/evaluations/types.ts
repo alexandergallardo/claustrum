@@ -68,7 +68,6 @@ export type EvaluationRow = {
   course_id: number;
   academic_term_id: number | null;
   professor_id: number | null;
-  uploaded_by: string;
   evaluation_type: EvaluationType;
   evaluation_number: number | null;
   custom_name: string | null;
@@ -93,8 +92,6 @@ export type EvaluationModerationRow = {
   term_display_name: string | null;
   professor_id: number | null;
   professor_name: string | null;
-  uploaded_by: string;
-  uploader_email: string | null;
   evaluation_type: EvaluationType;
   evaluation_number: number | null;
   custom_name: string | null;

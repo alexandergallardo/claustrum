@@ -149,14 +149,6 @@ export default {
 };
 
 async function handleEvaluationUpload(request: Request, env: Env): Promise<Response> {
-  const userId = await verifyAuth(request, env);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: corsHeaders,
-    });
-  }
-
   const formData = await request.formData();
   const evaluationFile = formData.get("evaluationFile") as File | null;
   const answersFile = formData.get("answersFile") as File | null;
@@ -221,7 +213,6 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
     course_id: courseId,
     academic_term_id: academicTermId,
     professor_id: professorId,
-    uploaded_by: userId,
     evaluation_type: evaluationType,
     evaluation_number: evaluationNumber,
     custom_name: customName && customName.trim() !== "" ? customName.trim() : null,
@@ -264,15 +255,14 @@ async function handleEvaluationFileById(request: Request, env: Env, evaluationId
   const supabase = getSupabase(env);
   const { data: evaluation, error } = await supabase
     .from("course_evaluations")
-    .select("id, status, uploaded_by, file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)")
+    .select("id, status, file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)")
     .eq("id", evaluationId)
     .single();
 
   if (error || !evaluation) return badRequest("Evaluacion no encontrada");
 
-  const userId = await verifyAuth(request, env);
-
   if (evaluation.status !== "approved") {
+    const userId = await verifyAuth(request, env);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -280,10 +270,8 @@ async function handleEvaluationFileById(request: Request, env: Env, evaluationId
       });
     }
 
-    if (evaluation.uploaded_by !== userId) {
-      const admin = await isAdmin(userId, env);
-      if (!admin) return badRequest("No tienes acceso a esta evaluacion");
-    }
+    const admin = await isAdmin(userId, env);
+    if (!admin) return badRequest("No tienes acceso a esta evaluacion");
   }
 
   const object = await env.EVALUATIONS_BUCKET.get(evaluation.file_key);

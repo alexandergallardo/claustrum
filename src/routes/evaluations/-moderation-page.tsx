@@ -103,7 +103,6 @@ export function EvaluationModerationPage() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead>Profesor</TableHead>
-                  <TableHead>Usuario</TableHead>
                   <TableHead>Tamaño</TableHead>
                   <TableHead>Cátedra</TableHead>
                   <TableHead>Respuestas</TableHead>
@@ -129,9 +128,6 @@ export function EvaluationModerationPage() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {evaluation.professor_name ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {evaluation.uploader_email ?? "—"}
                     </TableCell>
                     <TableCell className="text-sm font-mono">
                       {formatFileSize(evaluation.file_size)}

@@ -44,13 +44,6 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
     throw new Error("API Worker URL no configurado");
   }
 
-  const supabase = getSupabaseBrowserClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
-  if (!accessToken) {
-    throw new Error("Debes iniciar sesión para subir evaluaciones");
-  }
-
   const [fileSha256, answersFileSha256] = await Promise.all([
     sha256File(payload.evaluationFile),
     payload.answersFile ? sha256File(payload.answersFile) : Promise.resolve(""),
@@ -86,9 +79,6 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
 
   const response = await fetch(`${apiBaseUrl}/evaluations/upload`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
     body: formData,
   });
 
