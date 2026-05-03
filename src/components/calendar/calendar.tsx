@@ -16,6 +16,7 @@ export default function Calendar({
   setHourHeight,
   dayWidth,
   setDayWidth,
+  exportTheme,
 }: CalendarProps) {
   return (
     <CalendarProvider
@@ -31,6 +32,7 @@ export default function Calendar({
       setHourHeight={setHourHeight}
       dayWidth={dayWidth}
       setDayWidth={setDayWidth}
+      exportTheme={exportTheme}
     >
       <TooltipProvider delayDuration={200}>
         <CalendarBody />

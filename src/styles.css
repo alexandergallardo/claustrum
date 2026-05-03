@@ -210,3 +210,179 @@ code {
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
 }
+
+[data-schedule-event-color="blue"] {
+  --schedule-event-bg: rgb(219 234 254);
+  --schedule-event-hover: rgb(191 219 254);
+  --schedule-event-border: rgb(147 197 253);
+  --schedule-event-text: rgb(30 58 138);
+}
+
+[data-schedule-event-color="emerald"] {
+  --schedule-event-bg: rgb(209 250 229);
+  --schedule-event-hover: rgb(167 243 208);
+  --schedule-event-border: rgb(110 231 183);
+  --schedule-event-text: rgb(6 95 70);
+}
+
+[data-schedule-event-color="yellow"] {
+  --schedule-event-bg: rgb(254 249 195);
+  --schedule-event-hover: rgb(254 240 138);
+  --schedule-event-border: rgb(253 224 71);
+  --schedule-event-text: rgb(113 63 18);
+}
+
+[data-schedule-event-color="red"] {
+  --schedule-event-bg: rgb(254 226 226);
+  --schedule-event-hover: rgb(254 202 202);
+  --schedule-event-border: rgb(252 165 165);
+  --schedule-event-text: rgb(127 29 29);
+}
+
+[data-schedule-event-color="orange"] {
+  --schedule-event-bg: rgb(255 237 213);
+  --schedule-event-hover: rgb(254 215 170);
+  --schedule-event-border: rgb(253 186 116);
+  --schedule-event-text: rgb(124 45 18);
+}
+
+[data-schedule-event-color="fuchsia"] {
+  --schedule-event-bg: rgb(250 232 255);
+  --schedule-event-hover: rgb(245 208 254);
+  --schedule-event-border: rgb(240 171 252);
+  --schedule-event-text: rgb(112 26 117);
+}
+
+[data-schedule-event-color="violet"] {
+  --schedule-event-bg: rgb(237 233 254);
+  --schedule-event-hover: rgb(221 214 254);
+  --schedule-event-border: rgb(196 181 253);
+  --schedule-event-text: rgb(76 29 149);
+}
+
+[data-schedule-event-color="slate"] {
+  --schedule-event-bg: rgb(241 245 249);
+  --schedule-event-hover: rgb(226 232 240);
+  --schedule-event-border: rgb(203 213 225);
+  --schedule-event-text: rgb(15 23 42);
+}
+
+.dark [data-schedule-event-color="blue"],
+[data-export-theme="dark"] [data-schedule-event-color="blue"] {
+  --schedule-event-bg: rgb(23 37 84);
+  --schedule-event-hover: rgb(30 58 138);
+  --schedule-event-border: rgb(29 78 216);
+  --schedule-event-text: rgb(219 234 254);
+}
+
+.dark [data-schedule-event-color="emerald"],
+[data-export-theme="dark"] [data-schedule-event-color="emerald"] {
+  --schedule-event-bg: rgb(2 44 34);
+  --schedule-event-hover: rgb(6 78 59);
+  --schedule-event-border: rgb(4 120 87);
+  --schedule-event-text: rgb(209 250 229);
+}
+
+.dark [data-schedule-event-color="yellow"],
+[data-export-theme="dark"] [data-schedule-event-color="yellow"] {
+  --schedule-event-bg: rgb(66 32 6);
+  --schedule-event-hover: rgb(113 63 18);
+  --schedule-event-border: rgb(161 98 7);
+  --schedule-event-text: rgb(254 249 195);
+}
+
+.dark [data-schedule-event-color="red"],
+[data-export-theme="dark"] [data-schedule-event-color="red"] {
+  --schedule-event-bg: rgb(69 10 10);
+  --schedule-event-hover: rgb(127 29 29);
+  --schedule-event-border: rgb(185 28 28);
+  --schedule-event-text: rgb(254 226 226);
+}
+
+.dark [data-schedule-event-color="orange"],
+[data-export-theme="dark"] [data-schedule-event-color="orange"] {
+  --schedule-event-bg: rgb(67 20 7);
+  --schedule-event-hover: rgb(124 45 18);
+  --schedule-event-border: rgb(194 65 12);
+  --schedule-event-text: rgb(255 237 213);
+}
+
+.dark [data-schedule-event-color="fuchsia"],
+[data-export-theme="dark"] [data-schedule-event-color="fuchsia"] {
+  --schedule-event-bg: rgb(74 4 78);
+  --schedule-event-hover: rgb(112 26 117);
+  --schedule-event-border: rgb(162 28 175);
+  --schedule-event-text: rgb(250 232 255);
+}
+
+.dark [data-schedule-event-color="violet"],
+[data-export-theme="dark"] [data-schedule-event-color="violet"] {
+  --schedule-event-bg: rgb(46 16 101);
+  --schedule-event-hover: rgb(76 29 149);
+  --schedule-event-border: rgb(109 40 217);
+  --schedule-event-text: rgb(237 233 254);
+}
+
+.dark [data-schedule-event-color="slate"],
+[data-export-theme="dark"] [data-schedule-event-color="slate"] {
+  --schedule-event-bg: rgb(15 23 42);
+  --schedule-event-hover: rgb(30 41 59);
+  --schedule-event-border: rgb(51 65 85);
+  --schedule-event-text: rgb(241 245 249);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="blue"] {
+  --schedule-event-bg: rgb(219 234 254);
+  --schedule-event-hover: rgb(191 219 254);
+  --schedule-event-border: rgb(147 197 253);
+  --schedule-event-text: rgb(30 58 138);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="emerald"] {
+  --schedule-event-bg: rgb(209 250 229);
+  --schedule-event-hover: rgb(167 243 208);
+  --schedule-event-border: rgb(110 231 183);
+  --schedule-event-text: rgb(6 95 70);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="yellow"] {
+  --schedule-event-bg: rgb(254 249 195);
+  --schedule-event-hover: rgb(254 240 138);
+  --schedule-event-border: rgb(253 224 71);
+  --schedule-event-text: rgb(113 63 18);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="red"] {
+  --schedule-event-bg: rgb(254 226 226);
+  --schedule-event-hover: rgb(254 202 202);
+  --schedule-event-border: rgb(252 165 165);
+  --schedule-event-text: rgb(127 29 29);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="orange"] {
+  --schedule-event-bg: rgb(255 237 213);
+  --schedule-event-hover: rgb(254 215 170);
+  --schedule-event-border: rgb(253 186 116);
+  --schedule-event-text: rgb(124 45 18);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="fuchsia"] {
+  --schedule-event-bg: rgb(250 232 255);
+  --schedule-event-hover: rgb(245 208 254);
+  --schedule-event-border: rgb(240 171 252);
+  --schedule-event-text: rgb(112 26 117);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="violet"] {
+  --schedule-event-bg: rgb(237 233 254);
+  --schedule-event-hover: rgb(221 214 254);
+  --schedule-event-border: rgb(196 181 253);
+  --schedule-event-text: rgb(76 29 149);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="slate"] {
+  --schedule-event-bg: rgb(241 245 249);
+  --schedule-event-hover: rgb(226 232 240);
+  --schedule-event-border: rgb(203 213 225);
+  --schedule-event-text: rgb(15 23 42);
+}

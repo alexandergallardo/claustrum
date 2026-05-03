@@ -20,20 +20,23 @@ export default function CalendarBodyWeek() {
   return (
     <div className="flex-1 min-w-0 overflow-x-auto">
       <div
-        className="relative flex divide-x min-w-[var(--week-min-width)] lg:min-w-0"
+        className="relative flex min-w-[var(--week-min-width)] lg:min-w-0"
         style={{
           minHeight: contentHeight,
           '--week-min-width': `${weekMinWidth}px`,
         } as CSSProperties}
       >
         <CalendarBodyDayMargin />
-        {weekDays.map((day) => (
+        {weekDays.map((day, index) => (
           <div
             key={day.toISOString()}
-            className="flex min-w-[var(--day-width)] flex-1 lg:min-w-0"
+            className={`flex min-w-[var(--day-width)] flex-1 lg:min-w-0 ${index > 0 ? 'border-l' : ''}`}
             style={{ '--day-width': `${dayWidth}px` } as CSSProperties}
           >
-            <CalendarBodyDayContent date={day} />
+            <CalendarBodyDayContent
+              date={day}
+              headerClassName={index === 0 ? 'border-l' : undefined}
+            />
           </div>
         ))}
       </div>

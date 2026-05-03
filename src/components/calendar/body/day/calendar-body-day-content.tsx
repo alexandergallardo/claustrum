@@ -75,7 +75,13 @@ function calculateEventLayouts(events: CalendarEventType[], hourHeight: number):
   return layouts
 }
 
-export default function CalendarBodyDayContent({ date }: { date: Date }) {
+export default function CalendarBodyDayContent({
+  date,
+  headerClassName,
+}: {
+  date: Date
+  headerClassName?: string
+}) {
   const { events, hourHeight } = useCalendarContext()
 
   const dayEvents = useMemo(
@@ -90,7 +96,7 @@ export default function CalendarBodyDayContent({ date }: { date: Date }) {
 
   return (
     <div className="flex flex-col flex-grow">
-      <CalendarBodyHeader date={date} onlyDay />
+      <CalendarBodyHeader date={date} onlyDay className={headerClassName} />
 
       <div className="flex-1 relative">
         {hours.map((hour) => (

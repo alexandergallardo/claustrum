@@ -5,14 +5,16 @@ import { cn } from '@/lib/utils'
 export default function CalendarBodyHeader({
   date,
   onlyDay = false,
+  className,
 }: {
   date: Date
   onlyDay?: boolean
+  className?: string
 }) {
   const isToday = isSameDay(date, new Date())
 
   return (
-    <div className="flex items-center justify-center gap-1 h-[33px] w-full sticky top-0 bg-background z-10 border-b">
+    <div className={cn("flex items-center justify-center gap-1 h-[33px] w-full sticky top-0 bg-background z-10 border-b", className)}>
       <span
         className={cn(
           'text-xs font-medium capitalize',

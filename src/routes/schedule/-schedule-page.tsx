@@ -10,6 +10,7 @@ import {
   useTransition,
   type CSSProperties,
 } from "react";
+import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import { ChevronDown, User } from "lucide-react";
 import CourseList from "@/components/course-list";
@@ -34,6 +35,7 @@ import {
 import {
   ScheduleExportDialog,
   type ScheduleExportOptions,
+  type ScheduleExportTheme,
 } from "@/components/schedule/schedule-export-dialog";
 import {
   START_HOUR,
@@ -67,6 +69,53 @@ const EXPORT_HEADER_HEIGHT = 33;
 const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
 const EXPORT_IMAGE_WIDTH = EXPORT_MARGIN_WIDTH + EXPORT_DAY_WIDTH * EXPORT_WEEK_DAYS;
 const EXPORT_IMAGE_HEIGHT = EXPORT_HEADER_HEIGHT + TOTAL_HOURS * EXPORT_HOUR_HEIGHT;
+
+const EXPORT_EVENT_COLORS = {
+  light: {
+    blue: ["rgb(219 234 254)", "rgb(191 219 254)", "rgb(147 197 253)", "rgb(30 58 138)"],
+    emerald: ["rgb(209 250 229)", "rgb(167 243 208)", "rgb(110 231 183)", "rgb(6 95 70)"],
+    yellow: ["rgb(254 249 195)", "rgb(254 240 138)", "rgb(253 224 71)", "rgb(113 63 18)"],
+    red: ["rgb(254 226 226)", "rgb(254 202 202)", "rgb(252 165 165)", "rgb(127 29 29)"],
+    orange: ["rgb(255 237 213)", "rgb(254 215 170)", "rgb(253 186 116)", "rgb(124 45 18)"],
+    fuchsia: ["rgb(250 232 255)", "rgb(245 208 254)", "rgb(240 171 252)", "rgb(112 26 117)"],
+    violet: ["rgb(237 233 254)", "rgb(221 214 254)", "rgb(196 181 253)", "rgb(76 29 149)"],
+    slate: ["rgb(241 245 249)", "rgb(226 232 240)", "rgb(203 213 225)", "rgb(15 23 42)"],
+  },
+  dark: {
+    blue: ["rgb(23 37 84)", "rgb(30 58 138)", "rgb(29 78 216)", "rgb(219 234 254)"],
+    emerald: ["rgb(2 44 34)", "rgb(6 78 59)", "rgb(4 120 87)", "rgb(209 250 229)"],
+    yellow: ["rgb(66 32 6)", "rgb(113 63 18)", "rgb(161 98 7)", "rgb(254 249 195)"],
+    red: ["rgb(69 10 10)", "rgb(127 29 29)", "rgb(185 28 28)", "rgb(254 226 226)"],
+    orange: ["rgb(67 20 7)", "rgb(124 45 18)", "rgb(194 65 12)", "rgb(255 237 213)"],
+    fuchsia: ["rgb(74 4 78)", "rgb(112 26 117)", "rgb(162 28 175)", "rgb(250 232 255)"],
+    violet: ["rgb(46 16 101)", "rgb(76 29 149)", "rgb(109 40 217)", "rgb(237 233 254)"],
+    slate: ["rgb(15 23 42)", "rgb(30 41 59)", "rgb(51 65 85)", "rgb(241 245 249)"],
+  },
+} as const;
+
+function applyExportEventColors(
+  root: HTMLElement,
+  theme: ScheduleExportTheme,
+) {
+  const elements = root.querySelectorAll<HTMLElement>("[data-schedule-event-color]");
+  elements.forEach((element) => {
+    const color = element.dataset.scheduleEventColor as keyof typeof EXPORT_EVENT_COLORS.light;
+    const [bg, hover, border, text] = EXPORT_EVENT_COLORS[theme][color] ?? EXPORT_EVENT_COLORS[theme].blue;
+    element.style.setProperty("--schedule-event-bg", bg);
+    element.style.setProperty("--schedule-event-hover", hover);
+    element.style.setProperty("--schedule-event-border", border);
+    element.style.setProperty("--schedule-event-text", text);
+  });
+
+  return () => {
+    elements.forEach((element) => {
+      element.style.removeProperty("--schedule-event-bg");
+      element.style.removeProperty("--schedule-event-hover");
+      element.style.removeProperty("--schedule-event-border");
+      element.style.removeProperty("--schedule-event-text");
+    });
+  };
+}
 
 export function SchedulePage() {
   const isMobile = useIsMobile();
@@ -108,6 +157,8 @@ export function SchedulePage() {
   const [hourHeight, setHourHeight] = useState<number>(
     SCHEDULE_DEFAULT_HOUR_HEIGHT,
   );
+  const [currentExportTheme, setCurrentExportTheme] =
+    useState<ScheduleExportTheme>("light");
   const [, startTransition] = useTransition();
   const totalHours = END_HOUR - START_HOUR + 1;
   const calendarHeight = totalHours * hourHeight + 33;
@@ -591,10 +642,13 @@ export function SchedulePage() {
       return;
     }
 
-    const exportTheme = options.transparent ? null : options.theme;
+    const exportTheme = options.theme;
+    flushSync(() => setCurrentExportTheme(exportTheme));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     if (exportTheme) {
       calendarElement.setAttribute("data-export-theme", exportTheme);
     }
+    const resetEventColors = applyExportEventColors(calendarElement, options.theme);
 
     try {
       const { toJpeg, toPng } = await import("html-to-image");
@@ -615,7 +669,7 @@ export function SchedulePage() {
         style: {
           width: `${EXPORT_IMAGE_WIDTH}px`,
           height: `${EXPORT_IMAGE_HEIGHT}px`,
-          overflow: "visible" as const,
+          overflow: "hidden" as const,
           position: "static" as const,
           zIndex: "auto" as const,
           opacity: "1" as const,
@@ -641,6 +695,7 @@ export function SchedulePage() {
       if (exportTheme) {
         calendarElement.removeAttribute("data-export-theme");
       }
+      resetEventColors();
     }
   }, [calendarEvents, selectedTerm]);
 
@@ -785,7 +840,7 @@ export function SchedulePage() {
             {orderedCourses.length > 0 && (
               <div className="px-4 lg:px-6">
                 <div
-                  className="border rounded-lg shrink-0 h-auto lg:h-[var(--calendar-height)]"
+                  className="border rounded-lg overflow-hidden shrink-0 h-auto lg:h-[var(--calendar-height)]"
                   style={{
                     "--calendar-height": `${calendarHeight}px`,
                   } as CSSProperties}
@@ -938,7 +993,7 @@ export function SchedulePage() {
       {/* Hidden calendar for export - behind the page, within viewport so html-to-image can capture it */}
       <div
         ref={exportCalendarRef}
-        className="fixed left-0 top-0 -z-10 overflow-hidden pointer-events-none opacity-0"
+        className="fixed left-0 top-0 -z-10 overflow-hidden pointer-events-none rounded-lg border bg-background opacity-0"
         style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
       >
         <Suspense fallback={null}>
@@ -951,6 +1006,7 @@ export function SchedulePage() {
             setDate={() => {}}
             hourHeight={EXPORT_HOUR_HEIGHT}
             dayWidth={EXPORT_DAY_WIDTH}
+            exportTheme={currentExportTheme}
           />
         </Suspense>
       </div>

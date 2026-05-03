@@ -1,5 +1,5 @@
 import { CalendarContext } from './calendar-context'
-import type { CalendarEvent, Mode } from './calendar-types'
+import type { CalendarEvent, CalendarExportTheme, Mode } from './calendar-types'
 import {
   DEFAULT_HOUR_HEIGHT,
   MIN_HOUR_HEIGHT,
@@ -48,6 +48,7 @@ export default function CalendarProvider({
   setHourHeight: externalSetHourHeight,
   dayWidth: externalDayWidth,
   setDayWidth: externalSetDayWidth,
+  exportTheme,
   children,
 }: {
   events: CalendarEvent[]
@@ -62,6 +63,7 @@ export default function CalendarProvider({
   setHourHeight?: (height: number) => void
   dayWidth?: number
   setDayWidth?: (width: number) => void
+  exportTheme?: CalendarExportTheme
   children: React.ReactNode
 }) {
   const [newEventDialogOpen, setNewEventDialogOpen] = useState(false)
@@ -112,6 +114,7 @@ export default function CalendarProvider({
         setHourHeight,
         dayWidth,
         setDayWidth,
+        exportTheme,
       }}
     >
       {children}

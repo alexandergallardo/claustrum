@@ -2,14 +2,6 @@ import { useEffect, useState } from "react";
 import { ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +19,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 export type ScheduleExportFormat = "png" | "jpeg" | "ics";
 export type ScheduleExportTheme = "light" | "dark";
@@ -37,6 +30,45 @@ export interface ScheduleExportOptions {
   transparent: boolean;
 }
 
+const formatOptions: Array<{
+  value: ScheduleExportFormat;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "png",
+    title: "PNG",
+    description: "Imagen con fondo transparente.",
+  },
+  {
+    value: "jpeg",
+    title: "JPEG",
+    description: "Imagen liviana con fondo sólido.",
+  },
+  {
+    value: "ics",
+    title: "Calendario",
+    description: "Archivo .ics para apps de calendario.",
+  },
+];
+
+const themeOptions: Array<{
+  value: ScheduleExportTheme;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "light",
+    title: "Claro",
+    description: "Fondo blanco y texto oscuro.",
+  },
+  {
+    value: "dark",
+    title: "Oscuro",
+    description: "Fondo oscuro y texto claro.",
+  },
+];
+
 interface ScheduleExportDialogProps {
   onExport: (options: ScheduleExportOptions) => Promise<void> | void;
 }
@@ -44,7 +76,6 @@ interface ScheduleExportDialogProps {
 export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
   const [format, setFormat] = useState<ScheduleExportFormat>("png");
   const [theme, setTheme] = useState<ScheduleExportTheme>("light");
-  const [transparent, setTransparent] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const isMobile = useIsMobile();
@@ -59,7 +90,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await onExport({ format, theme, transparent });
+      await onExport({ format, theme, transparent: format === "png" });
       setIsOpen(false);
     } finally {
       setIsExporting(false);
@@ -67,52 +98,65 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
   };
 
   const formFields = (
-    <div className="grid gap-4">
-      <div className="grid gap-2">
+    <div className="space-y-5">
+      <div className="space-y-2.5">
         <Label>Formato</Label>
-        <Select
-          value={format}
-          onValueChange={(value) => setFormat(value as ScheduleExportFormat)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona un formato" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="png">PNG</SelectItem>
-            <SelectItem value="jpeg">JPEG / JPG</SelectItem>
-            <SelectItem value="ics">Calendario (.ics)</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {formatOptions.map((option) => {
+            const isSelected = format === option.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={cn(
+                  "rounded-xl border p-3 text-left transition-all hover:border-primary/60 hover:bg-muted/40",
+                  isSelected && "border-primary bg-primary/5 shadow-sm",
+                )}
+                onClick={() => setFormat(option.value)}
+              >
+                <span className="block text-sm font-semibold leading-none">
+                  {option.title}
+                </span>
+                <span className="mt-1.5 block text-xs leading-snug text-muted-foreground">
+                  {option.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {format !== "ics" && (
-        <>
-          <div className="grid gap-2">
-            <Label>Modo</Label>
-            <Select
-              value={theme}
-              onValueChange={(value) => setTheme(value as ScheduleExportTheme)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un modo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Claro</SelectItem>
-                <SelectItem value="dark">Oscuro</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2.5">
+          <Label>Modo</Label>
+          <div className="grid grid-cols-2 gap-2 rounded-xl border bg-muted/20 p-1">
+            {themeOptions.map((option) => {
+              const isSelected = theme === option.value;
 
-          <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-            <div className="space-y-1">
-              <Label>Fondo transparente</Label>
-              <p className="text-sm text-muted-foreground">
-                Ideal para insertar en documentos o presentaciones.
-              </p>
-            </div>
-            <Switch checked={transparent} onCheckedChange={setTransparent} />
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={cn(
+                    "rounded-lg px-3 py-2.5 text-left transition-all",
+                    isSelected
+                      ? "bg-background shadow-sm"
+                      : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                  )}
+                  onClick={() => setTheme(option.value)}
+                >
+                  <span className="block text-sm font-semibold leading-none">
+                    {option.title}
+                  </span>
+                  <span className="mt-1 block text-xs leading-snug">
+                    {option.description}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

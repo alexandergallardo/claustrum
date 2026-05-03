@@ -3,7 +3,7 @@ import { useCalendarContext } from "../calendar-context";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { getColorClasses } from "@/lib/color-utils";
+import { getColorClasses, getEventColorStyle } from "@/lib/color-utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Building2, Clock, Layers, MapPin, User, Users, X } from "lucide-react";
 import { memo } from "react";
@@ -28,9 +28,15 @@ const CalendarEvent = memo(function CalendarEvent({
   month = false,
   className,
 }: CalendarEventProps) {
-  const { onRemoveEvent } = useCalendarContext();
+  const { onRemoveEvent, exportTheme } = useCalendarContext();
 
-  const style = month ? {} : (position ?? {});
+  const eventColorStyle = exportTheme
+    ? getEventColorStyle(event.color, exportTheme)
+    : undefined;
+  const style = {
+    ...(month ? {} : (position ?? {})),
+    ...eventColorStyle,
+  };
 
   const colorClasses = getColorClasses(event.color);
 
@@ -57,6 +63,7 @@ const CalendarEvent = memo(function CalendarEvent({
             !month && "absolute overflow-hidden",
             className,
           )}
+          data-schedule-event-color={event.color}
           style={style}
         >
           {!month && onRemoveEvent && (

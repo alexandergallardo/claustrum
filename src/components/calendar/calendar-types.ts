@@ -3,6 +3,7 @@ import type { CalendarEvent as CalendarEventType } from '@/lib/types'
 export type { CalendarEventType as CalendarEvent }
 export const calendarModes = ['day', 'week', 'month'] as const
 export type Mode = (typeof calendarModes)[number]
+export type CalendarExportTheme = 'light' | 'dark'
 
 // Altura de hora en píxeles (por defecto 128px = h-32)
 export const DEFAULT_HOUR_HEIGHT = 128
@@ -26,6 +27,7 @@ export type CalendarProps = {
   setHourHeight?: (height: number) => void
   dayWidth?: number
   setDayWidth?: (width: number) => void
+  exportTheme?: CalendarExportTheme
 }
 
 export type CalendarContextType = CalendarProps & {
