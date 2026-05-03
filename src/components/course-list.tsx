@@ -77,10 +77,7 @@ function createGroupView(
   const campusId = group.campus_id ?? course.campus_id ?? null
   const groupId = getGroupId(
     course.course_code,
-    parseInt(group.group_code, 10),
-    campusId,
-    course.offering_id,
-    group.group_id
+    group.group_code,
   )
   const campusLabel = showCampus
     ? (campusId ? campusById?.get(campusId) ?? `Sede ${campusId}` : null)
@@ -106,10 +103,7 @@ function createCourseViewData(course: ScheduleCourse, showCampus: boolean, campu
   for (const group of course.groups ?? []) {
     const groupKey = getGroupId(
       course.course_code,
-      parseInt(group.group_code, 10),
-      group.campus_id ?? course.campus_id,
-      course.offering_id,
-      group.group_id
+      group.group_code,
     )
     if (!uniqueGroups.has(groupKey)) {
       uniqueGroups.set(groupKey, group)
@@ -138,10 +132,7 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
     const { course: course1, group: group1 } = allGroupsList[i]
     const id1 = getGroupId(
       course1.course_code,
-      parseInt(group1.group_code, 10),
-      group1.campus_id,
-      course1.offering_id,
-      group1.group_id
+      group1.group_code,
     )
     const meetings1 = group1.meetings
 
@@ -155,10 +146,7 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
 
       const id2 = getGroupId(
         course2.course_code,
-        parseInt(group2.group_code, 10),
-        group2.campus_id,
-        course2.offering_id,
-        group2.group_id
+        group2.group_code,
       )
 
       for (const s1 of meetings1) {
@@ -272,16 +260,10 @@ export default function CourseList({
     (
       courseCode: string,
       groupCode: string,
-      campusId?: number | null,
-      offeringId?: number | null,
-      groupDbId?: number | null
     ) => {
       const groupId = getGroupId(
         courseCode,
-        parseInt(groupCode, 10),
-        campusId,
-        offeringId,
-        groupDbId
+        groupCode,
       )
       const newSelection = new Set(selectedGroups)
 
@@ -349,9 +331,6 @@ const CourseCard = memo(function CourseCard({
   onGroupToggle: (
     courseCode: string,
     groupCode: string,
-    campusId?: number | null,
-    offeringId?: number | null,
-    groupDbId?: number | null
   ) => void
 }) {
   return (
@@ -397,9 +376,6 @@ const CourseCard = memo(function CourseCard({
                         onGroupToggle(
                           course.course_code,
                           groupView.group.group_code,
-                          groupView.group.campus_id ?? course.campus_id,
-                          course.offering_id,
-                          groupView.group.group_id
                         )
                       }
                     >

@@ -200,10 +200,7 @@ export function SchedulePage() {
         const campusId = group.campus_id ?? course.campus_id ?? null;
         const groupId = getGroupId(
           course.course_code,
-          parseInt(group.group_code, 10),
-          campusId,
-          course.offering_id,
-          group.group_id,
+          group.group_code,
         );
         map.set(groupId, {
           course,

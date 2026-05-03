@@ -147,10 +147,7 @@ export function getConflictInfo(
 
   const groupId = getGroupId(
     courseCode,
-    parseInt(groupCode, 10),
-    group.campus_id,
-    undefined,
-    group.group_id
+    groupCode,
   )
   if (!selectedGroups.has(groupId)) {
     return result
@@ -161,10 +158,7 @@ export function getConflictInfo(
   for (const other of allGroups) {
     const otherGroupId = getGroupId(
       other.course.course_code,
-      parseInt(other.group.group_code, 10),
-      other.group.campus_id,
-      other.course.offering_id,
-      other.group.group_id
+      other.group.group_code,
     )
     if (otherGroupId === groupId) continue
     if (!selectedGroups.has(otherGroupId)) continue
@@ -213,33 +207,8 @@ function formatTime(time: string): string {
 }
 
 export function getGroupId(
-  courseId: string,
-  group: number,
-  campusId?: number | null,
-  offeringId?: number | null,
-  groupDbId?: number | null
+  courseCode: string,
+  groupCode: string,
 ): string {
-  if (groupDbId !== null && groupDbId !== undefined) {
-    if (campusId !== null && campusId !== undefined) {
-      if (offeringId !== null && offeringId !== undefined) {
-        return `${courseId}-${group}-${campusId}-${offeringId}-${groupDbId}`
-      }
-      return `${courseId}-${group}-${campusId}-${groupDbId}`
-    }
-    if (offeringId !== null && offeringId !== undefined) {
-      return `${courseId}-${group}-${offeringId}-${groupDbId}`
-    }
-    return `${courseId}-${group}-${groupDbId}`
-  }
-
-  if (campusId !== null && campusId !== undefined) {
-    if (offeringId !== null && offeringId !== undefined) {
-      return `${courseId}-${group}-${campusId}-${offeringId}`
-    }
-    return `${courseId}-${group}-${campusId}`
-  }
-  if (offeringId !== null && offeringId !== undefined) {
-    return `${courseId}-${group}-${offeringId}`
-  }
-  return `${courseId}-${group}`
+  return `${courseCode}-${groupCode}`
 }
