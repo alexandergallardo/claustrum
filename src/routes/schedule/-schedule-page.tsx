@@ -612,13 +612,17 @@ export function SchedulePage() {
       const captureOptions = {
         quality: 0.95,
         backgroundColor,
-        pixelRatio: 2,
+        pixelRatio: 3,
         width: EXPORT_IMAGE_WIDTH,
         height: EXPORT_IMAGE_HEIGHT,
         style: {
           width: `${EXPORT_IMAGE_WIDTH}px`,
           height: `${EXPORT_IMAGE_HEIGHT}px`,
           overflow: "visible" as const,
+          position: "static" as const,
+          zIndex: "auto" as const,
+          opacity: "1" as const,
+          pointerEvents: "none" as const,
         },
       };
 
@@ -934,10 +938,10 @@ export function SchedulePage() {
       </div>
     </div>
 
-      {/* Hidden calendar for export - fixed dimensions, independent of zoom/viewport */}
+      {/* Hidden calendar for export - behind the page, within viewport so html-to-image can capture it */}
       <div
         ref={exportCalendarRef}
-        className="fixed -left-[9999px] top-0 overflow-hidden"
+        className="fixed left-0 top-0 -z-10 overflow-hidden pointer-events-none opacity-0"
         style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
       >
         <Suspense fallback={null}>
