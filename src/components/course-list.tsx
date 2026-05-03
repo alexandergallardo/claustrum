@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { User, Clock, AlertTriangle, MapPin, Users } from 'lucide-react'
+import { User, Clock, MapPin, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getGroupId } from '@/lib/calendar-utils'
 import { colorOptions } from '@/components/calendar/calendar-tailwind-classes'
@@ -167,6 +167,29 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
   return map
 }
 
+function createGroupLabelMap(
+  courses: ScheduleCourse[],
+  showCampus: boolean,
+  campusById?: Map<number, string>
+): Map<string, string> {
+  const map = new Map<string, string>()
+
+  courses.forEach((course) => {
+    course.groups?.forEach((group) => {
+      const groupId = getGroupId(course.course_code, group.group_code)
+      const campusId = group.campus_id ?? course.campus_id ?? null
+      const campusLabel = showCampus
+        ? (campusId ? campusById?.get(campusId) ?? `Sede ${campusId}` : null)
+        : null
+      const campusSuffix = campusLabel ? ` • ${campusLabel}` : ''
+
+      map.set(groupId, `${course.course_code}: ${course.course_name} - GRUPO ${group.group_code}${campusSuffix}`)
+    })
+  })
+
+  return map
+}
+
 function createConflictReasons(
   selectedGroups: SelectedGroups,
   conflictMap: Map<string, Set<string>>,
@@ -176,24 +199,18 @@ function createConflictReasons(
 ): { conflictReasons: Map<string, string[]>; disabledSet: Set<string> } {
   const conflictReasons = new Map<string, string[]>()
   const disabledSet = new Set<string>()
-  const courseByCode = new Map(courses.map(c => [c.course_code, c] as [string, ScheduleCourse]))
+  const groupLabelsById = createGroupLabelMap(courses, showCampus, campusById)
 
   selectedGroups.forEach((selectedId) => {
     const conflicts = conflictMap.get(selectedId)
     if (!conflicts) return
 
+    const label = groupLabelsById.get(selectedId)
+    if (!label) return
+
     conflicts.forEach((conflictId) => {
       if (selectedGroups.has(conflictId)) return
       disabledSet.add(conflictId)
-
-      const [courseCode, groupNum, campusIdStr] = selectedId.split('-')
-      const course = courseByCode.get(courseCode)
-      if (!course) return
-
-      const campusId = campusIdStr ? parseInt(campusIdStr, 10) : null
-      const campusLabel = showCampus ? (campusId ? campusById?.get(campusId) ?? `Sede ${campusId}` : null) : null
-      const campusSuffix = campusLabel ? ` • ${campusLabel}` : ''
-      const label = `${course.course_name} (Grupo ${groupNum}${campusSuffix})`
 
       const existing = conflictReasons.get(conflictId) ?? []
       conflictReasons.set(conflictId, [...existing, label])
@@ -436,18 +453,14 @@ const CourseCard = memo(function CourseCard({
                     </div>
                   </TooltipTrigger>
                   {disabled && reasons.length > 0 && (
-                    <TooltipContent className="max-w-xs bg-destructive text-destructive-foreground">
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-semibold">Grupo bloqueado</p>
-                          <p className="text-sm">Choque con:</p>
-                          <ul className="text-sm list-disc list-inside">
-                            {reasons.map((reason, idx) => (
-                              <li key={idx}>{reason}</li>
-                            ))}
-                          </ul>
-                        </div>
+                    <TooltipContent className="max-w-xs bg-destructive text-white">
+                      <div className="space-y-1.5">
+                        <p className="text-base font-semibold leading-tight">Este grupo choca con:</p>
+                        <ul className="space-y-1 text-sm">
+                          {reasons.map((reason, idx) => (
+                            <li key={idx}>{reason}</li>
+                          ))}
+                        </ul>
                       </div>
                     </TooltipContent>
                   )}

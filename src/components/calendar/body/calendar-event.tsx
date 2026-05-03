@@ -131,7 +131,7 @@ const CalendarEvent = memo(function CalendarEvent({
             <span className="flex h-4 w-4 items-center justify-center shrink-0">
               <Users className="h-4 w-4" />
             </span>
-            <span>Grupo {event.groupCode}</span>
+            <span>GRUPO {event.groupCode}</span>
           </p>
           <p className="text-sm flex items-center gap-2">
             <span className="flex h-4 w-4 items-center justify-center shrink-0">
