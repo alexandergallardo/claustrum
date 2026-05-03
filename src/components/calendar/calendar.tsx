@@ -14,6 +14,8 @@ export default function Calendar({
   onRemoveEvent,
   hourHeight,
   setHourHeight,
+  dayWidth,
+  setDayWidth,
 }: CalendarProps) {
   return (
     <CalendarProvider
@@ -27,6 +29,8 @@ export default function Calendar({
       onRemoveEvent={onRemoveEvent}
       hourHeight={hourHeight}
       setHourHeight={setHourHeight}
+      dayWidth={dayWidth}
+      setDayWidth={setDayWidth}
     >
       <TooltipProvider delayDuration={200}>
         <CalendarBody />

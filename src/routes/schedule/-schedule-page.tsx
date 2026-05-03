@@ -58,6 +58,16 @@ const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
 const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
 const Calendar = lazy(() => import("@/components/calendar/calendar"));
 
+// Export constants - fixed, independent of user zoom/viewport
+const EXPORT_HOUR_HEIGHT = 64;
+const EXPORT_DAY_WIDTH = 150;
+const EXPORT_MARGIN_WIDTH = 48;
+const EXPORT_WEEK_DAYS = 6;
+const EXPORT_HEADER_HEIGHT = 33;
+const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
+const EXPORT_IMAGE_WIDTH = EXPORT_MARGIN_WIDTH + EXPORT_DAY_WIDTH * EXPORT_WEEK_DAYS;
+const EXPORT_IMAGE_HEIGHT = EXPORT_HEADER_HEIGHT + TOTAL_HOURS * EXPORT_HOUR_HEIGHT;
+
 export function SchedulePage() {
   const isMobile = useIsMobile();
   const search = useSearch({ from: "/schedule/" });
@@ -103,6 +113,7 @@ export function SchedulePage() {
   const calendarHeight = totalHours * hourHeight + 33;
   const previousGroupsRef = useRef<string | undefined>(undefined);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const exportCalendarRef = useRef<HTMLDivElement>(null);
 
   const serializedGroups = useMemo(() => {
     if (!search.groups) return [];
@@ -577,9 +588,9 @@ export function SchedulePage() {
       return;
     }
 
-    const calendarElement = calendarRef.current;
+    const calendarElement = exportCalendarRef.current;
     if (!calendarElement) {
-      toast.error("No se pudo encontrar el elemento del calendario");
+      toast.error("No se pudo generar la imagen del horario");
       return;
     }
 
@@ -598,17 +609,23 @@ export function SchedulePage() {
           ? "#0b0b0b"
           : "#ffffff";
 
+      const captureOptions = {
+        quality: 0.95,
+        backgroundColor,
+        pixelRatio: 2,
+        width: EXPORT_IMAGE_WIDTH,
+        height: EXPORT_IMAGE_HEIGHT,
+        style: {
+          width: `${EXPORT_IMAGE_WIDTH}px`,
+          height: `${EXPORT_IMAGE_HEIGHT}px`,
+          overflow: "visible" as const,
+        },
+      };
+
       const dataUrl =
         options.format === "jpeg"
-          ? await toJpeg(calendarElement, {
-              quality: 0.95,
-              backgroundColor,
-              pixelRatio: 2,
-            })
-          : await toPng(calendarElement, {
-              backgroundColor,
-              pixelRatio: 2,
-            });
+          ? await toJpeg(calendarElement, captureOptions)
+          : await toPng(calendarElement, captureOptions);
 
       const link = document.createElement("a");
       link.download = `horario-${dateStamp}.${extension}`;
@@ -687,6 +704,7 @@ export function SchedulePage() {
   }
 
   return (
+    <>
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -915,5 +933,26 @@ export function SchedulePage() {
         </div>
       </div>
     </div>
+
+      {/* Hidden calendar for export - fixed dimensions, independent of zoom/viewport */}
+      <div
+        ref={exportCalendarRef}
+        className="fixed -left-[9999px] top-0 overflow-hidden"
+        style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
+      >
+        <Suspense fallback={null}>
+          <Calendar
+            events={calendarEvents}
+            setEvents={() => {}}
+            mode="week"
+            setMode={() => {}}
+            date={date}
+            setDate={() => {}}
+            hourHeight={EXPORT_HOUR_HEIGHT}
+            dayWidth={EXPORT_DAY_WIDTH}
+          />
+        </Suspense>
+      </div>
+    </>
   );
 }
