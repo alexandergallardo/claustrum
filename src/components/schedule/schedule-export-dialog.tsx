@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarClock, ImageDown } from "lucide-react";
+import { ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -19,6 +19,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type ScheduleExportFormat = "png" | "jpeg" | "ics";
 export type ScheduleExportTheme = "light" | "dark";
@@ -39,6 +47,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
   const [transparent, setTransparent] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -57,6 +66,90 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
     }
   };
 
+  const formFields = (
+    <div className="grid gap-4">
+      <div className="grid gap-2">
+        <Label>Formato</Label>
+        <Select
+          value={format}
+          onValueChange={(value) => setFormat(value as ScheduleExportFormat)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecciona un formato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="png">PNG</SelectItem>
+            <SelectItem value="jpeg">JPEG / JPG</SelectItem>
+            <SelectItem value="ics">Calendario (.ics)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {format !== "ics" && (
+        <>
+          <div className="grid gap-2">
+            <Label>Modo</Label>
+            <Select
+              value={theme}
+              onValueChange={(value) => setTheme(value as ScheduleExportTheme)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un modo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Claro</SelectItem>
+                <SelectItem value="dark">Oscuro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+            <div className="space-y-1">
+              <Label>Fondo transparente</Label>
+              <p className="text-sm text-muted-foreground">
+                Ideal para insertar en documentos o presentaciones.
+              </p>
+            </div>
+            <Switch checked={transparent} onCheckedChange={setTransparent} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Button
+          variant="outline"
+          size="icon"
+          title="Exportar calendario"
+          onClick={() => setIsOpen(true)}
+        >
+          <ImageDown className="h-4 w-4" />
+        </Button>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
+            <SheetHeader>
+              <SheetTitle>Exportar calendario</SheetTitle>
+              <SheetDescription>
+                Descarga el horario como imagen o archivo de calendario.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+              {formFields}
+              <div className="mt-5">
+                <Button onClick={handleExport} disabled={isExporting} className="w-full">
+                  {isExporting ? "Exportando..." : format === "ics" ? "Descargar" : "Exportar"}
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -72,59 +165,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label>Formato</Label>
-            <Select
-              value={format}
-              onValueChange={(value) => setFormat(value as ScheduleExportFormat)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un formato" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="png">PNG</SelectItem>
-                <SelectItem value="jpeg">JPEG / JPG</SelectItem>
-                <SelectItem value="ics">
-                  <span className="flex items-center gap-2">
-                    <CalendarClock className="h-4 w-4" />
-                    Calendario (.ics)
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {format !== "ics" && (
-            <>
-              <div className="grid gap-2">
-                <Label>Modo</Label>
-                <Select
-                  value={theme}
-                  onValueChange={(value) => setTheme(value as ScheduleExportTheme)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un modo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Claro</SelectItem>
-                    <SelectItem value="dark">Oscuro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-                <div className="space-y-1">
-                  <Label>Fondo transparente</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Ideal para insertar en documentos o presentaciones.
-                  </p>
-                </div>
-                <Switch checked={transparent} onCheckedChange={setTransparent} />
-              </div>
-            </>
-          )}
-        </div>
+        {formFields}
 
         <DialogFooter>
           <Button onClick={handleExport} disabled={isExporting}>
