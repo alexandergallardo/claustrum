@@ -125,7 +125,7 @@ const CalendarEvent = memo(function CalendarEvent({
       <TooltipContent className="max-w-xs text-wrap">
         <div className="space-y-1">
           <p className="font-semibold max-w-[220px] break-words leading-tight">
-            {event.courseName} ({event.courseCode})
+            {event.courseCode}: {event.courseName}
           </p>
           <p className="text-sm flex items-center gap-2">
             <span className="flex h-4 w-4 items-center justify-center shrink-0">
