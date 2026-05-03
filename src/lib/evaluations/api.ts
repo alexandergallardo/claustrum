@@ -1,5 +1,5 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { getEvaluationWorkerUrl } from "@/lib/env/public";
+import { getApiBaseUrl } from "@/lib/env/public";
 import type {
   EvaluationRow,
   EvaluationModerationRow,
@@ -39,9 +39,9 @@ export async function getEvaluationModerationQueue(
 }
 
 export async function uploadEvaluation(payload: UploadEvaluationPayload): Promise<void> {
-  const workerUrl = getEvaluationWorkerUrl();
-  if (!workerUrl) {
-    throw new Error("Worker URL no configurado");
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
   }
 
   const supabase = getSupabaseBrowserClient();
@@ -84,7 +84,7 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
     formData.append("answersFileSha256", answersFileSha256);
   }
 
-  const response = await fetch(`${workerUrl}/upload`, {
+  const response = await fetch(`${apiBaseUrl}/evaluations/upload`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -99,9 +99,9 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
 }
 
 export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
-  const workerUrl = getEvaluationWorkerUrl();
-  if (!workerUrl) {
-    throw new Error("Worker URL no configurado");
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
   }
 
   const supabase = getSupabaseBrowserClient();
@@ -114,7 +114,7 @@ export async function getEvaluationSignedUrl(fileKey: string): Promise<string> {
   }
 
   const response = await fetch(
-    `${workerUrl}/signed-url?key=${encodeURIComponent(fileKey)}`,
+    `${apiBaseUrl}/evaluations/file?key=${encodeURIComponent(fileKey)}`,
     {
       headers,
     },
@@ -134,9 +134,9 @@ export async function moderateEvaluation(
   status: "approved" | "rejected",
   note: string,
 ): Promise<void> {
-  const workerUrl = getEvaluationWorkerUrl();
-  if (!workerUrl) {
-    throw new Error("Worker URL no configurado");
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
   }
 
   const supabase = getSupabaseBrowserClient();
@@ -146,7 +146,7 @@ export async function moderateEvaluation(
     throw new Error("Debes iniciar sesión para moderar");
   }
 
-  const response = await fetch(`${workerUrl}/moderate`, {
+  const response = await fetch(`${apiBaseUrl}/evaluations/moderate`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,

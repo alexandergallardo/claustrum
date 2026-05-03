@@ -1,4 +1,5 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { getApiBaseUrl } from "@/lib/env/public";
 import type {
   ProfessorReviewCourseOption,
   ProfessorReviewModerationRow,
@@ -118,12 +119,23 @@ export async function searchProfessorReviewCourses(query: string): Promise<Profe
 }
 
 export async function submitProfessorReview(payload: SubmitProfessorReviewPayload): Promise<void> {
-  const supabase = getSupabaseBrowserClient();
-  const { error } = await supabase.functions.invoke("submit-professor-review", {
-    body: payload,
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
+  }
+
+  const response = await fetch(`${apiBaseUrl}/professor-reviews`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 
-  if (error) throw error;
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Error desconocido" }));
+    throw new Error(body.error ?? `Error ${response.status}`);
+  }
 }
 
 export async function getProfessorReviewsForModeration(
