@@ -79,7 +79,7 @@ const CalendarEvent = memo(function CalendarEvent({
           <div className={cn("flex flex-col w-full gap-0.5", colorClasses.text)}>
             <p
               className={cn(
-                "font-semibold text-[11px] leading-tight sm:text-[13px]",
+                "font-semibold text-[11px] leading-tight sm:text-[13px] line-clamp-2",
                 isCompact && "text-[9px] sm:text-[10px]",
               )}
             >
