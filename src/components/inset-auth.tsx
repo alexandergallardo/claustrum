@@ -496,6 +496,14 @@ async function invalidateAuthFlowQueries(queryClient: ReturnType<typeof useQuery
   }
 }
 
+async function getPostSignInRedirect(supabase: ReturnType<typeof getSupabaseBrowserClient>) {
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") {
+    return "/auth/2fa" as const;
+  }
+  return "/" as const;
+}
+
 function MagicLinkButton({ email = "" }: { email?: string }) {
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
@@ -598,7 +606,7 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: "/", replace: true });
+        navigate({ to: await getPostSignInRedirect(supabase), replace: true });
       }
     };
 
@@ -629,7 +637,7 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
       data: { user },
     } = await supabase.auth.getUser();
     await invalidateAuthFlowQueries(queryClient, user?.id);
-    navigate({ to: "/", replace: true });
+    navigate({ to: await getPostSignInRedirect(supabase), replace: true });
     setPending(false);
   };
 

@@ -30,6 +30,7 @@ import { Route as AuthSignupIndexRouteImport } from './routes/auth/signup/index'
 import { Route as AuthSigninIndexRouteImport } from './routes/auth/signin/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/auth/reset-password/index'
 import { Route as AuthMagicLinkIndexRouteImport } from './routes/auth/magic-link/index'
+import { Route as Auth2faIndexRouteImport } from './routes/auth/2fa/index'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -136,6 +137,11 @@ const AuthMagicLinkIndexRoute = AuthMagicLinkIndexRouteImport.update({
   path: '/magic-link/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const Auth2faIndexRoute = Auth2faIndexRouteImport.update({
+  id: '/2fa/',
+  path: '/2fa/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const EvaluationsViewEvaluationSlugRoute =
   EvaluationsViewEvaluationSlugRouteImport.update({
     id: '/evaluations/view/$evaluationSlug',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
+  '/auth/2fa/': typeof Auth2faIndexRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
   '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/auth/signin/': typeof AuthSigninIndexRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
+  '/auth/2fa': typeof Auth2faIndexRoute
   '/auth/magic-link': typeof AuthMagicLinkIndexRoute
   '/auth/reset-password': typeof AuthResetPasswordIndexRoute
   '/auth/signin': typeof AuthSigninIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
+  '/auth/2fa/': typeof Auth2faIndexRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
   '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/auth/signin/': typeof AuthSigninIndexRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/schedule/'
     | '/settings/'
     | '/evaluations/view/$evaluationSlug'
+    | '/auth/2fa/'
     | '/auth/magic-link/'
     | '/auth/reset-password/'
     | '/auth/signin/'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/evaluations/view/$evaluationSlug'
+    | '/auth/2fa'
     | '/auth/magic-link'
     | '/auth/reset-password'
     | '/auth/signin'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/schedule/'
     | '/settings/'
     | '/evaluations/view/$evaluationSlug'
+    | '/auth/2fa/'
     | '/auth/magic-link/'
     | '/auth/reset-password/'
     | '/auth/signin/'
@@ -454,6 +466,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthMagicLinkIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/auth/2fa/': {
+      id: '/auth/2fa/'
+      path: '/2fa'
+      fullPath: '/auth/2fa/'
+      preLoaderRoute: typeof Auth2faIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/evaluations/view/$evaluationSlug': {
       id: '/evaluations/view/$evaluationSlug'
       path: '/evaluations/view/$evaluationSlug'
@@ -465,6 +484,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteRouteChildren {
+  Auth2faIndexRoute: typeof Auth2faIndexRoute
   AuthMagicLinkIndexRoute: typeof AuthMagicLinkIndexRoute
   AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
   AuthSigninIndexRoute: typeof AuthSigninIndexRoute
@@ -473,6 +493,7 @@ interface AuthRouteRouteChildren {
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  Auth2faIndexRoute: Auth2faIndexRoute,
   AuthMagicLinkIndexRoute: AuthMagicLinkIndexRoute,
   AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
   AuthSigninIndexRoute: AuthSigninIndexRoute,
