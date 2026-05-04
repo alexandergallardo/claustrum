@@ -12,7 +12,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
-import { ChevronDown, User, Save, Bookmark, Trash2, Loader2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronDown, User, Save, Bookmark, Trash2, Loader2 } from "lucide-react";
 import CourseList from "@/components/course-list";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
@@ -82,6 +82,37 @@ const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
 const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
 const Calendar = lazy(() => import("@/components/calendar/calendar"));
+
+function ScheduleEmptyState({
+  title,
+  description,
+  variant = "default",
+}: {
+  title: string;
+  description: string;
+  variant?: "default" | "error";
+}) {
+  const Icon = variant === "error" ? AlertTriangle : CalendarDays;
+
+  return (
+    <div className="flex flex-1 px-4 lg:px-6">
+      <div className="flex min-h-[45svh] w-full items-center justify-center rounded-lg border bg-card p-6 text-center md:min-h-96">
+        <div className="flex max-w-sm flex-col items-center gap-3">
+          <div className={cn(
+            "flex size-12 items-center justify-center rounded-full",
+            variant === "error" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+          )}>
+            <Icon className="size-6" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-semibold tracking-tight md:text-xl">{title}</h2>
+            <p className="text-sm text-muted-foreground md:text-base">{description}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Export constants - fixed, independent of user zoom/viewport
 const EXPORT_HOUR_HEIGHT = 64;
@@ -888,6 +919,7 @@ export function SchedulePage() {
     plansQuery.isLoading ||
     termsQuery.isLoading;
   const isInitialLoading = isLoadingFilters && !universities?.length;
+  const hasRequiredScheduleFilters = !!selectedCampusId && !!selectedTermId;
 
   if (isInitialLoading) {
     return (
@@ -917,16 +949,15 @@ export function SchedulePage() {
 
   if (coursesQuery.isError) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">
-            Error al cargar el horario
-          </h2>
-          <p className="text-muted-foreground">
-            {coursesQuery.error instanceof Error
-              ? coursesQuery.error.message
-              : "Error desconocido"}
-          </p>
+      <div className="flex flex-1 flex-col">
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <ScheduleEmptyState
+              title="Error al cargar el horario"
+              description={coursesQuery.error instanceof Error ? coursesQuery.error.message : "Error desconocido"}
+              variant="error"
+            />
+          </div>
         </div>
       </div>
     );
@@ -936,7 +967,7 @@ export function SchedulePage() {
     <>
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="flex-1 min-w-0">
@@ -993,24 +1024,23 @@ export function SchedulePage() {
             </div>
           </div>
 
-            {selectedTermId &&
+            {!hasRequiredScheduleFilters && !coursesQuery.isLoading && (
+              <ScheduleEmptyState
+                title="Selecciona los filtros del horario"
+                description="Selecciona una sede y un periodo para visualizar los cursos disponibles."
+              />
+            )}
+
+            {hasRequiredScheduleFilters &&
               !orderedCourses.length &&
               !coursesQuery.isLoading && (
-                <div className="px-4 lg:px-6">
-                  <div className="flex items-center justify-center h-[calc(100vh-24rem)]">
-                    <div className="text-center">
-                      <h2 className="text-2xl font-bold mb-2">
-                        No hay cursos disponibles
-                      </h2>
-                      <p className="text-muted-foreground">
-                        No se encontraron cursos para el período seleccionado
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <ScheduleEmptyState
+                  title="No hay cursos disponibles"
+                  description="No se encontraron cursos con los filtros actuales. Prueba cambiando el periodo, carrera o sede."
+                />
               )}
 
-            {orderedCourses.length > 0 && (
+            {hasRequiredScheduleFilters && orderedCourses.length > 0 && (
               <div className="px-4 lg:px-6">
                 <div
                   className="border rounded-lg overflow-hidden shrink-0 h-auto lg:h-[var(--calendar-height)]"
