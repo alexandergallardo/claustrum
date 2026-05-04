@@ -12,7 +12,7 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
-import { ChevronDown, User } from "lucide-react";
+import { ChevronDown, User, Save, Bookmark, Trash2, Loader2 } from "lucide-react";
 import CourseList from "@/components/course-list";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
@@ -23,6 +23,22 @@ import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScheduleFilters } from "@/components/schedule/schedule-filters";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -54,6 +70,13 @@ import {
   useUserStudyPlan,
   useSuggestedAcademicTerm,
 } from "@/lib/hooks/use-queries";
+import {
+  useSavedSchedules,
+  useSaveSchedule,
+  useDeleteSchedule,
+  type SavedSchedule,
+} from "@/lib/hooks/use-saved-schedules";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
@@ -171,6 +194,13 @@ export function SchedulePage() {
   const previousGroupsRef = useRef<string | undefined>(undefined);
   const calendarRef = useRef<HTMLDivElement>(null);
   const exportCalendarRef = useRef<HTMLDivElement>(null);
+
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [scheduleName, setScheduleName] = useState("");
+
+  const { data: savedSchedules } = useSavedSchedules();
+  const saveScheduleMutation = useSaveSchedule();
+  const deleteScheduleMutation = useDeleteSchedule();
 
   const serializedGroups = useMemo(() => {
     if (!search.groups) return [];
@@ -414,6 +444,68 @@ export function SchedulePage() {
     );
     setStoredShowOtherCampuses(search.otherCampuses);
   }, [search.otherCampuses]);
+
+  useEffect(() => {
+    if (!search.loadSchedule || !orderedCourses.length) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const sb = getSupabaseBrowserClient();
+        const { data: items, error } = await sb
+          .rpc("get_user_saved_schedule_group_lookups", {
+            p_saved_schedule_id: search.loadSchedule,
+          });
+
+        if (error) throw error;
+        if (cancelled) return;
+
+        const savedGroupLookups = (items ?? []) as Array<{
+          course_code: string;
+          campus_id: number | null;
+          group_code: string;
+        }>;
+        const lookupSet = new Set(
+          savedGroupLookups.map(i => `${i.course_code}-${i.campus_id ?? ""}-${i.group_code}`)
+        );
+        const matchingGroups: string[] = [];
+
+        groupById.forEach((value, key) => {
+          if (lookupSet.has(`${value.course.course_code}-${value.campusId ?? ""}-${value.group.group_code}`)) {
+            matchingGroups.push(key);
+          }
+        });
+
+        if (cancelled) return;
+
+        navigate({
+          to: "/schedule",
+          search: {
+            ...search,
+            loadSchedule: undefined,
+            groups: matchingGroups.length ? matchingGroups.join(",") : undefined,
+          },
+          resetScroll: false,
+        });
+      } catch (err) {
+        console.error("Error loading schedule:", err);
+        toast.error("Error al cargar el horario");
+        if (!cancelled) {
+          navigate({
+            to: "/schedule",
+            search: {
+              ...search,
+              loadSchedule: undefined,
+            },
+            resetScroll: false,
+          });
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [search.loadSchedule, orderedCourses.length]);
 
   const updateSelectedGroups = useCallback(
     (nextGroups: Set<string>) => {
@@ -714,6 +806,81 @@ export function SchedulePage() {
     [selectedGroups, updateSelectedGroups]
   );
 
+  const handleSaveSchedule = useCallback(() => {
+    if (!selectedTermId) return;
+
+    const groupLookups: Array<{
+      courseCode: string;
+      campusId: number | null;
+      groupCode: string;
+    }> = [];
+    selectedGroups.forEach((groupId) => {
+      const data = groupById.get(groupId);
+      if (data) {
+        groupLookups.push({
+          courseCode: data.course.course_code,
+          campusId: data.campusId,
+          groupCode: data.group.group_code,
+        });
+      }
+    });
+
+    saveScheduleMutation.mutate(
+      {
+        name: scheduleName.trim(),
+        academicTermId: selectedTermId,
+        groupLookups,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Horario guardado correctamente");
+          setSaveDialogOpen(false);
+          setScheduleName("");
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Error al guardar el horario");
+        },
+      }
+    );
+  }, [selectedGroups, groupById, selectedTermId, scheduleName, saveScheduleMutation]);
+
+  const handleLoadSchedule = useCallback(
+    (schedule: SavedSchedule) => {
+      if (schedule.academic_term_id === selectedTermId) {
+        navigate({
+          to: "/schedule",
+          search: {
+            ...search,
+            loadSchedule: schedule.id,
+          },
+          resetScroll: false,
+        });
+      } else {
+        navigate({
+          to: "/schedule",
+          search: {
+            ...search,
+            term: schedule.academic_term_id,
+            loadSchedule: schedule.id,
+            groups: undefined,
+          },
+          resetScroll: false,
+        });
+      }
+    },
+    [selectedTermId, navigate, search]
+  );
+
+  const handleDeleteSchedule = useCallback(
+    (scheduleId: number) => {
+      deleteScheduleMutation.mutate(scheduleId, {
+        onSuccess: () => toast.success("Horario eliminado"),
+        onError: (error) => toast.error(error instanceof Error ? error.message : "Error al eliminar"),
+      });
+    },
+    [deleteScheduleMutation]
+  );
+
   const isLoadingFilters =
     isLoadingUniversities ||
     campusesQuery.isLoading ||
@@ -900,6 +1067,73 @@ export function SchedulePage() {
                             setHourHeight={setHourHeight}
                             isFloating={false}
                           />
+                          {isAuthenticated && (
+                            <>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="icon" title="Mis horarios guardados">
+                                    <Bookmark className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  {!savedSchedules?.length ? (
+                                    <DropdownMenuItem disabled>Sin horarios guardados</DropdownMenuItem>
+                                  ) : (
+                                    savedSchedules.map((s) => (
+                                      <DropdownMenuItem key={s.id} onClick={() => handleLoadSchedule(s)}>
+                                        <div className="flex items-center justify-between w-full">
+                                          <span>{s.name}</span>
+                                          <span
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
+                                            className="ml-2 text-muted-foreground hover:text-destructive cursor-pointer"
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleDeleteSchedule(s.id); } }}
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </span>
+                                        </div>
+                                      </DropdownMenuItem>
+                                    ))
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="icon" disabled={!selectedGroups.size} title="Guardar horario actual">
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Guardar horario</DialogTitle>
+                                      <DialogDescription className="sr-only">
+                                        Guarda los grupos seleccionados como un horario con nombre personalizado.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 pt-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="schedule-name-mobile">Nombre del horario</Label>
+                                        <Input
+                                          id="schedule-name-mobile"
+                                          value={scheduleName}
+                                          onChange={(e) => setScheduleName(e.target.value)}
+                                          placeholder="Ej: IS-2026-1"
+                                        />
+                                    </div>
+                                    <Button
+                                      onClick={handleSaveSchedule}
+                                      disabled={!scheduleName.trim() || saveScheduleMutation.isPending}
+                                      className="w-full"
+                                    >
+                                      {saveScheduleMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                      Guardar
+                                    </Button>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </>
+                          )}
                           <ScheduleExportDialog onExport={handleExport} />
                         </div>
                         <div
@@ -965,6 +1199,73 @@ export function SchedulePage() {
                               setHourHeight={setHourHeight}
                               isFloating={false}
                             />
+                            {isAuthenticated && (
+                              <>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" title="Mis horarios guardados">
+                                      <Bookmark className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56">
+                                    {!savedSchedules?.length ? (
+                                      <DropdownMenuItem disabled>Sin horarios guardados</DropdownMenuItem>
+                                    ) : (
+                                      savedSchedules.map((s) => (
+                                        <DropdownMenuItem key={s.id} onClick={() => handleLoadSchedule(s)}>
+                                          <div className="flex items-center justify-between w-full">
+                                            <span>{s.name}</span>
+                                            <span
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
+                                              className="ml-2 text-muted-foreground hover:text-destructive cursor-pointer"
+                                              role="button"
+                                              tabIndex={0}
+                                              onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleDeleteSchedule(s.id); } }}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5" />
+                                            </span>
+                                          </div>
+                                        </DropdownMenuItem>
+                                      ))
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button variant="outline" size="icon" disabled={!selectedGroups.size} title="Guardar horario actual">
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Guardar horario</DialogTitle>
+                                      <DialogDescription className="sr-only">
+                                        Guarda los grupos seleccionados como un horario con nombre personalizado.
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4 pt-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="schedule-name-desktop">Nombre del horario</Label>
+                                        <Input
+                                          id="schedule-name-desktop"
+                                          value={scheduleName}
+                                          onChange={(e) => setScheduleName(e.target.value)}
+                                          placeholder="Ej: IS-2026-1"
+                                        />
+                                      </div>
+                                      <Button
+                                        onClick={handleSaveSchedule}
+                                        disabled={!scheduleName.trim() || saveScheduleMutation.isPending}
+                                        className="w-full"
+                                      >
+                                        {saveScheduleMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                        Guardar
+                                      </Button>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              </>
+                            )}
                             <ScheduleExportDialog onExport={handleExport} />
                           </div>
                           <div

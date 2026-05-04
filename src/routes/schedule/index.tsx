@@ -16,6 +16,7 @@ const scheduleSearchSchema = z.object({
   otherCampuses: z.boolean().optional(),
   showAll: z.boolean().optional(),
   groups: z.string().optional(),
+  loadSchedule: z.coerce.number().optional(),
 });
 
 export const Route = createFileRoute("/schedule/")({
