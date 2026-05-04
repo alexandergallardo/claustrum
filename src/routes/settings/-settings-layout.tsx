@@ -31,13 +31,6 @@ export function SettingsLayout() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Configuración</h1>
-          <p className="text-muted-foreground text-sm">
-            Gestiona tu cuenta y preferencias
-          </p>
-        </div>
-
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
           <Card className="w-full lg:w-64 shrink-0 self-start py-0">
             <CardContent className="p-2">
