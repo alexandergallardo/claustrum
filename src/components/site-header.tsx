@@ -1,9 +1,19 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, ChevronRight, Moon, Search, Settings, Sun } from "lucide-react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Bell, CalendarDays, ChevronRight, GraduationCap, Home, Moon, Palette, Search, Settings, Shield, Sun, User, Users } from "lucide-react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { useTheme } from "@/components/theme-provider";
 import { useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
 import { useProfessorById } from "@/lib/hooks/use-professor-reviews";
@@ -14,6 +24,16 @@ type BreadcrumbItem = {
   to?: string;
   isLoading?: boolean;
 };
+
+const quickLinks = [
+  { label: "Inicio", to: "/", icon: Home },
+  { label: "Horarios", to: "/schedule", icon: CalendarDays },
+  { label: "Plan de estudios", to: "/curriculum", icon: GraduationCap },
+  { label: "Profesores", to: "/professors", icon: Users },
+  { label: "Perfil", to: "/settings/profile", icon: User },
+  { label: "Seguridad", to: "/settings/security", icon: Shield },
+  { label: "Apariencia", to: "/settings/appearance", icon: Palette },
+] as const;
 
 const pageTitles: Record<string, string> = {
   "/": "Inicio",
@@ -43,7 +63,9 @@ function getSearchNumber(search: string, key: string) {
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
 
   const professorId = getNumericPathSegment(location.pathname, "/professors/");
   const isProfessorDetail = professorId !== null;
@@ -75,6 +97,23 @@ export function SiteHeader() {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsCommandOpen((open) => !open);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  function runCommand(callback: () => void) {
+    setIsCommandOpen(false);
+    callback();
+  }
 
   const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
     if (isCourseDetail) {
@@ -138,14 +177,18 @@ export function SiteHeader() {
           })}
         </div>
 
-        <label className="hidden h-11 items-center gap-3 rounded-full bg-background px-5 text-muted-foreground shadow-sm ring-1 ring-border/60 transition-colors focus-within:text-foreground focus-within:ring-primary/30 lg:flex">
+        <button
+          type="button"
+          onClick={() => setIsCommandOpen(true)}
+          className="hidden h-11 items-center gap-3 rounded-full bg-background px-5 text-muted-foreground shadow-sm ring-1 ring-border/60 transition-colors hover:text-foreground hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 lg:flex"
+        >
           <Search className="size-5 shrink-0" />
-          <input
-            type="search"
-            placeholder="Buscar..."
-            className="h-full min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
-          />
-        </label>
+          <span className="min-w-0 flex-1 text-left text-sm">Buscar...</span>
+          <KbdGroup>
+            <Kbd>Ctrl</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        </button>
 
         <div className="ml-auto flex items-center gap-2">
           <Button
@@ -176,6 +219,40 @@ export function SiteHeader() {
           </Button>
         </div>
       </div>
+      <CommandDialog
+        open={isCommandOpen}
+        onOpenChange={setIsCommandOpen}
+        title="Buscar en Claustrum"
+        description="Busca rutas y acciones rápidas."
+      >
+        <CommandInput placeholder="Buscar rutas o acciones..." />
+        <CommandList>
+          <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+          <CommandGroup heading="Navegación">
+            {quickLinks.map((item) => (
+              <CommandItem
+                key={item.to}
+                value={`${item.label} ${item.to}`}
+                onSelect={() => runCommand(() => void navigate({ to: item.to }))}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Acciones">
+            <CommandItem onSelect={() => runCommand(toggleTheme)}>
+              {theme === "dark" ? <Sun /> : <Moon />}
+              <span>{theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}</span>
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => void navigate({ to: "/settings/appearance" }))}>
+              <Settings />
+              <span>Abrir configuración</span>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
     </header>
   );
 }
