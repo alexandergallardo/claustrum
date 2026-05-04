@@ -105,6 +105,9 @@ function applyExportEventColors(
     element.style.setProperty("--schedule-event-hover", hover);
     element.style.setProperty("--schedule-event-border", border);
     element.style.setProperty("--schedule-event-text", text);
+    element.style.backgroundColor = bg;
+    element.style.borderColor = border;
+    element.style.color = text;
   });
 
   return () => {
@@ -113,6 +116,9 @@ function applyExportEventColors(
       element.style.removeProperty("--schedule-event-hover");
       element.style.removeProperty("--schedule-event-border");
       element.style.removeProperty("--schedule-event-text");
+      element.style.removeProperty("background-color");
+      element.style.removeProperty("border-color");
+      element.style.removeProperty("color");
     });
   };
 }
