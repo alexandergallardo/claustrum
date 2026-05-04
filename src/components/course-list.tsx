@@ -1,4 +1,4 @@
-import { useMemo, useCallback, memo, useEffect, useRef } from 'react'
+import { useMemo, useCallback, memo, useEffect, useRef, useState } from 'react'
 import type { ScheduleCourse, ScheduleGroup } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -350,6 +350,8 @@ const CourseCard = memo(function CourseCard({
     groupCode: string,
   ) => void
 }) {
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null)
+
   return (
     <Card className="w-full" style={{ contentVisibility: 'auto', containIntrinsicSize: '0 280px' }}>
       <CardHeader>
@@ -370,7 +372,10 @@ const CourseCard = memo(function CourseCard({
               const reasons = conflictReasonsByGroupId.get(groupView.groupId) ?? []
 
               return (
-                <Tooltip key={groupView.groupId}>
+                <Tooltip
+                  key={groupView.groupId}
+                  open={disabled && hoveredGroupId === groupView.groupId}
+                >
                   <TooltipTrigger asChild>
                     <div
                       className={cn(
@@ -395,6 +400,10 @@ const CourseCard = memo(function CourseCard({
                           groupView.group.group_code,
                         )
                       }
+                      onPointerEnter={() => setHoveredGroupId(groupView.groupId)}
+                      onPointerLeave={() => setHoveredGroupId((current) => (
+                        current === groupView.groupId ? null : current
+                      ))}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <Badge

@@ -105,7 +105,6 @@ export function useProfileContext(userId: string | null) {
       return data as UserProfileContextRow | null;
     },
     enabled: !!userId,
-    placeholderData: null,
   });
 }
 

@@ -1,6 +1,6 @@
 import { Suspense, lazy, useLayoutEffect, useRef, useState } from "react";
 
-import { EmptyDashboard, DashboardSkeleton } from "@/components/dashboard/empty-state";
+import { EmptyDashboard, DashboardSkeleton, DashboardStatsSkeleton } from "@/components/dashboard/empty-state";
 import { NextCourses } from "@/components/dashboard/next-courses";
 import { ProgressTimeline } from "@/components/dashboard/progress-timeline";
 import { useAuthUser, useDashboardStats, useUserStudyPlan } from "@/lib/hooks/use-queries";
@@ -62,7 +62,7 @@ export function DashboardPage() {
           ) : (
             <>
               <div className="px-4 lg:px-6">
-                <Suspense fallback={<div className="h-[132px] w-full rounded-lg border bg-muted/20" />}>
+                <Suspense fallback={<DashboardStatsSkeleton />}>
                   <DashboardStatsCards stats={dashboardData.stats} />
                 </Suspense>
               </div>
