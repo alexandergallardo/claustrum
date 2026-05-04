@@ -1,7 +1,7 @@
 import { ClientOnly } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { UserIcon, PencilIcon, Loader2Icon } from "lucide-react";
+import { UserIcon, Loader2Icon, UploadIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
@@ -20,8 +20,8 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { useAuthUser, useUniversities, useCampuses, useAcademicUnits, useStudyPlans, useProfileContext } from "@/lib/hooks/use-queries";
 import { useRef } from "react";
 
@@ -52,13 +52,15 @@ function ProfilePage() {
 
   const profileContext = useProfileContext(authUser?.id ?? null);
 
-  const [isEditing, setIsEditing] = useState(false);
   const [universityIdDraft, setUniversityIdDraft] = useState<string>("");
   const [campusIdDraft, setCampusIdDraft] = useState<string>("");
   const [academicUnitIdDraft, setAcademicUnitIdDraft] = useState<string>("");
   const [studyPlanIdDraft, setStudyPlanIdDraft] = useState<string>("");
   const [carnetDraft, setCarnetDraft] = useState<string>("");
+  const [nameDraft, setNameDraft] = useState<string>("");
+  const [emailDraft, setEmailDraft] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingIdentity, setIsSavingIdentity] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const campusTriggerRef = useRef<HTMLButtonElement | null>(null);
   const academicUnitTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -68,9 +70,9 @@ function ProfilePage() {
   const campusId = profileContext.data?.campus_id ?? null;
   const academicUnitId = profileContext.data?.academic_unit_id ?? null;
 
-  const effectiveUniversityId = isEditing && universityIdDraft ? Number(universityIdDraft) : universityId;
-  const effectiveCampusId = isEditing && campusIdDraft ? Number(campusIdDraft) : campusId;
-  const effectiveAcademicUnitId = isEditing && academicUnitIdDraft ? Number(academicUnitIdDraft) : academicUnitId;
+  const effectiveUniversityId = universityIdDraft ? Number(universityIdDraft) : universityId;
+  const effectiveCampusId = campusIdDraft ? Number(campusIdDraft) : campusId;
+  const effectiveAcademicUnitId = academicUnitIdDraft ? Number(academicUnitIdDraft) : academicUnitId;
 
   const campuses = useCampuses(effectiveUniversityId);
   const academicUnits = useAcademicUnits(effectiveCampusId);
@@ -112,11 +114,16 @@ function ProfilePage() {
   }, [profileContext.isSuccess, profileContext.data, universityIdDraft, campusIdDraft]);
 
   useEffect(() => {
-    if (!isEditing) return;
+    if (!authUser) return;
+    setNameDraft(authUser.user_metadata?.full_name ?? "");
+    setEmailDraft(authUser.email ?? "");
+  }, [authUser]);
+
+  useEffect(() => {
     if (universityIdDraft) return;
     if (!universities || universities.length === 0) return;
     setUniversityIdDraft(String(universities[0].id));
-  }, [isEditing, universities, universityIdDraft]);
+  }, [universities, universityIdDraft]);
 
   const hasUnsavedChanges = authUser && profileContext.data && (
     (profileContext.data.university_id !== null && String(profileContext.data.university_id) !== universityIdDraft) ||
@@ -126,6 +133,7 @@ function ProfilePage() {
     (profileContext.data.carnet !== null && profileContext.data.carnet !== carnetDraft) ||
     (profileContext.data.university_id === null && universityIdDraft !== "")
   );
+  const hasIdentityChanges = authUser && (authUser.user_metadata?.full_name ?? "") !== nameDraft;
 
   function handleCampusChange(campusId: string) {
     setFormError(null);
@@ -218,7 +226,6 @@ function ProfilePage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] });
-      setIsEditing(false);
       toast.success("Perfil actualizado correctamente");
     } catch (err) {
       setFormError(getErrorMessage(err));
@@ -227,17 +234,27 @@ function ProfilePage() {
     }
   }
 
-  function handleCancel() {
-    setFormError(null);
-    setDraftsFromContext(profileContext.data ?? null);
-    setIsEditing(false);
-  }
+  async function handleSaveIdentity(): Promise<void> {
+    if (!authUser || !hasIdentityChanges) return;
 
-  function startEditing() {
-    if (profileContext.data?.university_id !== null && universityIdDraft === "") {
-      setDraftsFromContext(profileContext.data);
+    setIsSavingIdentity(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          ...authUser.user_metadata,
+          full_name: nameDraft,
+        },
+      });
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      toast.success("Identidad actualizada correctamente");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al actualizar identidad");
+    } finally {
+      setIsSavingIdentity(false);
     }
-    setIsEditing(true);
   }
 
   if (isInitialLoading) {
@@ -250,81 +267,88 @@ function ProfilePage() {
 
   if (profileContext.isError) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-sm">
-            <div className="font-medium">Error al cargar el perfil</div>
-            <div className="text-muted-foreground mt-1">{getErrorMessage(profileContext.error)}</div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-lg border bg-destructive/5 p-4 text-sm">
+        <div className="font-medium text-destructive">Error al cargar el perfil</div>
+        <div className="mt-1 text-muted-foreground">{getErrorMessage(profileContext.error)}</div>
+      </div>
     );
   }
 
   if (!authUser) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center py-12">
-            <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Inicia sesión para acceder a tu perfil</h3>
-            <p className="text-muted-foreground mb-6">
-              Necesitas estar autenticado para ver y editar tu información académica.
-            </p>
-            <Button asChild>
-              <a href="/auth/signin">Iniciar sesión</a>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="py-12 text-center">
+        <UserIcon className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <h3 className="mb-2 text-lg font-semibold">Inicia sesión para acceder a tu perfil</h3>
+        <p className="mx-auto mb-6 max-w-md text-muted-foreground">
+          Necesitas estar autenticado para ver y editar tu información académica.
+        </p>
+        <Button asChild>
+          <a href="/auth/signin">Iniciar sesión</a>
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
+    <SettingsPage
+      title="Perfil"
+      description="Gestiona tu identidad y los datos académicos que personalizan Claustrum."
+    >
+      <SettingsSection
+        title="Identidad"
+        description="Visible en tu cuenta y menú de usuario."
+      >
+        <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+            <Avatar className="h-16 w-16 rounded-full">
               <AvatarImage src={authUser.user_metadata?.avatar_url} />
-              <AvatarFallback>
-                <UserIcon className="h-8 w-8" />
+              <AvatarFallback className="rounded-full text-lg font-medium">
+                {(nameDraft || authUser.email || "U").charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <Button disabled size="sm" variant="outline">
-              Cambiar foto
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">Nombre</div>
-              <div className="mt-1 font-medium">{authUser.user_metadata?.full_name ?? "No configurado"}</div>
-            </div>
-
-            <div>
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">Correo electrónico</div>
-              <div className="mt-1 font-medium">{authUser.email ?? "-"}</div>
+            <div className="space-y-1.5">
+              <Button disabled size="sm" variant="outline" className="w-fit">
+                <UploadIcon className="mr-2 h-4 w-4" />
+                Subir foto
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                PNG o SVG, 1024x1024 máx.
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Información académica</CardTitle>
-            <CardDescription />
-          </div>
-          {!isEditing && (
-            <Button variant="outline" size="sm" onClick={startEditing}>
-              <PencilIcon className="mr-2 h-4 w-4" />
-              Editar
+          <Field>
+            <FieldLabel>Nombre</FieldLabel>
+            <Input
+              value={nameDraft}
+              onChange={(event) => setNameDraft(event.target.value)}
+              placeholder="Tu nombre"
+              autoComplete="name"
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Correo electrónico</FieldLabel>
+            <Input
+              value={emailDraft}
+              placeholder="tu@correo.com"
+              type="email"
+              autoComplete="email"
+              disabled
+            />
+          </Field>
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => void handleSaveIdentity()} disabled={isSavingIdentity || !hasIdentityChanges}>
+              {isSavingIdentity && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar
             </Button>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </div>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Información académica"
+        description="Usada para horarios, plan de estudios y recomendaciones."
+      >
+        <div className="space-y-4">
           {formError && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {formError}
@@ -338,7 +362,7 @@ function ProfilePage() {
               value={(campuses.data ?? []).find((item) => String(item.id) === campusIdDraft) ?? null}
               onValueChange={(item) => void handleCampusChange(item ? String(item.id) : "")}
               itemToStringValue={(item) => item.name}
-              disabled={!isEditing || !effectiveUniversityId || campuses.isLoading}
+              disabled={!effectiveUniversityId || campuses.isLoading}
             >
               <ComboboxTrigger
                 ref={campusTriggerRef}
@@ -371,7 +395,7 @@ function ProfilePage() {
               value={(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft) ?? null}
               onValueChange={(item) => void handleAcademicUnitChange(item ? String(item.id) : "")}
               itemToStringValue={(item) => `${item.code} - ${item.name}`}
-              disabled={!isEditing || !campusIdDraft || academicUnits.isLoading}
+              disabled={!campusIdDraft || academicUnits.isLoading}
             >
               <ComboboxTrigger
                 ref={academicUnitTriggerRef}
@@ -406,7 +430,7 @@ function ProfilePage() {
               value={(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft) ?? null}
               onValueChange={(item) => void handleStudyPlanChange(item ? String(item.id) : "")}
               itemToStringValue={(item) => item.name}
-              disabled={!isEditing || !academicUnitIdDraft || studyPlans.isLoading}
+              disabled={!academicUnitIdDraft || studyPlans.isLoading}
             >
               <ComboboxTrigger
                 ref={studyPlanTriggerRef}
@@ -438,29 +462,23 @@ function ProfilePage() {
               value={carnetDraft}
               onChange={(e) => setCarnetDraft(e.target.value)}
               placeholder="Tu número de carnet (opcional)"
-              disabled={!isEditing}
             />
           </Field>
 
-          {isEditing && (
-            <div className="flex gap-2 pt-2">
-              <Button onClick={() => void handleSave()} disabled={isSaving || !hasUnsavedChanges}>
-                {isSaving && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar
-              </Button>
-              <Button variant="outline" onClick={handleCancel}>
-                Cancelar
-              </Button>
-            </div>
-          )}
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => void handleSave()} disabled={isSaving || !hasUnsavedChanges}>
+              {isSaving && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar
+            </Button>
+          </div>
 
-          {!isEditing && !hasData && (
+          {!hasData && (
             <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
               Completa tu información académica para personalizar tu experiencia.
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </SettingsSection>
+    </SettingsPage>
   );
 }
