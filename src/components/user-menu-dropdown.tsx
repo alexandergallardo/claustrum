@@ -19,6 +19,8 @@ interface UserMenuDropdownProps {
     avatar?: string;
   };
   trigger: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   align?: "start" | "center" | "end";
   side?: "top" | "right" | "bottom" | "left";
   sideOffset?: number;
@@ -28,6 +30,8 @@ interface UserMenuDropdownProps {
 export function UserMenuDropdown({
   user,
   trigger,
+  open,
+  onOpenChange,
   align = "end",
   side = "bottom",
   sideOffset = 4,
@@ -36,7 +40,7 @@ export function UserMenuDropdown({
   const navigate = useNavigate();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent
         className={contentClass}
