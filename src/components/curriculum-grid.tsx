@@ -29,12 +29,17 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
   const { semesters, courseById } = useCurriculumViewModel(planDetail, statusMap)
 
   useEffect(() => {
-    if (scaledContentRef.current) {
-      const height = scaledContentRef.current.scrollHeight
-      const width = scaledContentRef.current.scrollWidth
-      setContentHeight(height)
-      setContentWidth(width)
+    const el = scaledContentRef.current
+    if (!el) return
+
+    const updateSize = () => {
+      setContentHeight(el.scrollHeight)
+      setContentWidth(el.scrollWidth)
     }
+
+    const ro = new ResizeObserver(updateSize)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [zoom, semesters])
 
   const getRelationType = useCallback((targetId: string, courseId: string): RelationType => {

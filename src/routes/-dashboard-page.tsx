@@ -1,4 +1,4 @@
-import { Suspense, lazy, useLayoutEffect, useRef, useState } from "react";
+import { Suspense, lazy } from "react";
 
 import { EmptyDashboard, DashboardSkeleton, DashboardStatsSkeleton } from "@/components/dashboard/empty-state";
 import { NextCourses } from "@/components/dashboard/next-courses";
@@ -24,27 +24,6 @@ export function DashboardPage() {
     userStudyPlan?.studyPlanId ?? null,
   );
 
-  const distributionRef = useRef<HTMLDivElement>(null);
-  const [distributionHeight, setDistributionHeight] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    const element = distributionRef.current;
-    if (!element) return;
-
-    const updateHeight = () => {
-      setDistributionHeight(element.offsetHeight);
-    };
-
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [dashboardData]);
-
   const isAuthenticated = !!authUser;
   const hasProfile = !!userStudyPlan?.studyPlanId;
   const isDataLoading = isAuthenticated && (isLoadingUserPlan || isLoadingStats);
@@ -68,12 +47,12 @@ export function DashboardPage() {
               </div>
 
               <div className="grid gap-4 px-4 lg:px-6 md:grid-cols-2 lg:grid-cols-7">
-                <div ref={distributionRef} className="w-full min-w-0 lg:col-span-4 h-fit">
+                <div className="w-full min-w-0 lg:col-span-4">
                   <Suspense fallback={<div className="h-[360px] w-full rounded-lg border bg-muted/20" />}>
                     <CourseStatusChart stats={dashboardData.stats} />
                   </Suspense>
                 </div>
-                <div className="w-full min-w-0 lg:col-span-3" style={distributionHeight ? { height: distributionHeight } : undefined}>
+                <div className="w-full min-w-0 lg:col-span-3">
                   <NextCourses
                     courses={dashboardData.nextCourses}
                     universityId={userStudyPlan?.universityId ?? null}
