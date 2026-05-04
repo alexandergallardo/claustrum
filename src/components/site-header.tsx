@@ -14,6 +14,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/components/theme-provider";
 import { useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
 import { useProfessorById } from "@/lib/hooks/use-professor-reviews";
@@ -226,32 +227,34 @@ export function SiteHeader() {
         description="Busca rutas y acciones rápidas."
       >
         <CommandInput placeholder="Buscar rutas o acciones..." />
-        <CommandList>
-          <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-          <CommandGroup heading="Navegación">
-            {quickLinks.map((item) => (
-              <CommandItem
-                key={item.to}
-                value={`${item.label} ${item.to}`}
-                onSelect={() => runCommand(() => void navigate({ to: item.to }))}
-              >
-                <item.icon />
-                <span>{item.label}</span>
+        <ScrollArea className="max-h-[300px]">
+          <CommandList className="max-h-none overflow-visible">
+            <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+            <CommandGroup heading="Navegación">
+              {quickLinks.map((item) => (
+                <CommandItem
+                  key={item.to}
+                  value={`${item.label} ${item.to}`}
+                  onSelect={() => runCommand(() => void navigate({ to: item.to }))}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup heading="Acciones">
+              <CommandItem onSelect={() => runCommand(toggleTheme)}>
+                {theme === "dark" ? <Sun /> : <Moon />}
+                <span>{theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}</span>
               </CommandItem>
-            ))}
-          </CommandGroup>
-          <CommandSeparator />
-          <CommandGroup heading="Acciones">
-            <CommandItem onSelect={() => runCommand(toggleTheme)}>
-              {theme === "dark" ? <Sun /> : <Moon />}
-              <span>{theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => void navigate({ to: "/settings/appearance" }))}>
-              <Settings />
-              <span>Abrir configuración</span>
-            </CommandItem>
-          </CommandGroup>
-        </CommandList>
+              <CommandItem onSelect={() => runCommand(() => void navigate({ to: "/settings/appearance" }))}>
+                <Settings />
+                <span>Abrir configuración</span>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </ScrollArea>
       </CommandDialog>
     </header>
   );
