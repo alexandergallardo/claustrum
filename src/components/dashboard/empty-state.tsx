@@ -24,7 +24,7 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
   const actionHref = hasProfile ? "/curriculum" : "/settings/profile"
   const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Configurar perfil"
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
+    <div className="flex min-h-[calc(100svh-var(--header-height)-6rem)] flex-col items-center justify-center px-4 py-12 md:min-h-[calc(100svh-var(--header-height)-3rem)]">
       <div className="bg-primary/10 p-4 rounded-full mb-4">
         <GraduationCap className="h-12 w-12 text-primary" />
       </div>
@@ -77,25 +77,25 @@ function MiniBarSkeleton() {
   )
 }
 
+export function DashboardStatsSkeleton() {
+  return (
+    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+      <RadialProgressSkeleton />
+      <RadialProgressSkeleton />
+      <MiniBarSkeleton />
+      <MiniBarSkeleton />
+      <MiniBarSkeleton />
+      <MiniBarSkeleton />
+    </div>
+  )
+}
+
 export function DashboardSkeleton() {
   return (
     <div className="animate-pulse">
-      {/* Title area */}
-      <div className="px-4 lg:px-6 space-y-2">
-        <div className="h-8 w-64 bg-muted rounded" />
-        <div className="h-5 w-48 bg-muted rounded" />
-      </div>
-
       {/* Stats cards - 6 cards in 2x3 grid */}
-      <div className="px-4 lg:px-6 mt-4 md:mt-6">
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-          <RadialProgressSkeleton />
-          <RadialProgressSkeleton />
-          <MiniBarSkeleton />
-          <MiniBarSkeleton />
-          <MiniBarSkeleton />
-          <MiniBarSkeleton />
-        </div>
+      <div className="px-4 lg:px-6">
+        <DashboardStatsSkeleton />
       </div>
 
       {/* Distribution + Next courses row */}

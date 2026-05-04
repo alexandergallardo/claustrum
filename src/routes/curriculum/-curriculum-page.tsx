@@ -190,7 +190,7 @@ export function CurriculumPage() {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="flex-1 min-w-0">
@@ -263,9 +263,9 @@ export function CurriculumPage() {
           )}
 
           {!selectedPlanId && !planDetailQuery.isLoading && (
-            <div className="px-4 lg:px-6">
-              <Card className="flex-1 min-h-96 flex items-center justify-center">
-                <p className="text-muted-foreground">Selecciona una carrera para visualizar el plan de estudios</p>
+            <div className="flex flex-1 px-4 lg:px-6">
+              <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 text-center md:min-h-96">
+                <p className="max-w-sm text-sm text-muted-foreground md:text-base">Selecciona una carrera para visualizar el plan de estudios</p>
               </Card>
             </div>
           )}
