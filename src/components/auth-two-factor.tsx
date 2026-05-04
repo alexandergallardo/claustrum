@@ -193,15 +193,11 @@ export function AuthTwoFactorPage() {
         {isLoadingFactor ? "Cargando..." : "Verificar"}
       </Button>
 
-      <Button type="button" variant="link" className="text-muted-foreground">
-        Usar código de recuperación
-      </Button>
-
       <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
         <CircleHelpIcon className="size-3.5" />
         ¿Perdiste el acceso?{" "}
         <Link to="/policies" className="text-foreground underline underline-offset-4">
-          Contacta soporte
+          Contactar a soporte
         </Link>
       </p>
     </form>
