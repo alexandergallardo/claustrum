@@ -5,6 +5,11 @@ import { Combobox as ComboboxPrimitive } from "@base-ui/react"
 import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import {
   InputGroup,
@@ -144,27 +149,75 @@ function ComboboxList({ className, ...props }: ComboboxPrimitive.List.Props) {
 function ComboboxItem({
   className,
   children,
+  onPointerEnter,
+  onFocus,
   ...props
 }: ComboboxPrimitive.Item.Props) {
+  const itemRef = React.useRef<HTMLDivElement | null>(null)
+  const [tooltipOpen, setTooltipOpen] = React.useState(false)
+  const [tooltipText, setTooltipText] = React.useState("")
+
+  const checkOverflow = React.useCallback(() => {
+    const el = itemRef.current
+    if (!el) return false
+    const truncated = el.querySelectorAll<HTMLElement>(".truncate")
+    const hasOverflow = Array.from(truncated).some(
+      (element) => element.scrollWidth > element.clientWidth
+    )
+    if (hasOverflow) {
+      setTooltipText(el.textContent?.trim() || "")
+    }
+    return hasOverflow
+  }, [])
+
+  const handleOpenChange = React.useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setTooltipOpen(false)
+        return
+      }
+      if (checkOverflow()) {
+        setTooltipOpen(true)
+      }
+    },
+    [checkOverflow],
+  )
+
   return (
-    <ComboboxPrimitive.Item
-      data-slot="combobox-item"
-      className={cn(
-        "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <ComboboxPrimitive.ItemIndicator
-        data-slot="combobox-item-indicator"
-        render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
-        }
-      >
-        <CheckIcon className="pointer-events-none size-4 pointer-coarse:size-5" />
-      </ComboboxPrimitive.ItemIndicator>
-    </ComboboxPrimitive.Item>
+    <Tooltip open={tooltipOpen} onOpenChange={handleOpenChange}>
+      <TooltipTrigger asChild>
+        <ComboboxPrimitive.Item
+          ref={itemRef}
+          data-slot="combobox-item"
+          className={cn(
+            "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+            className,
+          )}
+          onPointerEnter={(event) => {
+            checkOverflow()
+            onPointerEnter?.(event)
+          }}
+          onFocus={(event) => {
+            checkOverflow()
+            onFocus?.(event)
+          }}
+          {...props}
+        >
+          {children}
+          <ComboboxPrimitive.ItemIndicator
+            data-slot="combobox-item-indicator"
+            render={
+              <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
+            }
+          >
+            <CheckIcon className="pointer-events-none size-4 pointer-coarse:size-5" />
+          </ComboboxPrimitive.ItemIndicator>
+        </ComboboxPrimitive.Item>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={4}>
+        {tooltipText}
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
