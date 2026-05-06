@@ -54,7 +54,7 @@ export function DashboardPage() {
                 </Suspense>
               </div>
 
-              <div className="grid gap-4 px-4 md:grid-cols-2 lg:grid-cols-7 lg:px-6">
+              <div className="grid auto-rows-min gap-4 px-4 md:grid-cols-2 lg:grid-cols-7 lg:px-6">
                 <div className="w-full min-w-0 lg:col-span-4">
                   <Suspense
                     fallback={<div className="bg-muted/20 h-[360px] w-full rounded-lg border" />}
@@ -62,7 +62,7 @@ export function DashboardPage() {
                     <CourseStatusChart stats={dashboardData.stats} />
                   </Suspense>
                 </div>
-                <div className="w-full min-w-0 lg:col-span-3">
+                <div className="min-h-0 w-full min-w-0 overflow-y-auto lg:col-span-3">
                   <NextCourses
                     courses={dashboardData.nextCourses}
                     universityId={userStudyPlan?.universityId ?? null}
