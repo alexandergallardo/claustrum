@@ -2,12 +2,11 @@ import {
   IconCalendarTime,
   IconDashboard,
   IconFileDescription,
-  IconInnerShadowTop,
   IconSchool,
   IconUsers,
 } from "@tabler/icons-react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { EllipsisVertical, LogIn } from "lucide-react";
+import { EllipsisVertical, Loader2, LogIn } from "lucide-react";
 import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,8 +47,39 @@ const data = {
   ],
 };
 
+function ClaustrumLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      role="img"
+      aria-label="Claustrum logo"
+      className={className}
+    >
+      <path
+        d="M190 48H78C61.431 48 48 61.431 48 78v100c0 16.569 13.431 30 30 30h112"
+        fill="none"
+        stroke="#0F172A"
+        strokeWidth="20"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="84"
+        y="84"
+        width="88"
+        height="88"
+        rx="18"
+        fill="none"
+        stroke="#C9A227"
+        strokeWidth="14"
+      />
+    </svg>
+  );
+}
+
 export function AppSidebar() {
-  const { authUser } = useAppAuth();
+  const { authUser, isAuthLoading } = useAppAuth();
   const location = useLocation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -77,8 +107,8 @@ export function AppSidebar() {
         className="text-foreground hover:bg-background/70 flex h-12 items-center gap-3 rounded-full transition-colors"
       >
         <span className="flex size-12 shrink-0 items-center justify-center">
-          <span className="bg-background flex size-8 items-center justify-center rounded-full shadow-sm">
-            <IconInnerShadowTop className="size-5" />
+          <span className="flex size-9 items-center justify-center rounded-full">
+            <ClaustrumLogo className="size-8" />
           </span>
         </span>
         <span className="truncate text-sm font-semibold opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-data-[user-menu=open]/sidebar:opacity-100">
@@ -182,6 +212,19 @@ export function AppSidebar() {
             sideOffset={8}
             contentClass="w-56 rounded-lg"
           />
+        ) : isAuthLoading ? (
+          <Button
+            variant="ghost"
+            disabled
+            className="hover:bg-background/80 hover:text-foreground !h-12 w-full justify-start gap-3 rounded-full !p-0 text-left"
+          >
+            <span className="flex size-12 shrink-0 items-center justify-center">
+              <Loader2 className="size-5 animate-spin" />
+            </span>
+            <span className="truncate opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-data-[user-menu=open]/sidebar:opacity-100">
+              Cargando sesión
+            </span>
+          </Button>
         ) : (
           <Button
             variant="ghost"
