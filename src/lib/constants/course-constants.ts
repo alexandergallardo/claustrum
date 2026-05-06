@@ -1,4 +1,4 @@
-import type { CourseStatus } from "@/lib/types"
+import type { CourseStatus } from "@/lib/types";
 
 export const STATUS_CONFIG = {
   approved: { label: "Aprobado", color: "bg-green-500", borderColor: "border-green-500" },
@@ -6,7 +6,7 @@ export const STATUS_CONFIG = {
   not_taken: { label: "No cursado", color: "bg-gray-300", borderColor: "border-gray-300" },
   withdrawn: { label: "Retirado", color: "bg-orange-500", borderColor: "border-orange-500" },
   in_progress: { label: "En curso", color: "bg-blue-500", borderColor: "border-blue-500" },
-} as const
+} as const;
 
 export const RELATION_CONFIG = {
   PREREQUISITE: {
@@ -24,8 +24,8 @@ export const RELATION_CONFIG = {
     icon: "✅",
     color: "text-green-500",
   },
-} as const
+} as const;
 
 export function getStatusConfig(status: CourseStatus) {
-  return STATUS_CONFIG[status]
+  return STATUS_CONFIG[status];
 }

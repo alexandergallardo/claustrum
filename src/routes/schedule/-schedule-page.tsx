@@ -1,4 +1,15 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import { startOfWeek } from "date-fns";
+import {
+  AlertTriangle,
+  CalendarDays,
+  ChevronDown,
+  User,
+  Save,
+  Bookmark,
+  Trash2,
+  Loader2,
+} from "lucide-react";
 import {
   Suspense,
   lazy,
@@ -12,16 +23,23 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarDays, ChevronDown, User, Save, Bookmark, Trash2, Loader2 } from "lucide-react";
-import CourseList from "@/components/course-list";
-import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
-import { buildScheduleIcs } from "@/lib/calendar/ics";
-import { startOfWeek } from "date-fns";
-import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
+
 import type { Mode, CalendarEvent } from "@/components/calendar/calendar-types";
 import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
+
+import { START_HOUR, END_HOUR } from "@/components/calendar/body/day/calendar-body-day-margin";
+import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
+import CourseList from "@/components/course-list";
+import {
+  ScheduleExportDialog,
+  type ScheduleExportOptions,
+  type ScheduleExportTheme,
+} from "@/components/schedule/schedule-export-dialog";
 import { ScheduleFilters } from "@/components/schedule/schedule-filters";
+import {
+  ScheduleZoomControls,
+  SCHEDULE_DEFAULT_HOUR_HEIGHT,
+} from "@/components/schedule/schedule-zoom-controls";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,34 +49,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import {
-  ScheduleZoomControls,
-  SCHEDULE_DEFAULT_HOUR_HEIGHT,
-} from "@/components/schedule/schedule-zoom-controls";
-import {
-  ScheduleExportDialog,
-  type ScheduleExportOptions,
-  type ScheduleExportTheme,
-} from "@/components/schedule/schedule-export-dialog";
-import {
-  START_HOUR,
-  END_HOUR,
-} from "@/components/calendar/body/day/calendar-body-day-margin";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
+import { buildScheduleIcs } from "@/lib/calendar/ics";
 import {
   useAuthUser,
   useUniversities,
@@ -77,6 +80,7 @@ import {
   type SavedSchedule,
 } from "@/lib/hooks/use-saved-schedules";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { cn } from "@/lib/utils";
 
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
@@ -96,17 +100,21 @@ function ScheduleEmptyState({
 
   return (
     <div className="flex flex-1 px-4 lg:px-6">
-      <div className="flex min-h-[45svh] w-full items-center justify-center rounded-lg border bg-card p-6 text-center md:min-h-96">
+      <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 text-center md:min-h-96">
         <div className="flex max-w-sm flex-col items-center gap-3">
-          <div className={cn(
-            "flex size-12 items-center justify-center rounded-full",
-            variant === "error" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
-          )}>
+          <div
+            className={cn(
+              "flex size-12 items-center justify-center rounded-full",
+              variant === "error"
+                ? "bg-destructive/10 text-destructive"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
             <Icon className="size-6" />
           </div>
           <div className="space-y-1.5">
             <h2 className="text-lg font-semibold tracking-tight md:text-xl">{title}</h2>
-            <p className="text-sm text-muted-foreground md:text-base">{description}</p>
+            <p className="text-muted-foreground text-sm md:text-base">{description}</p>
           </div>
         </div>
       </div>
@@ -147,14 +155,12 @@ const EXPORT_EVENT_COLORS = {
   },
 } as const;
 
-function applyExportEventColors(
-  root: HTMLElement,
-  theme: ScheduleExportTheme,
-) {
+function applyExportEventColors(root: HTMLElement, theme: ScheduleExportTheme) {
   const elements = root.querySelectorAll<HTMLElement>("[data-schedule-event-color]");
   elements.forEach((element) => {
     const color = element.dataset.scheduleEventColor as keyof typeof EXPORT_EVENT_COLORS.light;
-    const [bg, hover, border, text] = EXPORT_EVENT_COLORS[theme][color] ?? EXPORT_EVENT_COLORS[theme].blue;
+    const [bg, hover, border, text] =
+      EXPORT_EVENT_COLORS[theme][color] ?? EXPORT_EVENT_COLORS[theme].blue;
     element.style.setProperty("--schedule-event-bg", bg);
     element.style.setProperty("--schedule-event-hover", hover);
     element.style.setProperty("--schedule-event-border", border);
@@ -188,12 +194,7 @@ export function SchedulePage() {
   const selectedPlanId = search.plan ?? null;
   const selectedTermId = search.term ?? null;
   const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
-    () =>
-      !search.university &&
-      !search.campus &&
-      !search.career &&
-      !search.plan &&
-      !search.term,
+    () => !search.university && !search.campus && !search.career && !search.plan && !search.term,
   );
   const [storedShowAll, setStoredShowAll] = useState(() => {
     if (typeof window === "undefined") return true;
@@ -214,11 +215,8 @@ export function SchedulePage() {
   const mode: Mode = "week";
   const [date] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [isCourseListOpen, setIsCourseListOpen] = useState(true);
-  const [hourHeight, setHourHeight] = useState<number>(
-    SCHEDULE_DEFAULT_HOUR_HEIGHT,
-  );
-  const [currentExportTheme, setCurrentExportTheme] =
-    useState<ScheduleExportTheme>("light");
+  const [hourHeight, setHourHeight] = useState<number>(SCHEDULE_DEFAULT_HOUR_HEIGHT);
+  const [currentExportTheme, setCurrentExportTheme] = useState<ScheduleExportTheme>("light");
   const [, startTransition] = useTransition();
   const totalHours = END_HOUR - START_HOUR + 1;
   const calendarHeight = totalHours * hourHeight + 33;
@@ -241,9 +239,7 @@ export function SchedulePage() {
       .filter(Boolean);
   }, [search.groups]);
 
-
-  const { data: universities, isLoading: isLoadingUniversities } =
-    useUniversities();
+  const { data: universities, isLoading: isLoadingUniversities } = useUniversities();
   const campusesQuery = useCampuses(selectedUniversityId);
   const careersQuery = useAcademicUnits(selectedCampusId);
   const plansQuery = useStudyPlans(selectedCareerId);
@@ -270,14 +266,14 @@ export function SchedulePage() {
     !!selectedPlanId && !selectedTermId,
   );
 
-  const campuses = campusesQuery.data ?? [];
+  const campuses = useMemo(() => campusesQuery.data ?? [], [campusesQuery.data]);
   const campusById = useMemo(
     () => new Map(campuses.map((campus) => [campus.id, campus.name])),
     [campuses],
   );
   const careers = careersQuery.data ?? [];
   const plans = plansQuery.data ?? [];
-  const terms = termsQuery.data ?? [];
+  const terms = useMemo(() => termsQuery.data ?? [], [termsQuery.data]);
   const selectedTerm = useMemo(
     () => terms.find((term) => term.id === selectedTermId) ?? null,
     [selectedTermId, terms],
@@ -298,10 +294,7 @@ export function SchedulePage() {
     });
   }, [courses]);
 
-  const weekStart = useMemo(
-    () => startOfWeek(date, { weekStartsOn: 1 }),
-    [date],
-  );
+  const weekStart = useMemo(() => startOfWeek(date, { weekStartsOn: 1 }), [date]);
 
   const groupById = useMemo(() => {
     const map = new Map<
@@ -316,10 +309,7 @@ export function SchedulePage() {
     orderedCourses.forEach((course) => {
       course.groups?.forEach((group) => {
         const campusId = group.campus_id ?? course.campus_id ?? null;
-        const groupId = getGroupId(
-          course.course_code,
-          group.group_code,
-        );
+        const groupId = getGroupId(course.course_code, group.group_code);
         map.set(groupId, {
           course,
           group,
@@ -337,7 +327,7 @@ export function SchedulePage() {
 
   useEffect(() => {
     if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -364,7 +354,7 @@ export function SchedulePage() {
       userStudyPlan.academicUnitId ||
       userStudyPlan.studyPlanId
     ) {
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           university: userStudyPlan.universityId ?? undefined,
@@ -380,11 +370,7 @@ export function SchedulePage() {
     if (!isAuthenticated) return;
     if (!userStudyPlan) return;
     const hasSearch =
-      !!search.university ||
-      !!search.campus ||
-      !!search.career ||
-      !!search.plan ||
-      !!search.term;
+      !!search.university || !!search.campus || !!search.career || !!search.plan || !!search.term;
     if (!hasSearch) {
       setIsUsingProfileDefaults(true);
       return;
@@ -410,7 +396,7 @@ export function SchedulePage() {
       suggestedTermQuery.isSuccess &&
       suggestedTermQuery.data
     ) {
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -424,7 +410,7 @@ export function SchedulePage() {
       suggestedTermQuery.isSuccess &&
       !suggestedTermQuery.data
     ) {
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -469,10 +455,7 @@ export function SchedulePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (search.otherCampuses === undefined) return;
-    localStorage.setItem(
-      SHOW_OTHER_CAMPUSES_STORAGE_KEY,
-      String(search.otherCampuses),
-    );
+    localStorage.setItem(SHOW_OTHER_CAMPUSES_STORAGE_KEY, String(search.otherCampuses));
     setStoredShowOtherCampuses(search.otherCampuses);
   }, [search.otherCampuses]);
 
@@ -481,13 +464,12 @@ export function SchedulePage() {
 
     let cancelled = false;
 
-    (async () => {
+    void (async () => {
       try {
         const sb = getSupabaseBrowserClient();
-        const { data: items, error } = await sb
-          .rpc("get_user_saved_schedule_group_lookups", {
-            p_saved_schedule_id: search.loadSchedule,
-          });
+        const { data: items, error } = await sb.rpc("get_user_saved_schedule_group_lookups", {
+          p_saved_schedule_id: search.loadSchedule,
+        });
 
         if (error) throw error;
         if (cancelled) return;
@@ -498,19 +480,23 @@ export function SchedulePage() {
           group_code: string;
         }>;
         const lookupSet = new Set(
-          savedGroupLookups.map(i => `${i.course_code}-${i.campus_id ?? ""}-${i.group_code}`)
+          savedGroupLookups.map((i) => `${i.course_code}-${i.campus_id ?? ""}-${i.group_code}`),
         );
         const matchingGroups: string[] = [];
 
         groupById.forEach((value, key) => {
-          if (lookupSet.has(`${value.course.course_code}-${value.campusId ?? ""}-${value.group.group_code}`)) {
+          if (
+            lookupSet.has(
+              `${value.course.course_code}-${value.campusId ?? ""}-${value.group.group_code}`,
+            )
+          ) {
             matchingGroups.push(key);
           }
         });
 
         if (cancelled) return;
 
-        navigate({
+        void navigate({
           to: "/schedule",
           search: {
             ...search,
@@ -519,11 +505,10 @@ export function SchedulePage() {
           },
           resetScroll: false,
         });
-      } catch (err) {
-        console.error("Error loading schedule:", err);
+      } catch {
         toast.error("Error al cargar el horario");
         if (!cancelled) {
-          navigate({
+          void navigate({
             to: "/schedule",
             search: {
               ...search,
@@ -535,18 +520,19 @@ export function SchedulePage() {
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [search.loadSchedule, orderedCourses.length]);
+    return () => {
+      cancelled = true;
+    };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- search is intentionally excluded to avoid infinite loops; only search.loadSchedule should trigger this effect
+  }, [search.loadSchedule, orderedCourses.length, navigate, groupById]);
 
   const updateSelectedGroups = useCallback(
     (nextGroups: Set<string>) => {
       setSelectedGroups(nextGroups);
-      const nextGroupsValue = nextGroups.size
-        ? Array.from(nextGroups).join(",")
-        : undefined;
+      const nextGroupsValue = nextGroups.size ? Array.from(nextGroups).join(",") : undefined;
       if (nextGroupsValue === search.groups) return;
       startTransition(() => {
-        navigate({
+        void navigate({
           to: "/schedule",
           search: {
             ...search,
@@ -556,13 +542,13 @@ export function SchedulePage() {
         });
       });
     },
-    [navigate, search, startTransition]
+    [navigate, search, startTransition],
   );
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -580,7 +566,7 @@ export function SchedulePage() {
   const handleCampusChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -597,7 +583,7 @@ export function SchedulePage() {
   const handleCareerChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -613,7 +599,7 @@ export function SchedulePage() {
   const handlePlanChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -628,7 +614,7 @@ export function SchedulePage() {
   const handleTermChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -641,7 +627,7 @@ export function SchedulePage() {
 
   const handleOtherCampusesChange = useCallback(
     (checked: boolean) => {
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -655,7 +641,7 @@ export function SchedulePage() {
   const handleShowAllChange = useCallback(
     (checked: boolean) => {
       if (!isAuthenticated) return;
-      navigate({
+      void navigate({
         to: "/schedule",
         search: {
           ...search,
@@ -669,7 +655,7 @@ export function SchedulePage() {
   const handleUseProfileDefaults = useCallback(() => {
     if (!userStudyPlan) return;
     setIsUsingProfileDefaults(true);
-    navigate({
+    void navigate({
       to: "/schedule",
       search: {
         ...search,
@@ -704,9 +690,7 @@ export function SchedulePage() {
       const group = groupData.group;
       const courseCode = course.course_code;
       const color = courseColors.get(courseCode) || "blue";
-      const campusName = groupData.campusId
-        ? (campusById.get(groupData.campusId) ?? null)
-        : null;
+      const campusName = groupData.campusId ? (campusById.get(groupData.campusId) ?? null) : null;
 
       const sessions = group.meetings;
       if (!sessions) return;
@@ -728,105 +712,106 @@ export function SchedulePage() {
             weekStart,
           });
           events.push(event);
-        } catch (err) {
-          console.error("Error converting session to event:", err);
+        } catch {
+          // ignore
         }
       });
     });
 
     return events;
-  }, [selectedGroups, courseColors, weekStart, campusById, groupById]);
+  }, [selectedGroups, courseColors, weekStart, campusById, groupById, orderedCourses]);
 
-  const handleExport = useCallback(async (options: ScheduleExportOptions) => {
-    if (options.format === "ics") {
-      if (!calendarEvents.length) {
-        toast.error("No hay clases seleccionadas para exportar");
+  const handleExport = useCallback(
+    async (options: ScheduleExportOptions) => {
+      if (options.format === "ics") {
+        if (!calendarEvents.length) {
+          toast.error("No hay clases seleccionadas para exportar");
+          return;
+        }
+
+        try {
+          const ics = buildScheduleIcs({
+            events: calendarEvents,
+            term: selectedTerm,
+          });
+          const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const dateStamp = new Date().toISOString().slice(0, 10);
+          link.href = url;
+          link.download = `horario-${dateStamp}.ics`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success("Calendario exportado correctamente");
+        } catch {
+          toast.error("Error al exportar el calendario");
+        }
         return;
       }
 
-      try {
-        const ics = buildScheduleIcs({
-          events: calendarEvents,
-          term: selectedTerm,
-        });
-        const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        const dateStamp = new Date().toISOString().slice(0, 10);
-        link.href = url;
-        link.download = `horario-${dateStamp}.ics`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success("Calendario exportado correctamente");
-      } catch (error) {
-        console.error("Error exporting calendar:", error);
-        toast.error("Error al exportar el calendario");
+      const calendarElement = exportCalendarRef.current;
+      if (!calendarElement) {
+        toast.error("No se pudo generar la imagen del horario");
+        return;
       }
-      return;
-    }
 
-    const calendarElement = exportCalendarRef.current;
-    if (!calendarElement) {
-      toast.error("No se pudo generar la imagen del horario");
-      return;
-    }
-
-    const exportTheme = options.theme;
-    flushSync(() => setCurrentExportTheme(exportTheme));
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (exportTheme) {
-      calendarElement.setAttribute("data-export-theme", exportTheme);
-    }
-    const resetEventColors = applyExportEventColors(calendarElement, options.theme);
-
-    try {
-      const { toJpeg, toPng } = await import("html-to-image");
-      const extension = options.format === "jpeg" ? "jpg" : "png";
-      const dateStamp = new Date().toISOString().slice(0, 10);
-      const backgroundColor = options.transparent
-        ? undefined
-        : options.theme === "dark"
-          ? "#0b0b0b"
-          : "#ffffff";
-
-      const captureOptions = {
-        quality: 0.95,
-        backgroundColor,
-        pixelRatio: 3,
-        width: EXPORT_IMAGE_WIDTH,
-        height: EXPORT_IMAGE_HEIGHT,
-        style: {
-          width: `${EXPORT_IMAGE_WIDTH}px`,
-          height: `${EXPORT_IMAGE_HEIGHT}px`,
-          overflow: "hidden" as const,
-          position: "static" as const,
-          zIndex: "auto" as const,
-          opacity: "1" as const,
-          pointerEvents: "none" as const,
-        },
-      };
-
-      const dataUrl =
-        options.format === "jpeg"
-          ? await toJpeg(calendarElement, captureOptions)
-          : await toPng(calendarElement, captureOptions);
-
-      const link = document.createElement("a");
-      link.download = `horario-${dateStamp}.${extension}`;
-      link.href = dataUrl;
-      link.click();
-
-      toast.success("Horario exportado correctamente");
-    } catch (error) {
-      console.error("Error exporting schedule:", error);
-      toast.error("Error al exportar el horario");
-    } finally {
+      const exportTheme = options.theme;
+      flushSync(() => setCurrentExportTheme(exportTheme));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
       if (exportTheme) {
-        calendarElement.removeAttribute("data-export-theme");
+        calendarElement.setAttribute("data-export-theme", exportTheme);
       }
-      resetEventColors();
-    }
-  }, [calendarEvents, selectedTerm]);
+      const resetEventColors = applyExportEventColors(calendarElement, options.theme);
+
+      try {
+        const { toJpeg, toPng } = await import("html-to-image");
+        const extension = options.format === "jpeg" ? "jpg" : "png";
+        const dateStamp = new Date().toISOString().slice(0, 10);
+        const backgroundColor = options.transparent
+          ? undefined
+          : options.theme === "dark"
+            ? "#0b0b0b"
+            : "#ffffff";
+
+        const captureOptions = {
+          quality: 0.95,
+          backgroundColor,
+          pixelRatio: 3,
+          width: EXPORT_IMAGE_WIDTH,
+          height: EXPORT_IMAGE_HEIGHT,
+          style: {
+            width: `${EXPORT_IMAGE_WIDTH}px`,
+            height: `${EXPORT_IMAGE_HEIGHT}px`,
+            overflow: "hidden" as const,
+            position: "static" as const,
+            zIndex: "auto" as const,
+            opacity: "1" as const,
+            pointerEvents: "none" as const,
+          },
+        };
+
+        const dataUrl =
+          options.format === "jpeg"
+            ? await toJpeg(calendarElement, captureOptions)
+            : await toPng(calendarElement, captureOptions);
+
+        const link = document.createElement("a");
+        link.download = `horario-${dateStamp}.${extension}`;
+        link.href = dataUrl;
+        link.click();
+
+        toast.success("Horario exportado correctamente");
+      } catch {
+        toast.error("Error al exportar el horario");
+      } finally {
+        if (exportTheme) {
+          calendarElement.removeAttribute("data-export-theme");
+        }
+        resetEventColors();
+      }
+    },
+    [calendarEvents, selectedTerm],
+  );
 
   const handleRemoveEvent = useCallback(
     (event: CalendarEvent) => {
@@ -834,7 +819,7 @@ export function SchedulePage() {
       next.delete(event.groupId);
       updateSelectedGroups(next);
     },
-    [selectedGroups, updateSelectedGroups]
+    [selectedGroups, updateSelectedGroups],
   );
 
   const handleSaveSchedule = useCallback(() => {
@@ -871,14 +856,14 @@ export function SchedulePage() {
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "Error al guardar el horario");
         },
-      }
+      },
     );
   }, [selectedGroups, groupById, selectedTermId, scheduleName, saveScheduleMutation]);
 
   const handleLoadSchedule = useCallback(
     (schedule: SavedSchedule) => {
       if (schedule.academic_term_id === selectedTermId) {
-        navigate({
+        void navigate({
           to: "/schedule",
           search: {
             ...search,
@@ -887,7 +872,7 @@ export function SchedulePage() {
           resetScroll: false,
         });
       } else {
-        navigate({
+        void navigate({
           to: "/schedule",
           search: {
             ...search,
@@ -899,17 +884,18 @@ export function SchedulePage() {
         });
       }
     },
-    [selectedTermId, navigate, search]
+    [selectedTermId, navigate, search],
   );
 
   const handleDeleteSchedule = useCallback(
     (scheduleId: number) => {
       deleteScheduleMutation.mutate(scheduleId, {
         onSuccess: () => toast.success("Horario eliminado"),
-        onError: (error) => toast.error(error instanceof Error ? error.message : "Error al eliminar"),
+        onError: (error) =>
+          toast.error(error instanceof Error ? error.message : "Error al eliminar"),
       });
     },
-    [deleteScheduleMutation]
+    [deleteScheduleMutation],
   );
 
   const isLoadingFilters =
@@ -930,7 +916,7 @@ export function SchedulePage() {
               <Skeleton className="h-12 w-full" />
             </div>
             <div className="px-4 lg:px-6">
-              <div className="flex gap-4 h-[calc(100vh-16rem)]">
+              <div className="flex h-[calc(100vh-16rem)] gap-4">
                 <div className="w-96 space-y-4">
                   <Skeleton className="h-32" />
                   <Skeleton className="h-32" />
@@ -954,7 +940,11 @@ export function SchedulePage() {
           <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
             <ScheduleEmptyState
               title="Error al cargar el horario"
-              description={coursesQuery.error instanceof Error ? coursesQuery.error.message : "Error desconocido"}
+              description={
+                coursesQuery.error instanceof Error
+                  ? coursesQuery.error.message
+                  : "Error desconocido"
+              }
               variant="error"
             />
           </div>
@@ -965,64 +955,56 @@ export function SchedulePage() {
 
   return (
     <>
-    <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2">
-        <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <div className="px-4 lg:px-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <ScheduleFilters
-                  universities={universities ?? []}
-                  campuses={mainCampuses}
-                  careers={careers}
-                  plans={plans}
-                  terms={terms}
-                  selectedUniversityId={selectedUniversityId}
-                  selectedCampusId={selectedCampusId}
-                  selectedCareerId={selectedCareerId}
-                  selectedPlanId={selectedPlanId}
-                  selectedTermId={selectedTermId}
-                  onUniversityChange={handleUniversityChange}
-                  onCampusChange={handleCampusChange}
-                  onCareerChange={handleCareerChange}
-                  onPlanChange={handlePlanChange}
-                  onTermChange={handleTermChange}
-                  isLoadingUniversities={isLoadingUniversities}
-                  isLoadingCampuses={
-                    campusesQuery.isFetching && campusesQuery.data?.length === 0
-                  }
-                  isLoadingCareers={
-                    careersQuery.isFetching && careersQuery.data?.length === 0
-                  }
-                  isLoadingPlans={
-                    plansQuery.isFetching && plansQuery.data?.length === 0
-                  }
-                  isLoadingTerms={
-                    termsQuery.isFetching && termsQuery.data?.length === 0
-                  }
-                  showAll={effectiveShowAllCourses}
-                  onShowAllChange={handleShowAllChange}
-                  showAllDisabled={!isAuthenticated}
-                  showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
-                  showOtherCampuses={showOtherCampuses}
-                  onShowOtherCampusesChange={handleOtherCampusesChange}
-                />
+      <div className="flex flex-1 flex-col">
+        <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="px-4 lg:px-6">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="min-w-0 flex-1">
+                  <ScheduleFilters
+                    universities={universities ?? []}
+                    campuses={mainCampuses}
+                    careers={careers}
+                    plans={plans}
+                    terms={terms}
+                    selectedUniversityId={selectedUniversityId}
+                    selectedCampusId={selectedCampusId}
+                    selectedCareerId={selectedCareerId}
+                    selectedPlanId={selectedPlanId}
+                    selectedTermId={selectedTermId}
+                    onUniversityChange={handleUniversityChange}
+                    onCampusChange={handleCampusChange}
+                    onCareerChange={handleCareerChange}
+                    onPlanChange={handlePlanChange}
+                    onTermChange={handleTermChange}
+                    isLoadingUniversities={isLoadingUniversities}
+                    isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
+                    isLoadingCareers={careersQuery.isFetching && careersQuery.data?.length === 0}
+                    isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                    isLoadingTerms={termsQuery.isFetching && termsQuery.data?.length === 0}
+                    showAll={effectiveShowAllCourses}
+                    onShowAllChange={handleShowAllChange}
+                    showAllDisabled={!isAuthenticated}
+                    showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
+                    showOtherCampuses={showOtherCampuses}
+                    onShowOtherCampusesChange={handleOtherCampusesChange}
+                  />
+                </div>
+                {isAuthenticated && userStudyPlan && (
+                  <Button
+                    type="button"
+                    variant={isUsingProfileDefaults ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={handleUseProfileDefaults}
+                    disabled={isUsingProfileDefaults}
+                    className="h-8 shrink-0 gap-1.5 text-xs"
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    {isUsingProfileDefaults ? "Perfil activo" : "Usar mi perfil"}
+                  </Button>
+                )}
               </div>
-              {isAuthenticated && userStudyPlan && (
-                <Button
-                  type="button"
-                  variant={isUsingProfileDefaults ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={handleUseProfileDefaults}
-                  disabled={isUsingProfileDefaults}
-                  className="shrink-0 h-8 text-xs gap-1.5"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  {isUsingProfileDefaults ? 'Perfil activo' : 'Usar mi perfil'}
-                </Button>
-              )}
             </div>
-          </div>
 
             {!hasRequiredScheduleFilters && !coursesQuery.isLoading && (
               <ScheduleEmptyState
@@ -1031,29 +1013,29 @@ export function SchedulePage() {
               />
             )}
 
-            {hasRequiredScheduleFilters &&
-              !orderedCourses.length &&
-              !coursesQuery.isLoading && (
-                <ScheduleEmptyState
-                  title="No hay cursos disponibles"
-                  description="No se encontraron cursos con los filtros actuales. Prueba cambiando el periodo, carrera o sede."
-                />
-              )}
+            {hasRequiredScheduleFilters && !orderedCourses.length && !coursesQuery.isLoading && (
+              <ScheduleEmptyState
+                title="No hay cursos disponibles"
+                description="No se encontraron cursos con los filtros actuales. Prueba cambiando el periodo, carrera o sede."
+              />
+            )}
 
             {hasRequiredScheduleFilters && orderedCourses.length > 0 && (
               <div className="px-4 lg:px-6">
                 <div
-                  className="border rounded-lg overflow-hidden shrink-0 h-auto lg:h-[var(--calendar-height)]"
-                  style={{
-                    "--calendar-height": `${calendarHeight}px`,
-                  } as CSSProperties}
+                  className="h-auto shrink-0 overflow-hidden rounded-lg border lg:h-[var(--calendar-height)]"
+                  style={
+                    {
+                      "--calendar-height": `${calendarHeight}px`,
+                    } as CSSProperties
+                  }
                 >
                   {isMobile ? (
                     <div className="flex flex-col">
                       <div className="flex flex-col border-b">
-                        <div className="px-4 h-[33px] bg-muted/30 shrink-0 flex items-center">
+                        <div className="bg-muted/30 flex h-[33px] shrink-0 items-center px-4">
                           <div className="flex w-full items-center justify-between gap-2">
-                            <h2 className="text-base font-semibold leading-none">
+                            <h2 className="text-base leading-none font-semibold">
                               {orderedCourses.length} curso
                               {orderedCourses.length !== 1 ? "s" : ""} disponible
                               {orderedCourses.length !== 1 ? "s" : ""}
@@ -1078,7 +1060,9 @@ export function SchedulePage() {
                             </Button>
                           </div>
                         </div>
-                        <div className={cn("overflow-hidden h-[50vh]", !isCourseListOpen && "hidden")}> 
+                        <div
+                          className={cn("h-[50vh] overflow-hidden", !isCourseListOpen && "hidden")}
+                        >
                           <CourseList
                             key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
                             courses={orderedCourses}
@@ -1101,27 +1085,43 @@ export function SchedulePage() {
                             <>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="icon" title="Mis horarios guardados">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    title="Mis horarios guardados"
+                                  >
                                     <Bookmark className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
                                   {!savedSchedules?.length ? (
-                                    <DropdownMenuItem disabled>Sin horarios guardados</DropdownMenuItem>
+                                    <DropdownMenuItem disabled>
+                                      Sin horarios guardados
+                                    </DropdownMenuItem>
                                   ) : (
                                     savedSchedules.map((s) => (
-                                      <DropdownMenuItem key={s.id} onClick={() => handleLoadSchedule(s)}>
-                                        <div className="flex items-center justify-between w-full">
+                                      <DropdownMenuItem
+                                        key={s.id}
+                                        onClick={() => handleLoadSchedule(s)}
+                                      >
+                                        <div className="flex w-full items-center justify-between">
                                           <span>{s.name}</span>
-                                          <span
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
-                                            className="ml-2 text-muted-foreground hover:text-destructive cursor-pointer"
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleDeleteSchedule(s.id); } }}
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteSchedule(s.id);
+                                            }}
+                                            className="text-muted-foreground hover:text-destructive ml-2 inline-flex cursor-pointer items-center"
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") {
+                                                e.stopPropagation();
+                                                handleDeleteSchedule(s.id);
+                                              }
+                                            }}
                                           >
                                             <Trash2 className="h-3.5 w-3.5" />
-                                          </span>
+                                          </button>
                                         </div>
                                       </DropdownMenuItem>
                                     ))
@@ -1130,33 +1130,45 @@ export function SchedulePage() {
                               </DropdownMenu>
                               <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
                                 <DialogTrigger asChild>
-                                  <Button variant="outline" size="icon" disabled={!selectedGroups.size} title="Guardar horario actual">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={!selectedGroups.size}
+                                    title="Guardar horario actual"
+                                  >
                                     <Save className="h-4 w-4" />
                                   </Button>
                                 </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Guardar horario</DialogTitle>
-                                      <DialogDescription className="sr-only">
-                                        Guarda los grupos seleccionados como un horario con nombre personalizado.
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-4 pt-4">
-                                      <div className="space-y-2">
-                                        <Label htmlFor="schedule-name-mobile">Nombre del horario</Label>
-                                        <Input
-                                          id="schedule-name-mobile"
-                                          value={scheduleName}
-                                          onChange={(e) => setScheduleName(e.target.value)}
-                                          placeholder="Ej: IS-2026-1"
-                                        />
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Guardar horario</DialogTitle>
+                                    <DialogDescription className="sr-only">
+                                      Guarda los grupos seleccionados como un horario con nombre
+                                      personalizado.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4 pt-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="schedule-name-mobile">
+                                        Nombre del horario
+                                      </Label>
+                                      <Input
+                                        id="schedule-name-mobile"
+                                        value={scheduleName}
+                                        onChange={(e) => setScheduleName(e.target.value)}
+                                        placeholder="Ej: IS-2026-1"
+                                      />
                                     </div>
                                     <Button
                                       onClick={handleSaveSchedule}
-                                      disabled={!scheduleName.trim() || saveScheduleMutation.isPending}
+                                      disabled={
+                                        !scheduleName.trim() || saveScheduleMutation.isPending
+                                      }
                                       className="w-full"
                                     >
-                                      {saveScheduleMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                      {saveScheduleMutation.isPending && (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      )}
                                       Guardar
                                     </Button>
                                   </div>
@@ -1166,11 +1178,8 @@ export function SchedulePage() {
                           )}
                           <ScheduleExportDialog onExport={handleExport} />
                         </div>
-                        <div
-                          ref={calendarRef}
-                          className="overflow-hidden p-0"
-                        >
-                          <Suspense fallback={<div className="h-full w-full bg-muted/20" />}>
+                        <div ref={calendarRef} className="overflow-hidden p-0">
+                          <Suspense fallback={<div className="bg-muted/20 h-full w-full" />}>
                             <Calendar
                               events={calendarEvents}
                               setEvents={() => {}}
@@ -1187,10 +1196,7 @@ export function SchedulePage() {
                       </div>
                     </div>
                   ) : (
-                    <ResizablePanelGroup
-                      orientation="horizontal"
-                      className="h-full"
-                    >
+                    <ResizablePanelGroup orientation="horizontal" className="h-full">
                       <ResizablePanel
                         defaultSize="30%"
                         minSize="20%"
@@ -1198,16 +1204,16 @@ export function SchedulePage() {
                         className="min-w-0 overflow-hidden"
                       >
                         <div className="flex flex-col lg:h-full">
-                          <div className="px-4 h-[33px] border-b bg-muted/30 shrink-0 flex items-center">
+                          <div className="bg-muted/30 flex h-[33px] shrink-0 items-center border-b px-4">
                             <div className="flex items-center gap-2">
-                              <h2 className="text-base font-semibold leading-none">
+                              <h2 className="text-base leading-none font-semibold">
                                 {orderedCourses.length} curso
                                 {orderedCourses.length !== 1 ? "s" : ""} disponible
                                 {orderedCourses.length !== 1 ? "s" : ""}
                               </h2>
                             </div>
                           </div>
-                          <div className="overflow-hidden h-[60vh] lg:flex-1 lg:h-auto">
+                          <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
                             <CourseList
                               courses={orderedCourses}
                               selectedGroups={selectedGroups}
@@ -1233,27 +1239,43 @@ export function SchedulePage() {
                               <>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="icon" title="Mis horarios guardados">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      title="Mis horarios guardados"
+                                    >
                                       <Bookmark className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-56">
                                     {!savedSchedules?.length ? (
-                                      <DropdownMenuItem disabled>Sin horarios guardados</DropdownMenuItem>
+                                      <DropdownMenuItem disabled>
+                                        Sin horarios guardados
+                                      </DropdownMenuItem>
                                     ) : (
                                       savedSchedules.map((s) => (
-                                        <DropdownMenuItem key={s.id} onClick={() => handleLoadSchedule(s)}>
-                                          <div className="flex items-center justify-between w-full">
+                                        <DropdownMenuItem
+                                          key={s.id}
+                                          onClick={() => handleLoadSchedule(s)}
+                                        >
+                                          <div className="flex w-full items-center justify-between">
                                             <span>{s.name}</span>
-                                            <span
-                                              onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(s.id); }}
-                                              className="ml-2 text-muted-foreground hover:text-destructive cursor-pointer"
-                                              role="button"
-                                              tabIndex={0}
-                                              onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleDeleteSchedule(s.id); } }}
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteSchedule(s.id);
+                                              }}
+                                              className="text-muted-foreground hover:text-destructive ml-2 inline-flex cursor-pointer items-center"
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                  e.stopPropagation();
+                                                  handleDeleteSchedule(s.id);
+                                                }
+                                              }}
                                             >
                                               <Trash2 className="h-3.5 w-3.5" />
-                                            </span>
+                                            </button>
                                           </div>
                                         </DropdownMenuItem>
                                       ))
@@ -1262,7 +1284,12 @@ export function SchedulePage() {
                                 </DropdownMenu>
                                 <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
                                   <DialogTrigger asChild>
-                                    <Button variant="outline" size="icon" disabled={!selectedGroups.size} title="Guardar horario actual">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={!selectedGroups.size}
+                                      title="Guardar horario actual"
+                                    >
                                       <Save className="h-4 w-4" />
                                     </Button>
                                   </DialogTrigger>
@@ -1270,12 +1297,15 @@ export function SchedulePage() {
                                     <DialogHeader>
                                       <DialogTitle>Guardar horario</DialogTitle>
                                       <DialogDescription className="sr-only">
-                                        Guarda los grupos seleccionados como un horario con nombre personalizado.
+                                        Guarda los grupos seleccionados como un horario con nombre
+                                        personalizado.
                                       </DialogDescription>
                                     </DialogHeader>
                                     <div className="space-y-4 pt-4">
                                       <div className="space-y-2">
-                                        <Label htmlFor="schedule-name-desktop">Nombre del horario</Label>
+                                        <Label htmlFor="schedule-name-desktop">
+                                          Nombre del horario
+                                        </Label>
                                         <Input
                                           id="schedule-name-desktop"
                                           value={scheduleName}
@@ -1285,10 +1315,14 @@ export function SchedulePage() {
                                       </div>
                                       <Button
                                         onClick={handleSaveSchedule}
-                                        disabled={!scheduleName.trim() || saveScheduleMutation.isPending}
+                                        disabled={
+                                          !scheduleName.trim() || saveScheduleMutation.isPending
+                                        }
                                         className="w-full"
                                       >
-                                        {saveScheduleMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                        {saveScheduleMutation.isPending && (
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        )}
                                         Guardar
                                       </Button>
                                     </div>
@@ -1298,11 +1332,8 @@ export function SchedulePage() {
                             )}
                             <ScheduleExportDialog onExport={handleExport} />
                           </div>
-                          <div
-                            ref={calendarRef}
-                            className="lg:h-full overflow-hidden p-0"
-                          >
-                            <Suspense fallback={<div className="h-full w-full bg-muted/20" />}>
+                          <div ref={calendarRef} className="overflow-hidden p-0 lg:h-full">
+                            <Suspense fallback={<div className="bg-muted/20 h-full w-full" />}>
                               <Calendar
                                 events={calendarEvents}
                                 setEvents={() => {}}
@@ -1323,14 +1354,14 @@ export function SchedulePage() {
                 </div>
               </div>
             )}
+          </div>
         </div>
       </div>
-    </div>
 
       {/* Hidden calendar for export - behind the page, within viewport so html-to-image can capture it */}
       <div
         ref={exportCalendarRef}
-        className="fixed left-0 top-0 -z-10 overflow-hidden pointer-events-none rounded-lg border bg-background opacity-0"
+        className="bg-background pointer-events-none fixed top-0 left-0 -z-10 overflow-hidden rounded-lg border opacity-0"
         style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
       >
         <Suspense fallback={null}>

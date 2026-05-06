@@ -1,9 +1,4 @@
-import {
-  IconCalendarTime,
-  IconDashboard,
-  IconSchool,
-  IconUsers,
-} from "@tabler/icons-react";
+import { IconCalendarTime, IconDashboard, IconSchool, IconUsers } from "@tabler/icons-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { LogInIcon } from "lucide-react";
 
@@ -45,7 +40,7 @@ export function MobileBottomNav() {
     url === "/" ? location.pathname === url : location.pathname.startsWith(url);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex h-[72px] items-stretch justify-around border-t border-border/60 bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="border-border/60 bg-background fixed inset-x-0 bottom-0 z-50 flex h-[72px] items-stretch justify-around border-t pb-[env(safe-area-inset-bottom)] md:hidden">
       {mainNavItems.map((item) => {
         const active = isActive(item.url);
 
@@ -57,11 +52,11 @@ export function MobileBottomNav() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors",
-              active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {active ? (
-              <span className="absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-foreground" />
+              <span className="bg-foreground absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
             ) : null}
             <item.icon className="size-5 shrink-0" strokeWidth={active ? 2.4 : 2} />
             <span className="truncate">{item.title}</span>
@@ -76,14 +71,14 @@ export function MobileBottomNav() {
           "relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors",
           isActive("/settings") || isActive("/auth")
             ? "text-foreground"
-            : "text-muted-foreground hover:text-foreground"
+            : "text-muted-foreground hover:text-foreground",
         )}
       >
         {isActive("/settings") || isActive("/auth") ? (
-          <span className="absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-foreground" />
+          <span className="bg-foreground absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
         ) : null}
         {authUser ? (
-          <Avatar className="size-5 border border-muted-foreground/35">
+          <Avatar className="border-muted-foreground/35 size-5 border">
             <AvatarImage src={authUser.user_metadata?.avatar_url} alt={userName} />
             <AvatarFallback className="text-[9px]">{userInitial}</AvatarFallback>
           </Avatar>

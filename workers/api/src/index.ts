@@ -71,7 +71,11 @@ function getSupabase(env: Env) {
   return createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY);
 }
 
-async function verifyTurnstileToken(token: string, env: Env, remoteIp: string | null): Promise<boolean> {
+async function verifyTurnstileToken(
+  token: string,
+  env: Env,
+  remoteIp: string | null,
+): Promise<boolean> {
   const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
     method: "POST",
     headers: {
@@ -86,7 +90,7 @@ async function verifyTurnstileToken(token: string, env: Env, remoteIp: string | 
 
   if (!response.ok) return false;
 
-  const data = await response.json() as { success?: boolean };
+  const data = (await response.json()) as { success?: boolean };
   return data.success === true;
 }
 
@@ -154,10 +158,14 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
   const answersFile = formData.get("answersFile") as File | null;
 
   const courseId = Number(formData.get("courseId"));
-  const academicTermId = formData.get("academicTermId") ? Number(formData.get("academicTermId")) : null;
+  const academicTermId = formData.get("academicTermId")
+    ? Number(formData.get("academicTermId"))
+    : null;
   const professorId = formData.get("professorId") ? Number(formData.get("professorId")) : null;
   const evaluationType = formData.get("evaluationType") as string;
-  const evaluationNumber = formData.get("evaluationNumber") ? Number(formData.get("evaluationNumber")) : null;
+  const evaluationNumber = formData.get("evaluationNumber")
+    ? Number(formData.get("evaluationNumber"))
+    : null;
   const customName = formData.get("customName") as string | null;
   const isCatedra = formData.get("isCatedra") === "true";
   const includesAnswers = formData.get("includesAnswers") === "true";
@@ -237,7 +245,12 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
   return ok({ success: true, message: "Evaluacion subida correctamente" });
 }
 
-function formatFileName(courseCode: string | null, evaluationType: string | null, evaluationNumber: number | null, customName: string | null): string {
+function formatFileName(
+  courseCode: string | null,
+  evaluationType: string | null,
+  evaluationNumber: number | null,
+  customName: string | null,
+): string {
   if (evaluationType === "otro" && customName && customName.trim() !== "") {
     return `${courseCode ?? "evaluacion"}-${customName.trim()}.pdf`;
   }
@@ -251,11 +264,17 @@ function formatFileName(courseCode: string | null, evaluationType: string | null
   return `${base}.pdf`;
 }
 
-async function handleEvaluationFileById(request: Request, env: Env, evaluationId: number): Promise<Response> {
+async function handleEvaluationFileById(
+  request: Request,
+  env: Env,
+  evaluationId: number,
+): Promise<Response> {
   const supabase = getSupabase(env);
   const { data: evaluation, error } = await supabase
     .from("course_evaluations")
-    .select("id, status, file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)")
+    .select(
+      "id, status, file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)",
+    )
     .eq("id", evaluationId)
     .single();
 
@@ -278,7 +297,12 @@ async function handleEvaluationFileById(request: Request, env: Env, evaluationId
   if (!object) return badRequest("Archivo no encontrado");
 
   const courseCode = (evaluation.course as { code: string } | null)?.code ?? null;
-  const fileName = formatFileName(courseCode, evaluation.evaluation_type, evaluation.evaluation_number, evaluation.custom_name);
+  const fileName = formatFileName(
+    courseCode,
+    evaluation.evaluation_type,
+    evaluation.evaluation_number,
+    evaluation.custom_name,
+  );
 
   return new Response(object.body, {
     status: 200,
@@ -309,7 +333,11 @@ async function handleEvaluationModerate(request: Request, env: Env): Promise<Res
     });
   }
 
-  const body = await request.json() as { evaluationId: number; status: "approved" | "rejected"; note?: string };
+  const body = (await request.json()) as {
+    evaluationId: number;
+    status: "approved" | "rejected";
+    note?: string;
+  };
 
   const supabase = getSupabase(env);
   const { error } = await supabase
@@ -347,13 +375,16 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
   });
   if (ip) turnstileBody.set("remoteip", ip);
 
-  const turnstileVerification = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    body: turnstileBody,
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+  const turnstileVerification = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    {
+      method: "POST",
+      body: turnstileBody,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
     },
-  });
+  );
 
   if (!turnstileVerification.ok) {
     return new Response(JSON.stringify({ error: "Could not verify anti-spam token" }), {
@@ -362,7 +393,10 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
     });
   }
 
-  const turnstileJson = (await turnstileVerification.json()) as { success: boolean; "error-codes"?: string[] };
+  const turnstileJson = (await turnstileVerification.json()) as {
+    success: boolean;
+    "error-codes"?: string[];
+  };
   if (!turnstileJson.success) {
     return badRequest("Invalid anti-spam token");
   }

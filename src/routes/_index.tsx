@@ -1,7 +1,9 @@
-import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Suspense, lazy } from "react";
 
-const DashboardPage = lazy(() => import("./-dashboard-page").then((module) => ({ default: module.DashboardPage })));
+const DashboardPage = lazy(() =>
+  import("./-dashboard-page").then((module) => ({ default: module.DashboardPage })),
+);
 
 export const Route = createFileRoute("/_index")({
   component: AppDashboardRoute,
@@ -9,7 +11,7 @@ export const Route = createFileRoute("/_index")({
 
 function AppDashboardRoute() {
   return (
-    <Suspense fallback={<div className="flex-1 bg-background" />}>
+    <Suspense fallback={<div className="bg-background flex-1" />}>
       <DashboardPage />
     </Suspense>
   );

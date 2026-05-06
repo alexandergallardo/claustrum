@@ -1,16 +1,24 @@
 import { Suspense, lazy } from "react";
 
-import { EmptyDashboard, DashboardSkeleton, DashboardStatsSkeleton } from "@/components/dashboard/empty-state";
+import {
+  EmptyDashboard,
+  DashboardSkeleton,
+  DashboardStatsSkeleton,
+} from "@/components/dashboard/empty-state";
 import { NextCourses } from "@/components/dashboard/next-courses";
 import { ProgressTimeline } from "@/components/dashboard/progress-timeline";
 import { useAuthUser, useDashboardStats, useUserStudyPlan } from "@/lib/hooks/use-queries";
 
 const DashboardStatsCards = lazy(() =>
-  import("@/components/dashboard/dashboard-stats").then((module) => ({ default: module.DashboardStatsCards })),
+  import("@/components/dashboard/dashboard-stats").then((module) => ({
+    default: module.DashboardStatsCards,
+  })),
 );
 
 const CourseStatusChart = lazy(() =>
-  import("@/components/dashboard/dashboard-stats").then((module) => ({ default: module.CourseStatusChart })),
+  import("@/components/dashboard/dashboard-stats").then((module) => ({
+    default: module.CourseStatusChart,
+  })),
 );
 
 export function DashboardPage() {
@@ -46,9 +54,11 @@ export function DashboardPage() {
                 </Suspense>
               </div>
 
-              <div className="grid gap-4 px-4 lg:px-6 md:grid-cols-2 lg:grid-cols-7">
+              <div className="grid gap-4 px-4 md:grid-cols-2 lg:grid-cols-7 lg:px-6">
                 <div className="w-full min-w-0 lg:col-span-4">
-                  <Suspense fallback={<div className="h-[360px] w-full rounded-lg border bg-muted/20" />}>
+                  <Suspense
+                    fallback={<div className="bg-muted/20 h-[360px] w-full rounded-lg border" />}
+                  >
                     <CourseStatusChart stats={dashboardData.stats} />
                   </Suspense>
                 </div>

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 
 interface ValueObject {
   [themeName: string]: string;
@@ -11,10 +11,10 @@ export interface UseThemeProps {
   forcedTheme?: string | undefined;
   setTheme: React.Dispatch<React.SetStateAction<string>>;
   theme?: string | undefined;
-  systemTheme?: 'dark' | 'light' | undefined;
+  systemTheme?: "dark" | "light" | undefined;
 }
 
-export type Attribute = `data-${string}` | 'class';
+export type Attribute = `data-${string}` | "class";
 
 export interface ThemeProviderProps extends React.PropsWithChildren {
   themes?: string[] | undefined;
@@ -29,9 +29,9 @@ export interface ThemeProviderProps extends React.PropsWithChildren {
   nonce?: string | undefined;
 }
 
-const colorSchemes = ['light', 'dark'];
-const MEDIA = '(prefers-color-scheme: dark)';
-const isServer = typeof window === 'undefined';
+const colorSchemes = ["light", "dark"];
+const MEDIA = "(prefers-color-scheme: dark)";
+const isServer = typeof window === "undefined";
 const ThemeContext = React.createContext<UseThemeProps | undefined>(undefined);
 const defaultContext: UseThemeProps = { setTheme: (_) => {}, themes: [] };
 
@@ -44,35 +44,29 @@ export const ThemeProvider = (props: ThemeProviderProps): React.ReactNode => {
   return <Theme {...props} />;
 };
 
-const defaultThemes = ['light', 'dark'];
+const defaultThemes = ["light", "dark"];
 
 const Theme = ({
   forcedTheme,
   disableTransitionOnChange = false,
   enableSystem = true,
   enableColorScheme = true,
-  storageKey = 'theme',
+  storageKey = "theme",
   themes = defaultThemes,
-  defaultTheme = enableSystem ? 'system' : 'light',
-  attribute = 'class',
+  defaultTheme = enableSystem ? "system" : "light",
+  attribute = "class",
   value,
   children,
   nonce,
 }: ThemeProviderProps) => {
-
-
-
   const [theme, setThemeState] = React.useState(() => getTheme(storageKey, defaultTheme));
   const attrs = !value ? themes : Object.values(value);
-
-
-
 
   const applyTheme = React.useCallback((theme: string | undefined) => {
     let resolved = theme;
     if (!resolved) return;
 
-    if (theme === 'system' && enableSystem) {
+    if (theme === "system" && enableSystem) {
       resolved = getSystemTheme();
     }
 
@@ -81,10 +75,10 @@ const Theme = ({
     const d = document.documentElement;
 
     const handleAttribute = (attr: Attribute) => {
-      if (attr === 'class') {
+      if (attr === "class") {
         d.classList.remove(...attrs);
         if (name) d.classList.add(name);
-      } else if (attr.startsWith('data-')) {
+      } else if (attr.startsWith("data-")) {
         if (name) {
           d.setAttribute(attr, name);
         } else {
@@ -105,30 +99,30 @@ const Theme = ({
     }
 
     enable?.();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- applyTheme is intentionally stable; dependencies are captured from closure to avoid unnecessary re-renders
   }, []);
 
   const setTheme = React.useCallback(
     (value: any) => {
-      const newTheme = typeof value === 'function' ? value(theme) : value;
+      const newTheme = typeof value === "function" ? value(theme) : value;
       setThemeState(newTheme);
 
       try {
         localStorage.setItem(storageKey, String(newTheme));
-      } catch (e) {
-      }
+      } catch {}
     },
-    [theme],
+    [theme, storageKey],
   );
 
   const handleMediaQuery = React.useCallback(
     (e: MediaQueryListEvent | MediaQueryList) => {
       getSystemTheme(e);
 
-      if (theme === 'system' && enableSystem && !forcedTheme) {
-        applyTheme('system');
+      if (theme === "system" && enableSystem && !forcedTheme) {
+        applyTheme("system");
       }
     },
-    [theme, forcedTheme],
+    [theme, forcedTheme, enableSystem, applyTheme],
   );
 
   React.useEffect(() => {
@@ -150,20 +144,20 @@ const Theme = ({
       setTheme(theme);
     };
 
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [setTheme]);
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [setTheme, storageKey, defaultTheme]);
 
   React.useEffect(() => {
     applyTheme(forcedTheme ?? theme);
-  }, [forcedTheme, theme]);
+  }, [forcedTheme, theme, applyTheme]);
 
   const providerValue = React.useMemo(
     () => ({
       theme,
       setTheme,
       forcedTheme,
-      themes: enableSystem ? [...themes, 'system'] : themes,
+      themes: enableSystem ? [...themes, "system"] : themes,
     }),
     [theme, setTheme, forcedTheme, enableSystem, themes],
   );
@@ -199,7 +193,7 @@ const ThemeScript = React.memo(
     value,
     themes,
     nonce,
-  }: Omit<ThemeProviderProps, 'children'> & { defaultTheme: string }) => {
+  }: Omit<ThemeProviderProps, "children"> & { defaultTheme: string }) => {
     const scriptArgs = JSON.stringify([
       attribute,
       storageKey,
@@ -214,7 +208,7 @@ const ThemeScript = React.memo(
     return (
       <script
         suppressHydrationWarning
-        nonce={typeof window === 'undefined' ? nonce : ''}
+        nonce={typeof window === "undefined" ? nonce : ""}
         dangerouslySetInnerHTML={{ __html: `(${script.toString()})(${scriptArgs})` }}
       />
     );
@@ -226,16 +220,15 @@ const getTheme = (key: string, fallback?: string) => {
   let theme: string | undefined;
   try {
     theme = localStorage.getItem(key) || undefined;
-  } catch (e) {
-  }
+  } catch {}
   return theme || fallback;
 };
 
 const disableAnimation = () => {
-  const css = document.createElement('style');
+  const css = document.createElement("style");
   css.appendChild(
     document.createTextNode(
-      '*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important}',
+      "*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important}",
     ),
   );
   document.head.appendChild(css);
@@ -252,10 +245,9 @@ const disableAnimation = () => {
 const getSystemTheme = (e?: MediaQueryList | MediaQueryListEvent) => {
   const event = e ?? window.matchMedia(MEDIA);
   const isDark = event.matches;
-  const systemTheme = isDark ? 'dark' : 'light';
+  const systemTheme = isDark ? "dark" : "light";
   return systemTheme;
 };
-
 
 export const script: (...args: any[]) => void = (
   attribute,
@@ -268,8 +260,8 @@ export const script: (...args: any[]) => void = (
   enableColorScheme,
 ) => {
   const el = document.documentElement;
-  const systemThemes = ['light', 'dark'];
-  const isClass = attribute === 'class';
+  const systemThemes = ["light", "dark"];
+  const isClass = attribute === "class";
   const classes = isClass && value ? themes.map((t: string | number) => value[t] || t) : themes;
 
   function updateDOM(theme: string) {
@@ -290,7 +282,7 @@ export const script: (...args: any[]) => void = (
   }
 
   function getSystemTheme() {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
 
   if (forcedTheme) {
@@ -298,10 +290,9 @@ export const script: (...args: any[]) => void = (
   } else {
     try {
       const themeName = localStorage.getItem(storageKey) ?? defaultTheme;
-      const isSystem = enableSystem && themeName === 'system';
+      const isSystem = enableSystem && themeName === "system";
       const finalTheme = isSystem ? getSystemTheme() : themeName;
       updateDOM(finalTheme);
-    } catch (e) {
-    }
+    } catch {}
   }
 };

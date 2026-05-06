@@ -1,5 +1,5 @@
-import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Suspense, lazy } from "react";
 
 const SecurityPage = lazy(() =>
   import("./-security-page").then((module) => ({ default: module.SecurityPage })),

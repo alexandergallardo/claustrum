@@ -148,13 +148,10 @@ export function PoliciesPage() {
             <section
               key={section.title}
               id={section.id}
-              className="scroll-mt-24 grid gap-4 border-t pt-8 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-8"
+              className="grid scroll-mt-24 gap-4 border-t pt-8 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-8"
             >
               <h2 className="text-xl font-semibold tracking-tight lg:text-2xl">
-                <a
-                  href={`#${section.id}`}
-                  className="transition-colors hover:text-primary"
-                >
+                <a href={`#${section.id}`} className="hover:text-primary transition-colors">
                   {section.title}
                 </a>
               </h2>
@@ -163,14 +160,14 @@ export function PoliciesPage() {
                 {section.paragraphs.map((paragraph) => (
                   <p
                     key={paragraph}
-                    className="max-w-4xl text-base leading-8 text-foreground/90 lg:text-lg"
+                    className="text-foreground/90 max-w-4xl text-base leading-8 lg:text-lg"
                   >
                     {paragraph}
                   </p>
                 ))}
 
                 {section.bullets ? (
-                  <ul className="max-w-4xl list-disc space-y-3 pl-6 text-base leading-8 text-foreground/90 lg:text-lg">
+                  <ul className="text-foreground/90 max-w-4xl list-disc space-y-3 pl-6 text-base leading-8 lg:text-lg">
                     {section.bullets.map((item) => (
                       <li key={item}>{item}</li>
                     ))}

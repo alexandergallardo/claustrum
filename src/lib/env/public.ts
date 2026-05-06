@@ -22,10 +22,7 @@ let cachedPublicEnv: z.infer<typeof publicEnvSchema> | null = null;
 export function getPublicEnv(): z.infer<typeof publicEnvSchema> {
   if (cachedPublicEnv) return cachedPublicEnv;
 
-  if (
-    typeof import.meta === "undefined" ||
-    typeof import.meta.env === "undefined"
-  ) {
+  if (typeof import.meta === "undefined" || typeof import.meta.env === "undefined") {
     throw new Error("Environment variables not available in this runtime");
   }
 

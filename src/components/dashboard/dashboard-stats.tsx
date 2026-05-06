@@ -1,9 +1,11 @@
 "use client";
 
+import { Label, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
+
+import type { DashboardStats } from "@/lib/types";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
-import type { DashboardStats } from "@/lib/types";
-import { Label, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 
 interface DashboardStatsCardsProps {
   stats: DashboardStats;
@@ -31,7 +33,7 @@ function RadialProgressCard({
 
   return (
     <Card className="flex flex-col">
-      <CardContent className="flex flex-col justify-center md:flex-row md:items-center gap-4 p-4">
+      <CardContent className="flex flex-col justify-center gap-4 p-4 md:flex-row md:items-center">
         <ChartContainer
           config={chartConfig}
           className="aspect-square h-[100px] w-[100px] shrink-0 self-center md:self-auto"
@@ -77,12 +79,15 @@ function RadialProgressCard({
             </PolarRadiusAxis>
           </RadialBarChart>
         </ChartContainer>
-        <div className="flex flex-col gap-1 text-center md:text-left w-full mx-auto md:mx-0">
-          <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <div className="mx-auto flex w-full flex-col gap-1 text-center md:mx-0 md:text-left">
+          <span className="text-muted-foreground text-sm font-medium">{title}</span>
           <span className="text-2xl font-bold tracking-tight">
-            {value}{total ? <span className="text-muted-foreground text-lg font-normal">/{total}</span> : null}
+            {value}
+            {total ? (
+              <span className="text-muted-foreground text-lg font-normal">/{total}</span>
+            ) : null}
           </span>
-          <span className="text-xs text-muted-foreground">{description}</span>
+          <span className="text-muted-foreground text-xs">{description}</span>
         </div>
       </CardContent>
     </Card>
@@ -106,24 +111,24 @@ function MiniBarCard({
 }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
   const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(2);
-  
+
   return (
     <Card className="flex flex-col">
       <CardContent className="flex flex-col gap-2 p-4">
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <span className="text-muted-foreground text-sm font-medium">{title}</span>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-bold tracking-tight">{displayValue}</span>
-          <span className="text-sm text-muted-foreground">/ {total}</span>
+          <span className="text-muted-foreground text-sm">/ {total}</span>
         </div>
         <div className="flex flex-col gap-1.5">
-          <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+          <div className="bg-muted flex h-2 overflow-hidden rounded-full">
             {segments ? (
               segments.map((segment, i) => {
                 const segmentWidth = total > 0 ? (segment.value / total) * 100 : 0;
                 return (
                   <div
                     key={i}
-                    className="h-full first:rounded-l-full last:rounded-r-full transition-all"
+                    className="h-full transition-all first:rounded-l-full last:rounded-r-full"
                     style={{
                       width: `${segmentWidth}%`,
                       backgroundColor: segment.color,
@@ -141,7 +146,9 @@ function MiniBarCard({
               />
             )}
           </div>
-          <span className="text-xs text-muted-foreground">{percentage}% {percentageLabel}</span>
+          <span className="text-muted-foreground text-xs">
+            {percentage}% {percentageLabel}
+          </span>
         </div>
       </CardContent>
     </Card>
@@ -158,10 +165,10 @@ function SemesterCard({
   return (
     <Card className="flex flex-col">
       <CardContent className="flex flex-col gap-2 p-4">
-        <span className="text-sm font-medium text-muted-foreground">Semestre actual</span>
+        <span className="text-muted-foreground text-sm font-medium">Semestre actual</span>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-bold tracking-tight">{currentSemester}</span>
-          <span className="text-sm text-muted-foreground">de {totalSemesters}</span>
+          <span className="text-muted-foreground text-sm">de {totalSemesters}</span>
         </div>
         <div className="flex gap-1">
           {Array.from({ length: totalSemesters }, (_, i) => (
@@ -169,16 +176,17 @@ function SemesterCard({
               key={i}
               className="h-2 flex-1 rounded-full transition-all"
               style={{
-                backgroundColor: i < currentSemester 
-                  ? "var(--color-emerald-500)" 
-                  : i === currentSemester 
-                    ? "var(--color-blue-500)"
-                    : "hsl(var(--muted))",
+                backgroundColor:
+                  i < currentSemester
+                    ? "var(--color-emerald-500)"
+                    : i === currentSemester
+                      ? "var(--color-blue-500)"
+                      : "hsl(var(--muted))",
               }}
             />
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-muted-foreground text-xs">
           {totalSemesters - currentSemester} semestres restantes
         </span>
       </CardContent>
@@ -192,7 +200,7 @@ export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
   const pendingCourses = Math.max(stats.totalCourses - stats.completedCourses, 0);
 
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <RadialProgressCard
         title="Progreso general"
         value={stats.completedCourses}
@@ -229,10 +237,7 @@ export function DashboardStatsCards({ stats }: DashboardStatsCardsProps) {
         percentageLabel="sobre 100"
         color="var(--color-indigo-500)"
       />
-      <SemesterCard
-        currentSemester={stats.currentSemester}
-        totalSemesters={10}
-      />
+      <SemesterCard currentSemester={stats.currentSemester} totalSemesters={10} />
     </div>
   );
 }
@@ -254,12 +259,12 @@ export function CourseStatusChart({ stats }: CourseStatusChartProps) {
   const maxValue = Math.max(...data.map((d) => d.value));
 
   return (
-    <Card className="h-full w-full flex flex-col">
+    <Card className="flex h-full w-full flex-col">
       <CardHeader>
         <CardTitle className="text-base">Distribución de cursos</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pt-0">
-        <div className="space-y-3 h-full">
+        <div className="h-full space-y-3">
           {data.map((item) => {
             const percentage = Math.round((item.value / total) * 100);
             const width = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
@@ -267,17 +272,14 @@ export function CourseStatusChart({ stats }: CourseStatusChartProps) {
               <div key={item.name} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
                     <span>{item.name}</span>
                   </div>
                   <span className="text-muted-foreground">
                     {item.value} ({percentage}%)
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="bg-muted h-2 overflow-hidden rounded-full">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{

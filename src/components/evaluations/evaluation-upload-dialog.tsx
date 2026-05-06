@@ -1,6 +1,9 @@
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { FileUp, Minus, Plus, X } from "lucide-react";
+import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+import type { CourseRecentProfessor } from "@/lib/types";
+import type { AcademicTerm } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,13 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,16 +33,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUploadEvaluation } from "@/lib/hooks/use-evaluations";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
   EVALUATION_TYPE_LABELS,
   EVALUATION_TYPES_WITH_NUMBER,
   type EvaluationType,
 } from "@/lib/evaluations/types";
-import type { CourseRecentProfessor } from "@/lib/types";
-import type { AcademicTerm } from "@/lib/types";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useUploadEvaluation } from "@/lib/hooks/use-evaluations";
 import { cn } from "@/lib/utils";
 
 const Turnstile = lazy(() =>
@@ -106,7 +107,15 @@ export function EvaluationUploadDialog({
     if (showCustomNameInput && customName.trim() === "") return false;
     if (!turnstileSiteKey || !turnstileToken) return false;
     return true;
-  }, [evaluationFile, evaluationType, uploadMutation.isPending, showCustomNameInput, customName, turnstileSiteKey, turnstileToken]);
+  }, [
+    evaluationFile,
+    evaluationType,
+    uploadMutation.isPending,
+    showCustomNameInput,
+    customName,
+    turnstileSiteKey,
+    turnstileToken,
+  ]);
 
   const resetForm = useCallback(() => {
     setEvaluationFile(null);
@@ -141,7 +150,7 @@ export function EvaluationUploadDialog({
   };
 
   const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>, type: "evaluation" | "answers") => {
+    (event: React.DragEvent<HTMLElement>, type: "evaluation" | "answers") => {
       event.preventDefault();
       setIsDragging(false);
       const file = event.dataTransfer.files[0];
@@ -198,7 +207,8 @@ export function EvaluationUploadDialog({
 
     const parsedTermId = academicTermId ? Number(academicTermId) : null;
     const parsedProfessorId = professorId ? Number(professorId) : null;
-    const parsedEvaluationNumber = evaluationNumberInput.trim() === "" ? null : Number(evaluationNumberInput);
+    const parsedEvaluationNumber =
+      evaluationNumberInput.trim() === "" ? null : Number(evaluationNumberInput);
     const parsedCustomName = customName.trim() === "" ? null : customName.trim();
 
     try {
@@ -225,335 +235,337 @@ export function EvaluationUploadDialog({
   };
 
   const selectedTerm = academicTerms.find((t) => String(t.id) === academicTermId) ?? null;
-  const selectedProfessor = recentProfessors.find((p) => String(p.professorId) === professorId) ?? null;
+  const selectedProfessor =
+    recentProfessors.find((p) => String(p.professorId) === professorId) ?? null;
 
   const formFields = (
     <div className="space-y-5">
-          {/* Evaluation file drop zone */}
-          <div className="space-y-2">
-            <Label>Archivo de la evaluación</Label>
-            {!evaluationFile ? (
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => handleDrop(e, "evaluation")}
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
-                onClick={() => document.getElementById("evaluation-file-input")?.click()}
+      {/* Evaluation file drop zone */}
+      <div className="space-y-2">
+        <Label>Archivo de la evaluación</Label>
+        {!evaluationFile ? (
+          <button
+            type="button"
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => handleDrop(e, "evaluation")}
+            className={`w-full cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors ${
+              isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+            }`}
+            onClick={() => document.getElementById("evaluation-file-input")?.click()}
+          >
+            <FileUp className="text-muted-foreground mx-auto mb-2 h-6 w-6" />
+            <p className="text-muted-foreground text-sm">
+              Arrastra un PDF aquí o haz clic para seleccionar
+            </p>
+            <p className="text-muted-foreground mt-1 text-xs">Máximo 10 MB</p>
+          </button>
+        ) : (
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{evaluationFile.name}</p>
+              <p className="text-muted-foreground text-xs">{formatFileSize(evaluationFile.size)}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setEvaluationFile(null)}
+              aria-label="Quitar archivo"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        <input
+          id="evaluation-file-input"
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) => handleFileInput(e, "evaluation")}
+        />
+      </div>
+
+      {/* Type + Number / Custom name */}
+      <div className="space-y-2">
+        <Label htmlFor="evaluation-type">Tipo de evaluación</Label>
+        <div className="flex gap-3">
+          <Select
+            value={evaluationType}
+            onValueChange={(v) => {
+              setEvaluationType(v as EvaluationType);
+              setEvaluationNumberInput("");
+              setCustomName("");
+            }}
+          >
+            <SelectTrigger id="evaluation-type" className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {EVALUATION_TYPES.map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {showNumberInput && (
+            <div className="flex flex-1 items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleEvaluationNumberStep(-1)}
+                aria-label="Disminuir número"
               >
-                <FileUp className="mx-auto h-6 w-6 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Arrastra un PDF aquí o haz clic para seleccionar
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">Máximo 10 MB</p>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{evaluationFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(evaluationFile.size)}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEvaluationFile(null)}
-                  aria-label="Quitar archivo"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            <input
-              id="evaluation-file-input"
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => handleFileInput(e, "evaluation")}
-            />
-          </div>
-
-          {/* Type + Number / Custom name */}
-          <div className="space-y-2">
-            <Label htmlFor="evaluation-type">Tipo de evaluación</Label>
-            <div className="flex gap-3">
-              <Select value={evaluationType} onValueChange={(v) => {
-                setEvaluationType(v as EvaluationType);
-                setEvaluationNumberInput("");
-                setCustomName("");
-              }}>
-                <SelectTrigger id="evaluation-type" className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  {EVALUATION_TYPES.map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {showNumberInput && (
-                <div className="flex items-center gap-2 flex-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleEvaluationNumberStep(-1)}
-                    aria-label="Disminuir número"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
-                    type="text"
-                    inputMode="numeric"
-                    value={evaluationNumberInput}
-                    onChange={(event) => handleEvaluationNumberChange(event.target.value)}
-                    placeholder="Número de evaluación"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => handleEvaluationNumberStep(1)}
-                    aria-label="Aumentar número"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              {showCustomNameInput && (
-                <div className="flex items-center gap-2 flex-1">
-                  <Input
-                    className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
-                    value={customName}
-                    onChange={(event) => setCustomName(event.target.value)}
-                    placeholder="Nombre de la evaluación"
-                    maxLength={100}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Period + Professor */}
-          {(academicTerms.length > 0 || recentProfessors.length > 0) && (
-            <div className="grid grid-cols-2 gap-3">
-              {academicTerms.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Período académico</Label>
-                  <Combobox
-                    items={academicTerms}
-                    value={selectedTerm}
-                    onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
-                    itemToStringValue={(term) => term.display_name}
-                  >
-                    <ComboboxTrigger
-                      ref={termTriggerRef}
-                      render={
-                        <Button
-                          variant="outline"
-                          className="w-full min-w-0 overflow-hidden justify-between font-normal"
-                        />
-                      }
-                    >
-                      <span
-                        className={cn(
-                          "block min-w-0 flex-1 truncate text-left",
-                          !selectedTerm && "text-muted-foreground",
-                        )}
-                      >
-                        {selectedTerm?.display_name ?? "Seleccionar período"}
-                      </span>
-                    </ComboboxTrigger>
-                    <ComboboxContent
-                      anchor={termTriggerRef}
-                      container={comboboxPortalContainerRef}
-                      className="w-64"
-                    >
-                      <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
-                      <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-                      <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                        {(term) => (
-                          <ComboboxItem key={term.id} value={term}>
-                            <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                          </ComboboxItem>
-                        )}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                </div>
-              )}
-
-              {recentProfessors.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Profesor</Label>
-                  <Combobox
-                    items={recentProfessors}
-                    value={selectedProfessor}
-                    onValueChange={(prof) => setProfessorId(prof ? String(prof.professorId) : "")}
-                    itemToStringValue={(prof) => prof.professorName}
-                  >
-                    <ComboboxTrigger
-                      ref={professorTriggerRef}
-                      render={
-                        <Button
-                          variant="outline"
-                          className="w-full min-w-0 overflow-hidden justify-between font-normal"
-                        />
-                      }
-                    >
-                      <span
-                        className={cn(
-                          "block min-w-0 flex-1 truncate text-left",
-                          !selectedProfessor && "text-muted-foreground",
-                        )}
-                      >
-                        {selectedProfessor?.professorName ?? "Seleccionar profesor"}
-                      </span>
-                    </ComboboxTrigger>
-                    <ComboboxContent
-                      anchor={professorTriggerRef}
-                      container={comboboxPortalContainerRef}
-                      className="w-64"
-                    >
-                      <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
-                      <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>
-                      <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                        {(prof) => (
-                          <ComboboxItem key={prof.professorId} value={prof}>
-                            <span className="block min-w-0 flex-1 truncate">{prof.professorName}</span>
-                          </ComboboxItem>
-                        )}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                </div>
-              )}
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
+                type="text"
+                inputMode="numeric"
+                value={evaluationNumberInput}
+                onChange={(event) => handleEvaluationNumberChange(event.target.value)}
+                placeholder="Número de evaluación"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleEvaluationNumberStep(1)}
+                aria-label="Aumentar número"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
           )}
 
-          {/* Checkboxes */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="is-catedra"
-                checked={isCatedra}
-                onCheckedChange={(v) => setIsCatedra(v === true)}
-              />
-              <Label htmlFor="is-catedra" className="text-sm font-normal">
-                Es de cátedra
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="includes-answers"
-                checked={includesAnswers}
-                onCheckedChange={(v) => setIncludesAnswers(v === true)}
-              />
-              <Label htmlFor="includes-answers" className="text-sm font-normal">
-                Incluye respuestas o solucionario
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="has-separate-answers"
-                checked={hasSeparateAnswers}
-                onCheckedChange={(v) => setHasSeparateAnswers(v === true)}
-              />
-              <Label htmlFor="has-separate-answers" className="text-sm font-normal">
-                Respuestas en archivo aparte
-              </Label>
-            </div>
-          </div>
-
-          {/* Answers file */}
-          {hasSeparateAnswers && (
-            <div className="space-y-2">
-              <Label>Archivo de respuestas (PDF)</Label>
-              {!answersFile ? (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={(e) => handleDrop(e, "answers")}
-                  className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
-                    isDragging
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50"
-                  }`}
-                  onClick={() => document.getElementById("answers-file-input")?.click()}
-                >
-                  <p className="text-sm text-muted-foreground">
-                    Arrastra el PDF de respuestas aquí o haz clic
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Máximo 10 MB</p>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{answersFile.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(answersFile.size)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setAnswersFile(null)}
-                    aria-label="Quitar archivo"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <input
-                id="answers-file-input"
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={(e) => handleFileInput(e, "answers")}
+          {showCustomNameInput && (
+            <div className="flex flex-1 items-center gap-2">
+              <Input
+                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
+                value={customName}
+                onChange={(event) => setCustomName(event.target.value)}
+                placeholder="Nombre de la evaluación"
+                maxLength={100}
               />
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label>Verificación humana</Label>
-            <div className="min-h-[70px]">
-              {turnstileSiteKey ? (
-                <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
-                  <Suspense fallback={<span className="text-sm text-muted-foreground">Cargando verificación...</span>}>
-                    <Turnstile
-                      siteKey={turnstileSiteKey}
-                      options={{ language: "es", size: "normal" }}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onError={() => setTurnstileToken(null)}
-                      onExpire={() => setTurnstileToken(null)}
-                    />
-                  </Suspense>
-                </div>
-              ) : (
-                <p className="text-sm text-amber-600">
-                  Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar envío.
-                </p>
-              )}
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* Period + Professor */}
+      {(academicTerms.length > 0 || recentProfessors.length > 0) && (
+        <div className="grid grid-cols-2 gap-3">
+          {academicTerms.length > 0 && (
+            <div className="space-y-2">
+              <Label>Período académico</Label>
+              <Combobox
+                items={academicTerms}
+                value={selectedTerm}
+                onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
+                itemToStringValue={(term) => term.display_name}
+              >
+                <ComboboxTrigger
+                  ref={termTriggerRef}
+                  render={
+                    <Button
+                      variant="outline"
+                      className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                    />
+                  }
+                >
+                  <span
+                    className={cn(
+                      "block min-w-0 flex-1 truncate text-left",
+                      !selectedTerm && "text-muted-foreground",
+                    )}
+                  >
+                    {selectedTerm?.display_name ?? "Seleccionar período"}
+                  </span>
+                </ComboboxTrigger>
+                <ComboboxContent
+                  anchor={termTriggerRef}
+                  container={comboboxPortalContainerRef}
+                  className="w-64"
+                >
+                  <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
+                  <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
+                  <ComboboxList className="max-h-48 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {(term) => (
+                      <ComboboxItem key={term.id} value={term}>
+                        <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
+
+          {recentProfessors.length > 0 && (
+            <div className="space-y-2">
+              <Label>Profesor</Label>
+              <Combobox
+                items={recentProfessors}
+                value={selectedProfessor}
+                onValueChange={(prof) => setProfessorId(prof ? String(prof.professorId) : "")}
+                itemToStringValue={(prof) => prof.professorName}
+              >
+                <ComboboxTrigger
+                  ref={professorTriggerRef}
+                  render={
+                    <Button
+                      variant="outline"
+                      className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                    />
+                  }
+                >
+                  <span
+                    className={cn(
+                      "block min-w-0 flex-1 truncate text-left",
+                      !selectedProfessor && "text-muted-foreground",
+                    )}
+                  >
+                    {selectedProfessor?.professorName ?? "Seleccionar profesor"}
+                  </span>
+                </ComboboxTrigger>
+                <ComboboxContent
+                  anchor={professorTriggerRef}
+                  container={comboboxPortalContainerRef}
+                  className="w-64"
+                >
+                  <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
+                  <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>
+                  <ComboboxList className="max-h-48 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {(prof) => (
+                      <ComboboxItem key={prof.professorId} value={prof}>
+                        <span className="block min-w-0 flex-1 truncate">{prof.professorName}</span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Checkboxes */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="is-catedra"
+            checked={isCatedra}
+            onCheckedChange={(v) => setIsCatedra(v === true)}
+          />
+          <Label htmlFor="is-catedra" className="text-sm font-normal">
+            Es de cátedra
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="includes-answers"
+            checked={includesAnswers}
+            onCheckedChange={(v) => setIncludesAnswers(v === true)}
+          />
+          <Label htmlFor="includes-answers" className="text-sm font-normal">
+            Incluye respuestas o solucionario
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="has-separate-answers"
+            checked={hasSeparateAnswers}
+            onCheckedChange={(v) => setHasSeparateAnswers(v === true)}
+          />
+          <Label htmlFor="has-separate-answers" className="text-sm font-normal">
+            Respuestas en archivo aparte
+          </Label>
+        </div>
+      </div>
+
+      {/* Answers file */}
+      {hasSeparateAnswers && (
+        <div className="space-y-2">
+          <Label>Archivo de respuestas (PDF)</Label>
+          {!answersFile ? (
+            <button
+              type="button"
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => handleDrop(e, "answers")}
+              className={`w-full cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
+                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              }`}
+              onClick={() => document.getElementById("answers-file-input")?.click()}
+            >
+              <p className="text-muted-foreground text-sm">
+                Arrastra el PDF de respuestas aquí o haz clic
+              </p>
+              <p className="text-muted-foreground mt-1 text-xs">Máximo 10 MB</p>
+            </button>
+          ) : (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{answersFile.name}</p>
+                <p className="text-muted-foreground text-xs">{formatFileSize(answersFile.size)}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAnswersFile(null)}
+                aria-label="Quitar archivo"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          <input
+            id="answers-file-input"
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => handleFileInput(e, "answers")}
+          />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label>Verificación humana</Label>
+        <div className="min-h-[70px]">
+          {turnstileSiteKey ? (
+            <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
+              <Suspense
+                fallback={
+                  <span className="text-muted-foreground text-sm">Cargando verificación...</span>
+                }
+              >
+                <Turnstile
+                  siteKey={turnstileSiteKey}
+                  options={{ language: "es", size: "normal" }}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onError={() => setTurnstileToken(null)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </Suspense>
+            </div>
+          ) : (
+            <p className="text-sm text-amber-600">
+              Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar envío.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 
   if (isMobile) {
@@ -563,9 +575,7 @@ export function EvaluationUploadDialog({
           <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <SheetHeader>
             <SheetTitle>Subir evaluación</SheetTitle>
-            <SheetDescription>
-              Comparte material de estudio con otros estudiantes.
-            </SheetDescription>
+            <SheetDescription>Comparte material de estudio con otros estudiantes.</SheetDescription>
           </SheetHeader>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             {formFields}
@@ -582,13 +592,11 @@ export function EvaluationUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
         <DialogHeader>
           <DialogTitle>Subir evaluación</DialogTitle>
-          <DialogDescription>
-            Comparte material de estudio con otros estudiantes.
-          </DialogDescription>
+          <DialogDescription>Comparte material de estudio con otros estudiantes.</DialogDescription>
         </DialogHeader>
 
         {formFields}

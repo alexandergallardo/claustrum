@@ -1,16 +1,14 @@
-import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { CheckIcon, ChevronLeftIcon, Loader2Icon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { CheckIcon, ChevronLeftIcon, Loader2Icon } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  CardDescription,
-} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { CardDescription } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 type Mode = "request" | "sent" | "update";
 
@@ -47,7 +45,7 @@ export function AuthResetPasswordPage() {
 
   const passwordMismatch = useMemo(
     () => confirmPassword.length > 0 && newPassword !== confirmPassword,
-    [confirmPassword, newPassword]
+    [confirmPassword, newPassword],
   );
 
   const onRequestSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -118,7 +116,13 @@ export function AuthResetPasswordPage() {
         ) : null}
 
         {mode === "sent" ? (
-          <SentState email={email} onTryDifferent={() => { setMode("request"); setErrorMessage(null); }} />
+          <SentState
+            email={email}
+            onTryDifferent={() => {
+              setMode("request");
+              setErrorMessage(null);
+            }}
+          />
         ) : null}
 
         {mode === "update" ? (
@@ -142,8 +146,8 @@ export function AuthResetPasswordPage() {
 function BrandMark() {
   return (
     <div className="flex items-center justify-center">
-      <div className="flex size-8 items-center justify-center rounded-md bg-foreground">
-        <span className="block size-2 rounded-full bg-background" />
+      <div className="bg-foreground flex size-8 items-center justify-center rounded-md">
+        <span className="bg-background block size-2 rounded-full" />
       </div>
     </div>
   );
@@ -166,7 +170,7 @@ function RequestState({
     <>
       <div className="items-center text-center">
         <BrandMark />
-        <h1 className="mt-4 font-heading text-2xl tracking-tight">Restablecer contraseña</h1>
+        <h1 className="font-heading mt-4 text-2xl tracking-tight">Restablecer contraseña</h1>
         <CardDescription className="text-sm">
           Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.
         </CardDescription>
@@ -202,7 +206,7 @@ function RequestState({
       <div className="mt-4 flex justify-center">
         <Link
           to="/auth/signin"
-          className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
         >
           <ChevronLeftIcon className="size-3.5" />
           Volver a iniciar sesión
@@ -212,27 +216,21 @@ function RequestState({
   );
 }
 
-function SentState({
-  email,
-  onTryDifferent,
-}: {
-  email: string;
-  onTryDifferent: () => void;
-}) {
+function SentState({ email, onTryDifferent }: { email: string; onTryDifferent: () => void }) {
   return (
     <>
       <div className="items-center text-center">
         <div className="flex size-14 items-center justify-center rounded-full bg-emerald-500/15">
           <CheckIcon className="size-6 text-emerald-600" />
         </div>
-        <h1 className="mt-4 font-heading text-2xl tracking-tight">Revisa tu correo</h1>
+        <h1 className="font-heading mt-4 text-2xl tracking-tight">Revisa tu correo</h1>
         <CardDescription className="text-sm break-words">
           Te enviamos un enlace de recuperación a{" "}
           <strong className="text-foreground break-all">{email}</strong>
         </CardDescription>
       </div>
       <div className="mt-4 flex flex-col gap-4">
-        <p className="text-center text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-center text-xs">
           El enlace expira en 1 hora. Si no lo ves, revisa spam o promociones.
         </p>
         <Button variant="ghost" size="lg" onClick={onTryDifferent}>
@@ -240,7 +238,7 @@ function SentState({
         </Button>
       </div>
       <div className="mt-4 flex justify-center">
-        <Link to="/auth/signin" className="text-muted-foreground text-xs hover:text-foreground">
+        <Link to="/auth/signin" className="text-muted-foreground hover:text-foreground text-xs">
           Volver a iniciar sesión
         </Link>
       </div>
@@ -273,7 +271,7 @@ function UpdateState({
     <>
       <div className="items-center text-center">
         <BrandMark />
-        <h1 className="mt-4 font-heading text-2xl tracking-tight">Crea una nueva contraseña</h1>
+        <h1 className="font-heading mt-4 text-2xl tracking-tight">Crea una nueva contraseña</h1>
         <CardDescription className="text-sm">
           Elige una contraseña segura para tu cuenta.
         </CardDescription>
@@ -328,7 +326,7 @@ function UpdateState({
         </form>
       </div>
       <div className="mt-4 flex justify-center">
-        <Link to="/auth/signin" className="text-muted-foreground text-xs hover:text-foreground">
+        <Link to="/auth/signin" className="text-muted-foreground hover:text-foreground text-xs">
           Volver a iniciar sesión
         </Link>
       </div>

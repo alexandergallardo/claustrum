@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { EvaluationStatus, UploadEvaluationPayload } from "@/lib/evaluations/types";
+
 import {
   getCourseEvaluations,
   getEvaluationModerationQueue,
   moderateEvaluation,
   uploadEvaluation,
 } from "@/lib/evaluations/api";
-import type { EvaluationStatus, UploadEvaluationPayload } from "@/lib/evaluations/types";
 
 export function useCourseEvaluations(courseId: number | null) {
   return useQuery({
@@ -21,8 +22,8 @@ export function useUploadEvaluation() {
   return useMutation({
     mutationFn: (payload: UploadEvaluationPayload) => uploadEvaluation(payload),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["courseEvaluations", variables.courseId] });
-      queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
+      void queryClient.invalidateQueries({ queryKey: ["courseEvaluations", variables.courseId] });
+      void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
     },
   });
 }
@@ -42,11 +43,14 @@ export function useEvaluationModerationQueue(
 export function useModerateEvaluation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (variables: { evaluationId: number; status: "approved" | "rejected"; note: string }) =>
-      moderateEvaluation(variables.evaluationId, variables.status, variables.note),
+    mutationFn: (variables: {
+      evaluationId: number;
+      status: "approved" | "rejected";
+      note: string;
+    }) => moderateEvaluation(variables.evaluationId, variables.status, variables.note),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
-      queryClient.invalidateQueries({ queryKey: ["courseEvaluations"] });
+      void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
+      void queryClient.invalidateQueries({ queryKey: ["courseEvaluations"] });
     },
   });
 }

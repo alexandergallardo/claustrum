@@ -1,11 +1,12 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { GraduationCap, ArrowRight } from "lucide-react"
+import { GraduationCap, ArrowRight } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 interface EmptyDashboardProps {
-  isAuthenticated: boolean
-  hasProfile: boolean
+  isAuthenticated: boolean;
+  hasProfile: boolean;
 }
 
 export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardProps) {
@@ -13,25 +14,23 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
     ? "Bienvenido a Claustrum"
     : hasProfile
       ? "Aún no tienes un plan de estudios configurado"
-      : "Completa tu perfil académico"
+      : "Completa tu perfil académico";
 
   const description = !isAuthenticated
     ? "Inicia sesión para ver tu plan de estudios y seguimiento de progreso académico."
     : hasProfile
       ? "Selecciona tu universidad, sede, carrera y plan de estudios para ver tu progreso académico."
-      : "Agrega tu universidad, sede, carrera y plan para que podamos armar tu dashboard."
+      : "Agrega tu universidad, sede, carrera y plan para que podamos armar tu dashboard.";
 
-  const actionHref = hasProfile ? "/curriculum" : "/settings/profile"
-  const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Configurar perfil"
+  const actionHref = hasProfile ? "/curriculum" : "/settings/profile";
+  const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Configurar perfil";
   return (
     <div className="flex min-h-[calc(100svh-var(--header-height)-6rem)] flex-col items-center justify-center px-4 py-12 md:min-h-[calc(100svh-var(--header-height)-3rem)]">
-      <div className="bg-primary/10 p-4 rounded-full mb-4">
-        <GraduationCap className="h-12 w-12 text-primary" />
+      <div className="bg-primary/10 mb-4 rounded-full p-4">
+        <GraduationCap className="text-primary h-12 w-12" />
       </div>
-      <h2 className="text-xl font-semibold mb-2">{title}</h2>
-      <p className="text-muted-foreground text-center max-w-md mb-6">
-        {description}
-      </p>
+      <h2 className="mb-2 text-xl font-semibold">{title}</h2>
+      <p className="text-muted-foreground mb-6 max-w-md text-center">{description}</p>
       {isAuthenticated ? (
         <a href={actionHref}>
           <Button>
@@ -50,36 +49,36 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function RadialProgressSkeleton() {
   return (
-    <div className="bg-muted rounded-lg p-4 flex flex-col justify-center md:flex-row md:items-center gap-4">
-      <div className="h-[100px] w-[100px] rounded-full bg-muted-foreground/20 shrink-0 self-center md:self-auto animate-pulse" />
-      <div className="flex flex-col gap-1 text-center md:text-left w-full">
-        <div className="h-4 w-24 bg-muted-foreground/20 rounded mx-auto md:mx-0" />
-        <div className="h-7 w-16 bg-muted-foreground/20 rounded mx-auto md:mx-0" />
-        <div className="h-3 w-28 bg-muted-foreground/20 rounded mx-auto md:mx-0" />
+    <div className="bg-muted flex flex-col justify-center gap-4 rounded-lg p-4 md:flex-row md:items-center">
+      <div className="bg-muted-foreground/20 h-[100px] w-[100px] shrink-0 animate-pulse self-center rounded-full md:self-auto" />
+      <div className="flex w-full flex-col gap-1 text-center md:text-left">
+        <div className="bg-muted-foreground/20 mx-auto h-4 w-24 rounded md:mx-0" />
+        <div className="bg-muted-foreground/20 mx-auto h-7 w-16 rounded md:mx-0" />
+        <div className="bg-muted-foreground/20 mx-auto h-3 w-28 rounded md:mx-0" />
       </div>
     </div>
-  )
+  );
 }
 
 function MiniBarSkeleton() {
   return (
-    <div className="bg-muted rounded-lg p-4 space-y-2">
-      <div className="h-4 w-24 bg-muted-foreground/20 rounded" />
-      <div className="h-7 w-16 bg-muted-foreground/20 rounded" />
-      <div className="h-2 w-full bg-muted-foreground/20 rounded-full" />
-      <div className="h-3 w-20 bg-muted-foreground/20 rounded" />
+    <div className="bg-muted space-y-2 rounded-lg p-4">
+      <div className="bg-muted-foreground/20 h-4 w-24 rounded" />
+      <div className="bg-muted-foreground/20 h-7 w-16 rounded" />
+      <div className="bg-muted-foreground/20 h-2 w-full rounded-full" />
+      <div className="bg-muted-foreground/20 h-3 w-20 rounded" />
     </div>
-  )
+  );
 }
 
 export function DashboardStatsSkeleton() {
   return (
-    <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <RadialProgressSkeleton />
       <RadialProgressSkeleton />
       <MiniBarSkeleton />
@@ -87,7 +86,7 @@ export function DashboardStatsSkeleton() {
       <MiniBarSkeleton />
       <MiniBarSkeleton />
     </div>
-  )
+  );
 }
 
 export function DashboardSkeleton() {
@@ -99,17 +98,17 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Distribution + Next courses row */}
-      <div className="px-4 lg:px-6 mt-4">
+      <div className="mt-4 px-4 lg:px-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <div className="h-64 bg-muted rounded-lg lg:col-span-4" />
-          <div className="h-64 bg-muted rounded-lg lg:col-span-3" />
+          <div className="bg-muted h-64 rounded-lg lg:col-span-4" />
+          <div className="bg-muted h-64 rounded-lg lg:col-span-3" />
         </div>
       </div>
 
       {/* Timeline */}
-      <div className="px-4 lg:px-6 mt-4">
-        <div className="h-48 bg-muted rounded-lg" />
+      <div className="mt-4 px-4 lg:px-6">
+        <div className="bg-muted h-48 rounded-lg" />
       </div>
     </div>
-  )
+  );
 }

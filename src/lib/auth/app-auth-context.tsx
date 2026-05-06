@@ -1,5 +1,6 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
+
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 import { useAuthUser } from "@/lib/hooks/use-queries";
 

@@ -1,40 +1,44 @@
-import { useCallback } from "react"
-import { useQueryClient } from "@tanstack/react-query"
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router"
-import { ArrowLeft, AlertTriangle } from "lucide-react"
-import { CourseDetails } from "@/components/course-details"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { useCallback } from "react";
+
+import type { CatalogStudyPlan, CourseStatus } from "@/lib/types";
+
+import { CourseDetails } from "@/components/course-details";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   useAuthUser,
   useCreateCourseAttempt,
   useStudyPlanDetail,
   useStudyPlans,
   useStudentCourseStatuses,
-} from "@/lib/hooks/use-queries"
-import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel"
-import type { CatalogStudyPlan, CourseStatus } from "@/lib/types"
-import { saveLocalCourseStatus } from "@/lib/utils/local-storage-utils"
+} from "@/lib/hooks/use-queries";
+import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
+import { saveLocalCourseStatus } from "@/lib/utils/local-storage-utils";
 
 export function CourseDetailPage() {
-  const params = useParams({ from: "/curriculum/$courseId" })
-  const search = useSearch({ from: "/curriculum/$courseId" })
-  const navigate = useNavigate({ from: "/curriculum/$courseId" })
-  const queryClient = useQueryClient()
+  const params = useParams({ from: "/curriculum/$courseId" });
+  const search = useSearch({ from: "/curriculum/$courseId" });
+  const navigate = useNavigate({ from: "/curriculum/$courseId" });
+  const queryClient = useQueryClient();
 
-  const selectedAcademicUnitId = search.career ?? null
-  const selectedPlanId = search.plan ?? null
+  const selectedAcademicUnitId = search.career ?? null;
+  const selectedPlanId = search.plan ?? null;
 
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser()
-  const plansQuery = useStudyPlans(selectedAcademicUnitId)
-  const selectedPlanData = plansQuery.data?.find((plan: CatalogStudyPlan) => plan.id === selectedPlanId)
-  const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData)
-  const { data: statusMap } = useStudentCourseStatuses(authUser?.id ?? null, selectedPlanId)
-  const createCourseAttempt = useCreateCourseAttempt()
+  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+  const plansQuery = useStudyPlans(selectedAcademicUnitId);
+  const selectedPlanData = plansQuery.data?.find(
+    (plan: CatalogStudyPlan) => plan.id === selectedPlanId,
+  );
+  const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
+  const { data: statusMap } = useStudentCourseStatuses(authUser?.id ?? null, selectedPlanId);
+  const createCourseAttempt = useCreateCourseAttempt();
 
-  const { courseById } = useCurriculumViewModel(planDetailQuery.data ?? null, statusMap)
-  const selectedCourse = courseById.get(params.courseId)
+  const { courseById } = useCurriculumViewModel(planDetailQuery.data ?? null, statusMap);
+  const selectedCourse = courseById.get(params.courseId);
 
   const handleBack = useCallback(() => {
     void navigate({
@@ -43,35 +47,38 @@ export function CourseDetailPage() {
       viewTransition: {
         types: ["course-close"],
       },
-    })
-  }, [navigate, search])
+    });
+  }, [navigate, search]);
 
-  const handleCreateAttempt = useCallback(async (
-    courseId: string,
-    attempt: {
-      status: Exclude<CourseStatus, "not_taken">
-      grade: number | null
-      academicTermId: number
+  const handleCreateAttempt = useCallback(
+    async (
+      courseId: string,
+      attempt: {
+        status: Exclude<CourseStatus, "not_taken">;
+        grade: number | null;
+        academicTermId: number;
+      },
+    ) => {
+      if (!authUser?.id || !selectedPlanId) {
+        saveLocalCourseStatus(parseInt(courseId), selectedPlanId ?? null, attempt.status);
+        void queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses"] });
+        void queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
+        return "local" as const;
+      }
+
+      await createCourseAttempt.mutateAsync({
+        userId: authUser.id,
+        studyPlanId: selectedPlanId,
+        courseId: parseInt(courseId),
+        status: attempt.status,
+        grade: attempt.grade,
+        academicTermId: attempt.academicTermId,
+      });
+
+      return "success" as const;
     },
-  ) => {
-    if (!authUser?.id || !selectedPlanId) {
-      saveLocalCourseStatus(parseInt(courseId), selectedPlanId ?? null, attempt.status)
-      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses"] })
-      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] })
-      return "local" as const
-    }
-
-    await createCourseAttempt.mutateAsync({
-      userId: authUser.id,
-      studyPlanId: selectedPlanId,
-      courseId: parseInt(courseId),
-      status: attempt.status,
-      grade: attempt.grade,
-      academicTermId: attempt.academicTermId,
-    })
-
-    return "success" as const
-  }, [authUser?.id, createCourseAttempt, queryClient, selectedPlanId])
+    [authUser?.id, createCourseAttempt, queryClient, selectedPlanId],
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -98,12 +105,14 @@ export function CourseDetailPage() {
           {!selectedPlanId && !planDetailQuery.isLoading ? (
             <div className="px-4 lg:px-6">
               <Card className="flex min-h-72 items-center justify-center p-6">
-                <p className="text-muted-foreground">No hay plan seleccionado. Vuelve y selecciona uno para abrir cursos.</p>
+                <p className="text-muted-foreground">
+                  No hay plan seleccionado. Vuelve y selecciona uno para abrir cursos.
+                </p>
               </Card>
             </div>
           ) : null}
 
-          {(planDetailQuery.isLoading || isAuthLoading) ? (
+          {planDetailQuery.isLoading || isAuthLoading ? (
             <div className="px-4 lg:px-6">
               <Card className="min-h-72 animate-pulse" />
             </div>
@@ -112,13 +121,15 @@ export function CourseDetailPage() {
           {selectedPlanId && !planDetailQuery.isLoading && !selectedCourse ? (
             <div className="px-4 lg:px-6">
               <Card className="flex min-h-72 items-center justify-center p-6">
-                <p className="text-muted-foreground">No encontramos este curso en el plan seleccionado.</p>
+                <p className="text-muted-foreground">
+                  No encontramos este curso en el plan seleccionado.
+                </p>
               </Card>
             </div>
           ) : null}
 
           {selectedPlanId && selectedCourse ? (
-            <div className="px-4 lg:px-6 pb-4">
+            <div className="px-4 pb-4 lg:px-6">
               <CourseDetails
                 course={selectedCourse}
                 courseById={courseById}
@@ -134,5 +145,5 @@ export function CourseDetailPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

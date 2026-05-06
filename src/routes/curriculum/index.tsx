@@ -1,27 +1,27 @@
-import { Suspense, lazy } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense, lazy } from "react";
+import { z } from "zod";
 
 const CurriculumPage = lazy(() =>
-  import('./-curriculum-page').then((module) => ({ default: module.CurriculumPage })),
-)
+  import("./-curriculum-page").then((module) => ({ default: module.CurriculumPage })),
+);
 
 const curriculumSearchSchema = z.object({
   university: z.coerce.number().optional(),
   campus: z.coerce.number().optional(),
   career: z.coerce.number().optional(),
   plan: z.coerce.number().optional(),
-})
+});
 
-export const Route = createFileRoute('/curriculum/')({
+export const Route = createFileRoute("/curriculum/")({
   validateSearch: curriculumSearchSchema,
   component: CurriculumRoute,
-})
+});
 
 function CurriculumRoute() {
   return (
-    <Suspense fallback={<div className="flex-1 bg-background" />}>
+    <Suspense fallback={<div className="bg-background flex-1" />}>
       <CurriculumPage />
     </Suspense>
-  )
+  );
 }

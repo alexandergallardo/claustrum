@@ -1,5 +1,3 @@
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { getApiBaseUrl } from "@/lib/env/public";
 import type {
   ProfessorReviewCourseOption,
   ProfessorReviewModerationRow,
@@ -12,11 +10,16 @@ import type {
   SubmitProfessorReviewPayload,
 } from "@/lib/professor-reviews/types";
 
+import { getApiBaseUrl } from "@/lib/env/public";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
 function escapeIlikeQuery(value: string) {
   return value.replace(/[,%]/g, " ").trim();
 }
 
-export async function searchProfessorReviewStats(params: SearchProfessorReviewStatsParams): Promise<ProfessorReviewStatsRow[]> {
+export async function searchProfessorReviewStats(
+  params: SearchProfessorReviewStatsParams,
+): Promise<ProfessorReviewStatsRow[]> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("search_professor_review_stats", {
     p_query: params.query.trim() === "" ? null : params.query.trim(),
@@ -48,7 +51,9 @@ export async function getProfessorReviewsPublic(
   return (data ?? []) as ProfessorReviewPublicRow[];
 }
 
-export async function getProfessorReviewSummary(professorId: number): Promise<ProfessorReviewSummary> {
+export async function getProfessorReviewSummary(
+  professorId: number,
+): Promise<ProfessorReviewSummary> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("get_professor_review_summary", {
     p_professor_id: professorId,
@@ -88,7 +93,9 @@ export async function getProfessorReviewSummary(professorId: number): Promise<Pr
   };
 }
 
-export async function getProfessorById(professorId: number): Promise<{ id: number; full_name: string } | null> {
+export async function getProfessorById(
+  professorId: number,
+): Promise<{ id: number; full_name: string } | null> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase
     .from("professor")
@@ -100,7 +107,9 @@ export async function getProfessorById(professorId: number): Promise<{ id: numbe
   return data;
 }
 
-export async function searchProfessorReviewCourses(query: string): Promise<ProfessorReviewCourseOption[]> {
+export async function searchProfessorReviewCourses(
+  query: string,
+): Promise<ProfessorReviewCourseOption[]> {
   const normalizedQuery = escapeIlikeQuery(query);
 
   if (normalizedQuery.length < 2) {

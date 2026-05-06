@@ -1,5 +1,8 @@
-import { Badge } from "@/components/ui/badge";
 import type { Dispatch, SetStateAction } from "react";
+
+import type { ProfessorReviewPublicRow } from "@/lib/professor-reviews/types";
+
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import {
   Pagination,
@@ -15,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ProfessorReviewPublicRow } from "@/lib/professor-reviews/types";
 
 function scoreLabel(score: number | null) {
   if (score === null) return "En revisión";
@@ -56,14 +58,16 @@ export function ProfessorReviewsList({
       <CardContent className="space-y-4 p-4">
         <CardTitle className="text-base">Reseñas</CardTitle>
         {isLoading && reviewRows.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Cargando reseñas...</div>
+          <div className="text-muted-foreground text-sm">Cargando reseñas...</div>
         ) : reviewRows.length === 0 ? (
-          <div className="text-sm text-muted-foreground">Aún no hay reseñas para este profesor.</div>
+          <div className="text-muted-foreground text-sm">
+            Aún no hay reseñas para este profesor.
+          </div>
         ) : (
           <div className="divide-y rounded-md border">
             {reviewRows.map((review) => (
               <article key={review.review_id} className="space-y-3 p-4">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="text-sm font-medium">
                     {review.course_code} - {review.course_name}
                   </div>
@@ -72,15 +76,20 @@ export function ProfessorReviewsList({
                   </Badge>
                 </div>
 
-                <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
+                <div className="text-muted-foreground grid gap-2 text-xs md:grid-cols-3">
                   <div>
-                    Asistencia: {review.attendance_required === null ? "En revisión" : review.attendance_required ? "Obligatoria" : "No obligatoria"}
+                    Asistencia:{" "}
+                    {review.attendance_required === null
+                      ? "En revisión"
+                      : review.attendance_required
+                        ? "Obligatoria"
+                        : "No obligatoria"}
                   </div>
                   <div>Calificación: {review.grade_received ?? "En revisión"}</div>
                   <div>Interés: {review.engagement_level ?? "En revisión"}</div>
                 </div>
 
-                <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-4">
+                <div className="text-muted-foreground grid gap-2 text-xs md:grid-cols-4">
                   <div>Facilidad: {scoreLabel(review.ease_score)}</div>
                   <div>Calidad: {scoreLabel(review.quality_score)}</div>
                   <div>Claridad: {scoreLabel(review.clarity_score)}</div>
@@ -104,10 +113,11 @@ export function ProfessorReviewsList({
         )}
 
         <div className="mt-2 flex items-center justify-between gap-4">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {reviewRows.length === 0
               ? "Sin resultados"
-              : `Mostrando ${firstRow}-${lastRow} de ${totalCount}`} · Página {page + 1} de {totalPages}
+              : `Mostrando ${firstRow}-${lastRow} de ${totalCount}`}{" "}
+            · Página {page + 1} de {totalPages}
           </span>
           <div className="flex items-center gap-3">
             <Pagination className="w-auto">

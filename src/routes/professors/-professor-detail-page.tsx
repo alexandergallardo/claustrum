@@ -1,13 +1,14 @@
-import { lazy, Suspense, useState } from "react";
-import { useNavigate, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, PenLine } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
   useProfessorById,
@@ -16,7 +17,6 @@ import {
   useSubmitProfessorReview,
 } from "@/lib/hooks/use-professor-reviews";
 import { REVIEW_TAG_OPTIONS, type ReviewTag } from "@/lib/professor-reviews/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { getProfessorNameTransitionName } from "@/lib/utils/view-transition";
 
 const ReviewComposer = lazy(() =>
@@ -78,14 +78,18 @@ export function ProfessorDetailPage() {
   const turnstileSiteKey = getTurnstileSiteKey();
   const parsedProfessorId = Number.isFinite(professorId) && professorId > 0 ? professorId : null;
   const cachedProfessor = parsedProfessorId
-    ? queryClient.getQueryData<{ id: number; full_name: string }>(["professorById", parsedProfessorId])
+    ? queryClient.getQueryData<{ id: number; full_name: string }>([
+        "professorById",
+        parsedProfessorId,
+      ])
     : null;
 
   const professorQuery = useProfessorById(parsedProfessorId);
   const summaryQuery = useProfessorReviewSummary(parsedProfessorId);
   const reviewsQuery = useProfessorReviewsPublic(parsedProfessorId, page, pageSize);
   const submitMutation = useSubmitProfessorReview();
-  const headingProfessorName = professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? "Profesor";
+  const headingProfessorName =
+    professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? "Profesor";
 
   const reviewRows = reviewsQuery.data ?? [];
   const totalCount = reviewRows[0]?.total_count ?? 0;
@@ -164,124 +168,137 @@ export function ProfessorDetailPage() {
   };
 
   if (isInvalidProfessorId) {
-    return (
-      <div className="p-6 text-sm text-muted-foreground">ID de profesor inválido.</div>
-    );
+    return <div className="text-muted-foreground p-6 text-sm">ID de profesor inválido.</div>;
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={handleBack}
-              aria-label="Atrás"
-              title="Atrás"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1
-              className="text-2xl font-bold"
-              style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
-            >
-              {headingProfessorName}
-            </h1>
-          </div>
-          <Button type="button" onClick={() => setIsComposerOpen(true)}>
-            <PenLine className="mr-2 h-4 w-4" />
-            Escribir reseña
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleBack}
+            aria-label="Atrás"
+            title="Atrás"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Button>
+          <h1
+            className="text-2xl font-bold"
+            style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
+          >
+            {headingProfessorName}
+          </h1>
         </div>
+        <Button type="button" onClick={() => setIsComposerOpen(true)}>
+          <PenLine className="mr-2 h-4 w-4" />
+          Escribir reseña
+        </Button>
+      </div>
 
-        <Card>
-          <CardContent className="space-y-4 p-4">
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-              <MetricPill label="Promedio general" value={metricLabel(summary?.average_overall_score ?? null)} />
-              <MetricPill label="Facilidad" value={metricLabel(summary?.average_ease_score ?? null)} />
-              <MetricPill label="Calidad" value={metricLabel(summary?.average_quality_score ?? null)} />
-              <MetricPill
-                label="La llevarían otra vez"
-                value={summary?.would_take_again_percentage === null ? "-" : `${summary?.would_take_again_percentage.toFixed(1)}%`}
-              />
-            </div>
-            <div className="border-t pt-3">
-              <p className="mb-2 text-sm font-medium">Etiquetas destacadas</p>
-              {summaryQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Cargando etiquetas...</p>
-              ) : summary?.tag_counts?.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {summary.tag_counts.slice(0, 10).map((tag) => (
-                    <Badge key={tag.tag} variant="secondary">
-                      {tag.tag} ({tag.count})
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Aún no hay etiquetas aprobadas para mostrar.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <MetricPill
+              label="Promedio general"
+              value={metricLabel(summary?.average_overall_score ?? null)}
+            />
+            <MetricPill
+              label="Facilidad"
+              value={metricLabel(summary?.average_ease_score ?? null)}
+            />
+            <MetricPill
+              label="Calidad"
+              value={metricLabel(summary?.average_quality_score ?? null)}
+            />
+            <MetricPill
+              label="La llevarían otra vez"
+              value={
+                summary?.would_take_again_percentage === null
+                  ? "-"
+                  : `${summary?.would_take_again_percentage.toFixed(1)}%`
+              }
+            />
+          </div>
+          <div className="border-t pt-3">
+            <p className="mb-2 text-sm font-medium">Etiquetas destacadas</p>
+            {summaryQuery.isLoading ? (
+              <p className="text-muted-foreground text-sm">Cargando etiquetas...</p>
+            ) : summary?.tag_counts?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {summary.tag_counts.slice(0, 10).map((tag) => (
+                  <Badge key={tag.tag} variant="secondary">
+                    {tag.tag} ({tag.count})
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                Aún no hay etiquetas aprobadas para mostrar.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Suspense fallback={<div className="h-[260px] w-full rounded-lg border bg-muted/20" />}>
-          <ProfessorReviewsList
-            reviewRows={reviewRows}
-            isLoading={reviewsQuery.isLoading}
-            isFetching={reviewsQuery.isFetching}
-            page={page}
-            pageSize={pageSize}
-            totalCount={totalCount}
-            totalPages={totalPages}
-            hasMore={hasMore}
-            firstRow={firstRow}
-            lastRow={lastRow}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
+      <Suspense fallback={<div className="bg-muted/20 h-[260px] w-full rounded-lg border" />}>
+        <ProfessorReviewsList
+          reviewRows={reviewRows}
+          isLoading={reviewsQuery.isLoading}
+          isFetching={reviewsQuery.isFetching}
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          totalPages={totalPages}
+          hasMore={hasMore}
+          firstRow={firstRow}
+          lastRow={lastRow}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
+      </Suspense>
+
+      {isComposerOpen ? (
+        <Suspense fallback={null}>
+          <ReviewComposer
+            isMobile={isMobile}
+            open={isComposerOpen}
+            onOpenChange={(open) => {
+              setIsComposerOpen(open);
+              if (!open) setTurnstileToken(null);
+            }}
+            submitMutationPending={submitMutation.isPending}
+            turnstileSiteKey={turnstileSiteKey}
+            courseCode={courseCode}
+            setCourseCode={setCourseCode}
+            gradeReceived={gradeReceived}
+            setGradeReceived={setGradeReceived}
+            comment={comment}
+            setComment={setComment}
+            easeScore={easeScore}
+            setEaseScore={setEaseScore}
+            qualityScore={qualityScore}
+            setQualityScore={setQualityScore}
+            clarityScore={clarityScore}
+            setClarityScore={setClarityScore}
+            fairnessScore={fairnessScore}
+            setFairnessScore={setFairnessScore}
+            engagementLevel={engagementLevel}
+            setEngagementLevel={setEngagementLevel}
+            attendanceRequired={attendanceRequired}
+            setAttendanceRequired={setAttendanceRequired}
+            tags={tags}
+            turnstileToken={turnstileToken}
+            setTurnstileToken={setTurnstileToken}
+            onSubmit={() => void handleSubmit()}
+            onCloseReset={resetComposer}
+            handleTagToggle={handleTagToggle}
           />
         </Suspense>
-
-        {isComposerOpen ? (
-          <Suspense fallback={null}>
-            <ReviewComposer
-              isMobile={isMobile}
-              open={isComposerOpen}
-              onOpenChange={(open) => {
-                setIsComposerOpen(open);
-                if (!open) setTurnstileToken(null);
-              }}
-              submitMutationPending={submitMutation.isPending}
-              turnstileSiteKey={turnstileSiteKey}
-              courseCode={courseCode}
-              setCourseCode={setCourseCode}
-              gradeReceived={gradeReceived}
-              setGradeReceived={setGradeReceived}
-              comment={comment}
-              setComment={setComment}
-              easeScore={easeScore}
-              setEaseScore={setEaseScore}
-              qualityScore={qualityScore}
-              setQualityScore={setQualityScore}
-              clarityScore={clarityScore}
-              setClarityScore={setClarityScore}
-              fairnessScore={fairnessScore}
-              setFairnessScore={setFairnessScore}
-              engagementLevel={engagementLevel}
-              setEngagementLevel={setEngagementLevel}
-              attendanceRequired={attendanceRequired}
-              setAttendanceRequired={setAttendanceRequired}
-              tags={tags}
-              turnstileToken={turnstileToken}
-              setTurnstileToken={setTurnstileToken}
-              onSubmit={() => void handleSubmit()}
-              onCloseReset={resetComposer}
-              handleTagToggle={handleTagToggle}
-            />
-          </Suspense>
-        ) : null}
-      </div>
+      ) : null}
+    </div>
   );
 }
 

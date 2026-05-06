@@ -1,12 +1,15 @@
-import type { CalendarEvent as CalendarEventType } from "@/lib/types";
-import { useCalendarContext } from "../calendar-context";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { getColorClasses, getEventColorStyle } from "@/lib/color-utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Building2, Clock, Layers, MapPin, User, Users, X } from "lucide-react";
 import { memo } from "react";
+
+import type { CalendarEvent as CalendarEventType } from "@/lib/types";
+
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getColorClasses, getEventColorStyle } from "@/lib/color-utils";
+import { cn } from "@/lib/utils";
+
+import { useCalendarContext } from "../calendar-context";
 
 interface EventPosition {
   left: string;
@@ -30,9 +33,7 @@ const CalendarEvent = memo(function CalendarEvent({
 }: CalendarEventProps) {
   const { onRemoveEvent, exportTheme } = useCalendarContext();
 
-  const eventColorStyle = exportTheme
-    ? getEventColorStyle(event.color, exportTheme)
-    : undefined;
+  const eventColorStyle = exportTheme ? getEventColorStyle(event.color, exportTheme) : undefined;
   const style = {
     ...(month ? {} : (position ?? {})),
     ...eventColorStyle,
@@ -41,13 +42,11 @@ const CalendarEvent = memo(function CalendarEvent({
   const colorClasses = getColorClasses(event.color);
 
   const classroomLabel = event.classroom?.trim();
-  const showClassroom =
-    classroomLabel && !classroomLabel.toLowerCase().includes("no disponible");
-  const professorLabel =
-    event.professors?.filter(Boolean).join(", ") || "Sin asignar";
+  const showClassroom = classroomLabel && !classroomLabel.toLowerCase().includes("no disponible");
+  const professorLabel = event.professors?.filter(Boolean).join(", ") || "Sin asignar";
   const modalityLabel = event.groupType ?? "Sin modalidad";
   const campusLabel = event.campusName;
-  const heightValue = month ? null : (position?.height ? parseFloat(position.height) : null);
+  const heightValue = month ? null : position?.height ? parseFloat(position.height) : null;
   const eventHeight = heightValue;
   const isCompact = eventHeight !== null && eventHeight < 72;
 
@@ -56,7 +55,7 @@ const CalendarEvent = memo(function CalendarEvent({
       <TooltipTrigger asChild>
         <div
           className={cn(
-            "group px-1 py-0.5 sm:px-2 sm:py-1 rounded-md cursor-pointer transition-all duration-200 border relative",
+            "group relative cursor-pointer rounded-md border px-1 py-0.5 transition-all duration-200 sm:px-2 sm:py-1",
             colorClasses.bg,
             colorClasses.hover,
             colorClasses.border,
@@ -70,8 +69,8 @@ const CalendarEvent = memo(function CalendarEvent({
             <button
               type="button"
               className={cn(
-                "absolute top-1 right-1 rounded-sm p-0.5 text-white/80 hover:text-white cursor-pointer",
-                "opacity-0 group-hover:opacity-100 transition-opacity",
+                "absolute top-1 right-1 cursor-pointer rounded-sm p-0.5 text-white/80 hover:text-white",
+                "opacity-0 transition-opacity group-hover:opacity-100",
               )}
               onClick={(eventClick) => {
                 eventClick.stopPropagation();
@@ -83,26 +82,26 @@ const CalendarEvent = memo(function CalendarEvent({
             </button>
           )}
 
-          <div className={cn("flex flex-col w-full gap-0.5", colorClasses.text)}>
+          <div className={cn("flex w-full flex-col gap-0.5", colorClasses.text)}>
             <p
               className={cn(
-                "font-semibold text-[11px] leading-tight sm:text-[13px] line-clamp-2",
+                "line-clamp-2 text-[11px] leading-tight font-semibold sm:text-[13px]",
                 isCompact && "text-[9px] sm:text-[10px]",
               )}
             >
               {event.courseName}
             </p>
             {!isCompact && showClassroom && (
-              <div className="flex items-center gap-2 text-[10px] sm:text-xs opacity-90">
-                <span className="flex h-3 w-3 items-center justify-center shrink-0 sm:h-4 sm:w-4">
+              <div className="flex items-center gap-2 text-[10px] opacity-90 sm:text-xs">
+                <span className="flex h-3 w-3 shrink-0 items-center justify-center sm:h-4 sm:w-4">
                   <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                 </span>
                 <span className="leading-tight">{classroomLabel}</span>
               </div>
             )}
             {!isCompact && (
-              <div className="flex items-center gap-2 text-[10px] sm:text-xs opacity-85">
-                <span className="flex h-3 w-3 items-center justify-center shrink-0 sm:h-4 sm:w-4">
+              <div className="flex items-center gap-2 text-[10px] opacity-85 sm:text-xs">
+                <span className="flex h-3 w-3 shrink-0 items-center justify-center sm:h-4 sm:w-4">
                   <Layers className="h-3 w-3 sm:h-4 sm:w-4" />
                 </span>
                 <span className="leading-tight">{modalityLabel}</span>
@@ -110,14 +109,19 @@ const CalendarEvent = memo(function CalendarEvent({
             )}
             <div
               className={cn(
-                "flex items-start gap-2 text-[10px] sm:text-xs opacity-85",
+                "flex items-start gap-2 text-[10px] opacity-85 sm:text-xs",
                 isCompact && "hidden",
               )}
             >
-              <span className="flex h-3 w-3 items-center justify-center shrink-0 sm:h-4 sm:w-4">
+              <span className="flex h-3 w-3 shrink-0 items-center justify-center sm:h-4 sm:w-4">
                 <User className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
-              <span className={cn("leading-tight", !isCompact ? "whitespace-normal break-words line-clamp-2" : "truncate")}>
+              <span
+                className={cn(
+                  "leading-tight",
+                  !isCompact ? "line-clamp-2 break-words whitespace-normal" : "truncate",
+                )}
+              >
                 {professorLabel}
               </span>
             </div>
@@ -131,17 +135,17 @@ const CalendarEvent = memo(function CalendarEvent({
       </TooltipTrigger>
       <TooltipContent className="max-w-xs text-wrap">
         <div className="space-y-1">
-          <p className="font-semibold max-w-[220px] break-words leading-tight">
+          <p className="max-w-[220px] leading-tight font-semibold break-words">
             {event.courseCode}: {event.courseName}
           </p>
-          <p className="text-sm flex items-center gap-2">
-            <span className="flex h-4 w-4 items-center justify-center shrink-0">
+          <p className="flex items-center gap-2 text-sm">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Users className="h-4 w-4" />
             </span>
             <span>GRUPO {event.groupCode}</span>
           </p>
-          <p className="text-sm flex items-center gap-2">
-            <span className="flex h-4 w-4 items-center justify-center shrink-0">
+          <p className="flex items-center gap-2 text-sm">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Clock className="h-4 w-4" />
             </span>
             <span>
@@ -150,29 +154,29 @@ const CalendarEvent = memo(function CalendarEvent({
             </span>
           </p>
           {campusLabel && (
-            <p className="text-sm flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center shrink-0">
+            <p className="flex items-center gap-2 text-sm">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                 <Building2 className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1 truncate">{campusLabel}</span>
             </p>
           )}
           {showClassroom && (
-            <p className="text-sm flex items-center gap-2">
-              <span className="flex h-4 w-4 items-center justify-center shrink-0">
+            <p className="flex items-center gap-2 text-sm">
+              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                 <MapPin className="h-4 w-4" />
               </span>
               <span>{classroomLabel}</span>
             </p>
           )}
-          <p className="text-sm flex items-center gap-2">
-            <span className="flex h-4 w-4 items-center justify-center shrink-0">
+          <p className="flex items-center gap-2 text-sm">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
               <Layers className="h-4 w-4" />
             </span>
             <span>{modalityLabel}</span>
           </p>
-          <p className="text-sm flex items-center gap-2">
-            <span className="flex h-4 w-4 items-center justify-center shrink-0">
+          <p className="flex items-center gap-2 text-sm">
+            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
               <User className="h-4 w-4" />
             </span>
             <span className="min-w-0 flex-1 truncate">{professorLabel}</span>

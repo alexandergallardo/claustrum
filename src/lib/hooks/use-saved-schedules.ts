@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export type SavedSchedule = {
@@ -58,7 +59,7 @@ export function useSaveSchedule() {
       return data as SavedSchedule;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["savedSchedules"] });
+      void queryClient.invalidateQueries({ queryKey: ["savedSchedules"] });
     },
   });
 }
@@ -68,14 +69,11 @@ export function useDeleteSchedule() {
   return useMutation({
     mutationFn: async (scheduleId: number) => {
       const sb = getSupabaseBrowserClient();
-      const { error } = await sb
-        .from("saved_schedule")
-        .delete()
-        .eq("id", scheduleId);
+      const { error } = await sb.from("saved_schedule").delete().eq("id", scheduleId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["savedSchedules"] });
+      void queryClient.invalidateQueries({ queryKey: ["savedSchedules"] });
     },
   });
 }

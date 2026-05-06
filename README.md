@@ -123,14 +123,14 @@ La app queda disponible en `http://localhost:3000`.
 
 El frontend usa variables públicas con prefijo `VITE_`. Las credenciales privilegiadas no deben exponerse en código cliente ni confirmarse en Git.
 
-| Variable | Uso | Obligatoria |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` | URL base del proyecto Supabase, sin `/rest/v1` | Sí |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key pública para el cliente web | Sí |
-| `VITE_TURNSTILE_SITE_KEY` | Site key pública de Cloudflare Turnstile | No, requerida para flujos con captcha |
-| `VITE_API_BASE_URL` | URL base del API Worker (`claustrum-api`) | No, requerida para subir/ver evaluaciones y enviar reseñas |
-| `SUPABASE_SECRET_KEY` | Credencial de servidor para scripts/admin | No en frontend, requerida para operaciones privilegiadas |
-| `TURNSTILE_SECRET_KEY` | Secret key de servidor de Turnstile | Requerida en API Worker con captcha |
+| Variable                        | Uso                                            | Obligatoria                                                |
+| ------------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | URL base del proyecto Supabase, sin `/rest/v1` | Sí                                                         |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Publishable key pública para el cliente web    | Sí                                                         |
+| `VITE_TURNSTILE_SITE_KEY`       | Site key pública de Cloudflare Turnstile       | No, requerida para flujos con captcha                      |
+| `VITE_API_BASE_URL`             | URL base del API Worker (`claustrum-api`)      | No, requerida para subir/ver evaluaciones y enviar reseñas |
+| `SUPABASE_SECRET_KEY`           | Credencial de servidor para scripts/admin      | No en frontend, requerida para operaciones privilegiadas   |
+| `TURNSTILE_SECRET_KEY`          | Secret key de servidor de Turnstile            | Requerida en API Worker con captcha                        |
 
 Archivos de referencia:
 
@@ -142,17 +142,17 @@ Archivos de referencia:
 
 Todos los comandos del proyecto principal deben ejecutarse con Bun.
 
-| Comando | Descripción |
-| --- | --- |
-| `bun install` | Instala dependencias según `bun.lock` |
-| `bun run dev` | Inicia Vite en `http://localhost:3000` |
-| `bun run build` | Ejecuta `tsc` y genera build de producción en `dist/` |
-| `bun run preview` | Sirve localmente el build de producción |
-| `bun run supabase:start` | Levanta Supabase local |
-| `bun run supabase:stop` | Detiene Supabase local |
-| `bun run supabase:status` | Muestra estado y credenciales locales de Supabase |
-| `bun run supabase:reset` | Restablece la base local y aplica migraciones/seed según Supabase CLI |
-| `bun run supabase:migrate` | Aplica migraciones pendientes |
+| Comando                    | Descripción                                                           |
+| -------------------------- | --------------------------------------------------------------------- |
+| `bun install`              | Instala dependencias según `bun.lock`                                 |
+| `bun run dev`              | Inicia Vite en `http://localhost:3000`                                |
+| `bun run build`            | Ejecuta `tsc` y genera build de producción en `dist/`                 |
+| `bun run preview`          | Sirve localmente el build de producción                               |
+| `bun run supabase:start`   | Levanta Supabase local                                                |
+| `bun run supabase:stop`    | Detiene Supabase local                                                |
+| `bun run supabase:status`  | Muestra estado y credenciales locales de Supabase                     |
+| `bun run supabase:reset`   | Restablece la base local y aplica migraciones/seed según Supabase CLI |
+| `bun run supabase:migrate` | Aplica migraciones pendientes                                         |
 
 Existe un script `bun run test` en `package.json`, pero este repositorio no mantiene actualmente una suite de pruebas consolidada para el flujo habitual. La verificación mínima antes de abrir cambios es `bun run build`.
 
@@ -216,12 +216,12 @@ El Worker ubicado en `workers/api` es el backend unificado de la aplicación. Ma
 
 ### Endpoints
 
-| Método | Ruta | Descripción |
-| --- | --- | --- |
-| `POST` | `/evaluations/upload` | Sube PDF de evaluación y, opcionalmente, PDF de respuestas |
-| `GET` | `/evaluations/file?key=...` | Sirve/streaming de PDF si el usuario tiene permiso |
-| `POST` | `/evaluations/moderate` | Aprueba o rechaza evaluaciones, solo administradores |
-| `POST` | `/professor-reviews` | Envía una reseña de profesor (con Turnstile) |
+| Método | Ruta                        | Descripción                                                |
+| ------ | --------------------------- | ---------------------------------------------------------- |
+| `POST` | `/evaluations/upload`       | Sube PDF de evaluación y, opcionalmente, PDF de respuestas |
+| `GET`  | `/evaluations/file?key=...` | Sirve/streaming de PDF si el usuario tiene permiso         |
+| `POST` | `/evaluations/moderate`     | Aprueba o rechaza evaluaciones, solo administradores       |
+| `POST` | `/professor-reviews`        | Envía una reseña de profesor (con Turnstile)               |
 
 ### Seguridad
 
@@ -297,28 +297,28 @@ Consulta `supabase/tec-data/README.md` para ver el detalle completo de dependenc
 
 Las rutas se generan desde `src/routes` con TanStack Router.
 
-| Ruta | Propósito |
-| --- | --- |
-| `/` | Dashboard principal |
-| `/onboarding` | Configuración académica inicial |
-| `/auth/signin` | Inicio de sesión |
-| `/auth/signup` | Registro |
-| `/auth/magic-link` | Acceso por magic link |
-| `/auth/reset-password` | Restablecimiento de contraseña |
-| `/auth/verify-email` | Verificación de correo |
-| `/curriculum` | Malla curricular |
-| `/curriculum/$courseId` | Detalle de curso |
-| `/schedule` | Horarios y grupos |
-| `/professors` | Búsqueda/listado de profesores |
-| `/professors/$professorId` | Detalle y reseñas de profesor |
-| `/professors/moderation` | Moderación de reseñas |
-| `/evaluations/view` | Visualización de evaluaciones |
-| `/evaluations/moderation` | Moderación de evaluaciones |
-| `/policies` | Políticas/información del proyecto |
-| `/settings` | Configuración del usuario |
-| `/settings/profile` | Perfil |
-| `/settings/security` | Seguridad |
-| `/settings/appearance` | Apariencia |
+| Ruta                       | Propósito                          |
+| -------------------------- | ---------------------------------- |
+| `/`                        | Dashboard principal                |
+| `/onboarding`              | Configuración académica inicial    |
+| `/auth/signin`             | Inicio de sesión                   |
+| `/auth/signup`             | Registro                           |
+| `/auth/magic-link`         | Acceso por magic link              |
+| `/auth/reset-password`     | Restablecimiento de contraseña     |
+| `/auth/verify-email`       | Verificación de correo             |
+| `/curriculum`              | Malla curricular                   |
+| `/curriculum/$courseId`    | Detalle de curso                   |
+| `/schedule`                | Horarios y grupos                  |
+| `/professors`              | Búsqueda/listado de profesores     |
+| `/professors/$professorId` | Detalle y reseñas de profesor      |
+| `/professors/moderation`   | Moderación de reseñas              |
+| `/evaluations/view`        | Visualización de evaluaciones      |
+| `/evaluations/moderation`  | Moderación de evaluaciones         |
+| `/policies`                | Políticas/información del proyecto |
+| `/settings`                | Configuración del usuario          |
+| `/settings/profile`        | Perfil                             |
+| `/settings/security`       | Seguridad                          |
+| `/settings/appearance`     | Apariencia                         |
 
 `src/routes/__root.tsx` aplica el layout global, controla redirecciones de onboarding y renderiza el `Toaster`. Las rutas públicas principales son `/auth/*` y `/onboarding`; el resto usa `AppLayoutWrapper`.
 

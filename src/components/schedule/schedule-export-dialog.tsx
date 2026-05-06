@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
 import { ImageDown } from "lucide-react";
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -110,15 +111,13 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
                 key={option.value}
                 type="button"
                 className={cn(
-                  "rounded-xl border p-3 text-left transition-all hover:border-primary/60 hover:bg-muted/40",
+                  "hover:border-primary/60 hover:bg-muted/40 rounded-xl border p-3 text-left transition-all",
                   isSelected && "border-primary bg-primary/5 shadow-sm",
                 )}
                 onClick={() => setFormat(option.value)}
               >
-                <span className="block text-sm font-semibold leading-none">
-                  {option.title}
-                </span>
-                <span className="mt-1.5 block text-xs leading-snug text-muted-foreground">
+                <span className="block text-sm leading-none font-semibold">{option.title}</span>
+                <span className="text-muted-foreground mt-1.5 block text-xs leading-snug">
                   {option.description}
                 </span>
               </button>
@@ -130,7 +129,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
       {format !== "ics" && (
         <div className="space-y-2.5">
           <Label>Modo</Label>
-          <div className="grid grid-cols-2 gap-2 rounded-xl border bg-muted/20 p-1">
+          <div className="bg-muted/20 grid grid-cols-2 gap-2 rounded-xl border p-1">
             {themeOptions.map((option) => {
               const isSelected = theme === option.value;
 
@@ -146,12 +145,8 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
                   )}
                   onClick={() => setTheme(option.value)}
                 >
-                  <span className="block text-sm font-semibold leading-none">
-                    {option.title}
-                  </span>
-                  <span className="mt-1 block text-xs leading-snug">
-                    {option.description}
-                  </span>
+                  <span className="block text-sm leading-none font-semibold">{option.title}</span>
+                  <span className="mt-1 block text-xs leading-snug">{option.description}</span>
                 </button>
               );
             })}

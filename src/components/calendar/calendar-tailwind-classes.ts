@@ -1,34 +1,34 @@
 export const colorOptions = [
   {
-    value: 'blue',
-    label: 'Blue',
+    value: "blue",
+    label: "Blue",
   },
   {
-    value: 'emerald',
-    label: 'Emerald',
+    value: "emerald",
+    label: "Emerald",
   },
   {
-    value: 'yellow',
-    label: 'Yellow',
+    value: "yellow",
+    label: "Yellow",
   },
   {
-    value: 'red',
-    label: 'Red',
+    value: "red",
+    label: "Red",
   },
   {
-    value: 'orange',
-    label: 'Orange',
+    value: "orange",
+    label: "Orange",
   },
   {
-    value: 'fuchsia',
-    label: 'Fuchsia',
+    value: "fuchsia",
+    label: "Fuchsia",
   },
   {
-    value: 'violet',
-    label: 'Violet',
+    value: "violet",
+    label: "Violet",
   },
   {
-    value: 'slate',
-    label: 'Slate',
+    value: "slate",
+    label: "Slate",
   },
-]
+];

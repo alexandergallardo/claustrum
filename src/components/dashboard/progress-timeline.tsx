@@ -1,11 +1,13 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { SemesterProgress } from "@/lib/types"
-import { CheckCircle2, Circle, CircleDashed } from "lucide-react"
+import { CheckCircle2, Circle, CircleDashed } from "lucide-react";
+
+import type { SemesterProgress } from "@/lib/types";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ProgressTimelineProps {
-  semesters: SemesterProgress[]
+  semesters: SemesterProgress[];
 }
 
 export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
@@ -18,22 +20,22 @@ export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
         <div className="relative">
           {semesters.map((semester, index) => (
             <div key={semester.levelNumber} className="flex items-start pb-6 last:pb-0">
-              <div className="relative flex flex-col items-center mr-4">
+              <div className="relative mr-4 flex flex-col items-center">
                 <div
-                  className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full ${
+                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full ${
                     semester.status === "completed"
                       ? "bg-emerald-500 text-white"
                       : semester.status === "in_progress"
-                      ? "bg-blue-500 text-white"
-                      : "bg-muted text-muted-foreground"
+                        ? "bg-blue-500 text-white"
+                        : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {semester.status === "completed" ? (
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="h-5 w-5" />
                   ) : semester.status === "in_progress" ? (
-                    <CircleDashed className="w-5 h-5 animate-pulse" />
+                    <CircleDashed className="h-5 w-5 animate-pulse" />
                   ) : (
-                    <Circle className="w-5 h-5" />
+                    <Circle className="h-5 w-5" />
                   )}
                 </div>
                 {index < semesters.length - 1 && (
@@ -48,26 +50,28 @@ export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
               <div className="flex-1 pt-1">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{semester.levelLabel}</span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     {semester.completedCourses}/{semester.totalCourses} cursos
                   </span>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+                <div className="bg-muted mt-2 h-2 overflow-hidden rounded-full">
                   <div
                     className={`h-full rounded-full transition-all ${
                       semester.status === "completed"
                         ? "bg-emerald-500"
                         : semester.status === "in_progress"
-                        ? "bg-blue-500"
-                        : "bg-muted-foreground/30"
+                          ? "bg-blue-500"
+                          : "bg-muted-foreground/30"
                     }`}
                     style={{
                       width: `${semester.totalCourses > 0 ? (semester.completedCourses / semester.totalCourses) * 100 : 0}%`,
                     }}
                   />
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{semester.completedCredits}/{semester.credits} créditos</span>
+                <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
+                  <span>
+                    {semester.completedCredits}/{semester.credits} créditos
+                  </span>
                 </div>
               </div>
             </div>
@@ -75,5 +79,5 @@ export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

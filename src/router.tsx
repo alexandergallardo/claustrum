@@ -1,7 +1,7 @@
-import { createRouter } from '@tanstack/react-router'
+import { createRouter } from "@tanstack/react-router";
 
 // Import the generated route tree
-import { routeTree } from './routeTree.gen'
+import { routeTree } from "./routeTree.gen";
 
 // Create a new router instance
 export const getRouter = () => {
@@ -11,14 +11,14 @@ export const getRouter = () => {
     defaultPreload: false,
     defaultPreloadStaleTime: 0,
     defaultStructuralSharing: true,
-  })
+  });
 
-  return router
-}
+  return router;
+};
 
 // Register the router instance for type safety
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: ReturnType<typeof getRouter>
+    router: ReturnType<typeof getRouter>;
   }
 }

@@ -1,16 +1,13 @@
-import { ClientOnly } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { UserIcon, Loader2Icon, UploadIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { ClientOnly } from "@tanstack/react-router";
+import { UserIcon, Loader2Icon, UploadIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRef } from "react";
+import { toast } from "sonner";
 
+import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   Combobox,
   ComboboxContent,
@@ -20,23 +17,30 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
-import { useAuthUser, useUniversities, useCampuses, useAcademicUnits, useStudyPlans, useProfileContext } from "@/lib/hooks/use-queries";
-import { useRef } from "react";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  useAuthUser,
+  useUniversities,
+  useCampuses,
+  useAcademicUnits,
+  useStudyPlans,
+  useProfileContext,
+} from "@/lib/hooks/use-queries";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export function ProfilePageRoute() {
   return (
     <ClientOnly
       fallback={
         <div className="flex items-center justify-center py-12">
-          <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+          <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
         </div>
       }
     >
       <ProfilePage />
     </ClientOnly>
-  )
+  );
 }
 
 function getErrorMessage(err: unknown): string {
@@ -72,7 +76,9 @@ function ProfilePage() {
 
   const effectiveUniversityId = universityIdDraft ? Number(universityIdDraft) : universityId;
   const effectiveCampusId = campusIdDraft ? Number(campusIdDraft) : campusId;
-  const effectiveAcademicUnitId = academicUnitIdDraft ? Number(academicUnitIdDraft) : academicUnitId;
+  const effectiveAcademicUnitId = academicUnitIdDraft
+    ? Number(academicUnitIdDraft)
+    : academicUnitId;
 
   const campuses = useCampuses(effectiveUniversityId);
   const academicUnits = useAcademicUnits(effectiveCampusId);
@@ -108,7 +114,12 @@ function ProfilePage() {
   };
 
   useEffect(() => {
-    if (profileContext.isSuccess && profileContext.data && universityIdDraft === "" && campusIdDraft === "") {
+    if (
+      profileContext.isSuccess &&
+      profileContext.data &&
+      universityIdDraft === "" &&
+      campusIdDraft === ""
+    ) {
       setDraftsFromContext(profileContext.data);
     }
   }, [profileContext.isSuccess, profileContext.data, universityIdDraft, campusIdDraft]);
@@ -125,14 +136,19 @@ function ProfilePage() {
     setUniversityIdDraft(String(universities[0].id));
   }, [universities, universityIdDraft]);
 
-  const hasUnsavedChanges = authUser && profileContext.data && (
-    (profileContext.data.university_id !== null && String(profileContext.data.university_id) !== universityIdDraft) ||
-    (profileContext.data.campus_id !== null && String(profileContext.data.campus_id) !== campusIdDraft) ||
-    (profileContext.data.academic_unit_id !== null && String(profileContext.data.academic_unit_id) !== academicUnitIdDraft) ||
-    (profileContext.data.study_plan_id !== null && String(profileContext.data.study_plan_id) !== studyPlanIdDraft) ||
-    (profileContext.data.carnet !== null && profileContext.data.carnet !== carnetDraft) ||
-    (profileContext.data.university_id === null && universityIdDraft !== "")
-  );
+  const hasUnsavedChanges =
+    authUser &&
+    profileContext.data &&
+    ((profileContext.data.university_id !== null &&
+      String(profileContext.data.university_id) !== universityIdDraft) ||
+      (profileContext.data.campus_id !== null &&
+        String(profileContext.data.campus_id) !== campusIdDraft) ||
+      (profileContext.data.academic_unit_id !== null &&
+        String(profileContext.data.academic_unit_id) !== academicUnitIdDraft) ||
+      (profileContext.data.study_plan_id !== null &&
+        String(profileContext.data.study_plan_id) !== studyPlanIdDraft) ||
+      (profileContext.data.carnet !== null && profileContext.data.carnet !== carnetDraft) ||
+      (profileContext.data.university_id === null && universityIdDraft !== ""));
   const hasIdentityChanges = authUser && (authUser.user_metadata?.full_name ?? "") !== nameDraft;
 
   function handleCampusChange(campusId: string) {
@@ -182,12 +198,10 @@ function ProfilePage() {
       const entryYear = carnetDraft ? parseInt(carnetDraft.substring(0, 4), 10) : null;
 
       if (carnetDraft !== "") {
-        const { error: userError } = await supabase
-          .from("user")
-          .upsert({
-            id: authUser.id,
-            carnet: carnetDraft,
-          });
+        const { error: userError } = await supabase.from("user").upsert({
+          id: authUser.id,
+          carnet: carnetDraft,
+        });
 
         if (userError) throw userError;
       }
@@ -213,14 +227,12 @@ function ProfilePage() {
 
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await supabase
-          .from("user_study_plan")
-          .insert({
-            user_id: authUser.id,
-            study_plan_id: studyPlanId,
-            campus_id: campusId,
-            entry_year: entryYear || new Date().getFullYear(),
-          });
+        const { error: insertError } = await supabase.from("user_study_plan").insert({
+          user_id: authUser.id,
+          study_plan_id: studyPlanId,
+          campus_id: campusId,
+          entry_year: entryYear || new Date().getFullYear(),
+        });
 
         if (insertError) throw insertError;
       }
@@ -260,16 +272,16 @@ function ProfilePage() {
   if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
       </div>
     );
   }
 
   if (profileContext.isError) {
     return (
-      <div className="rounded-lg border bg-destructive/5 p-4 text-sm">
-        <div className="font-medium text-destructive">Error al cargar el perfil</div>
-        <div className="mt-1 text-muted-foreground">{getErrorMessage(profileContext.error)}</div>
+      <div className="bg-destructive/5 rounded-lg border p-4 text-sm">
+        <div className="text-destructive font-medium">Error al cargar el perfil</div>
+        <div className="text-muted-foreground mt-1">{getErrorMessage(profileContext.error)}</div>
       </div>
     );
   }
@@ -277,9 +289,9 @@ function ProfilePage() {
   if (!authUser) {
     return (
       <div className="py-12 text-center">
-        <UserIcon className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <UserIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
         <h3 className="mb-2 text-lg font-semibold">Inicia sesión para acceder a tu perfil</h3>
-        <p className="mx-auto mb-6 max-w-md text-muted-foreground">
+        <p className="text-muted-foreground mx-auto mb-6 max-w-md">
           Necesitas estar autenticado para ver y editar tu información académica.
         </p>
         <Button asChild>
@@ -294,10 +306,7 @@ function ProfilePage() {
       title="Perfil"
       description="Gestiona tu identidad y los datos académicos que personalizan Claustrum."
     >
-      <SettingsSection
-        title="Identidad"
-        description="Visible en tu cuenta y menú de usuario."
-      >
+      <SettingsSection title="Identidad" description="Visible en tu cuenta y menú de usuario.">
         <div className="space-y-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 rounded-full">
@@ -311,9 +320,7 @@ function ProfilePage() {
                 <UploadIcon className="mr-2 h-4 w-4" />
                 Subir foto
               </Button>
-              <p className="text-xs text-muted-foreground">
-                PNG o SVG, 1024x1024 máx.
-              </p>
+              <p className="text-muted-foreground text-xs">PNG o SVG, 1024x1024 máx.</p>
             </div>
           </div>
           <Field>
@@ -336,7 +343,10 @@ function ProfilePage() {
             />
           </Field>
           <div className="flex justify-end pt-2">
-            <Button onClick={() => void handleSaveIdentity()} disabled={isSavingIdentity || !hasIdentityChanges}>
+            <Button
+              onClick={() => void handleSaveIdentity()}
+              disabled={isSavingIdentity || !hasIdentityChanges}
+            >
               {isSavingIdentity && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
               Guardar
             </Button>
@@ -350,7 +360,7 @@ function ProfilePage() {
       >
         <div className="space-y-4">
           {formError && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="bg-destructive/10 text-destructive rounded-md p-3 text-sm">
               {formError}
             </div>
           )}
@@ -359,8 +369,10 @@ function ProfilePage() {
             <FieldLabel>Sede</FieldLabel>
             <Combobox
               items={campuses.data ?? []}
-              value={(campuses.data ?? []).find((item) => String(item.id) === campusIdDraft) ?? null}
-              onValueChange={(item) => void handleCampusChange(item ? String(item.id) : "")}
+              value={
+                (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft) ?? null
+              }
+              onValueChange={(item) => handleCampusChange(item ? String(item.id) : "")}
               itemToStringValue={(item) => item.name}
               disabled={!effectiveUniversityId || campuses.isLoading}
             >
@@ -368,16 +380,22 @@ function ProfilePage() {
                 ref={campusTriggerRef}
                 render={<Button variant="outline" className="w-full justify-between font-normal" />}
               >
-                <span className={`block min-w-0 flex-1 truncate text-left ${!campusIdDraft ? "text-muted-foreground" : ""}`}>
+                <span
+                  className={`block min-w-0 flex-1 truncate text-left ${!campusIdDraft ? "text-muted-foreground" : ""}`}
+                >
                   {campuses.isLoading
                     ? "Cargando..."
-                    : (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)?.name ?? "Selecciona tu sede"}
+                    : ((campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)
+                        ?.name ?? "Selecciona tu sede")}
                 </span>
               </ComboboxTrigger>
-              <ComboboxContent anchor={campusTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+              <ComboboxContent
+                anchor={campusTriggerRef}
+                className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]"
+              >
                 <ComboboxInput showTrigger={false} placeholder="Buscar sede" />
                 <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
                       <span className="block w-full min-w-0 truncate">{item.name}</span>
@@ -392,8 +410,12 @@ function ProfilePage() {
             <FieldLabel>Escuela</FieldLabel>
             <Combobox
               items={academicUnits.data ?? []}
-              value={(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft) ?? null}
-              onValueChange={(item) => void handleAcademicUnitChange(item ? String(item.id) : "")}
+              value={
+                (academicUnits.data ?? []).find(
+                  (item) => String(item.id) === academicUnitIdDraft,
+                ) ?? null
+              }
+              onValueChange={(item) => handleAcademicUnitChange(item ? String(item.id) : "")}
               itemToStringValue={(item) => `${item.code} - ${item.name}`}
               disabled={!campusIdDraft || academicUnits.isLoading}
             >
@@ -401,21 +423,30 @@ function ProfilePage() {
                 ref={academicUnitTriggerRef}
                 render={<Button variant="outline" className="w-full justify-between font-normal" />}
               >
-                <span className={`block min-w-0 flex-1 truncate text-left ${!academicUnitIdDraft ? "text-muted-foreground" : ""}`}>
+                <span
+                  className={`block min-w-0 flex-1 truncate text-left ${!academicUnitIdDraft ? "text-muted-foreground" : ""}`}
+                >
                   {academicUnits.isLoading
                     ? "Cargando..."
-                    : ((academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)
+                    : (academicUnits.data ?? []).find(
+                          (item) => String(item.id) === academicUnitIdDraft,
+                        )
                       ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.code} - ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.name}`
-                      : "Selecciona tu escuela")}
+                      : "Selecciona tu escuela"}
                 </span>
               </ComboboxTrigger>
-              <ComboboxContent anchor={academicUnitTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+              <ComboboxContent
+                anchor={academicUnitTriggerRef}
+                className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]"
+              >
                 <ComboboxInput showTrigger={false} placeholder="Buscar escuela" />
                 <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
-                      <span className="block w-full min-w-0 truncate">{item.code} - {item.name}</span>
+                      <span className="block w-full min-w-0 truncate">
+                        {item.code} - {item.name}
+                      </span>
                     </ComboboxItem>
                   )}
                 </ComboboxList>
@@ -427,8 +458,10 @@ function ProfilePage() {
             <FieldLabel>Plan de estudios</FieldLabel>
             <Combobox
               items={studyPlans.data ?? []}
-              value={(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft) ?? null}
-              onValueChange={(item) => void handleStudyPlanChange(item ? String(item.id) : "")}
+              value={
+                (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft) ?? null
+              }
+              onValueChange={(item) => handleStudyPlanChange(item ? String(item.id) : "")}
               itemToStringValue={(item) => item.name}
               disabled={!academicUnitIdDraft || studyPlans.isLoading}
             >
@@ -436,16 +469,22 @@ function ProfilePage() {
                 ref={studyPlanTriggerRef}
                 render={<Button variant="outline" className="w-full justify-between font-normal" />}
               >
-                <span className={`block min-w-0 flex-1 truncate text-left ${!studyPlanIdDraft ? "text-muted-foreground" : ""}`}>
+                <span
+                  className={`block min-w-0 flex-1 truncate text-left ${!studyPlanIdDraft ? "text-muted-foreground" : ""}`}
+                >
                   {studyPlans.isLoading
                     ? "Cargando..."
-                    : (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)?.name ?? "Selecciona tu plan"}
+                    : ((studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)
+                        ?.name ?? "Selecciona tu plan")}
                 </span>
               </ComboboxTrigger>
-              <ComboboxContent anchor={studyPlanTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+              <ComboboxContent
+                anchor={studyPlanTriggerRef}
+                className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]"
+              >
                 <ComboboxInput showTrigger={false} placeholder="Buscar plan" />
                 <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
                       <span className="block w-full min-w-0 truncate">{item.name}</span>
@@ -473,7 +512,7 @@ function ProfilePage() {
           </div>
 
           {!hasData && (
-            <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
+            <div className="bg-muted text-muted-foreground rounded-md p-4 text-sm">
               Completa tu información académica para personalizar tu experiencia.
             </div>
           )}

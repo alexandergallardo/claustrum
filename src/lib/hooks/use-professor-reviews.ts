@@ -1,5 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type {
+  ProfessorReviewStatus,
+  SearchProfessorReviewStatsParams,
+  SubmitProfessorReviewPayload,
+} from "@/lib/professor-reviews/types";
+
 import {
   getCurrentUserIsAdmin,
   getProfessorById,
@@ -11,11 +17,6 @@ import {
   searchProfessorReviewStats,
   submitProfessorReview,
 } from "@/lib/professor-reviews/api";
-import type {
-  ProfessorReviewStatus,
-  SearchProfessorReviewStatsParams,
-  SubmitProfessorReviewPayload,
-} from "@/lib/professor-reviews/types";
 
 export function useProfessorReviewStats(params: SearchProfessorReviewStatsParams) {
   return useQuery({
@@ -25,7 +26,11 @@ export function useProfessorReviewStats(params: SearchProfessorReviewStatsParams
   });
 }
 
-export function useProfessorReviewsPublic(professorId: number | null, page: number, pageSize: number) {
+export function useProfessorReviewsPublic(
+  professorId: number | null,
+  page: number,
+  pageSize: number,
+) {
   return useQuery({
     queryKey: ["professorReviewsPublic", professorId, page, pageSize],
     queryFn: () => getProfessorReviewsPublic(professorId!, pageSize, page * pageSize),
@@ -65,7 +70,7 @@ export function useSubmitProfessorReview() {
   return useMutation({
     mutationFn: (payload: SubmitProfessorReviewPayload) => submitProfessorReview(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
+      void queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
     },
   });
 }
@@ -92,9 +97,9 @@ export function useModerateProfessorReview() {
     mutationFn: (variables: { reviewId: number; status: "approved" | "rejected"; note: string }) =>
       moderateProfessorReview(variables.reviewId, variables.status, variables.note),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["professorModerationQueue"] });
-      queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
-      queryClient.invalidateQueries({ queryKey: ["professorReviewsPublic"] });
+      void queryClient.invalidateQueries({ queryKey: ["professorModerationQueue"] });
+      void queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
+      void queryClient.invalidateQueries({ queryKey: ["professorReviewsPublic"] });
     },
   });
 }

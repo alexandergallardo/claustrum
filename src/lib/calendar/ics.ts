@@ -1,4 +1,5 @@
 import { format, parseISO, addDays, startOfDay, endOfDay, isValid } from "date-fns";
+
 import type { CalendarEvent, AcademicTerm } from "@/lib/types";
 
 const WEEKDAY_BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
@@ -22,12 +23,7 @@ function buildFirstOccurrenceDate(eventStart: Date, termStart: Date): Date {
   const delta = (targetDow - startDow + 7) % 7;
   const candidate = addDays(startDay, delta);
   const result = new Date(candidate);
-  result.setHours(
-    eventStart.getHours(),
-    eventStart.getMinutes(),
-    eventStart.getSeconds(),
-    0,
-  );
+  result.setHours(eventStart.getHours(), eventStart.getMinutes(), eventStart.getSeconds(), 0);
   return result;
 }
 
@@ -38,10 +34,7 @@ function buildRecurrenceRule(eventStart: Date, termEnd: Date): string {
 }
 
 function buildDescription(event: CalendarEvent): string {
-  const parts = [
-    `${event.courseName} (${event.courseCode})`,
-    `Grupo ${event.groupCode}`,
-  ];
+  const parts = [`${event.courseName} (${event.courseCode})`, `Grupo ${event.groupCode}`];
 
   if (event.groupType) {
     parts.push(`Modalidad: ${event.groupType}`);
@@ -87,9 +80,7 @@ export function buildScheduleIcs(params: {
 
   events.forEach((event, index) => {
     const durationMs = event.end.getTime() - event.start.getTime();
-    const dtStart = hasTermRange
-      ? buildFirstOccurrenceDate(event.start, termStart)
-      : event.start;
+    const dtStart = hasTermRange ? buildFirstOccurrenceDate(event.start, termStart) : event.start;
     const dtEnd = new Date(dtStart.getTime() + durationMs);
     const uid = `${event.groupId}-${formatIcsDate(event.start)}-${index}@claustrum`;
 

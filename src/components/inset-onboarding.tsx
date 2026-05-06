@@ -1,16 +1,30 @@
-import { useMemo, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { Loader2Icon } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { AuthLeftPanel, AuthPageBackdrop } from "@/components/inset-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, ComboboxTrigger } from "@/components/ui/combobox";
+import {
+  useAcademicUnits,
+  useAuthUser,
+  useCampuses,
+  useStudyPlans,
+  useUniversities,
+} from "@/lib/hooks/use-queries";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { useAcademicUnits, useAuthUser, useCampuses, useStudyPlans, useUniversities } from "@/lib/hooks/use-queries";
-import { AuthLeftPanel, AuthPageBackdrop } from "@/components/inset-auth";
 import { cn } from "@/lib/utils";
 
 const TOTAL_STEPS = 4;
@@ -23,7 +37,7 @@ export function InsetOnboardingPage() {
 
   const defaultUniversity = useMemo(() => {
     const tec = (universities ?? []).find((u) => u.name.toLowerCase().includes("tecnologico"));
-    return tec ?? (universities?.[0] ?? null);
+    return tec ?? universities?.[0] ?? null;
   }, [universities]);
 
   const [step, setStep] = useState(1);
@@ -51,7 +65,7 @@ export function InsetOnboardingPage() {
         .from("user")
         .upsert({ id: authUser.id, onboarding_dismissed_at: new Date().toISOString() });
       await queryClient.invalidateQueries({ queryKey: ["onboardingStatus", authUser.id] });
-      navigate({ to: "/" });
+      void navigate({ to: "/" });
     })();
   };
 
@@ -113,14 +127,12 @@ export function InsetOnboardingPage() {
           .eq("id", activePlan.id);
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await supabase
-          .from("user_study_plan")
-          .insert({
-            user_id: authUser.id,
-            study_plan_id: parsedStudyPlanId,
-            campus_id: parsedCampusId,
-            entry_year: entryYear || new Date().getFullYear(),
-          });
+        const { error: insertError } = await supabase.from("user_study_plan").insert({
+          user_id: authUser.id,
+          study_plan_id: parsedStudyPlanId,
+          campus_id: parsedCampusId,
+          entry_year: entryYear || new Date().getFullYear(),
+        });
         if (insertError) throw insertError;
       }
 
@@ -132,7 +144,7 @@ export function InsetOnboardingPage() {
       await queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] });
       await queryClient.invalidateQueries({ queryKey: ["userStudyPlan", authUser.id] });
       await queryClient.invalidateQueries({ queryKey: ["dashboardStats", authUser.id] });
-      navigate({ to: "/" });
+      void navigate({ to: "/" });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "No se pudo guardar el onboarding.");
     } finally {
@@ -140,10 +152,17 @@ export function InsetOnboardingPage() {
     }
   };
 
-  const isNextDisabled = (step === 1 && !campusId) || (step === 2 && !academicUnitId) || (step === 3 && !studyPlanId);
+  const isNextDisabled =
+    (step === 1 && !campusId) || (step === 2 && !academicUnitId) || (step === 3 && !studyPlanId);
 
   const currentStepError =
-    step === 1 ? "Selecciona una sede." : step === 2 ? "Selecciona una carrera." : step === 3 ? "Selecciona un plan de estudios." : null;
+    step === 1
+      ? "Selecciona una sede."
+      : step === 2
+        ? "Selecciona una carrera."
+        : step === 3
+          ? "Selecciona un plan de estudios."
+          : null;
 
   const showCampusError = showStepError && step === 1 && !campusId;
   const showAcademicUnitError = showStepError && step === 2 && !academicUnitId;
@@ -153,23 +172,29 @@ export function InsetOnboardingPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-background text-foreground">
+    <div className="bg-background text-foreground relative h-screen overflow-hidden">
       <AuthPageBackdrop />
       <div className="relative grid h-screen w-full grid-cols-1 lg:grid-cols-[1fr_minmax(440px,560px)]">
         <AuthLeftPanel />
-        <div className="relative flex h-full flex-col overflow-y-auto bg-card text-foreground">
+        <div className="bg-card text-foreground relative flex h-full flex-col overflow-y-auto">
           <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-8 lg:py-10">
             <div className="mb-6 flex items-center justify-between gap-3 text-sm">
-              <div className="font-medium">Paso {step} de {TOTAL_STEPS}</div>
+              <div className="font-medium">
+                Paso {step} de {TOTAL_STEPS}
+              </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={skipForNow}>Saltar</Button>
-                <Button variant="ghost" size="sm" onClick={skipForNow}>Configurar más tarde</Button>
+                <Button variant="ghost" size="sm" onClick={skipForNow}>
+                  Saltar
+                </Button>
+                <Button variant="ghost" size="sm" onClick={skipForNow}>
+                  Configurar más tarde
+                </Button>
               </div>
             </div>
 
@@ -188,7 +213,9 @@ export function InsetOnboardingPage() {
                   <FieldLabel>Sede</FieldLabel>
                   <Combobox
                     items={campuses.data ?? []}
-                    value={(campuses.data ?? []).find((item) => String(item.id) === campusId) ?? null}
+                    value={
+                      (campuses.data ?? []).find((item) => String(item.id) === campusId) ?? null
+                    }
                     onValueChange={(item) => {
                       const value = item ? String(item.id) : "";
                       setCampusId(value);
@@ -200,16 +227,30 @@ export function InsetOnboardingPage() {
                   >
                     <ComboboxTrigger
                       ref={campusTriggerRef}
-                      render={<Button variant="outline" className={cn("w-full justify-between font-normal", showCampusError && "border-destructive text-destructive") } />}
+                      render={
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            showCampusError && "border-destructive text-destructive",
+                          )}
+                        />
+                      }
                     >
-                      <span className={`block min-w-0 flex-1 truncate text-left ${!campusId ? "text-muted-foreground" : ""}`}>
-                        {(campuses.data ?? []).find((item) => String(item.id) === campusId)?.name ?? "Selecciona una sede"}
+                      <span
+                        className={`block min-w-0 flex-1 truncate text-left ${!campusId ? "text-muted-foreground" : ""}`}
+                      >
+                        {(campuses.data ?? []).find((item) => String(item.id) === campusId)?.name ??
+                          "Selecciona una sede"}
                       </span>
                     </ComboboxTrigger>
-                    <ComboboxContent anchor={campusTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+                    <ComboboxContent
+                      anchor={campusTriggerRef}
+                      className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]"
+                    >
                       <ComboboxInput showTrigger={false} placeholder="Buscar sede" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
                             <span className="block w-full min-w-0 truncate">{item.name}</span>
@@ -223,11 +264,15 @@ export function InsetOnboardingPage() {
               ) : null}
 
               {step === 2 ? (
-              <Field>
+                <Field>
                   <FieldLabel>Carrera</FieldLabel>
                   <Combobox
                     items={academicUnits.data ?? []}
-                    value={(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId) ?? null}
+                    value={
+                      (academicUnits.data ?? []).find(
+                        (item) => String(item.id) === academicUnitId,
+                      ) ?? null
+                    }
                     onValueChange={(item) => {
                       const value = item ? String(item.id) : "";
                       setAcademicUnitId(value);
@@ -238,21 +283,38 @@ export function InsetOnboardingPage() {
                   >
                     <ComboboxTrigger
                       ref={academicUnitTriggerRef}
-                      render={<Button variant="outline" className={cn("w-full justify-between font-normal", showAcademicUnitError && "border-destructive text-destructive")} />}
+                      render={
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            showAcademicUnitError && "border-destructive text-destructive",
+                          )}
+                        />
+                      }
                     >
-                      <span className={`block min-w-0 flex-1 truncate text-left ${!academicUnitId ? "text-muted-foreground" : ""}`}>
-                        {(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)
+                      <span
+                        className={`block min-w-0 flex-1 truncate text-left ${!academicUnitId ? "text-muted-foreground" : ""}`}
+                      >
+                        {(academicUnits.data ?? []).find(
+                          (item) => String(item.id) === academicUnitId,
+                        )
                           ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)!.code} - ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)!.name}`
                           : "Selecciona una carrera"}
                       </span>
                     </ComboboxTrigger>
-                    <ComboboxContent anchor={academicUnitTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+                    <ComboboxContent
+                      anchor={academicUnitTriggerRef}
+                      className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]"
+                    >
                       <ComboboxInput showTrigger={false} placeholder="Buscar carrera" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
-                            <span className="block w-full min-w-0 truncate">{item.code} - {item.name}</span>
+                            <span className="block w-full min-w-0 truncate">
+                              {item.code} - {item.name}
+                            </span>
                           </ComboboxItem>
                         )}
                       </ComboboxList>
@@ -267,7 +329,10 @@ export function InsetOnboardingPage() {
                   <FieldLabel>Plan de estudios</FieldLabel>
                   <Combobox
                     items={studyPlans.data ?? []}
-                    value={(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanId) ?? null}
+                    value={
+                      (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanId) ??
+                      null
+                    }
                     onValueChange={(item) => {
                       setStudyPlanId(item ? String(item.id) : "");
                       setShowStepError(false);
@@ -276,16 +341,30 @@ export function InsetOnboardingPage() {
                   >
                     <ComboboxTrigger
                       ref={studyPlanTriggerRef}
-                      render={<Button variant="outline" className={cn("w-full justify-between font-normal", showStudyPlanError && "border-destructive text-destructive")} />}
+                      render={
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-between font-normal",
+                            showStudyPlanError && "border-destructive text-destructive",
+                          )}
+                        />
+                      }
                     >
-                      <span className={`block min-w-0 flex-1 truncate text-left ${!studyPlanId ? "text-muted-foreground" : ""}`}>
-                        {(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanId)?.name ?? "Selecciona un plan de estudios"}
+                      <span
+                        className={`block min-w-0 flex-1 truncate text-left ${!studyPlanId ? "text-muted-foreground" : ""}`}
+                      >
+                        {(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanId)
+                          ?.name ?? "Selecciona un plan de estudios"}
                       </span>
                     </ComboboxTrigger>
-                    <ComboboxContent anchor={studyPlanTriggerRef} className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]">
+                    <ComboboxContent
+                      anchor={studyPlanTriggerRef}
+                      className="w-[var(--anchor-width)] min-w-[var(--anchor-width)]"
+                    >
                       <ComboboxInput showTrigger={false} placeholder="Buscar plan" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
                             <span className="block w-full min-w-0 truncate">{item.name}</span>
@@ -314,9 +393,13 @@ export function InsetOnboardingPage() {
             </div>
 
             <div className="mt-8 flex items-center justify-between">
-              <Button variant="outline" onClick={prevStep} disabled={step === 1 || isSaving}>Anterior</Button>
+              <Button variant="outline" onClick={prevStep} disabled={step === 1 || isSaving}>
+                Anterior
+              </Button>
               {step < TOTAL_STEPS ? (
-                <Button onClick={nextStep} disabled={isNextDisabled}>Siguiente</Button>
+                <Button onClick={nextStep} disabled={isNextDisabled}>
+                  Siguiente
+                </Button>
               ) : (
                 <Button onClick={finishOnboarding} disabled={isSaving}>
                   {isSaving ? <Loader2Icon className="h-4 w-4 animate-spin" /> : null}

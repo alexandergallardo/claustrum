@@ -1,7 +1,7 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
-import { CircleHelpIcon, Loader2Icon } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { CircleHelpIcon, Loader2Icon } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,8 @@ export function AuthTwoFactorPage() {
       setIsLoadingFactor(true);
       setErrorMessage(null);
 
-      const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const { data: aal, error: aalError } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalError) {
         setErrorMessage(aalError.message);
         setIsLoadingFactor(false);
@@ -38,7 +39,7 @@ export function AuthTwoFactorPage() {
       }
 
       if (aal?.currentLevel === "aal2") {
-        navigate({ to: "/", replace: true });
+        void navigate({ to: "/", replace: true });
         return;
       }
 
@@ -135,19 +136,19 @@ export function AuthTwoFactorPage() {
     }
 
     setIsVerifying(false);
-    navigate({ to: "/", replace: true });
+    void navigate({ to: "/", replace: true });
   }
 
   return (
     <form onSubmit={handleVerify} className="flex flex-col gap-5 text-center">
       <div className="space-y-2">
-        <p className="text-[0.65rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
+        <p className="text-muted-foreground text-[0.65rem] font-medium tracking-[0.28em] uppercase">
           Paso 2 de 2
         </p>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
           Autenticación de dos factores
         </h1>
-        <p className="mx-auto max-w-sm text-sm leading-6 text-muted-foreground">
+        <p className="text-muted-foreground mx-auto max-w-sm text-sm leading-6">
           Abre tu aplicación autenticadora e ingresa el código de 6 dígitos.
         </p>
       </div>
@@ -159,7 +160,11 @@ export function AuthTwoFactorPage() {
         </Alert>
       ) : null}
 
-      <div className="flex items-center justify-center gap-2" role="group" aria-label="Código de autenticación">
+      <div
+        className="flex items-center justify-center gap-2"
+        role="group"
+        aria-label="Código de autenticación"
+      >
         {code.map((digit, index) => (
           <div key={index} className="flex items-center gap-2">
             <input
@@ -178,8 +183,8 @@ export function AuthTwoFactorPage() {
               onKeyDown={(event) => handleKeyDown(index, event.key)}
               aria-label={`Dígito ${index + 1}`}
               className={cn(
-                "h-12 w-10 rounded-lg border border-input bg-background text-center text-lg font-medium tabular-nums shadow-xs outline-none transition-[color,box-shadow]",
-                "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                "border-input bg-background h-12 w-10 rounded-lg border text-center text-lg font-medium tabular-nums shadow-xs transition-[color,box-shadow] outline-none",
+                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                 "sm:h-13 sm:w-11",
               )}
             />
@@ -193,7 +198,7 @@ export function AuthTwoFactorPage() {
         {isLoadingFactor ? "Cargando..." : "Verificar"}
       </Button>
 
-      <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+      <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-xs">
         <CircleHelpIcon className="size-3.5" />
         ¿Perdiste el acceso?{" "}
         <Link to="/policies" className="text-foreground underline underline-offset-4">

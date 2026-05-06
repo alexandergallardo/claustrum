@@ -1,5 +1,5 @@
-import { EllipsisVertical, LogIn, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { EllipsisVertical, LogIn, Settings } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -70,9 +70,7 @@ export function NavUser({
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {user.email}
-                </span>
+                <span className="text-muted-foreground truncate text-xs">{user.email}</span>
               </div>
               <EllipsisVertical className="ml-auto h-4 w-4" />
             </SidebarMenuButton>

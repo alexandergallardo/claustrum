@@ -1,9 +1,5 @@
+import { IconLogout, IconNotification, IconUserCircle } from "@tabler/icons-react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import {
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -36,15 +32,8 @@ export function UserMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {trigger}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-56 rounded-lg"
-        side={side}
-        align={align}
-        sideOffset={4}
-      >
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56 rounded-lg" side={side} align={align} sideOffset={4}>
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <Avatar className="h-8 w-8">
@@ -53,9 +42,7 @@ export function UserMenu({
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="text-muted-foreground truncate text-xs">
-                {user.email}
-              </span>
+              <span className="text-muted-foreground truncate text-xs">{user.email}</span>
             </div>
           </div>
         </DropdownMenuLabel>
@@ -77,7 +64,7 @@ export function UserMenu({
           onClick={async () => {
             const supabase = getSupabaseBrowserClient();
             await supabase.auth.signOut();
-            navigate({ to: "." });
+            void navigate({ to: "." });
           }}
         >
           <IconLogout />

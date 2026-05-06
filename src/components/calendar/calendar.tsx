@@ -1,7 +1,9 @@
-import type { CalendarProps } from './calendar-types'
-import CalendarBody from './body/calendar-body'
-import CalendarProvider from './calendar-provider'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+import type { CalendarProps } from "./calendar-types";
+
+import CalendarBody from "./body/calendar-body";
+import CalendarProvider from "./calendar-provider";
 
 export default function Calendar({
   events,
@@ -38,5 +40,5 @@ export default function Calendar({
         <CalendarBody />
       </TooltipProvider>
     </CalendarProvider>
-  )
+  );
 }

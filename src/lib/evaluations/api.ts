@@ -1,11 +1,12 @@
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { getApiBaseUrl } from "@/lib/env/public";
 import type {
   EvaluationRow,
   EvaluationModerationRow,
   EvaluationStatus,
   UploadEvaluationPayload,
 } from "@/lib/evaluations/types";
+
+import { getApiBaseUrl } from "@/lib/env/public";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 async function sha256File(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -88,7 +89,9 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
   }
 }
 
-export async function getEvaluationDocument(evaluationId: number): Promise<{ blob: Blob; fileName: string }> {
+export async function getEvaluationDocument(
+  evaluationId: number,
+): Promise<{ blob: Blob; fileName: string }> {
   const apiBaseUrl = getApiBaseUrl();
   if (!apiBaseUrl) {
     throw new Error("API Worker URL no configurado");

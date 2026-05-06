@@ -1,5 +1,5 @@
 import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
 import type {
   AcademicTerm,
   StudyPeriod,
@@ -14,6 +14,8 @@ import type {
   CourseLatestTermGroup,
   CourseRecentProfessor,
 } from "@/lib/types";
+
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
 export function useUniversities() {
@@ -167,7 +169,7 @@ export type CourseEquivalentsResult = {
 export type CourseRelation = {
   fromCourseId: number;
   toCourseId: number;
-  relationType: 'PREREQUISITE' | 'COREQUISITE' | 'EQUIVALENT';
+  relationType: "PREREQUISITE" | "COREQUISITE" | "EQUIVALENT";
 };
 
 function buildStudyPlanPeriods(items: Array<Record<string, unknown>>): StudyPeriod[] {
@@ -193,11 +195,13 @@ function buildStudyPlanPeriods(items: Array<Record<string, unknown>>): StudyPeri
 
   return Array.from(periods.entries())
     .sort(([a], [b]) => (a ?? 0) - (b ?? 0))
-    .map(([levelNumber, { levelLabel, courses }]): StudyPeriod => ({
-      levelNumber: levelNumber ?? 0,
-      levelLabel,
-      courses,
-    }));
+    .map(
+      ([levelNumber, { levelLabel, courses }]): StudyPeriod => ({
+        levelNumber: levelNumber ?? 0,
+        levelLabel,
+        courses,
+      }),
+    );
 }
 
 export function useStudyPlanCoursesDetails(planId: number | null) {
@@ -206,7 +210,9 @@ export function useStudyPlanCoursesDetails(planId: number | null) {
     queryFn: async () => {
       if (!planId) return null;
       const sb = getSupabaseBrowserClient();
-      const coursesResult = await sb.rpc("get_study_plan_courses_details", { p_study_plan_id: planId });
+      const coursesResult = await sb.rpc("get_study_plan_courses_details", {
+        p_study_plan_id: planId,
+      });
       if (coursesResult.error) throw coursesResult.error;
       return buildStudyPlanPeriods(coursesResult.data ?? []);
     },
@@ -215,7 +221,10 @@ export function useStudyPlanCoursesDetails(planId: number | null) {
   });
 }
 
-export function useStudyPlanDetail(planId: number | null, selectedPlanData: CatalogStudyPlan | undefined) {
+export function useStudyPlanDetail(
+  planId: number | null,
+  selectedPlanData: CatalogStudyPlan | undefined,
+) {
   return useQuery({
     queryKey: ["studyPlanDetail", planId],
     queryFn: async () => {
@@ -224,7 +233,8 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Cata
 
       const [coursesResult, relationsResult] = await Promise.all([
         sb.rpc("get_study_plan_courses_details", { p_study_plan_id: planId }),
-        sb.from("course_relation")
+        sb
+          .from("course_relation")
           .select("from_course_id, to_course_id, relation_type")
           .eq("study_plan_id", planId),
       ]);
@@ -232,14 +242,21 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Cata
       if (coursesResult.error) throw coursesResult.error;
       if (relationsResult.error) throw relationsResult.error;
 
-      const courseRelations = new Map<number, { prerequisites: number[]; corequisites: number[]; equivalents: number[] }>();
+      const courseRelations = new Map<
+        number,
+        { prerequisites: number[]; corequisites: number[]; equivalents: number[] }
+      >();
       for (const r of relationsResult.data ?? []) {
-        const existing = courseRelations.get(r.from_course_id) ?? { prerequisites: [], corequisites: [], equivalents: [] };
-        if (r.relation_type === 'PREREQUISITE') {
+        const existing = courseRelations.get(r.from_course_id) ?? {
+          prerequisites: [],
+          corequisites: [],
+          equivalents: [],
+        };
+        if (r.relation_type === "PREREQUISITE") {
           existing.prerequisites.push(r.to_course_id);
-        } else if (r.relation_type === 'COREQUISITE') {
+        } else if (r.relation_type === "COREQUISITE") {
           existing.corequisites.push(r.to_course_id);
-        } else if (r.relation_type === 'EQUIVALENT') {
+        } else if (r.relation_type === "EQUIVALENT") {
           existing.equivalents.push(r.to_course_id);
         }
         courseRelations.set(r.from_course_id, existing);
@@ -248,7 +265,14 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Cata
       const periodArray = buildStudyPlanPeriods(coursesResult.data ?? []);
 
       return {
-        plan: { id: planId, academic_unit_id: 0, external_plan_id: 0, name: "", academic_degree: null, modality_name: undefined } as CatalogStudyPlan,
+        plan: {
+          id: planId,
+          academic_unit_id: 0,
+          external_plan_id: 0,
+          name: "",
+          academic_degree: null,
+          modality_name: undefined,
+        } as CatalogStudyPlan,
         periods: periodArray,
         courseRelations,
       } as StudyPlanDetail;
@@ -257,7 +281,7 @@ export function useStudyPlanDetail(planId: number | null, selectedPlanData: Cata
       if (!data) return data;
       return {
         ...data,
-        plan: selectedPlanData ? { ...selectedPlanData } as CatalogStudyPlan : data.plan,
+        plan: selectedPlanData ? ({ ...selectedPlanData } as CatalogStudyPlan) : data.plan,
       };
     },
     enabled: !!planId,
@@ -392,7 +416,7 @@ export function useScheduleCourses(params: {
         .select("*");
 
       if (error) throw error;
-      return (data ?? []) as import('@/lib/types').ScheduleCourse[];
+      return (data ?? []) as import("@/lib/types").ScheduleCourse[];
     },
     enabled: isAuthReady && !!termId && !!campusId,
     staleTime: 2 * 60 * 1000,
@@ -406,8 +430,9 @@ export function useSuggestedAcademicTerm(studyPlanId: number | null, enabled = t
     queryFn: async () => {
       if (!studyPlanId) return null;
       const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .rpc("get_suggested_academic_term", { p_study_plan_id: studyPlanId });
+      const { data, error } = await sb.rpc("get_suggested_academic_term", {
+        p_study_plan_id: studyPlanId,
+      });
       if (error) throw error;
       return data as number | null;
     },
@@ -420,7 +445,10 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
   return useQuery({
     queryKey: ["studentCourseStatuses", userId, studyPlanId],
     queryFn: async () => {
-      let statusMap = new Map<number, "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress">();
+      let statusMap = new Map<
+        number,
+        "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress"
+      >();
 
       if (!userId || !studyPlanId) {
         const localChanges = getLocalCourseStatusChanges();
@@ -442,7 +470,10 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
       if (error) throw error;
 
       for (const record of (data ?? []) as Array<{ course_id: number; status: string }>) {
-        statusMap.set(record.course_id, record.status.toLowerCase() as "approved" | "failed" | "withdrawn" | "in_progress");
+        statusMap.set(
+          record.course_id,
+          record.status.toLowerCase() as "approved" | "failed" | "withdrawn" | "in_progress",
+        );
       }
 
       const localChanges = getLocalCourseStatusChanges();
@@ -485,10 +516,16 @@ export function useCreateCourseAttempt() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId] })
-      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] })
-      queryClient.invalidateQueries({ queryKey: ["dashboardStats", variables.userId, variables.studyPlanId] })
-      queryClient.invalidateQueries({ queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId] })
+      void queryClient.invalidateQueries({
+        queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["dashboardStats", variables.userId, variables.studyPlanId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId],
+      });
     },
   });
 }
@@ -516,15 +553,25 @@ export function useUpdateCourseAttempt() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId] });
-      queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboardStats", variables.userId, variables.studyPlanId] });
-      queryClient.invalidateQueries({ queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["dashboardStats", variables.userId, variables.studyPlanId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId],
+      });
     },
   });
 }
 
-export function useCourseAttempts(userId: string | null, studyPlanId: number | null, courseId: number | null) {
+export function useCourseAttempts(
+  userId: string | null,
+  studyPlanId: number | null,
+  courseId: number | null,
+) {
   return useQuery({
     queryKey: ["courseAttempts", userId, studyPlanId, courseId],
     queryFn: async () => {
@@ -539,21 +586,24 @@ export function useCourseAttempts(userId: string | null, studyPlanId: number | n
 
       if (error) throw error;
 
-      return (data ?? []).map((attempt: {
-        id: number;
-        attempt_number: number;
-        status: string;
-        grade: number | null;
-        academic_term_id: number | null;
-        recorded_at: string;
-      }) => ({
-        id: attempt.id,
-        attemptNumber: attempt.attempt_number,
-        status: attempt.status.toLowerCase() as CourseAttempt["status"],
-        grade: attempt.grade,
-        academicTermId: attempt.academic_term_id,
-        recordedAt: attempt.recorded_at,
-      } satisfies CourseAttempt));
+      return (data ?? []).map(
+        (attempt: {
+          id: number;
+          attempt_number: number;
+          status: string;
+          grade: number | null;
+          academic_term_id: number | null;
+          recorded_at: string;
+        }) =>
+          ({
+            id: attempt.id,
+            attemptNumber: attempt.attempt_number,
+            status: attempt.status.toLowerCase() as CourseAttempt["status"],
+            grade: attempt.grade,
+            academicTermId: attempt.academic_term_id,
+            recordedAt: attempt.recorded_at,
+          }) satisfies CourseAttempt,
+      );
     },
     enabled: !!userId && !!studyPlanId && !!courseId,
     staleTime: 30 * 1000,
@@ -581,7 +631,12 @@ export function useCoursesByIds(courseIds: number[] | null) {
   });
 }
 
-export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: number | null, page: number = 0, limit: number = 10) {
+export function useCourseEquivalents(
+  studyPlanId: number | null,
+  fromCourseId: number | null,
+  page: number = 0,
+  limit: number = 10,
+) {
   return useQuery({
     queryKey: ["courseEquivalents", studyPlanId, fromCourseId, page, limit],
     queryFn: async () => {
@@ -599,27 +654,29 @@ export function useCourseEquivalents(studyPlanId: number | null, fromCourseId: n
       if (error) throw error;
 
       const equivalents: Array<{
-        id: number
-        code: string | null
-        name: string | null
-        credits: number | null
-        weeklyHours: number | null
-        totalCount: number
-      }> = (data ?? []).map((item: {
-        to_course_id: number
-        to_course_code: string | null
-        to_course_name: string | null
-        to_course_credits: number | null
-        to_course_weekly_hours: number | null
-        total_count: number | null
-      }) => ({
-        id: item.to_course_id,
-        code: item.to_course_code,
-        name: item.to_course_name,
-        credits: item.to_course_credits,
-        weeklyHours: item.to_course_weekly_hours,
-        totalCount: item.total_count ?? 0,
-      }));
+        id: number;
+        code: string | null;
+        name: string | null;
+        credits: number | null;
+        weeklyHours: number | null;
+        totalCount: number;
+      }> = (data ?? []).map(
+        (item: {
+          to_course_id: number;
+          to_course_code: string | null;
+          to_course_name: string | null;
+          to_course_credits: number | null;
+          to_course_weekly_hours: number | null;
+          total_count: number | null;
+        }) => ({
+          id: item.to_course_id,
+          code: item.to_course_code,
+          name: item.to_course_name,
+          credits: item.to_course_credits,
+          weeklyHours: item.to_course_weekly_hours,
+          totalCount: item.total_count ?? 0,
+        }),
+      );
 
       const totalCount = equivalents.length > 0 ? equivalents[0].totalCount : 0;
 
@@ -653,25 +710,28 @@ export function useCourseRecentProfessors(
 
       if (error) throw error;
 
-      return (data ?? []).map((row: {
-        professor_id: number;
-        professor_name: string;
-        last_taught_term_id: number;
-        last_taught_term_name: string;
-        last_taught_year: number;
-        last_taught_period_number: number;
-        groups_in_last_term_count: number;
-        terms_taught_count: number;
-      }) => ({
-        professorId: row.professor_id,
-        professorName: row.professor_name,
-        lastTaughtTermId: row.last_taught_term_id,
-        lastTaughtTermName: row.last_taught_term_name,
-        lastTaughtYear: row.last_taught_year,
-        lastTaughtPeriodNumber: row.last_taught_period_number,
-        groupsInLastTermCount: row.groups_in_last_term_count,
-        termsTaughtCount: row.terms_taught_count,
-      } satisfies CourseRecentProfessor));
+      return (data ?? []).map(
+        (row: {
+          professor_id: number;
+          professor_name: string;
+          last_taught_term_id: number;
+          last_taught_term_name: string;
+          last_taught_year: number;
+          last_taught_period_number: number;
+          groups_in_last_term_count: number;
+          terms_taught_count: number;
+        }) =>
+          ({
+            professorId: row.professor_id,
+            professorName: row.professor_name,
+            lastTaughtTermId: row.last_taught_term_id,
+            lastTaughtTermName: row.last_taught_term_name,
+            lastTaughtYear: row.last_taught_year,
+            lastTaughtPeriodNumber: row.last_taught_period_number,
+            groupsInLastTermCount: row.groups_in_last_term_count,
+            termsTaughtCount: row.terms_taught_count,
+          }) satisfies CourseRecentProfessor,
+      );
     },
     enabled: !!courseId,
     staleTime: 5 * 60 * 1000,
@@ -697,33 +757,41 @@ export function useCourseLatestTermGroups(
 
       if (error) throw error;
 
-      return (data ?? []).map((row: {
-        academic_term_id: number;
-        term_display_name: string;
-        term_year: number;
-        term_period_number: number;
-        group_id: number;
-        group_code: string;
-        group_type: string;
-        capacity: number;
-        campus_id: number | null;
-        campus_name: string | null;
-        professors: Array<{ id: number; name: string }> | null;
-        meetings: Array<{ weekday: number; starts_at: string; ends_at: string; classroom: string | null }> | null;
-      }) => ({
-        academicTermId: row.academic_term_id,
-        termDisplayName: row.term_display_name,
-        termYear: row.term_year,
-        termPeriodNumber: row.term_period_number,
-        groupId: row.group_id,
-        groupCode: row.group_code,
-        groupType: row.group_type,
-        capacity: row.capacity,
-        campusId: row.campus_id,
-        campusName: row.campus_name,
-        professors: row.professors ?? [],
-        meetings: row.meetings ?? [],
-      } satisfies CourseLatestTermGroup));
+      return (data ?? []).map(
+        (row: {
+          academic_term_id: number;
+          term_display_name: string;
+          term_year: number;
+          term_period_number: number;
+          group_id: number;
+          group_code: string;
+          group_type: string;
+          capacity: number;
+          campus_id: number | null;
+          campus_name: string | null;
+          professors: Array<{ id: number; name: string }> | null;
+          meetings: Array<{
+            weekday: number;
+            starts_at: string;
+            ends_at: string;
+            classroom: string | null;
+          }> | null;
+        }) =>
+          ({
+            academicTermId: row.academic_term_id,
+            termDisplayName: row.term_display_name,
+            termYear: row.term_year,
+            termPeriodNumber: row.term_period_number,
+            groupId: row.group_id,
+            groupCode: row.group_code,
+            groupType: row.group_type,
+            capacity: row.capacity,
+            campusId: row.campus_id,
+            campusName: row.campus_name,
+            professors: row.professors ?? [],
+            meetings: row.meetings ?? [],
+          }) satisfies CourseLatestTermGroup,
+      );
     },
     enabled: !!courseId,
     staleTime: 2 * 60 * 1000,

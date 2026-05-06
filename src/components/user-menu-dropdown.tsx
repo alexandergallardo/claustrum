@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, Settings } from "lucide-react";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 interface UserMenuDropdownProps {
   user: {
@@ -58,9 +59,7 @@ export function UserMenuDropdown({
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="text-muted-foreground truncate text-xs">
-                {user.email}
-              </span>
+              <span className="text-muted-foreground truncate text-xs">{user.email}</span>
             </div>
           </div>
         </DropdownMenuLabel>
@@ -78,7 +77,7 @@ export function UserMenuDropdown({
           onClick={async () => {
             const supabase = getSupabaseBrowserClient();
             await supabase.auth.signOut();
-            navigate({ to: "/auth/signin" });
+            void navigate({ to: "/auth/signin" });
           }}
         >
           <LogOut className="h-4 w-4" />

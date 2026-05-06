@@ -1,5 +1,5 @@
-import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Suspense, lazy } from "react";
 
 const AppearancePage = lazy(() =>
   import("./-appearance-page").then((module) => ({ default: module.AppearancePage })),

@@ -1,5 +1,5 @@
-import CalendarHeaderDateIcon from './calendar-header-date-icon'
-import CalendarHeaderDateChevrons from './calendar-header-date-chevrons'
+import CalendarHeaderDateChevrons from "./calendar-header-date-chevrons";
+import CalendarHeaderDateIcon from "./calendar-header-date-icon";
 
 export default function CalendarHeaderDate() {
   return (
@@ -7,5 +7,5 @@ export default function CalendarHeaderDate() {
       <CalendarHeaderDateIcon />
       <CalendarHeaderDateChevrons />
     </div>
-  )
+  );
 }

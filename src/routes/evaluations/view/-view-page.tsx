@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { ArrowLeft, Download, Loader2, Minus, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 
 import { Button } from "@/components/ui/button";
@@ -68,7 +68,7 @@ export function EvaluationViewPage() {
       }
     }
 
-    load();
+    void load();
 
     return () => {
       cancelled = true;
@@ -122,9 +122,7 @@ export function EvaluationViewPage() {
   const isViewerReady = isReady && firstPageRendered;
 
   const pageWidth =
-    containerWidth > 0
-      ? Math.max(220, Math.floor((containerWidth - 32) * zoom))
-      : undefined;
+    containerWidth > 0 ? Math.max(220, Math.floor((containerWidth - 32) * zoom)) : undefined;
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -150,8 +148,8 @@ export function EvaluationViewPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Cargando documento...</p>
+        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        <p className="text-muted-foreground text-sm">Cargando documento...</p>
       </div>
     );
   }
@@ -159,7 +157,7 @@ export function EvaluationViewPage() {
   if (error || !blobUrl) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
-        <p className="text-sm text-destructive">{error ?? "No se pudo cargar el documento"}</p>
+        <p className="text-destructive text-sm">{error ?? "No se pudo cargar el documento"}</p>
         <Button variant="outline" onClick={() => window.history.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver
@@ -169,15 +167,18 @@ export function EvaluationViewPage() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+    <div className="bg-background relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {!isViewerReady && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Cargando documento...</p>
+        <div className="bg-background absolute inset-0 z-50 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground text-sm">Cargando documento...</p>
         </div>
       )}
 
-      <div ref={scrollContainerRef} className={`flex-1 min-h-0 w-full overflow-auto overscroll-contain ${isViewerReady ? "opacity-100 transition-opacity duration-300" : "opacity-0"}`}>
+      <div
+        ref={scrollContainerRef}
+        className={`min-h-0 w-full flex-1 overflow-auto overscroll-contain ${isViewerReady ? "opacity-100 transition-opacity duration-300" : "opacity-0"}`}
+      >
         <div className="py-4">
           <Document
             file={blobUrl}
@@ -206,7 +207,7 @@ export function EvaluationViewPage() {
 
       {numPages > 0 && (
         <div className="absolute inset-x-0 bottom-6 z-50 flex justify-center px-2">
-          <div className="flex max-w-full flex-nowrap items-center gap-1 overflow-x-auto rounded-full border bg-background/90 px-2 py-1 shadow-lg backdrop-blur-sm">
+          <div className="bg-background/90 flex max-w-full flex-nowrap items-center gap-1 overflow-x-auto rounded-full border px-2 py-1 shadow-lg backdrop-blur-sm">
             <Button
               variant="ghost"
               size="icon"
@@ -217,12 +218,12 @@ export function EvaluationViewPage() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="mx-1 h-4 w-px bg-border" />
+            <div className="bg-border mx-1 h-4 w-px" />
             <div className="hidden items-center min-[430px]:flex">
-              <span className="shrink-0 whitespace-nowrap px-2 text-sm text-muted-foreground tabular-nums">
+              <span className="text-muted-foreground shrink-0 px-2 text-sm whitespace-nowrap tabular-nums">
                 {numPages} páginas
               </span>
-              <div className="mx-1 h-4 w-px bg-border" />
+              <div className="bg-border mx-1 h-4 w-px" />
             </div>
             <Button
               variant="ghost"
@@ -234,7 +235,7 @@ export function EvaluationViewPage() {
             >
               <Minus className="h-4 w-4" />
             </Button>
-            <span className="w-12 text-center text-sm text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground w-12 text-center text-sm tabular-nums">
               {Math.round(zoom * 100)}%
             </span>
             <Button
@@ -247,14 +248,14 @@ export function EvaluationViewPage() {
             >
               <Plus className="h-4 w-4" />
             </Button>
-            <div className="mx-1 h-4 w-px bg-border" />
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 cursor-pointer"
-            >
-              <a href={blobUrl} download={fileName} aria-label="Descargar PDF" title="Descargar PDF">
+            <div className="bg-border mx-1 h-4 w-px" />
+            <Button asChild variant="ghost" size="icon" className="h-8 w-8 cursor-pointer">
+              <a
+                href={blobUrl}
+                download={fileName}
+                aria-label="Descargar PDF"
+                title="Descargar PDF"
+              >
                 <Download className="h-4 w-4" />
               </a>
             </Button>

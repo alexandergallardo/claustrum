@@ -1,8 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, CalendarDays, ChevronRight, GraduationCap, Home, Moon, Palette, Search, Settings, Shield, Sun, User, Users } from "lucide-react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import {
+  Bell,
+  CalendarDays,
+  ChevronRight,
+  GraduationCap,
+  Home,
+  Moon,
+  Palette,
+  Search,
+  Settings,
+  Shield,
+  Sun,
+  User,
+  Users,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
+import type { CatalogStudyPlan } from "@/lib/types";
+
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
@@ -15,10 +32,8 @@ import {
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useTheme } from "@/components/theme-provider";
-import { useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
 import { useProfessorById } from "@/lib/hooks/use-professor-reviews";
-import type { CatalogStudyPlan } from "@/lib/types";
+import { useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
 
 type BreadcrumbItem = {
   label: string;
@@ -81,7 +96,9 @@ export function SiteHeader() {
   const selectedCareerId = isCourseDetail ? getSearchNumber(location.searchStr, "career") : null;
   const selectedPlanId = isCourseDetail ? getSearchNumber(location.searchStr, "plan") : null;
   const plansQuery = useStudyPlans(selectedCareerId);
-  const selectedPlanData = plansQuery.data?.find((plan: CatalogStudyPlan) => plan.id === selectedPlanId);
+  const selectedPlanData = plansQuery.data?.find(
+    (plan: CatalogStudyPlan) => plan.id === selectedPlanId,
+  );
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
   const courseLabel = useMemo(() => {
     if (!courseId) return null;
@@ -150,7 +167,7 @@ export function SiteHeader() {
   ]);
 
   return (
-    <header className="sticky top-0 z-40 hidden h-(--header-height) shrink-0 items-center bg-muted px-4 md:flex lg:px-6">
+    <header className="bg-muted sticky top-0 z-40 hidden h-(--header-height) shrink-0 items-center px-4 md:flex lg:px-6">
       <div className="grid w-full grid-cols-[1fr_auto] items-center gap-3 lg:grid-cols-[1fr_minmax(20rem,40rem)_1fr]">
         <div className="flex min-w-0 items-center gap-2">
           {breadcrumbItems.map((item, index) => {
@@ -158,18 +175,20 @@ export function SiteHeader() {
 
             return (
               <div key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-2">
-                {index > 0 ? <ChevronRight className="size-4 shrink-0 text-muted-foreground" /> : null}
+                {index > 0 ? (
+                  <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+                ) : null}
                 {item.isLoading ? (
-                  <span className="h-4 w-40 animate-pulse rounded bg-muted-foreground/20" />
+                  <span className="bg-muted-foreground/20 h-4 w-40 animate-pulse rounded" />
                 ) : item.to && !isLast ? (
                   <Link
                     to={item.to}
-                    className="truncate text-sm font-medium text-foreground transition-colors hover:text-primary"
+                    className="text-foreground hover:text-primary truncate text-sm font-medium transition-colors"
                   >
                     {item.label}
                   </Link>
                 ) : (
-                  <span className="truncate text-sm font-medium text-muted-foreground">
+                  <span className="text-muted-foreground truncate text-sm font-medium">
                     {item.label}
                   </span>
                 )}
@@ -181,7 +200,7 @@ export function SiteHeader() {
         <button
           type="button"
           onClick={() => setIsCommandOpen(true)}
-          className="hidden h-11 items-center gap-3 rounded-full bg-background px-5 text-muted-foreground shadow-sm ring-1 ring-border/60 transition-colors hover:text-foreground hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 lg:flex"
+          className="bg-background text-muted-foreground ring-border/60 hover:text-foreground hover:ring-primary/30 focus-visible:ring-ring/50 hidden h-11 items-center gap-3 rounded-full px-5 shadow-sm ring-1 transition-colors focus-visible:ring-2 focus-visible:outline-none lg:flex"
         >
           <Search className="size-5 shrink-0" />
           <span className="min-w-0 flex-1 text-left text-sm">Buscar...</span>
@@ -210,10 +229,15 @@ export function SiteHeader() {
             title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
             className="rounded-full"
           >
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
           </Button>
-          <Button variant="ghost" size="icon" className="hidden rounded-full sm:inline-flex" asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden rounded-full sm:inline-flex"
+            asChild
+          >
             <Link to="/settings/appearance" aria-label="Configuración" title="Configuración">
               <Settings className="h-[1.2rem] w-[1.2rem]" />
             </Link>
@@ -248,7 +272,9 @@ export function SiteHeader() {
                 {theme === "dark" ? <Sun /> : <Moon />}
                 <span>{theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}</span>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => void navigate({ to: "/settings/appearance" }))}>
+              <CommandItem
+                onSelect={() => runCommand(() => void navigate({ to: "/settings/appearance" }))}
+              >
                 <Settings />
                 <span>Abrir configuración</span>
               </CommandItem>

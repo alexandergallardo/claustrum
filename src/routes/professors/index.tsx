@@ -1,5 +1,5 @@
-import { Suspense, lazy } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Suspense, lazy } from "react";
 
 const ProfessorsReviewsPage = lazy(() =>
   import("./-professors-page").then((module) => ({ default: module.ProfessorsReviewsPage })),
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/professors/")({
 
 function ProfessorsRoute() {
   return (
-    <Suspense fallback={<div className="flex-1 bg-background" />}>
+    <Suspense fallback={<div className="bg-background flex-1" />}>
       <ProfessorsReviewsPage />
     </Suspense>
   );

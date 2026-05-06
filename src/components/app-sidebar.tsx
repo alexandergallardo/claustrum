@@ -68,16 +68,16 @@ export function AppSidebar() {
   return (
     <aside
       data-user-menu={isUserMenuOpen ? "open" : "closed"}
-      className="peer/sidebar group/sidebar fixed inset-y-0 left-0 z-50 hidden w-20 flex-col bg-muted px-4 pt-1 pb-4 text-muted-foreground transition-[width] duration-200 ease-out hover:w-72 data-[user-menu=open]:w-72 md:flex"
+      className="peer/sidebar group/sidebar bg-muted text-muted-foreground fixed inset-y-0 left-0 z-50 hidden w-20 flex-col px-4 pt-1 pb-4 transition-[width] duration-200 ease-out hover:w-72 data-[user-menu=open]:w-72 md:flex"
     >
       <Link
         to="/"
         preload="intent"
         aria-label="Claustrum"
-        className="flex h-12 items-center gap-3 rounded-full text-foreground transition-colors hover:bg-background/70"
+        className="text-foreground hover:bg-background/70 flex h-12 items-center gap-3 rounded-full transition-colors"
       >
         <span className="flex size-12 shrink-0 items-center justify-center">
-          <span className="flex size-8 items-center justify-center rounded-full bg-background shadow-sm">
+          <span className="bg-background flex size-8 items-center justify-center rounded-full shadow-sm">
             <IconInnerShadowTop className="size-5" />
           </span>
         </span>
@@ -99,14 +99,14 @@ export function AppSidebar() {
               className={cn(
                 "flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
                 active
-                  ? "text-foreground group-hover/sidebar:bg-background group-hover/sidebar:shadow-sm group-data-[user-menu=open]/sidebar:bg-background group-data-[user-menu=open]/sidebar:shadow-sm"
-                  : "hover:bg-background/70 hover:text-foreground"
+                  ? "text-foreground group-hover/sidebar:bg-background group-data-[user-menu=open]/sidebar:bg-background group-hover/sidebar:shadow-sm group-data-[user-menu=open]/sidebar:shadow-sm"
+                  : "hover:bg-background/70 hover:text-foreground",
               )}
             >
               <span
                 className={cn(
                   "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
-                  active && "bg-background shadow-sm"
+                  active && "bg-background shadow-sm",
                 )}
               >
                 <item.icon className="size-5" />
@@ -132,14 +132,14 @@ export function AppSidebar() {
               className={cn(
                 "flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
                 active
-                  ? "text-foreground group-hover/sidebar:bg-background group-hover/sidebar:shadow-sm group-data-[user-menu=open]/sidebar:bg-background group-data-[user-menu=open]/sidebar:shadow-sm"
-                  : "hover:bg-background/70 hover:text-foreground"
+                  ? "text-foreground group-hover/sidebar:bg-background group-data-[user-menu=open]/sidebar:bg-background group-hover/sidebar:shadow-sm group-data-[user-menu=open]/sidebar:shadow-sm"
+                  : "hover:bg-background/70 hover:text-foreground",
               )}
             >
               <span
                 className={cn(
                   "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
-                  active && "bg-background shadow-sm"
+                  active && "bg-background shadow-sm",
                 )}
               >
                 <item.icon className="size-5" />
@@ -160,19 +160,19 @@ export function AppSidebar() {
               <Button
                 type="button"
                 variant="ghost"
-                className="!h-12 w-full justify-start gap-3 rounded-full !p-0 text-left hover:bg-background/80 hover:text-foreground"
+                className="hover:bg-background/80 hover:text-foreground !h-12 w-full justify-start gap-3 rounded-full !p-0 text-left"
               >
                 <span className="flex size-12 shrink-0 items-center justify-center">
-                  <Avatar className="size-8 rounded-full border border-muted-foreground/35 bg-background">
+                  <Avatar className="border-muted-foreground/35 bg-background size-8 rounded-full border">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="bg-muted text-xs font-medium text-foreground">
+                    <AvatarFallback className="bg-muted text-foreground text-xs font-medium">
                       {userInitial}
                     </AvatarFallback>
                   </Avatar>
                 </span>
                 <span className="grid min-w-0 flex-1 opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-data-[user-menu=open]/sidebar:opacity-100">
                   <span className="truncate text-sm font-medium">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                  <span className="text-muted-foreground truncate text-xs">{user.email}</span>
                 </span>
                 <EllipsisVertical className="ml-auto size-4 shrink-0 opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-data-[user-menu=open]/sidebar:opacity-100" />
               </Button>
@@ -185,7 +185,7 @@ export function AppSidebar() {
         ) : (
           <Button
             variant="ghost"
-            className="!h-12 w-full justify-start gap-3 rounded-full !p-0 text-left hover:bg-background/80 hover:text-foreground"
+            className="hover:bg-background/80 hover:text-foreground !h-12 w-full justify-start gap-3 rounded-full !p-0 text-left"
             asChild
           >
             <Link to="/auth/signin">

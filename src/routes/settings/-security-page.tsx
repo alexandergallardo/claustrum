@@ -1,22 +1,23 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import {
+  CheckIcon,
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  ShieldIcon,
+  Loader2Icon,
+  XIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon, ShieldIcon, Loader2Icon, XIcon } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
-import { Button } from "@/components/ui/button";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import {
-  Field,
-  FieldLabel,
-} from "@/components/ui/field";
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { useAuthUser } from "@/lib/hooks/use-queries";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
 const passwordRequirements = [
@@ -25,7 +26,7 @@ const passwordRequirements = [
   { regex: /[A-Z]/, text: "Al menos 1 letra mayúscula" },
   { regex: /[0-9]/, text: "Al menos 1 número" },
   {
-    regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/,
+    regex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
     text: "Al menos 1 carácter especial",
   },
 ];
@@ -74,7 +75,7 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
             {requirement.met ? (
               <CheckIcon className="size-4 text-green-600 dark:text-green-400" />
             ) : (
-              <XIcon className="size-4 text-muted-foreground" />
+              <XIcon className="text-muted-foreground size-4" />
             )}
             <span
               className={cn(
@@ -127,7 +128,7 @@ export function SecurityPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2Icon className="h-6 w-6 animate-spin text-muted-foreground" />
+        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
       </div>
     );
   }
@@ -135,9 +136,9 @@ export function SecurityPage() {
   if (!authUser) {
     return (
       <div className="py-12 text-center">
-        <ShieldIcon className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+        <ShieldIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
         <h3 className="mb-2 text-lg font-semibold">Inicia sesión para acceder a seguridad</h3>
-        <p className="mx-auto mb-6 max-w-md text-muted-foreground">
+        <p className="text-muted-foreground mx-auto mb-6 max-w-md">
           Necesitas estar autenticado para cambiar tu contraseña y configurar opciones de seguridad.
         </p>
         <Button asChild>
@@ -206,7 +207,9 @@ export function SecurityPage() {
         (factor) => (factor.status as string) !== "verified",
       );
       for (const pendingFactor of pendingFactors) {
-        const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: pendingFactor.id });
+        const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+          factorId: pendingFactor.id,
+        });
         if (unenrollError) throw unenrollError;
       }
 
@@ -301,7 +304,7 @@ export function SecurityPage() {
       if (error) throw error;
 
       queryClient.clear();
-      navigate({ to: "/auth/signin", replace: true });
+      void navigate({ to: "/auth/signin", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al cerrar sesiones");
       setIsSigningOutGlobally(false);
@@ -334,9 +337,13 @@ export function SecurityPage() {
                     type="button"
                     onClick={() => setIsNewPasswordVisible((value) => !value)}
                     aria-label={isNewPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="cursor-pointer rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    {isNewPasswordVisible ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                    {isNewPasswordVisible ? (
+                      <EyeOffIcon className="size-4" />
+                    ) : (
+                      <EyeIcon className="size-4" />
+                    )}
                   </button>
                 </InputGroupAddon>
               </InputGroup>
@@ -356,17 +363,26 @@ export function SecurityPage() {
                   <button
                     type="button"
                     onClick={() => setIsConfirmPasswordVisible((value) => !value)}
-                    aria-label={isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"}
-                    className="cursor-pointer rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                    aria-label={
+                      isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"
+                    }
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   >
-                    {isConfirmPasswordVisible ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                    {isConfirmPasswordVisible ? (
+                      <EyeOffIcon className="size-4" />
+                    ) : (
+                      <EyeIcon className="size-4" />
+                    )}
                   </button>
                 </InputGroupAddon>
               </InputGroup>
             </Field>
           </div>
           <div className="flex justify-end">
-            <Button onClick={handlePasswordReset} disabled={isSendingPasswordReset || !canSavePassword}>
+            <Button
+              onClick={handlePasswordReset}
+              disabled={isSendingPasswordReset || !canSavePassword}
+            >
               {isSendingPasswordReset && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
               Guardar contraseña
             </Button>
@@ -380,15 +396,15 @@ export function SecurityPage() {
       >
         <div className="max-w-md space-y-4">
           {isLoadingMfa ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Loader2Icon className="size-4 animate-spin" />
               Cargando configuración de 2FA...
             </div>
           ) : verifiedTotpFactorId ? (
             <>
-              <div className="rounded-md bg-muted/50 p-4 text-sm">
+              <div className="bg-muted/50 rounded-md p-4 text-sm">
                 <p className="font-medium">2FA está activado</p>
-                <p className="mt-1 text-muted-foreground">
+                <p className="text-muted-foreground mt-1">
                   Se pedirá un código de tu aplicación autenticadora al iniciar sesión.
                 </p>
               </div>
@@ -402,7 +418,7 @@ export function SecurityPage() {
               <div className="space-y-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">1. Escanea el código</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Usa Google Authenticator, 1Password, Authy o cualquier app compatible con TOTP.
                   </p>
                 </div>
@@ -415,19 +431,19 @@ export function SecurityPage() {
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Clave manual</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         Úsala si no puedes escanear el QR.
                       </p>
                     </div>
                     <div className="flex items-start gap-2">
-                      <code className="min-w-0 flex-1 break-all rounded-md bg-muted px-2 py-1.5 text-xs text-muted-foreground">
+                      <code className="bg-muted text-muted-foreground min-w-0 flex-1 rounded-md px-2 py-1.5 text-xs break-all">
                         {totpEnrollment.secret}
                       </code>
                       <button
                         type="button"
                         onClick={() => void handleCopyTotpSecret()}
                         aria-label="Copiar clave manual"
-                        className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
                       >
                         <CopyIcon className="size-3.5" />
                       </button>
@@ -438,7 +454,7 @@ export function SecurityPage() {
               <div className="space-y-3">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">2. Verifica el código</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Ingresa el código de 6 dígitos para terminar la configuración.
                   </p>
                 </div>
@@ -451,7 +467,9 @@ export function SecurityPage() {
                       pattern="[0-9]*"
                       maxLength={6}
                       value={totpCode}
-                      onChange={(event) => setTotpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                      onChange={(event) =>
+                        setTotpCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
                       autoComplete="one-time-code"
                     />
                   </InputGroup>
@@ -461,21 +479,28 @@ export function SecurityPage() {
                 <Button variant="outline" onClick={() => void handleCancelMfaEnrollment()}>
                   Cancelar
                 </Button>
-                <Button onClick={handleVerifyMfaEnrollment} disabled={!canVerifyMfaEnrollment || isVerifyingMfa}>
+                <Button
+                  onClick={handleVerifyMfaEnrollment}
+                  disabled={!canVerifyMfaEnrollment || isVerifyingMfa}
+                >
                   {isVerifyingMfa && <Loader2Icon className="mr-2 size-4 animate-spin" />}
                   Activar 2FA
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="space-y-4 rounded-md bg-muted/50 p-4">
+            <div className="bg-muted/50 space-y-4 rounded-md p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">Autenticación de dos factores desactivada</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Protege tu cuenta con una app autenticadora antes de acceder a tus datos.
                 </p>
               </div>
-              <Button variant="outline" onClick={handleStartMfaEnrollment} disabled={isEnrollingMfa}>
+              <Button
+                variant="outline"
+                onClick={handleStartMfaEnrollment}
+                disabled={isEnrollingMfa}
+              >
                 {isEnrollingMfa && <Loader2Icon className="mr-2 size-4 animate-spin" />}
                 Activar autenticación de dos factores
               </Button>
@@ -489,7 +514,11 @@ export function SecurityPage() {
         description="Dispositivos donde tu cuenta tiene sesión iniciada."
       >
         <div className="max-w-md">
-          <Button variant="destructive" onClick={handleGlobalSignOut} disabled={isSigningOutGlobally}>
+          <Button
+            variant="destructive"
+            onClick={handleGlobalSignOut}
+            disabled={isSigningOutGlobally}
+          >
             {isSigningOutGlobally && <Loader2Icon className="mr-2 size-4 animate-spin" />}
             Cerrar sesión en todos los dispositivos
           </Button>

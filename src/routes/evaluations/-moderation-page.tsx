@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -20,13 +19,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  useEvaluationModerationQueue,
-  useModerateEvaluation,
-} from "@/lib/hooks/use-evaluations";
+import { Textarea } from "@/components/ui/textarea";
+import { formatEvaluationTypeLabel } from "@/lib/evaluations/types";
+import { useEvaluationModerationQueue, useModerateEvaluation } from "@/lib/hooks/use-evaluations";
 import { useIsAdmin } from "@/lib/hooks/use-professor-reviews";
 import { useAuthUser } from "@/lib/hooks/use-queries";
-import { formatEvaluationTypeLabel } from "@/lib/evaluations/types";
 
 const PAGE_SIZE = 20;
 
@@ -59,9 +56,7 @@ export function EvaluationModerationPage() {
   }, [authUser, canModerate, isAdminQuery.isLoading, isAuthLoading, navigate]);
 
   if (isAuthLoading || isAdminQuery.isLoading) {
-    return (
-      <div className="p-6 text-sm text-muted-foreground">Cargando moderación...</div>
-    );
+    return <div className="text-muted-foreground p-6 text-sm">Cargando moderación...</div>;
   }
 
   if (!authUser || !canModerate) {
@@ -83,18 +78,20 @@ export function EvaluationModerationPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Moderación de evaluaciones</h1>
         <Badge variant="outline">{totalCount} pendientes</Badge>
       </div>
 
       {queueQuery.isLoading ? (
-        <div className="text-sm text-muted-foreground">Cargando cola de moderación...</div>
+        <div className="text-muted-foreground text-sm">Cargando cola de moderación...</div>
       ) : rows.length === 0 ? (
-        <div className="text-sm text-muted-foreground">No hay evaluaciones pendientes por moderar.</div>
+        <div className="text-muted-foreground text-sm">
+          No hay evaluaciones pendientes por moderar.
+        </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-md border overflow-x-auto">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -113,28 +110,26 @@ export function EvaluationModerationPage() {
               <TableBody>
                 {rows.map((evaluation) => (
                   <TableRow key={evaluation.id}>
-                    <TableCell className="text-sm font-mono">#{evaluation.id}</TableCell>
+                    <TableCell className="font-mono text-sm">#{evaluation.id}</TableCell>
                     <TableCell className="text-sm">
                       <div className="font-medium">{evaluation.course_code}</div>
                       <div className="text-muted-foreground">{evaluation.course_name}</div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">
-                        {formatEvaluationTypeLabel(evaluation.evaluation_type, evaluation.evaluation_number, evaluation.custom_name)}
+                        {formatEvaluationTypeLabel(
+                          evaluation.evaluation_type,
+                          evaluation.evaluation_number,
+                          evaluation.custom_name,
+                        )}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {evaluation.term_display_name ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {evaluation.professor_name ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm font-mono">
+                    <TableCell className="text-sm">{evaluation.term_display_name ?? "—"}</TableCell>
+                    <TableCell className="text-sm">{evaluation.professor_name ?? "—"}</TableCell>
+                    <TableCell className="font-mono text-sm">
                       {formatFileSize(evaluation.file_size)}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {evaluation.is_catedra ? "Sí" : "No"}
-                    </TableCell>
+                    <TableCell className="text-sm">{evaluation.is_catedra ? "Sí" : "No"}</TableCell>
                     <TableCell className="text-sm">
                       {evaluation.has_separate_answers
                         ? "Archivo aparte"
@@ -152,7 +147,7 @@ export function EvaluationModerationPage() {
                             [evaluation.id]: event.target.value,
                           }))
                         }
-                        className="min-h-0 h-16 text-xs"
+                        className="h-16 min-h-0 text-xs"
                         placeholder="Opcional"
                       />
                     </TableCell>
@@ -182,7 +177,7 @@ export function EvaluationModerationPage() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Página {page + 1}</span>
+            <span className="text-muted-foreground text-xs">Página {page + 1}</span>
             <Pagination className="w-auto">
               <PaginationContent>
                 <PaginationItem>
@@ -193,7 +188,9 @@ export function EvaluationModerationPage() {
                       setPage((value) => Math.max(value - 1, 0));
                     }}
                     aria-disabled={page === 0 || queueQuery.isLoading}
-                    className={page === 0 || queueQuery.isLoading ? "pointer-events-none opacity-50" : ""}
+                    className={
+                      page === 0 || queueQuery.isLoading ? "pointer-events-none opacity-50" : ""
+                    }
                   />
                 </PaginationItem>
                 <PaginationItem>
@@ -204,7 +201,9 @@ export function EvaluationModerationPage() {
                       setPage((value) => value + 1);
                     }}
                     aria-disabled={!hasMore || queueQuery.isLoading}
-                    className={!hasMore || queueQuery.isLoading ? "pointer-events-none opacity-50" : ""}
+                    className={
+                      !hasMore || queueQuery.isLoading ? "pointer-events-none opacity-50" : ""
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>

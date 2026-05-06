@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from "react";
-import { Minus, Plus, Search } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { useDebouncedValue } from "@tanstack/react-pacer";
+import { Link } from "@tanstack/react-router";
+import { Minus, Plus, Search } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +17,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import {
   Sheet,
   SheetContent,
@@ -25,13 +24,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProfessorReviewCourseSearch } from "@/lib/hooks/use-professor-reviews";
 import { REVIEW_TAG_OPTIONS, type ReviewTag } from "@/lib/professor-reviews/types";
 import { cn } from "@/lib/utils";
 
-const Turnstile = lazy(() => import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })));
+const Turnstile = lazy(() =>
+  import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
+);
 
 type ReviewComposerProps = {
   isMobile: boolean;
@@ -114,7 +116,9 @@ export function ReviewComposer({
   const showCourseOptions =
     isCourseSearchFocused &&
     normalizedCourseQuery.length >= 2 &&
-    (courseSearchQuery.isFetching || courseQueryDebouncer.state.isPending || courseOptions.length > 0);
+    (courseSearchQuery.isFetching ||
+      courseQueryDebouncer.state.isPending ||
+      courseOptions.length > 0);
 
   useEffect(() => {
     if (!courseCode) return;
@@ -166,13 +170,17 @@ export function ReviewComposer({
                 <ScrollArea
                   className={cn(
                     "max-h-52",
-                    courseOptions.length >= 6 || courseQueryDebouncer.state.isPending || courseSearchQuery.isFetching
+                    courseOptions.length >= 6 ||
+                      courseQueryDebouncer.state.isPending ||
+                      courseSearchQuery.isFetching
                       ? "h-52"
                       : "h-auto",
                   )}
                 >
                   {courseQueryDebouncer.state.isPending || courseSearchQuery.isFetching ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">Buscando cursos...</div>
+                    <div className="text-muted-foreground px-3 py-2 text-sm">
+                      Buscando cursos...
+                    </div>
                   ) : null}
 
                   {!courseQueryDebouncer.state.isPending && !courseSearchQuery.isFetching
@@ -185,7 +193,9 @@ export function ReviewComposer({
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => handleCourseSelect(course)}
                             >
-                              <span className="truncate">{course.code}: {course.name}</span>
+                              <span className="truncate">
+                                {course.code}: {course.name}
+                              </span>
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" sideOffset={8}>
@@ -198,7 +208,7 @@ export function ReviewComposer({
                   {!courseQueryDebouncer.state.isPending &&
                   !courseSearchQuery.isFetching &&
                   courseOptions.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                    <div className="text-muted-foreground px-3 py-2 text-sm">
                       No se encontraron cursos con ese criterio.
                     </div>
                   ) : null}
@@ -234,11 +244,14 @@ export function ReviewComposer({
         {showReviewExample ? (
           <div className="grid gap-2">
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm">
-              <p className="font-medium text-emerald-700 dark:text-emerald-400">Ejemplo de buena reseña</p>
+              <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                Ejemplo de buena reseña
+              </p>
               <p className="mt-1 text-emerald-900 dark:text-emerald-100">
-                "Usa clase invertida, así que conviene llegar con la lectura hecha y en clase se enfoca en resolver
-                problemas aplicados; además, la retroalimentación fue clara y rápida, por lo que pude corregir errores
-                a tiempo y entender mejor cómo estudiar para los exámenes."
+                "Usa clase invertida, así que conviene llegar con la lectura hecha y en clase se
+                enfoca en resolver problemas aplicados; además, la retroalimentación fue clara y
+                rápida, por lo que pude corregir errores a tiempo y entender mejor cómo estudiar
+                para los exámenes."
               </p>
             </div>
             <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm">
@@ -256,7 +269,7 @@ export function ReviewComposer({
           value={comment}
           onChange={(event) => setComment(event.target.value)}
         />
-        <p className="text-xs text-muted-foreground">{comment.length}/1000</p>
+        <p className="text-muted-foreground text-xs">{comment.length}/1000</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -270,13 +283,19 @@ export function ReviewComposer({
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-2">
             <Label htmlFor="composer-engagement-level">Interés en la clase</Label>
-            <span className={`text-sm font-medium ${clampedEngagementLevel >= 4 ? "text-green-600" : clampedEngagementLevel <= 2 ? "text-red-600" : "text-amber-600"}`}>
-              {clampedEngagementLevel <= 2 ? "Bajo" : clampedEngagementLevel >= 4 ? "Alto" : "Medio"}
+            <span
+              className={`text-sm font-medium ${clampedEngagementLevel >= 4 ? "text-green-600" : clampedEngagementLevel <= 2 ? "text-red-600" : "text-amber-600"}`}
+            >
+              {clampedEngagementLevel <= 2
+                ? "Bajo"
+                : clampedEngagementLevel >= 4
+                  ? "Alto"
+                  : "Medio"}
             </span>
           </div>
           <div className="flex h-9 items-center">
             <Slider
-              className="-translate-y-px w-full [&_[data-slot=slider-track]]:bg-gradient-to-r [&_[data-slot=slider-track]]:from-red-500 [&_[data-slot=slider-track]]:to-green-500 [&_[data-slot=slider-range]]:bg-transparent"
+              className="w-full -translate-y-px [&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-track]]:bg-gradient-to-r [&_[data-slot=slider-track]]:from-red-500 [&_[data-slot=slider-track]]:to-green-500"
               id="composer-engagement-level"
               min={1}
               max={5}
@@ -295,11 +314,17 @@ export function ReviewComposer({
               onValueChange={(value) => setAttendanceRequired(value === "yes")}
               className="flex items-center gap-4"
             >
-              <label className="inline-flex items-center gap-2 text-sm">
+              <label
+                htmlFor="composer-attendance-yes"
+                className="inline-flex items-center gap-2 text-sm"
+              >
                 <RadioGroupItem value="yes" id="composer-attendance-yes" />
                 Sí
               </label>
-              <label className="inline-flex items-center gap-2 text-sm">
+              <label
+                htmlFor="composer-attendance-no"
+                className="inline-flex items-center gap-2 text-sm"
+              >
                 <RadioGroupItem value="no" id="composer-attendance-no" />
                 No
               </label>
@@ -331,7 +356,11 @@ export function ReviewComposer({
         <div className="min-h-[70px]">
           {turnstileSiteKey ? (
             <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
-              <Suspense fallback={<span className="text-sm text-muted-foreground">Cargando verificación...</span>}>
+              <Suspense
+                fallback={
+                  <span className="text-muted-foreground text-sm">Cargando verificación...</span>
+                }
+              >
                 <Turnstile
                   siteKey={turnstileSiteKey}
                   options={{ language: "es", size: "normal" }}
@@ -350,7 +379,10 @@ export function ReviewComposer({
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={onSubmit} disabled={submitMutationPending || !turnstileSiteKey || !turnstileToken}>
+        <Button
+          onClick={onSubmit}
+          disabled={submitMutationPending || !turnstileSiteKey || !turnstileToken}
+        >
           {submitMutationPending ? "Enviando..." : "Enviar reseña"}
         </Button>
       </div>
@@ -386,9 +418,7 @@ export function ReviewComposer({
               </Button>
             </SheetDescription>
           </SheetHeader>
-          <ScrollArea className="min-h-0 flex-1">
-            {form}
-          </ScrollArea>
+          <ScrollArea className="min-h-0 flex-1">{form}</ScrollArea>
         </SheetContent>
       </Sheet>
     );
@@ -402,7 +432,7 @@ export function ReviewComposer({
         if (!nextOpen) onCloseReset();
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+      <DialogContent className="max-h-[90vh] max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Enviar reseña</DialogTitle>
           <DialogDescription className="space-y-2">
@@ -422,9 +452,7 @@ export function ReviewComposer({
             </Button>
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="min-h-0">
-          {form}
-        </ScrollArea>
+        <ScrollArea className="min-h-0">{form}</ScrollArea>
       </DialogContent>
     </Dialog>
   );
@@ -474,7 +502,7 @@ function ScoreInput({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="border-input focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] flex h-9 w-full items-center overflow-hidden rounded-md border bg-transparent transition-[color,box-shadow]">
+      <div className="border-input focus-within:border-ring focus-within:ring-ring/50 flex h-9 w-full items-center overflow-hidden rounded-md border bg-transparent transition-[color,box-shadow] focus-within:ring-[3px]">
         <Input
           className="h-full w-full rounded-none border-0 bg-transparent px-2 text-center tabular-nums shadow-none focus-visible:ring-0"
           type="text"

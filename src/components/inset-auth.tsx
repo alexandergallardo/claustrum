@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ChevronLeftIcon,
   CheckIcon,
@@ -9,21 +10,16 @@ import {
   ShuffleIcon,
   XIcon,
 } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
-import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -66,7 +62,7 @@ export function InsetSignupPage() {
       <MagicLinkButton />
       <OrSeparator />
       <SignUpForm />
-      <div className="mt-5 text-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground mt-5 text-center text-sm">
         ¿Ya tienes una cuenta?{" "}
         <Link to="/auth/signin" className="text-foreground hover:underline">
           Inicia sesión
@@ -212,19 +208,20 @@ function LeftPanel() {
 
       <div className="relative flex h-full flex-col justify-between p-12">
         <div className="flex items-start justify-between">
-          <a
-            href="#"
-            className="inline-flex w-fit items-center gap-1.5 rounded-md bg-black/20 px-2 py-1 font-mono text-[11px] text-white/65 uppercase tracking-[0.2em] backdrop-blur-sm transition-colors hover:text-white"
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-md bg-black/20 px-2 py-1 font-mono text-[11px] tracking-[0.2em] text-white/65 uppercase backdrop-blur-sm transition-colors hover:text-white"
           >
             <ChevronLeftIcon className="size-3.5" />
             Volver
-          </a>
+          </button>
           <ShuffleButton onClick={shuffle} paletteName={palette.name} />
         </div>
 
         <div className="max-w-md">
           <h2
-            className="font-heading font-semibold text-3xl leading-tight md:text-4xl"
+            className="font-heading text-3xl leading-tight font-semibold md:text-4xl"
             style={{ textShadow: "0 1px 24px rgba(0,0,0,0.55)" }}
           >
             <span className="text-white">Claustrum.</span>
@@ -234,10 +231,11 @@ function LeftPanel() {
             <span className="text-white/55">tu avance.</span>
           </h2>
           <p
-            className="mt-5 max-w-sm text-sm text-white/65 leading-relaxed"
+            className="mt-5 max-w-sm text-sm leading-relaxed text-white/65"
             style={{ textShadow: "0 1px 16px rgba(0,0,0,0.55)" }}
           >
-            Planes de estudio, horarios y evaluaciones en un solo lugar para enfocarte en lo que importa.
+            Planes de estudio, horarios y evaluaciones en un solo lugar para enfocarte en lo que
+            importa.
           </p>
         </div>
       </div>
@@ -249,23 +247,15 @@ export function AuthLeftPanel() {
   return <LeftPanel />;
 }
 
-function ShuffleButton({
-  onClick,
-  paletteName,
-}: {
-  onClick: () => void;
-  paletteName: string;
-}) {
+function ShuffleButton({ onClick, paletteName }: { onClick: () => void; paletteName: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group inline-flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2.5 py-1.5 text-white/75 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-black/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+      className="group inline-flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2.5 py-1.5 text-white/75 backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-black/40 hover:text-white focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:outline-none"
     >
       <ShuffleIcon className="size-3.5 transition-transform group-hover:rotate-12" />
-      <span className="font-mono text-[10px] uppercase tracking-[0.2em]">
-        {paletteName}
-      </span>
+      <span className="font-mono text-[10px] tracking-[0.2em] uppercase">{paletteName}</span>
     </button>
   );
 }
@@ -390,8 +380,7 @@ function MeshShader({ palette }: { palette: Palette }) {
       const k = 0.06;
       for (let i = 0; i < 4; i++) {
         for (let j = 0; j < 3; j++) {
-          currentRef.current[i][j] +=
-            (targetRef.current[i][j] - currentRef.current[i][j]) * k;
+          currentRef.current[i][j] += (targetRef.current[i][j] - currentRef.current[i][j]) * k;
         }
       }
       gl.uniform2f(uRes, canvas.width, canvas.height);
@@ -416,13 +405,7 @@ function MeshShader({ palette }: { palette: Palette }) {
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden
-      className="absolute inset-0 block h-full w-full"
-    />
-  );
+  return <canvas ref={canvasRef} aria-hidden className="absolute inset-0 block h-full w-full" />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -432,7 +415,7 @@ function MeshShader({ palette }: { palette: Palette }) {
 function Heading({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="mt-6 flex flex-col gap-1.5">
-      <h1 className="font-heading font-semibold text-2xl tracking-tight">{title}</h1>
+      <h1 className="font-heading text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="text-muted-foreground text-sm">{subtitle}</p>
     </div>
   );
@@ -484,7 +467,10 @@ function GoogleOAuthButton({ mode = "signin" }: { mode?: "signin" | "signup" }) 
 const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
 const VERIFY_EMAIL_KEY = "claustrum.auth.verify_email";
 
-async function invalidateAuthFlowQueries(queryClient: ReturnType<typeof useQueryClient>, userId?: string) {
+async function invalidateAuthFlowQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId?: string,
+) {
   await queryClient.invalidateQueries({ queryKey: ["authUser"] });
   if (userId) {
     await Promise.all([
@@ -511,7 +497,7 @@ function MagicLinkButton({ email = "" }: { email?: string }) {
   const onSendMagicLink = async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      navigate({ to: "/auth/magic-link" });
+      void navigate({ to: "/auth/magic-link" });
       return;
     }
 
@@ -535,7 +521,7 @@ function MagicLinkButton({ email = "" }: { email?: string }) {
     }
 
     window.sessionStorage.setItem(MAGIC_LINK_EMAIL_KEY, trimmedEmail);
-    navigate({ to: "/auth/magic-link" });
+    void navigate({ to: "/auth/magic-link" });
     setPending(false);
   };
 
@@ -558,7 +544,7 @@ function OrSeparator() {
   return (
     <div className="my-4 flex items-center gap-3">
       <Separator className="flex-1" />
-      <span className="text-[11px] text-muted-foreground">O</span>
+      <span className="text-muted-foreground text-[11px]">O</span>
       <Separator className="flex-1" />
     </div>
   );
@@ -603,10 +589,12 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
     const supabase = getSupabaseBrowserClient();
 
     const bootstrapSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: await getPostSignInRedirect(supabase), replace: true });
+        void navigate({ to: await getPostSignInRedirect(supabase), replace: true });
       }
     };
 
@@ -637,7 +625,7 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
       data: { user },
     } = await supabase.auth.getUser();
     await invalidateAuthFlowQueries(queryClient, user?.id);
-    navigate({ to: await getPostSignInRedirect(supabase), replace: true });
+    void navigate({ to: await getPostSignInRedirect(supabase), replace: true });
     setPending(false);
   };
 
@@ -683,7 +671,7 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
               type="button"
               onClick={() => setReveal((v) => !v)}
               aria-label={reveal ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="cursor-pointer rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
               {reveal ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
             </button>
@@ -709,7 +697,7 @@ const passwordRequirements = [
   { regex: /[A-Z]/, text: "Al menos 1 letra mayúscula" },
   { regex: /[0-9]/, text: "Al menos 1 número" },
   {
-    regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/,
+    regex: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
     text: "Al menos 1 carácter especial",
   },
 ];
@@ -754,22 +742,24 @@ function SignUpForm() {
         met: requirement.regex.test(password),
         text: requirement.text,
       })),
-    [password]
+    [password],
   );
 
   const passwordStrengthScore = useMemo(
     () => passwordStrength.filter((requirement) => requirement.met).length,
-    [passwordStrength]
+    [passwordStrength],
   );
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
 
     const bootstrapSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        navigate({ to: "/", replace: true });
+        void navigate({ to: "/", replace: true });
       }
     };
 
@@ -847,10 +837,10 @@ function SignUpForm() {
 
     if (data.session) {
       await invalidateAuthFlowQueries(queryClient, data.session.user.id);
-      navigate({ to: "/", replace: true });
+      void navigate({ to: "/", replace: true });
     } else {
       window.sessionStorage.setItem(VERIFY_EMAIL_KEY, email.trim());
-      navigate({ to: "/auth/verify-email", replace: true });
+      void navigate({ to: "/auth/verify-email", replace: true });
     }
     setPending(false);
   };
@@ -928,15 +918,19 @@ function SignUpForm() {
               type="button"
               onClick={() => setIsPasswordVisible((v) => !v)}
               aria-label={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="cursor-pointer rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
-              {isPasswordVisible ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+              {isPasswordVisible ? (
+                <EyeOffIcon className="size-4" />
+              ) : (
+                <EyeIcon className="size-4" />
+              )}
             </button>
           </InputGroupAddon>
         </InputGroup>
         <FieldError>{passwordError}</FieldError>
 
-        <div className="space-y-1 mt-1">
+        <div className="mt-1 space-y-1">
           <div className="flex h-1 w-full gap-1">
             {Array.from({ length: 5 }).map((_, index) => (
               <span
@@ -945,7 +939,7 @@ function SignUpForm() {
                   "h-full flex-1 rounded-full transition-all duration-300 ease-out",
                   index < passwordStrengthScore
                     ? getStrengthColor(passwordStrengthScore)
-                    : "bg-border"
+                    : "bg-border",
                 )}
               />
             ))}
@@ -964,7 +958,7 @@ function SignUpForm() {
                     "text-xs",
                     requirement.met
                       ? "text-green-600 dark:text-green-400"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {requirement.text}
@@ -1000,10 +994,16 @@ function SignUpForm() {
             <button
               type="button"
               onClick={() => setIsConfirmPasswordVisible((v) => !v)}
-              aria-label={isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"}
-              className="cursor-pointer rounded p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              aria-label={
+                isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"
+              }
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
-              {isConfirmPasswordVisible ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+              {isConfirmPasswordVisible ? (
+                <EyeOffIcon className="size-4" />
+              ) : (
+                <EyeIcon className="size-4" />
+              )}
             </button>
           </InputGroupAddon>
         </InputGroup>

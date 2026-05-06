@@ -11,8 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
 import { formatEvaluationTypeLabel } from "@/lib/evaluations/types";
+import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
 
 interface EvaluationListProps {
   courseId: number;
@@ -31,7 +31,7 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
   if (isLoading) {
     return (
       <div className="rounded-md border">
-        <div className="p-4 text-sm text-muted-foreground">Cargando evaluaciones...</div>
+        <div className="text-muted-foreground p-4 text-sm">Cargando evaluaciones...</div>
       </div>
     );
   }
@@ -39,7 +39,7 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
   if (!evaluations || evaluations.length === 0) {
     return (
       <div className="rounded-md border">
-        <div className="p-4 text-sm text-muted-foreground">
+        <div className="text-muted-foreground p-4 text-sm">
           Aún no hay evaluaciones publicadas para este curso.
         </div>
       </div>
@@ -47,7 +47,7 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
   }
 
   return (
-    <div className="rounded-md border overflow-x-auto">
+    <div className="overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -65,18 +65,16 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
             <TableRow key={evaluation.id}>
               <TableCell>
                 <Badge variant="secondary" className="text-xs">
-                  {formatEvaluationTypeLabel(evaluation.evaluation_type, evaluation.evaluation_number, evaluation.custom_name)}
+                  {formatEvaluationTypeLabel(
+                    evaluation.evaluation_type,
+                    evaluation.evaluation_number,
+                    evaluation.custom_name,
+                  )}
                 </Badge>
               </TableCell>
-              <TableCell className="text-sm">
-                {evaluation.term_display_name ?? "—"}
-              </TableCell>
-              <TableCell className="text-sm">
-                {evaluation.professor_name ?? "—"}
-              </TableCell>
-              <TableCell className="text-sm">
-                {evaluation.is_catedra ? "Sí" : "No"}
-              </TableCell>
+              <TableCell className="text-sm">{evaluation.term_display_name ?? "—"}</TableCell>
+              <TableCell className="text-sm">{evaluation.professor_name ?? "—"}</TableCell>
+              <TableCell className="text-sm">{evaluation.is_catedra ? "Sí" : "No"}</TableCell>
               <TableCell className="text-sm">
                 {evaluation.has_separate_answers
                   ? "Archivo aparte"
@@ -84,7 +82,7 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
                     ? "Incluidas"
                     : "No"}
               </TableCell>
-              <TableCell className="text-sm font-mono">
+              <TableCell className="font-mono text-sm">
                 {formatFileSize(evaluation.file_size)}
               </TableCell>
               <TableCell>

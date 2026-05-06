@@ -1,11 +1,12 @@
-import { type FormEvent, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ExternalLinkIcon } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 const RESEND_SECONDS = 30;
 const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
@@ -131,82 +132,72 @@ export function AuthMagicLinkSentPage() {
         }
       `}</style>
       <div className="flex flex-col items-center text-center">
-          <EnvelopeArt />
-          <h1 className="mt-3 font-heading text-3xl tracking-tight">
-            Acceso con enlace mágico
-          </h1>
+        <EnvelopeArt />
+        <h1 className="font-heading mt-3 text-3xl tracking-tight">Acceso con enlace mágico</h1>
 
-          <p className="mt-3 text-muted-foreground text-sm">
-            Te enviaremos un enlace para iniciar sesión sin contraseña.
-          </p>
+        <p className="text-muted-foreground mt-3 text-sm">
+          Te enviaremos un enlace para iniciar sesión sin contraseña.
+        </p>
 
-          <form onSubmit={onSubmit} className="mt-5 w-full space-y-3 text-left">
-            <Field>
-              <FieldLabel htmlFor="magic-link-email">Correo</FieldLabel>
-              <Input
-                id="magic-link-email"
-                type="email"
-                autoComplete="email"
-                placeholder="nombre@ejemplo.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </Field>
-            <Button type="submit" size="lg" className="w-full" disabled={isSending}>
-              {isSending ? "Enviando enlace..." : "Enviar enlace mágico"}
-            </Button>
-          </form>
+        <form onSubmit={onSubmit} className="mt-5 w-full space-y-3 text-left">
+          <Field>
+            <FieldLabel htmlFor="magic-link-email">Correo</FieldLabel>
+            <Input
+              id="magic-link-email"
+              type="email"
+              autoComplete="email"
+              placeholder="nombre@ejemplo.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </Field>
+          <Button type="submit" size="lg" className="w-full" disabled={isSending}>
+            {isSending ? "Enviando enlace..." : "Enviar enlace mágico"}
+          </Button>
+        </form>
 
-          <p className="mt-4 max-w-xs text-muted-foreground text-xs leading-relaxed">
-            El enlace expira en 10 minutos.
-          </p>
+        <p className="text-muted-foreground mt-4 max-w-xs text-xs leading-relaxed">
+          El enlace expira en 10 minutos.
+        </p>
 
-          {lastSentEmail ? (
-            <div className="font-mono text-foreground text-sm mt-1">{lastSentEmail}</div>
-          ) : null}
+        {lastSentEmail ? (
+          <div className="text-foreground mt-1 font-mono text-sm">{lastSentEmail}</div>
+        ) : null}
 
-          {successMessage ? (
-            <p className="mt-3 max-w-xs text-center text-sm text-emerald-600">{successMessage}</p>
-          ) : null}
+        {successMessage ? (
+          <p className="mt-3 max-w-xs text-center text-sm text-emerald-600">{successMessage}</p>
+        ) : null}
 
-          {errorMessage ? (
-            <p className="mt-3 max-w-xs text-center text-sm text-destructive">{errorMessage}</p>
-          ) : null}
+        {errorMessage ? (
+          <p className="text-destructive mt-3 max-w-xs text-center text-sm">{errorMessage}</p>
+        ) : null}
 
-          <div className="mt-7 flex w-full flex-col gap-2">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full"
-              asChild
-            >
-              <a
-                href={getEmailProviderUrl(lastSentEmail)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir correo
-                <ExternalLinkIcon />
-              </a>
-            </Button>
-            <Button
-              variant="ghost"
-              size="default"
-              className="w-full"
-              type="button"
-              disabled={secondsLeft > 0 || !lastSentEmail || isSending}
-              onClick={onResend}
-            >
-              {secondsLeft > 0
-                ? `Reenviar en ${formatCountdown(secondsLeft)}`
-                : "Reenviar enlace"}
-            </Button>
-          </div>
+        <div className="mt-7 flex w-full flex-col gap-2">
+          <Button variant="outline" size="lg" className="w-full" asChild>
+            <a href={getEmailProviderUrl(lastSentEmail)} target="_blank" rel="noreferrer">
+              Abrir correo
+              <ExternalLinkIcon />
+            </a>
+          </Button>
+          <Button
+            variant="ghost"
+            size="default"
+            className="w-full"
+            type="button"
+            disabled={secondsLeft > 0 || !lastSentEmail || isSending}
+            onClick={onResend}
+          >
+            {secondsLeft > 0 ? `Reenviar en ${formatCountdown(secondsLeft)}` : "Reenviar enlace"}
+          </Button>
+        </div>
 
-          <p className="mt-6 text-muted-foreground text-xs">
-            ¿No te llegó? Revisa spam o promociones, o{" "}
-            <Link to="/auth/signin" className="underline">vuelve a iniciar sesión</Link>.
-          </p>
+        <p className="text-muted-foreground mt-6 text-xs">
+          ¿No te llegó? Revisa spam o promociones, o{" "}
+          <Link to="/auth/signin" className="underline">
+            vuelve a iniciar sesión
+          </Link>
+          .
+        </p>
       </div>
     </>
   );
@@ -215,7 +206,7 @@ export function AuthMagicLinkSentPage() {
 function EnvelopeArt() {
   return (
     <div className="relative flex size-24 items-center justify-center">
-      <div className="relative flex size-16 items-center justify-center rounded-2xl border border-border bg-card text-foreground shadow-sm">
+      <div className="border-border bg-card text-foreground relative flex size-16 items-center justify-center rounded-2xl border shadow-sm">
         <svg
           viewBox="0 0 20 16"
           aria-hidden
@@ -228,13 +219,7 @@ function EnvelopeArt() {
         >
           <rect x="1" y="2" width="18" height="12" rx="2.4" />
           <path d="M2 4l8 5.2L18 4" />
-          <circle
-            cx="16.2"
-            cy="11.8"
-            r="1.4"
-            fill="currentColor"
-            stroke="none"
-          />
+          <circle cx="16.2" cy="11.8" r="1.4" fill="currentColor" stroke="none" />
         </svg>
       </div>
     </div>

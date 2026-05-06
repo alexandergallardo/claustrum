@@ -1,11 +1,11 @@
 export function normalizeCourseName(name: string): string {
-  return name.toUpperCase()
+  return name.toUpperCase();
 }
 
 export function getLevelLabel(
   levelNumber: number | null,
   levelLabel: string | undefined,
-  fallback: string = `SEMESTRE ${levelNumber}`
+  fallback: string = `SEMESTRE ${levelNumber}`,
 ): string {
-  return levelLabel || fallback
+  return levelLabel || fallback;
 }

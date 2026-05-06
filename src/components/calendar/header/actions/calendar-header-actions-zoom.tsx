@@ -1,26 +1,28 @@
-import { Button } from '@/components/ui/button'
-import { useCalendarContext } from '../../calendar-context'
-import { ZoomIn, ZoomOut } from 'lucide-react'
-import { MIN_HOUR_HEIGHT, MAX_HOUR_HEIGHT } from '../../calendar-types'
+import { ZoomIn, ZoomOut } from "lucide-react";
 
-const ZOOM_STEP = 24
+import { Button } from "@/components/ui/button";
+
+import { useCalendarContext } from "../../calendar-context";
+import { MIN_HOUR_HEIGHT, MAX_HOUR_HEIGHT } from "../../calendar-types";
+
+const ZOOM_STEP = 24;
 
 export default function CalendarHeaderActionsZoom() {
-  const { hourHeight, setHourHeight, mode } = useCalendarContext()
+  const { hourHeight, setHourHeight, mode } = useCalendarContext();
 
   // Solo mostrar controles de zoom en vista de día o semana
-  if (mode === 'month') return null
+  if (mode === "month") return null;
 
   function handleZoomIn() {
-    setHourHeight(Math.min(hourHeight + ZOOM_STEP, MAX_HOUR_HEIGHT))
+    setHourHeight(Math.min(hourHeight + ZOOM_STEP, MAX_HOUR_HEIGHT));
   }
 
   function handleZoomOut() {
-    setHourHeight(Math.max(hourHeight - ZOOM_STEP, MIN_HOUR_HEIGHT))
+    setHourHeight(Math.max(hourHeight - ZOOM_STEP, MIN_HOUR_HEIGHT));
   }
 
-  const canZoomIn = hourHeight < MAX_HOUR_HEIGHT
-  const canZoomOut = hourHeight > MIN_HOUR_HEIGHT
+  const canZoomIn = hourHeight < MAX_HOUR_HEIGHT;
+  const canZoomOut = hourHeight > MIN_HOUR_HEIGHT;
 
   return (
     <div className="flex items-center gap-1">
@@ -45,5 +47,5 @@ export default function CalendarHeaderActionsZoom() {
         <ZoomIn className="h-4 w-4" />
       </Button>
     </div>
-  )
+  );
 }
