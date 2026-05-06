@@ -71,7 +71,7 @@ export function NextCourses({
         {courses.length === 0 ? (
           <p className="text-muted-foreground text-sm">No hay cursos disponibles para mostrar.</p>
         ) : (
-          <ScrollArea className="h-full max-h-[320px] pr-3">
+          <ScrollArea className="h-full pr-3">
             <div className="space-y-2">
               {courses.map((course) => (
                 <CourseLink key={course.id} course={course} />
