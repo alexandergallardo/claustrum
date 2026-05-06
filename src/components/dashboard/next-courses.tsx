@@ -30,16 +30,20 @@ export function NextCourses({
   const CourseLink = ({ course }: { course: NextCourse }) => {
     if (searchParams) {
       return (
-        <Link to="/curriculum" search={searchParams} className="block cursor-pointer">
-          <div className="bg-muted/50 hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg p-2 transition-colors">
-            <div className="min-w-0 flex-1 overflow-hidden">
+        <Link
+          to="/curriculum"
+          search={searchParams}
+          className="block w-full max-w-full min-w-0 cursor-pointer overflow-hidden"
+        >
+          <div className="bg-muted/50 hover:bg-muted flex w-full max-w-full cursor-pointer items-center rounded-lg p-2 transition-colors">
+            <div className="w-full min-w-0 flex-1 overflow-hidden">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground font-mono text-xs">{course.code}</span>
                 <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs">
                   {course.levelLabel}
                 </span>
               </div>
-              <p className="mt-0.5 truncate text-sm font-medium">{course.name}</p>
+              <p className="mt-0.5 w-full truncate text-sm font-medium">{course.name}</p>
               <p className="text-muted-foreground text-xs">{course.credits} créditos</p>
             </div>
           </div>
@@ -47,15 +51,15 @@ export function NextCourses({
       );
     }
     return (
-      <div className="bg-muted/50 flex items-center justify-between rounded-lg p-2">
-        <div className="min-w-0 flex-1">
+      <div className="bg-muted/50 flex w-full max-w-full min-w-0 items-center overflow-hidden rounded-lg p-2">
+        <div className="w-full min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground font-mono text-xs">{course.code}</span>
             <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-xs">
               {course.levelLabel}
             </span>
           </div>
-          <p className="mt-0.5 truncate text-sm font-medium">{course.name}</p>
+          <p className="mt-0.5 w-full truncate text-sm font-medium">{course.name}</p>
           <p className="text-muted-foreground text-xs">{course.credits} créditos</p>
         </div>
       </div>
@@ -67,12 +71,12 @@ export function NextCourses({
       <CardHeader className="shrink-0 pb-1">
         <CardTitle className="text-base">Próximos cursos</CardTitle>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1 pt-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col pt-0">
         {courses.length === 0 ? (
           <p className="text-muted-foreground text-sm">No hay cursos disponibles para mostrar.</p>
         ) : (
-          <ScrollArea className="h-full pr-3">
-            <div className="space-y-2">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="w-0 max-w-full min-w-full space-y-2 pr-3">
               {courses.map((course) => (
                 <CourseLink key={course.id} course={course} />
               ))}

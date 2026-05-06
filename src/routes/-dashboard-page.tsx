@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 
 import {
   EmptyDashboard,
@@ -23,6 +23,9 @@ const CourseStatusChart = lazy(() =>
 );
 
 export function DashboardPage() {
+  const distributionCardRef = useRef<HTMLDivElement | null>(null);
+  const [distributionCardHeight, setDistributionCardHeight] = useState<number | null>(null);
+
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const { data: userStudyPlan, isLoading: isLoadingUserPlan } = useUserStudyPlan(
     authUser?.id ?? null,
@@ -32,6 +35,31 @@ export function DashboardPage() {
     userStudyPlan?.userId ?? null,
     userStudyPlan?.studyPlanId ?? null,
   );
+
+  useEffect(() => {
+    if (!distributionCardRef.current) {
+      return;
+    }
+
+    const updateHeight = () => {
+      if (!distributionCardRef.current) {
+        return;
+      }
+      setDistributionCardHeight(distributionCardRef.current.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    observer.observe(distributionCardRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [dashboardData?.stats]);
 
   const isAuthenticated = !!authUser;
   const hasProfile = !!userStudyPlan?.studyPlanId;
@@ -56,12 +84,17 @@ export function DashboardPage() {
               </div>
 
               <div className="grid gap-4 px-4 md:grid-cols-2 lg:grid-cols-7 lg:px-6">
-                <div className="w-full min-w-0 lg:col-span-4">
+                <div ref={distributionCardRef} className="w-full min-w-0 lg:col-span-4">
                   <Suspense fallback={<CourseStatusChartSkeleton />}>
                     <CourseStatusChart stats={dashboardData.stats} />
                   </Suspense>
                 </div>
-                <div className="min-h-0 w-full min-w-0 lg:col-span-3" style={{ contain: "size" }}>
+                <div
+                  className="min-h-0 w-full min-w-0 lg:col-span-3 lg:[contain:size]"
+                  style={
+                    distributionCardHeight ? { height: `${distributionCardHeight}px` } : undefined
+                  }
+                >
                   <NextCourses
                     courses={dashboardData.nextCourses}
                     universityId={userStudyPlan?.universityId ?? null}
