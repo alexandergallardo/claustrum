@@ -1,0 +1,38 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "unicorn", "jsx-a11y", "import"],
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "settings": {
+    "react": {
+      "version": "19.0"
+    }
+  },
+  "options": {
+    "typeAware": true
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "coverage/**",
+    "src/routeTree.gen.ts",
+    "supabase/**",
+    "workers/**",
+    ".wrangler/**",
+    ".tanstack/**",
+    ".playwright-cli/**",
+    ".opencode/**",
+    ".agents/**",
+    ".vscode/**",
+    "docs/**",
+    "public/**"
+  ],
+  "rules": {
+    "eqeqeq": "error",
+    "no-console": "warn",
+    "react/self-closing-comp": "error",
+    "import/no-cycle": "error"
+  }
+}

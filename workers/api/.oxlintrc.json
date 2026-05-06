@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "import"],
+  "env": {
+    "node": true,
+    "worker": true,
+    "es2022": true
+  },
+  "ignorePatterns": ["node_modules/**", ".wrangler/**", "dist/**"],
+  "rules": {
+    "eqeqeq": "error",
+    "no-console": "off"
+  }
+}
