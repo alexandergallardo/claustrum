@@ -1,4 +1,4 @@
-import { format, isSameDay } from "date-fns";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 import { cn } from "@/lib/utils";
@@ -12,8 +12,6 @@ export default function CalendarBodyHeader({
   onlyDay?: boolean;
   className?: string;
 }) {
-  const isToday = isSameDay(date, new Date());
-
   return (
     <div
       className={cn(
@@ -21,23 +19,11 @@ export default function CalendarBodyHeader({
         className,
       )}
     >
-      <span
-        className={cn(
-          "text-xs font-medium capitalize",
-          isToday ? "text-primary" : "text-muted-foreground",
-        )}
-      >
+      <span className="text-muted-foreground text-xs font-medium capitalize">
         {format(date, "EEE", { locale: es })}
       </span>
       {!onlyDay && (
-        <span
-          className={cn(
-            "text-xs font-medium",
-            isToday ? "text-primary font-bold" : "text-foreground",
-          )}
-        >
-          {format(date, "dd")}
-        </span>
+        <span className="text-foreground text-xs font-medium">{format(date, "dd")}</span>
       )}
     </div>
   );
