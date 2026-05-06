@@ -76,6 +76,25 @@ function MiniBarSkeleton() {
   );
 }
 
+export function CourseStatusChartSkeleton() {
+  return (
+    <div className="bg-card rounded-xl border p-3">
+      <div className="bg-muted-foreground/20 mb-3 h-5 w-40 rounded" />
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} className="space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="bg-muted-foreground/20 h-4 w-24 rounded" />
+              <div className="bg-muted-foreground/20 h-4 w-16 rounded" />
+            </div>
+            <div className="bg-muted h-2 w-full rounded-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function DashboardStatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -100,8 +119,19 @@ export function DashboardSkeleton() {
       {/* Distribution + Next courses row */}
       <div className="mt-4 px-4 lg:px-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <div className="bg-muted h-64 rounded-lg lg:col-span-4" />
-          <div className="bg-muted h-64 rounded-lg lg:col-span-3" />
+          <div className="lg:col-span-4">
+            <CourseStatusChartSkeleton />
+          </div>
+
+          <div className="bg-card rounded-xl border p-3 lg:col-span-3">
+            <div className="bg-muted-foreground/20 mb-3 h-5 w-36 rounded" />
+            <div className="space-y-2">
+              <div className="bg-muted h-12 rounded-lg" />
+              <div className="bg-muted h-12 rounded-lg" />
+              <div className="bg-muted h-12 rounded-lg" />
+              <div className="bg-muted h-12 rounded-lg" />
+            </div>
+          </div>
         </div>
       </div>
 

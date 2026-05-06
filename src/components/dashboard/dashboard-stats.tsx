@@ -259,8 +259,8 @@ export function CourseStatusChart({ stats }: CourseStatusChartProps) {
   const maxValue = Math.max(...data.map((d) => d.value));
 
   return (
-    <Card className="flex h-full w-full flex-col">
-      <CardHeader>
+    <Card className="flex h-full w-full flex-col gap-1">
+      <CardHeader className="pb-1">
         <CardTitle className="text-base">Distribución de cursos</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pt-0">

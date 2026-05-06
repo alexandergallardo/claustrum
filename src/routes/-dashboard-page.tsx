@@ -4,6 +4,7 @@ import {
   EmptyDashboard,
   DashboardSkeleton,
   DashboardStatsSkeleton,
+  CourseStatusChartSkeleton,
 } from "@/components/dashboard/empty-state";
 import { NextCourses } from "@/components/dashboard/next-courses";
 import { ProgressTimeline } from "@/components/dashboard/progress-timeline";
@@ -56,13 +57,11 @@ export function DashboardPage() {
 
               <div className="grid gap-4 px-4 md:grid-cols-2 lg:grid-cols-7 lg:px-6">
                 <div className="w-full min-w-0 lg:col-span-4">
-                  <Suspense
-                    fallback={<div className="bg-muted/20 h-[360px] w-full rounded-lg border" />}
-                  >
+                  <Suspense fallback={<CourseStatusChartSkeleton />}>
                     <CourseStatusChart stats={dashboardData.stats} />
                   </Suspense>
                 </div>
-                <div className="w-full min-w-0 lg:col-span-3">
+                <div className="min-h-0 w-full min-w-0 lg:col-span-3" style={{ contain: "size" }}>
                   <NextCourses
                     courses={dashboardData.nextCourses}
                     universityId={userStudyPlan?.universityId ?? null}

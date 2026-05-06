@@ -63,8 +63,8 @@ export function NextCourses({
   };
 
   return (
-    <Card className="flex h-full w-full flex-col overflow-hidden">
-      <CardHeader className="shrink-0 pb-2">
+    <Card className="flex h-full w-full flex-col gap-1 overflow-hidden">
+      <CardHeader className="shrink-0 pb-1">
         <CardTitle className="text-base">Próximos cursos</CardTitle>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 pt-0">
