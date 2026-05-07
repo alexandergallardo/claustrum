@@ -742,6 +742,177 @@ export function CourseRelationFlow({
       return { nodes: nodeList, edges: edgeList };
     }
 
+    if (prerequisites.length >= DESKTOP_PREREQUISITE_BUS_THRESHOLD) {
+      const prereqColumns = Math.ceil(prerequisites.length / 2);
+      const prereqColumnStep = NODE_WIDTH + DENSE_DESKTOP_COLUMN_GAP;
+      const prereqGridWidth =
+        prereqColumns * NODE_WIDTH + (prereqColumns - 1) * DENSE_DESKTOP_COLUMN_GAP;
+      const topRowY = -(NODE_HEIGHT + DENSE_DESKTOP_ROW_GAP) / 2;
+      const bottomRowY = (NODE_HEIGHT + DENSE_DESKTOP_ROW_GAP) / 2;
+      const busY = NODE_HEIGHT / 2;
+      const busWidth = prereqGridWidth;
+      const busLeft = 0;
+      const centralX = (prereqGridWidth - NODE_WIDTH) / 2;
+      const centralY = bottomRowY + NODE_HEIGHT + VERTICAL_GAP;
+      const dependentX = centralX + NODE_WIDTH + HORIZONTAL_GAP;
+      const busHeight = BUS_WIDTH;
+      const busTargetHandles: RelationBusNodeData["targetHandles"] = [];
+
+      nodeList.push({
+        id: "central",
+        type: "course",
+        position: { x: centralX, y: centralY },
+        data: {
+          course,
+          isCentral: true,
+          showTopHandle: true,
+          showRightHandle: dependents.length > 0,
+          showBottomHandle: corequisites.length > 0,
+        },
+      });
+
+      prerequisites.forEach((prereq, index) => {
+        const id = `prereq-${prereq.id}`;
+        const row = index % 2;
+        const col = Math.floor(index / 2);
+        const x = col * prereqColumnStep;
+        const y = row === 0 ? topRowY : bottomRowY;
+        const busHandleId = `desktop-in-${index}`;
+        const busHandlePosition = Math.min(
+          96,
+          Math.max(4, ((x + NODE_WIDTH / 2 - busLeft) / busWidth) * 100),
+        );
+
+        nodeList.push({
+          id,
+          type: "course",
+          position: { x, y },
+          data: {
+            course: prereq,
+            showBottomHandle: row === 0,
+            showTopSourceHandle: row === 1,
+          },
+        });
+
+        busTargetHandles.push({
+          id: busHandleId,
+          side: row === 0 ? "top" : "bottom",
+          position: busHandlePosition,
+        });
+
+        edgeList.push({
+          id: `e-${id}-prereq-bus`,
+          source: id,
+          target: "prereq-bus",
+          sourceHandle: row === 0 ? "bottom" : "top-source",
+          targetHandle: busHandleId,
+          type: "relation",
+          data: { relation: "prerequisite", layout: "vertical" },
+        });
+      });
+
+      nodeList.push({
+        id: "prereq-bus",
+        type: "bus",
+        position: { x: busLeft, y: busY },
+        data: {
+          height: busHeight,
+          width: busWidth,
+          orientation: "horizontal",
+          sourceSide: "bottom",
+          sourcePosition: 50,
+          targetHandles: busTargetHandles,
+        },
+      });
+
+      edgeList.push({
+        id: "e-prereq-bus-central",
+        source: "prereq-bus",
+        target: "central",
+        sourceHandle: "bottom",
+        targetHandle: "top",
+        type: "relation",
+        data: { relation: "prerequisite", layout: "vertical" },
+        markerEnd: getArrow("prerequisite"),
+      });
+
+      dependents.forEach((dep, index) => {
+        const id = `dep-${dep.id}`;
+        const y = (index - centralRow) * stepY;
+
+        nodeList.push({
+          id,
+          type: "course",
+          position: { x: dependentX, y },
+          data: { course: dep, showLeftHandle: true },
+        });
+
+        edgeList.push({
+          id: `e-central-${id}`,
+          source: "central",
+          target: id,
+          sourceHandle: "right",
+          targetHandle: "left",
+          type: "relation",
+          data: { relation: "postrequisite" },
+          markerEnd: getArrow("postrequisite"),
+        });
+      });
+
+      corequisites.forEach((coreq, index) => {
+        const id = `coreq-${coreq.id}`;
+        const y = centralY + (index + 1) * corequisiteStepY;
+
+        nodeList.push({
+          id,
+          type: "course",
+          position: { x: centralX, y },
+          data: { course: coreq, showTopHandle: true },
+        });
+
+        edgeList.push({
+          id: `e-central-${id}`,
+          source: "central",
+          target: id,
+          sourceHandle: "bottom",
+          targetHandle: "top",
+          type: "relation",
+          data: { relation: "corequisite" },
+          markerEnd: getArrow("corequisite"),
+        });
+      });
+
+      const minX = Math.min(...nodeList.map((node) => node.position.x));
+      const maxX = Math.max(
+        ...nodeList.map(
+          (node) =>
+            node.position.x +
+            (node.type === "bus" && "width" in node.data && node.data.width
+              ? node.data.width
+              : NODE_WIDTH),
+        ),
+      );
+      const minY = Math.min(...nodeList.map((node) => node.position.y));
+      const maxY = Math.max(
+        ...nodeList.map(
+          (node) =>
+            node.position.y +
+            (node.type === "bus" && "height" in node.data ? node.data.height : NODE_HEIGHT),
+        ),
+      );
+      const offsetX = (minX + maxX) / 2;
+      const offsetY = (minY + maxY) / 2;
+
+      nodeList.forEach((node) => {
+        node.position = {
+          x: node.position.x - offsetX,
+          y: node.position.y - offsetY,
+        };
+      });
+
+      return { nodes: nodeList, edges: edgeList };
+    }
+
     nodeList.push({
       id: "central",
       type: "course",
