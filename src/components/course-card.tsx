@@ -11,36 +11,42 @@ interface CourseCardProps {
   isHovered: boolean;
   relationType?: RelationType;
   id?: string;
+  solidStatusBackground?: boolean;
   transitionName?: string;
 }
 
 const statusConfig: Record<
   CourseStatus,
-  { label: string; bgClassName: string; borderClassName: string }
+  { label: string; bgClassName: string; solidBgClassName: string; borderClassName: string }
 > = {
   approved: {
     label: "Aprobado",
     bgClassName: "bg-emerald-500/20",
+    solidBgClassName: "bg-emerald-50 dark:bg-emerald-950",
     borderClassName: "border-emerald-500/30 hover:border-emerald-500/50",
   },
   failed: {
     label: "Reprobado",
     bgClassName: "bg-red-500/20",
+    solidBgClassName: "bg-red-50 dark:bg-red-950",
     borderClassName: "border-red-500/30 hover:border-red-500/50",
   },
   not_taken: {
     label: "No cursado",
     bgClassName: "bg-muted",
+    solidBgClassName: "bg-muted",
     borderClassName: "border-border hover:border-muted-foreground/30",
   },
   withdrawn: {
     label: "Retirado",
     bgClassName: "bg-amber-500/20",
+    solidBgClassName: "bg-amber-50 dark:bg-amber-950",
     borderClassName: "border-amber-500/30 hover:border-amber-500/50",
   },
   in_progress: {
     label: "En curso",
     bgClassName: "bg-blue-500/20",
+    solidBgClassName: "bg-blue-50 dark:bg-blue-950",
     borderClassName: "border-blue-500/30 hover:border-blue-500/50",
   },
 };
@@ -69,6 +75,7 @@ export function CourseCard({
   isHovered,
   relationType,
   id,
+  solidStatusBackground,
   transitionName,
 }: CourseCardProps) {
   const config = statusConfig[course.status];
@@ -102,7 +109,7 @@ export function CourseCard({
       <div
         className={cn(
           "relative flex min-h-16 items-center justify-center px-3 py-2 text-center",
-          config.bgClassName,
+          solidStatusBackground ? config.solidBgClassName : config.bgClassName,
         )}
       >
         <h3

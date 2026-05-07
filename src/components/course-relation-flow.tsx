@@ -17,7 +17,7 @@ import { Link, Lock, Unlock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
-import type { Course } from "@/lib/types";
+import type { Course, CourseStatus } from "@/lib/types";
 
 import { CourseCard } from "@/components/course-card";
 import { cn } from "@/lib/utils";
@@ -202,7 +202,7 @@ function CourseFlowNode({ data }: { data: CourseNodeData }) {
           ))
         : null}
 
-      <CourseCard course={course} isHovered={false} />
+      <CourseCard course={course} isHovered={false} solidStatusBackground />
     </div>
   );
 }
@@ -349,6 +349,38 @@ const nodeTypes = {
   course: CourseFlowNode,
   bus: RelationBusNode,
 };
+
+const STATUS_LEGEND = [
+  {
+    status: "approved",
+    label: "Aprobado",
+    className: "border-emerald-500/30 bg-emerald-500/20",
+  },
+  {
+    status: "in_progress",
+    label: "En curso",
+    className: "border-blue-500/30 bg-blue-500/20",
+  },
+  {
+    status: "not_taken",
+    label: "No cursado",
+    className: "border-border bg-muted",
+  },
+  {
+    status: "failed",
+    label: "Reprobado",
+    className: "border-red-500/30 bg-red-500/20",
+  },
+  {
+    status: "withdrawn",
+    label: "Retirado",
+    className: "border-amber-500/30 bg-amber-500/20",
+  },
+] satisfies Array<{
+  status: CourseStatus;
+  label: string;
+  className: string;
+}>;
 
 const edgeTypes = {
   relation: RelationEdge,
@@ -1043,22 +1075,6 @@ export function CourseRelationFlow({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-4">
-        {RELATION_LEGEND.map(({ relation, Icon, className }) => (
-          <div key={relation} className="flex items-center gap-2">
-            <div
-              className={cn(
-                "bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 shadow-sm",
-                className,
-              )}
-            >
-              <Icon className="size-3 shrink-0" />
-            </div>
-            <span className="text-muted-foreground text-sm">{RELATION_LABELS[relation]}</span>
-          </div>
-        ))}
-      </div>
-
       <div
         ref={containerRef}
         className={cn(
@@ -1096,6 +1112,47 @@ export function CourseRelationFlow({
         >
           <Background gap={16} size={1} color="var(--course-relation-flow-dot)" />
         </ReactFlow>
+      </div>
+
+      <div className="border-border border-t pt-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-3 sm:gap-x-8">
+          <div>
+            <h3 className="text-foreground mb-2 text-xs font-semibold sm:mb-3 sm:text-sm">
+              Leyenda de estados
+            </h3>
+            <div className="flex flex-wrap gap-x-3 gap-y-2 sm:gap-4">
+              {STATUS_LEGEND.map(({ status, label, className }) => (
+                <div key={status} className="flex items-center gap-1.5 sm:gap-2">
+                  <div className={cn("size-4 rounded border sm:size-6 sm:border-2", className)} />
+                  <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-foreground mb-2 text-xs font-semibold sm:mb-3 sm:text-sm">
+              Relaciones
+            </h3>
+            <div className="flex flex-wrap gap-x-3 gap-y-2 sm:gap-4">
+              {RELATION_LEGEND.map(({ relation, Icon, className }) => (
+                <div key={relation} className="flex items-center gap-1.5 sm:gap-2">
+                  <div
+                    className={cn(
+                      "bg-background flex size-4 shrink-0 items-center justify-center rounded-full border shadow-sm sm:size-6 sm:border-2",
+                      className,
+                    )}
+                  >
+                    <Icon className="size-2.5 shrink-0 sm:size-3" />
+                  </div>
+                  <span className="text-muted-foreground text-xs sm:text-sm">
+                    {RELATION_LABELS[relation]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
