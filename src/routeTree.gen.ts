@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ModerationRouteImport } from './routes/moderation'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
@@ -21,9 +22,7 @@ import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
-import { Route as ProfessorsModerationRouteImport } from './routes/professors/moderation'
 import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
-import { Route as EvaluationsModerationRouteImport } from './routes/evaluations/moderation'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as AuthVerifyEmailIndexRouteImport } from './routes/auth/verify-email/index'
 import { Route as AuthSignupIndexRouteImport } from './routes/auth/signup/index'
@@ -33,6 +32,11 @@ import { Route as AuthMagicLinkIndexRouteImport } from './routes/auth/magic-link
 import { Route as Auth2faIndexRouteImport } from './routes/auth/2fa/index'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
+const ModerationRoute = ModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
   getParentRoute: () => rootRouteImport,
@@ -92,19 +96,9 @@ const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
   path: '/appearance',
   getParentRoute: () => SettingsRouteRoute,
 } as any)
-const ProfessorsModerationRoute = ProfessorsModerationRouteImport.update({
-  id: '/professors/moderation',
-  path: '/professors/moderation',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
   id: '/professors/$professorId',
   path: '/professors/$professorId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EvaluationsModerationRoute = EvaluationsModerationRouteImport.update({
-  id: '/evaluations/moderation',
-  path: '/evaluations/moderation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
@@ -153,10 +147,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
-  '/evaluations/moderation': typeof EvaluationsModerationRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
-  '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
@@ -177,10 +170,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
-  '/evaluations/moderation': typeof EvaluationsModerationRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
-  '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
@@ -203,10 +195,9 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
+  '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
-  '/evaluations/moderation': typeof EvaluationsModerationRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
-  '/professors/moderation': typeof ProfessorsModerationRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
@@ -230,10 +221,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/'
+    | '/moderation'
     | '/curriculum/$courseId'
-    | '/evaluations/moderation'
     | '/professors/$professorId'
-    | '/professors/moderation'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
@@ -254,10 +244,9 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/'
+    | '/moderation'
     | '/curriculum/$courseId'
-    | '/evaluations/moderation'
     | '/professors/$professorId'
-    | '/professors/moderation'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
@@ -279,10 +268,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/_index'
+    | '/moderation'
     | '/curriculum/$courseId'
-    | '/evaluations/moderation'
     | '/professors/$professorId'
-    | '/professors/moderation'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
@@ -305,10 +293,9 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
+  ModerationRoute: typeof ModerationRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
-  EvaluationsModerationRoute: typeof EvaluationsModerationRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
-  ProfessorsModerationRoute: typeof ProfessorsModerationRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   PoliciesIndexRoute: typeof PoliciesIndexRoute
@@ -319,6 +306,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/moderation': {
+      id: '/moderation'
+      path: '/moderation'
+      fullPath: '/moderation'
+      preLoaderRoute: typeof ModerationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_index': {
       id: '/_index'
       path: ''
@@ -403,25 +397,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAppearanceRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
-    '/professors/moderation': {
-      id: '/professors/moderation'
-      path: '/professors/moderation'
-      fullPath: '/professors/moderation'
-      preLoaderRoute: typeof ProfessorsModerationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/professors/$professorId': {
       id: '/professors/$professorId'
       path: '/professors/$professorId'
       fullPath: '/professors/$professorId'
       preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/evaluations/moderation': {
-      id: '/evaluations/moderation'
-      path: '/evaluations/moderation'
-      fullPath: '/evaluations/moderation'
-      preLoaderRoute: typeof EvaluationsModerationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/curriculum/$courseId': {
@@ -527,10 +507,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
+  ModerationRoute: ModerationRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
-  EvaluationsModerationRoute: EvaluationsModerationRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
-  ProfessorsModerationRoute: ProfessorsModerationRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   PoliciesIndexRoute: PoliciesIndexRoute,
