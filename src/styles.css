@@ -93,6 +93,8 @@ code {
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
   --destructive-foreground: var(--color-red-700);
+  --course-relation-flow-background: oklch(0.975 0 0);
+  --course-relation-flow-dot: oklch(0.72 0 0 / 55%);
 }
 
 .dark {
@@ -128,6 +130,8 @@ code {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
   --destructive-foreground: var(--color-red-400);
+  --course-relation-flow-background: oklch(0.18 0 0);
+  --course-relation-flow-dot: oklch(0.62 0 0 / 35%);
 }
 
 @layer base {

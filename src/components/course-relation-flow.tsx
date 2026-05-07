@@ -1062,7 +1062,7 @@ export function CourseRelationFlow({
       <div
         ref={containerRef}
         className={cn(
-          "border-border bg-card/30 w-full overflow-hidden rounded-xl border",
+          "border-border w-full overflow-hidden rounded-xl border bg-[var(--course-relation-flow-background)]",
           isVerticalLayout ? "min-h-[360px]" : "aspect-[3/2] max-h-[500px] min-h-[240px]",
         )}
         style={isVerticalLayout ? { height: mobileCardHeight } : undefined}
@@ -1094,7 +1094,7 @@ export function CourseRelationFlow({
           attributionPosition="bottom-right"
           proOptions={{ hideAttribution: true }}
         >
-          <Background gap={16} size={1} color="hsl(var(--border))" />
+          <Background gap={16} size={1} color="var(--course-relation-flow-dot)" />
         </ReactFlow>
       </div>
     </div>
