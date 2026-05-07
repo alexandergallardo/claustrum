@@ -34,8 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useIsAdmin, useProfessorReviewStats } from "@/lib/hooks/use-professor-reviews";
-import { useAuthUser } from "@/lib/hooks/use-queries";
+import { useProfessorReviewStats } from "@/lib/hooks/use-professor-reviews";
 import {
   getProfessorById,
   getProfessorReviewSummary,
@@ -53,8 +52,6 @@ function formatScore(score: number | null): string {
 
 export function ProfessorsReviewsPage() {
   const queryClient = useQueryClient();
-  const { data: authUser } = useAuthUser();
-  const { data: isAdmin } = useIsAdmin();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch] = useDebouncedValue(searchInput, { wait: 300 });
   const [minAverageScoreInput, setMinAverageScoreInput] = useState("");
@@ -90,7 +87,7 @@ export function ProfessorsReviewsPage() {
     () => [
       {
         accessorKey: "professor_name",
-        header: "Profesor",
+        header: "Nombre",
         cell: ({ row }) => {
           const professorId = row.original.professor_id;
 
@@ -170,11 +167,6 @@ export function ProfessorsReviewsPage() {
               }}
             />
           </div>
-          {authUser && isAdmin ? (
-            <Button asChild variant="outline">
-              <Link to="/professors/moderation">Moderar reseñas</Link>
-            </Button>
-          ) : null}
           <CollapsibleTrigger asChild>
             <Button
               type="button"
@@ -241,7 +233,7 @@ export function ProfessorsReviewsPage() {
         </CollapsibleContent>
       </Collapsible>
 
-      <Card>
+      <Card className="py-0">
         <CardContent className="p-4">
           {rows.length === 0 && query.isLoading ? (
             <div className="text-muted-foreground text-sm">Cargando profesores...</div>

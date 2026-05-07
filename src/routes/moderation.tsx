@@ -1,18 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
-const ModerationPage = lazy(() =>
-  import("./-moderation-page").then((module) => ({ default: module.ModerationPage })),
+const AdminModerationPage = lazy(() =>
+  import("./-admin-moderation-page").then((module) => ({ default: module.AdminModerationPage })),
 );
 
-export const Route = createFileRoute("/professors/moderation")({
+export const Route = createFileRoute("/moderation")({
   component: ModerationRoute,
 });
 
 function ModerationRoute() {
   return (
     <Suspense fallback={<div className="bg-background flex-1" />}>
-      <ModerationPage />
+      <AdminModerationPage />
     </Suspense>
   );
 }

@@ -32,7 +32,8 @@ import {
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useProfessorById } from "@/lib/hooks/use-professor-reviews";
+import { useModerationCounts } from "@/lib/hooks/use-moderation";
+import { useIsAdmin, useProfessorById } from "@/lib/hooks/use-professor-reviews";
 import { useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
 
 type BreadcrumbItem = {
@@ -57,6 +58,7 @@ const pageTitles: Record<string, string> = {
   "/curriculum": "Plan de estudios",
   "/professors": "Profesores",
   "/policies": "Reglamento y políticas",
+  "/moderation": "Moderación",
   "/settings/profile": "Perfil",
   "/settings/security": "Seguridad",
   "/settings/appearance": "Apariencia",
@@ -82,6 +84,11 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const { data: isAdmin } = useIsAdmin();
+  const { data: moderationCounts } = useModerationCounts();
+  const totalPending = isAdmin
+    ? (moderationCounts?.pendingReviews ?? 0) + (moderationCounts?.pendingEvaluations ?? 0)
+    : 0;
 
   const professorId = getNumericPathSegment(location.pathname, "/professors/");
   const isProfessorDetail = professorId !== null;
@@ -211,6 +218,18 @@ export function SiteHeader() {
         </button>
 
         <div className="ml-auto flex items-center gap-2">
+          {isAdmin ? (
+            <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+              <Link to="/moderation" aria-label="Moderación" title="Moderación">
+                <Shield className="h-[1.2rem] w-[1.2rem]" />
+                {totalPending > 0 && (
+                  <span className="bg-foreground text-background ring-background absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[8px] font-bold ring-2">
+                    {totalPending > 9 ? "9+" : totalPending}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             size="icon"
