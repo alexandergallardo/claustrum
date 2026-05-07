@@ -189,6 +189,37 @@ code {
   background: transparent;
 }
 
+/* App-level scrollbar style */
+.app-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+  scrollbar-gutter: stable;
+}
+
+.app-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.app-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--foreground) 20%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.app-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--foreground) 34%, transparent);
+}
+
+.app-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 [data-export-theme="light"] {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
