@@ -65,7 +65,6 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatEvaluationFileName, type EvaluationType } from "@/lib/evaluations/types";
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
-import { useIsAdmin } from "@/lib/hooks/use-professor-reviews";
 import {
   useCourseInferredAcademicTerms,
   useCourseAttempts,
@@ -489,8 +488,6 @@ export function CourseDetails({
 }: CourseDetailsProps) {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
-  const { data: isAdmin } = useIsAdmin();
-
   const [gradeInput, setGradeInput] = useState("");
   const [academicTermId, setAcademicTermId] = useState<string>("");
   const [isProgressSheetOpen, setIsProgressSheetOpen] = useState(false);
@@ -1034,11 +1031,6 @@ export function CourseDetails({
           title="Evaluaciones"
           action={
             <>
-              {isAdmin ? (
-                <Button asChild variant="outline" size="sm">
-                  <Link to="/evaluations/moderation">Moderar</Link>
-                </Button>
-              ) : null}
               <Button variant="outline" size="sm" onClick={() => setIsExamUploadOpen(true)}>
                 Subir evaluación
               </Button>
