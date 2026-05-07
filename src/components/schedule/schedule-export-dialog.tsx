@@ -105,11 +105,10 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
       </div>
 
       {format !== "ics" && (
-        <div className="space-y-2.5">
-          <Label>Tema de exportación</Label>
-          <p className="text-muted-foreground rounded-xl border px-3 py-2 text-sm">
-            El calendario se exporta con el tema actual. Si deseas otro resultado, cambia el tema de
-            la página antes de exportar.
+        <div>
+          <p className="text-muted-foreground text-sm">
+            Nota: El calendario se exporta con el tema actual. Si deseas otro resultado, cambia el
+            tema de la página antes de exportar.
           </p>
         </div>
       )}
