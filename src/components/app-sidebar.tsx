@@ -54,12 +54,12 @@ function ClaustrumLogo({ className }: { className?: string }) {
       viewBox="0 0 256 256"
       role="img"
       aria-label="Claustrum logo"
-      className={className}
+      className={cn("text-[#0F172A] dark:text-[#F8FAFC]", className)}
     >
       <path
         d="M190 48H78C61.431 48 48 61.431 48 78v100c0 16.569 13.431 30 30 30h112"
         fill="none"
-        stroke="#0F172A"
+        stroke="currentColor"
         strokeWidth="20"
         strokeLinecap="round"
         strokeLinejoin="round"
