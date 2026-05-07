@@ -2,7 +2,8 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link id="app-favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
+    <link rel="shortcut icon" type="image/svg+xml" href="/favicon-light.svg" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Claustrum - Gestión de horarios académicos" />
@@ -49,6 +50,15 @@
           html.classList.remove("light", "dark");
           html.classList.add(resolvedTheme);
           html.style.colorScheme = resolvedTheme;
+
+          const faviconBase = resolvedTheme === "dark" ? "/favicon-dark.svg" : "/favicon-light.svg";
+          const faviconHref = `${faviconBase}?theme=${resolvedTheme}`;
+          const iconLinks = document.querySelectorAll('link[rel~="icon"]');
+          iconLinks.forEach((link) => {
+            if (link instanceof HTMLLinkElement) {
+              link.href = faviconHref;
+            }
+          });
 
           const backgroundColor = resolvedTheme === "dark" ? "oklch(0.145 0 0)" : "oklch(1 0 0)";
           const fallbackThemeColor = resolvedTheme === "dark" ? "#111111" : "#ffffff";

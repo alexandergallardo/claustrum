@@ -98,6 +98,21 @@ const Theme = ({
       }
     }
 
+    const faviconBase = resolved === "dark" ? "/favicon-dark.svg" : "/favicon-light.svg";
+    const faviconHref = `${faviconBase}?theme=${resolved}`;
+    const iconLinks = document.querySelectorAll('link[rel~="icon"]');
+    iconLinks.forEach((link) => {
+      if (link instanceof HTMLLinkElement) {
+        link.href = faviconHref;
+      }
+    });
+
+    const themeColor = resolved === "dark" ? "#111111" : "#ffffff";
+    const themeColorMetas = document.querySelectorAll('meta[name="theme-color"]');
+    themeColorMetas.forEach((meta) => {
+      meta.setAttribute("content", themeColor);
+    });
+
     enable?.();
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- applyTheme is intentionally stable; dependencies are captured from closure to avoid unnecessary re-renders
   }, []);
