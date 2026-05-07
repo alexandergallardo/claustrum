@@ -1,5 +1,5 @@
 import { ImageDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -53,45 +53,23 @@ const formatOptions: Array<{
   },
 ];
 
-const themeOptions: Array<{
-  value: ScheduleExportTheme;
-  title: string;
-  description: string;
-}> = [
-  {
-    value: "light",
-    title: "Claro",
-    description: "Fondo blanco y texto oscuro.",
-  },
-  {
-    value: "dark",
-    title: "Oscuro",
-    description: "Fondo oscuro y texto claro.",
-  },
-];
-
 interface ScheduleExportDialogProps {
   onExport: (options: ScheduleExportOptions) => Promise<void> | void;
 }
 
 export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
   const [format, setFormat] = useState<ScheduleExportFormat>("png");
-  const [theme, setTheme] = useState<ScheduleExportTheme>("light");
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (!isOpen) return;
-    if (typeof document === "undefined") return;
-    const isDark = document.documentElement.classList.contains("dark");
-    setTheme(isDark ? "dark" : "light");
-  }, [isOpen]);
-
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      await onExport({ format, theme, transparent: format === "png" });
+      const isDark =
+        typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+      const currentTheme: ScheduleExportTheme = isDark ? "dark" : "light";
+      await onExport({ format, theme: currentTheme, transparent: format === "png" });
       setIsOpen(false);
     } finally {
       setIsExporting(false);
@@ -128,29 +106,11 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
 
       {format !== "ics" && (
         <div className="space-y-2.5">
-          <Label>Modo</Label>
-          <div className="bg-muted/20 grid grid-cols-2 gap-2 rounded-xl border p-1">
-            {themeOptions.map((option) => {
-              const isSelected = theme === option.value;
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={cn(
-                    "rounded-lg px-3 py-2.5 text-left transition-all",
-                    isSelected
-                      ? "bg-background shadow-sm"
-                      : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
-                  )}
-                  onClick={() => setTheme(option.value)}
-                >
-                  <span className="block text-sm leading-none font-semibold">{option.title}</span>
-                  <span className="mt-1 block text-xs leading-snug">{option.description}</span>
-                </button>
-              );
-            })}
-          </div>
+          <Label>Tema de exportación</Label>
+          <p className="text-muted-foreground rounded-xl border px-3 py-2 text-sm">
+            El calendario se exporta con el tema actual. Si deseas otro resultado, cambia el tema de
+            la página antes de exportar.
+          </p>
         </div>
       )}
     </div>
