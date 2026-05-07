@@ -18,7 +18,7 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
         <main className="bg-muted flex min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-out md:ml-20 md:peer-hover/sidebar:ml-72 md:peer-data-[user-menu=open]/sidebar:ml-72">
           <SiteHeader />
           <div className="bg-background min-h-0 min-w-0 flex-1 overflow-hidden md:rounded-tl-2xl">
-            <div className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto pb-24 md:pb-0">
+            <div className="app-scrollbar flex h-full min-h-0 min-w-0 flex-col overflow-y-auto pb-24 md:pb-0">
               {children}
             </div>
           </div>
