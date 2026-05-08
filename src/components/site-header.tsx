@@ -80,7 +80,7 @@ function getSearchNumber(search: string, key: string) {
 
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
-  const location = useLocation();
+  const { pathname, searchStr } = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -90,7 +90,7 @@ export function SiteHeader() {
     ? (moderationCounts?.pendingReviews ?? 0) + (moderationCounts?.pendingEvaluations ?? 0)
     : 0;
 
-  const professorId = getNumericPathSegment(location.pathname, "/professors/");
+  const professorId = getNumericPathSegment(pathname, "/professors/");
   const isProfessorDetail = professorId !== null;
   const professorQuery = useProfessorById(professorId);
   const cachedProfessor = professorId
@@ -98,10 +98,10 @@ export function SiteHeader() {
     : null;
   const professorName = professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? null;
 
-  const courseId = getNumericPathSegment(location.pathname, "/curriculum/");
+  const courseId = getNumericPathSegment(pathname, "/curriculum/");
   const isCourseDetail = courseId !== null;
-  const selectedCareerId = isCourseDetail ? getSearchNumber(location.searchStr, "career") : null;
-  const selectedPlanId = isCourseDetail ? getSearchNumber(location.searchStr, "plan") : null;
+  const selectedCareerId = isCourseDetail ? getSearchNumber(searchStr, "career") : null;
+  const selectedPlanId = isCourseDetail ? getSearchNumber(searchStr, "plan") : null;
   const plansQuery = useStudyPlans(selectedCareerId);
   const selectedPlanData = plansQuery.data?.find(
     (plan: CatalogStudyPlan) => plan.id === selectedPlanId,
@@ -155,19 +155,19 @@ export function SiteHeader() {
       ];
     }
 
-    if (location.pathname.startsWith("/settings/")) {
+    if (pathname.startsWith("/settings/")) {
       return [
         { label: "Configuración", to: "/settings/profile" },
-        { label: pageTitles[location.pathname] ?? "" },
+        { label: pageTitles[pathname] ?? "" },
       ];
     }
 
-    return [{ label: pageTitles[location.pathname] ?? "" }];
+    return [{ label: pageTitles[pathname] ?? "" }];
   }, [
     courseLabel,
     isCourseDetail,
     isProfessorDetail,
-    location.pathname,
+    pathname,
     planDetailQuery.isLoading,
     professorName,
     professorQuery.isLoading,
