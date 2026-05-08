@@ -9,15 +9,18 @@ import {
   format,
   isWithinInterval,
 } from "date-fns";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
 import { useCalendarContext } from "../../calendar-context";
 import CalendarEvent from "../calendar-event";
 
+const noMotion = { duration: 0 };
+
 export default function CalendarBodyMonth() {
   const { date, events, setDate, setMode } = useCalendarContext();
+  const shouldReduceMotion = useReducedMotion();
 
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
@@ -60,10 +63,14 @@ export default function CalendarBodyMonth() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{
-            duration: 0.2,
-            ease: "easeInOut",
-          }}
+          transition={
+            shouldReduceMotion
+              ? noMotion
+              : {
+                  duration: 0.2,
+                  ease: "easeInOut",
+                }
+          }
         >
           {calendarDays.map((day) => {
             const dayEvents = visibleEvents.filter((event) => isSameDay(event.start, day));
@@ -108,9 +115,13 @@ export default function CalendarBodyMonth() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{
-                          duration: 0.2,
-                        }}
+                        transition={
+                          shouldReduceMotion
+                            ? noMotion
+                            : {
+                                duration: 0.2,
+                              }
+                        }
                         className="text-muted-foreground text-xs"
                         onClick={(e) => {
                           e.stopPropagation();

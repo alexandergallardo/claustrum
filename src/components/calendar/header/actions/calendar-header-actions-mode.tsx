@@ -1,4 +1,4 @@
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
@@ -9,8 +9,11 @@ import { useCalendarContext } from "../../calendar-context";
 import { calendarModeIconMap } from "../../calendar-mode-icon-map";
 import { calendarModes } from "../../calendar-types";
 
+const noMotion = { duration: 0 };
+
 export default function CalendarHeaderActionsMode() {
   const { mode, setMode } = useCalendarContext();
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <LayoutGroup>
@@ -31,13 +34,17 @@ export default function CalendarHeaderActionsMode() {
               layout
               className="flex flex-1 divide-x"
               animate={{ flex: isSelected ? 1.6 : 1 }}
-              transition={{
-                flex: {
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 30,
-                },
-              }}
+              transition={
+                shouldReduceMotion
+                  ? noMotion
+                  : {
+                      flex: {
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                      },
+                    }
+              }
             >
               <ToggleGroupItem
                 value={modeValue}
@@ -53,18 +60,22 @@ export default function CalendarHeaderActionsMode() {
                   animate={{
                     scale: isSelected ? 1 : 0.95,
                   }}
-                  transition={{
-                    scale: {
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                    },
-                    layout: {
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                    },
-                  }}
+                  transition={
+                    shouldReduceMotion
+                      ? noMotion
+                      : {
+                          scale: {
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 30,
+                          },
+                          layout: {
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 30,
+                          },
+                        }
+                  }
                 >
                   <motion.div
                     layout="position"
@@ -72,13 +83,17 @@ export default function CalendarHeaderActionsMode() {
                     animate={{
                       scale: isSelected ? 0.9 : 1,
                     }}
-                    transition={{
-                      scale: {
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 30,
-                      },
-                    }}
+                    transition={
+                      shouldReduceMotion
+                        ? noMotion
+                        : {
+                            scale: {
+                              type: "spring",
+                              stiffness: 400,
+                              damping: 30,
+                            },
+                          }
+                    }
                   >
                     {calendarModeIconMap[modeValue]}
                   </motion.div>
@@ -97,23 +112,27 @@ export default function CalendarHeaderActionsMode() {
                           opacity: 1,
                           x: 0,
                           scale: 1,
-                          transition: {
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 30,
-                            opacity: { duration: 0.15 },
-                          },
+                          transition: shouldReduceMotion
+                            ? noMotion
+                            : {
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 30,
+                                opacity: { duration: 0.15 },
+                              },
                         }}
                         exit={{
                           opacity: 0,
                           x: -2,
                           scale: 0.95,
-                          transition: {
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 30,
-                            opacity: { duration: 0.1 },
-                          },
+                          transition: shouldReduceMotion
+                            ? noMotion
+                            : {
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 30,
+                                opacity: { duration: 0.1 },
+                              },
                         }}
                       >
                         {modeValue.charAt(0).toUpperCase() + modeValue.slice(1)}
