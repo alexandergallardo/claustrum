@@ -11,8 +11,10 @@ import type {
   SemesterProgress,
   NextCourse,
   CourseAttempt,
+  CourseEffectiveStatus,
   CourseLatestTermGroup,
   CourseRecentProfessor,
+  CourseStatus,
 } from "@/lib/types";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -445,16 +447,28 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
   return useQuery({
     queryKey: ["studentCourseStatuses", userId, studyPlanId],
     queryFn: async () => {
-      let statusMap = new Map<
-        number,
-        "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress"
-      >();
+      let statusMap = new Map<number, CourseEffectiveStatus>();
 
       if (!userId || !studyPlanId) {
         const localChanges = getLocalCourseStatusChanges();
         for (const change of localChanges) {
           if (change.studyPlanId === studyPlanId) {
-            statusMap.set(change.courseId, change.status);
+            statusMap.set(change.courseId, {
+              status: change.status,
+              grade: null,
+              recordedAt: null,
+              originCourseId: change.courseId,
+              originCourseCode: null,
+              originCourseName: null,
+              originStudyPlanId: change.studyPlanId,
+              originAttemptId: null,
+              originAttemptNumber: null,
+              originGrade: null,
+              originRecordedAt: null,
+              originAcademicTermId: null,
+              originAcademicTermName: null,
+              originType: "direct_plan_status",
+            });
           }
         }
         return statusMap;
@@ -462,24 +476,65 @@ export function useStudentCourseStatuses(userId: string | null, studyPlanId: num
 
       const sb = getSupabaseBrowserClient();
 
-      const { data, error } = await sb.rpc("get_user_course_effective_statuses", {
+      const { data, error } = await sb.rpc("get_user_course_effective_status_details", {
         p_user_id: userId,
         p_study_plan_id: studyPlanId,
       });
 
       if (error) throw error;
 
-      for (const record of (data ?? []) as Array<{ course_id: number; status: string }>) {
-        statusMap.set(
-          record.course_id,
-          record.status.toLowerCase() as "approved" | "failed" | "withdrawn" | "in_progress",
-        );
+      for (const record of (data ?? []) as Array<{
+        course_id: number;
+        status: string;
+        grade: number | null;
+        recorded_at: string | null;
+        origin_course_id: number | null;
+        origin_course_code: string | null;
+        origin_course_name: string | null;
+        origin_study_plan_id: number | null;
+        origin_attempt_id: number | null;
+        origin_attempt_number: number | null;
+        origin_academic_term_id: number | null;
+        origin_academic_term_name: string | null;
+        origin_type: string | null;
+      }>) {
+        statusMap.set(record.course_id, {
+          status: record.status.toLowerCase() as CourseStatus,
+          grade: record.grade,
+          recordedAt: record.recorded_at,
+          originCourseId: record.origin_course_id,
+          originCourseCode: record.origin_course_code,
+          originCourseName: record.origin_course_name,
+          originStudyPlanId: record.origin_study_plan_id,
+          originAttemptId: record.origin_attempt_id,
+          originAttemptNumber: record.origin_attempt_number,
+          originGrade: record.grade,
+          originRecordedAt: record.recorded_at,
+          originAcademicTermId: record.origin_academic_term_id,
+          originAcademicTermName: record.origin_academic_term_name,
+          originType: record.origin_type as CourseEffectiveStatus["originType"],
+        });
       }
 
       const localChanges = getLocalCourseStatusChanges();
       for (const change of localChanges) {
         if (change.studyPlanId === studyPlanId) {
-          statusMap.set(change.courseId, change.status);
+          statusMap.set(change.courseId, {
+            status: change.status,
+            grade: null,
+            recordedAt: null,
+            originCourseId: change.courseId,
+            originCourseCode: null,
+            originCourseName: null,
+            originStudyPlanId: change.studyPlanId,
+            originAttemptId: null,
+            originAttemptNumber: null,
+            originGrade: null,
+            originRecordedAt: null,
+            originAcademicTermId: null,
+            originAcademicTermName: null,
+            originType: "direct_plan_status",
+          });
         }
       }
 
@@ -517,11 +572,11 @@ export function useCreateCourseAttempt() {
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId],
+        queryKey: ["studentCourseStatuses", variables.userId],
       });
       void queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
       void queryClient.invalidateQueries({
-        queryKey: ["dashboardStats", variables.userId, variables.studyPlanId],
+        queryKey: ["dashboardStats", variables.userId],
       });
       void queryClient.invalidateQueries({
         queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId],
@@ -554,11 +609,11 @@ export function useUpdateCourseAttempt() {
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({
-        queryKey: ["studentCourseStatuses", variables.userId, variables.studyPlanId],
+        queryKey: ["studentCourseStatuses", variables.userId],
       });
       void queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
       void queryClient.invalidateQueries({
-        queryKey: ["dashboardStats", variables.userId, variables.studyPlanId],
+        queryKey: ["dashboardStats", variables.userId],
       });
       void queryClient.invalidateQueries({
         queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId],

@@ -64,11 +64,45 @@ export interface Course {
   prerequisites: string[];
   corequisites: string[];
   equivalents?: string[];
+  statusOriginType?: CourseStatusOriginType | null;
+  statusOriginCourseId?: number | null;
+  statusOriginCourseCode?: string | null;
+  statusOriginCourseName?: string | null;
+  statusOriginStudyPlanId?: number | null;
+  statusOriginAttemptId?: number | null;
+  statusOriginAttemptNumber?: number | null;
+  statusOriginGrade?: number | null;
+  statusOriginRecordedAt?: string | null;
+  statusOriginAcademicTermId?: number | null;
+  statusOriginAcademicTermName?: string | null;
 }
 
 export type CourseStatus = "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress";
 
-export type StudentCourseStatusMap = Map<number, CourseStatus>;
+export type CourseStatusOriginType =
+  | "direct"
+  | "same_course_global"
+  | "equivalent"
+  | "direct_plan_status";
+
+export interface CourseEffectiveStatus {
+  status: CourseStatus;
+  grade: number | null;
+  recordedAt: string | null;
+  originCourseId: number | null;
+  originCourseCode: string | null;
+  originCourseName: string | null;
+  originStudyPlanId: number | null;
+  originAttemptId: number | null;
+  originAttemptNumber: number | null;
+  originGrade: number | null;
+  originRecordedAt: string | null;
+  originAcademicTermId: number | null;
+  originAcademicTermName: string | null;
+  originType: CourseStatusOriginType | null;
+}
+
+export type StudentCourseStatusMap = Map<number, CourseEffectiveStatus>;
 
 export interface StudyPlanDetail {
   plan: CatalogStudyPlan;

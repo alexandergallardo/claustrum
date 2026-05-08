@@ -23,7 +23,8 @@ export function useCurriculumViewModel(
         const relations: CourseRelations = (planDetail.courseRelations.get(
           course.courseId,
         ) as CourseRelations) || { prerequisites: [], corequisites: [] };
-        const status = statusMap?.get(course.courseId) || "not_taken";
+        const effectiveStatus = statusMap?.get(course.courseId);
+        const status = effectiveStatus?.status || "not_taken";
 
         return {
           id: courseIdStr,
@@ -36,6 +37,17 @@ export function useCurriculumViewModel(
           prerequisites: relations.prerequisites?.map(String) || [],
           corequisites: relations.corequisites?.map(String) || [],
           equivalents: relations.equivalents?.map(String) || [],
+          statusOriginType: effectiveStatus?.originType ?? null,
+          statusOriginCourseId: effectiveStatus?.originCourseId ?? null,
+          statusOriginCourseCode: effectiveStatus?.originCourseCode ?? null,
+          statusOriginCourseName: effectiveStatus?.originCourseName ?? null,
+          statusOriginStudyPlanId: effectiveStatus?.originStudyPlanId ?? null,
+          statusOriginAttemptId: effectiveStatus?.originAttemptId ?? null,
+          statusOriginAttemptNumber: effectiveStatus?.originAttemptNumber ?? null,
+          statusOriginGrade: effectiveStatus?.originGrade ?? null,
+          statusOriginRecordedAt: effectiveStatus?.originRecordedAt ?? null,
+          statusOriginAcademicTermId: effectiveStatus?.originAcademicTermId ?? null,
+          statusOriginAcademicTermName: effectiveStatus?.originAcademicTermName ?? null,
         } satisfies Course;
       });
 

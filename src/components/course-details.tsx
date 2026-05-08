@@ -272,6 +272,64 @@ function TimelineItem({
   );
 }
 
+function TimelineOriginItem({ course }: { course: Course }) {
+  const cfg = statusConfig.approved;
+  const date = course.statusOriginRecordedAt ? new Date(course.statusOriginRecordedAt) : null;
+  const gradeText =
+    course.statusOriginGrade === null || course.statusOriginGrade === undefined
+      ? null
+      : `${Math.round(course.statusOriginGrade)}`;
+  const originLabel =
+    course.statusOriginType === "same_course_global"
+      ? `Aprobado en otro plan como ${course.statusOriginCourseCode ?? "este mismo curso"}`
+      : `Aprobado por equivalencia con ${course.statusOriginCourseCode ?? "otro curso"}`;
+  const originDetail = course.statusOriginCourseName
+    ? `${originLabel}: ${course.statusOriginCourseName}`
+    : originLabel;
+  const attemptNumberText = course.statusOriginAttemptNumber
+    ? `#${course.statusOriginAttemptNumber}`
+    : "#";
+
+  return (
+    <div className="relative flex gap-4">
+      <div className="flex flex-col items-center">
+        <div
+          className={`flex size-8 shrink-0 items-center justify-center rounded-full ring-2 ${cfg.bg} ${cfg.ring}`}
+        >
+          <span className={`text-xs font-bold ${cfg.color}`}>{attemptNumberText}</span>
+        </div>
+        <div className="bg-border mt-1 w-px flex-1" />
+      </div>
+
+      <div className="min-w-0 flex-1 pb-6">
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-foreground text-sm font-semibold">Aprobado</span>
+            {date ? (
+              <span className="text-muted-foreground text-xs">{date.toLocaleDateString()}</span>
+            ) : null}
+          </div>
+        </div>
+        <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          {gradeText ? (
+            <span className="inline-flex items-center gap-1">
+              <GraduationCap className="size-3.5" />
+              Nota {gradeText}
+            </span>
+          ) : null}
+          {course.statusOriginAcademicTermName ? (
+            <span className="inline-flex items-center gap-1">
+              <Clock className="size-3.5" />
+              {course.statusOriginAcademicTermName}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-muted-foreground mt-2 text-xs italic">Nota: {originDetail}</p>
+      </div>
+    </div>
+  );
+}
+
 function ProfessorCard({
   professor,
   onPrepareTransition,
@@ -739,6 +797,9 @@ export function CourseDetails({
   /* --- derived state for hero --- */
   const currentStatus = course.status;
   const requiresProgressGrade = progressStatus === "approved" || progressStatus === "failed";
+  const isApprovedFromAnotherSource =
+    currentStatus === "approved" &&
+    (course.statusOriginType === "same_course_global" || course.statusOriginType === "equivalent");
 
   const progressForm = (
     <div className="space-y-6">
@@ -938,7 +999,7 @@ export function CourseDetails({
                 </div>
               ))}
             </div>
-          ) : attempts.length === 0 ? (
+          ) : attempts.length === 0 && !isApprovedFromAnotherSource ? (
             <div className="border-border flex flex-col items-center justify-center rounded-2xl border border-dashed py-12 text-center">
               <GraduationCap className="text-muted-foreground/50 mb-3 size-8" />
               <p className="text-foreground text-sm font-medium">Aún no hay intentos registrados</p>
@@ -948,6 +1009,7 @@ export function CourseDetails({
             </div>
           ) : (
             <div className="pl-1">
+              {isApprovedFromAnotherSource ? <TimelineOriginItem course={course} /> : null}
               {attempts.map((attempt: CourseAttempt) => (
                 <TimelineItem
                   key={attempt.id}
