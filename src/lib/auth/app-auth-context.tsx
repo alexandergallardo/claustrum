@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, use, useMemo, type ReactNode } from "react";
 
 import { useAuthUser } from "@/lib/hooks/use-queries";
 
@@ -23,7 +23,7 @@ export function AppAuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAppAuth() {
-  const context = useContext(AppAuthContext);
+  const context = use(AppAuthContext);
   if (!context) {
     throw new Error("useAppAuth must be used within AppAuthProvider");
   }

@@ -445,8 +445,11 @@ function ScheduleGroupCard({
             {meetings.length === 0 ? (
               <span className="text-muted-foreground text-xs">Sin horario registrado</span>
             ) : (
-              meetings.map((meeting, index) => (
-                <span key={index} className="text-foreground text-xs">
+              meetings.map((meeting) => (
+                <span
+                  key={`${meeting.weekday}-${meeting.starts_at}`}
+                  className="text-foreground text-xs"
+                >
                   {formatMeetingLine(meeting)}
                 </span>
               ))

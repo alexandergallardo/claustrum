@@ -181,7 +181,7 @@ export function SiteHeader() {
             const isLast = index === breadcrumbItems.length - 1;
 
             return (
-              <div key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-2">
+              <div key={item.to ?? item.label} className="flex min-w-0 items-center gap-2">
                 {index > 0 ? (
                   <ChevronRight className="text-muted-foreground size-4 shrink-0" />
                 ) : null}

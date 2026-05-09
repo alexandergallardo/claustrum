@@ -166,7 +166,7 @@ export function AuthTwoFactorPage() {
         aria-label="Código de autenticación"
       >
         {code.map((digit, index) => (
-          <div key={index} className="flex items-center gap-2">
+          <div key={`code-input-${index}`} className="flex items-center gap-2">
             <input
               ref={(element) => {
                 inputRefs.current[index] = element;

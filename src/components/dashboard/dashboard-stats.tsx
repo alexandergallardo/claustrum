@@ -123,11 +123,11 @@ function MiniBarCard({
         <div className="flex flex-col gap-1.5">
           <div className="bg-muted flex h-2 overflow-hidden rounded-full">
             {segments ? (
-              segments.map((segment, i) => {
+              segments.map((segment) => {
                 const segmentWidth = total > 0 ? (segment.value / total) * 100 : 0;
                 return (
                   <div
-                    key={i}
+                    key={segment.label}
                     className="h-full transition-all first:rounded-l-full last:rounded-r-full"
                     style={{
                       width: `${segmentWidth}%`,
@@ -173,7 +173,7 @@ function SemesterCard({
         <div className="flex gap-1">
           {Array.from({ length: totalSemesters }, (_, i) => (
             <div
-              key={i}
+              key={`sem-${i}`}
               className="h-2 flex-1 rounded-full transition-all"
               style={{
                 backgroundColor:

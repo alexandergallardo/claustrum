@@ -493,8 +493,8 @@ const CourseCard = memo(function CourseCard({
                           Este grupo choca con:
                         </p>
                         <ul className="space-y-1 text-sm">
-                          {reasons.map((reason, idx) => (
-                            <li key={idx}>{reason}</li>
+                          {reasons.map((reason) => (
+                            <li key={reason}>{reason}</li>
                           ))}
                         </ul>
                       </div>

@@ -35,10 +35,10 @@ const isServer = typeof window === "undefined";
 const ThemeContext = React.createContext<UseThemeProps | undefined>(undefined);
 const defaultContext: UseThemeProps = { setTheme: (_) => {}, themes: [] };
 
-export const useTheme = () => React.useContext(ThemeContext) ?? defaultContext;
+export const useTheme = () => React.use(ThemeContext) ?? defaultContext;
 
 export const ThemeProvider = (props: ThemeProviderProps): React.ReactNode => {
-  const context = React.useContext(ThemeContext);
+  const context = React.use(ThemeContext);
 
   if (context) return props.children;
   return <Theme {...props} />;
