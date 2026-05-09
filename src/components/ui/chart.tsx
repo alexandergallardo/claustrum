@@ -257,33 +257,33 @@ function ChartLegendContent({
         className,
       )}
     >
-      {payload
-        .flatMap((item) => (item.type !== "none" ? [item] : []))
-        .map((item) => {
-          const key = `${String(nameKey || item.dataKey || "value")}`;
-          const itemConfig = getPayloadConfigFromPayload(config, item, key);
+      {payload.reduce<React.ReactNode[]>((acc, item) => {
+        if (item.type === "none") return acc;
+        const key = `${String(nameKey || item.dataKey || "value")}`;
+        const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
-          return (
-            <div
-              key={item.value}
-              className={cn(
-                "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3",
-              )}
-            >
-              {itemConfig?.icon && !hideIcon ? (
-                <itemConfig.icon />
-              ) : (
-                <div
-                  className="size-2 shrink-0 rounded-[2px]"
-                  style={{
-                    backgroundColor: item.color,
-                  }}
-                />
-              )}
-              {itemConfig?.label}
-            </div>
-          );
-        })}
+        acc.push(
+          <div
+            key={item.value}
+            className={cn(
+              "[&>svg]:text-muted-foreground flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3",
+            )}
+          >
+            {itemConfig?.icon && !hideIcon ? (
+              <itemConfig.icon />
+            ) : (
+              <div
+                className="size-2 shrink-0 rounded-[2px]"
+                style={{
+                  backgroundColor: item.color,
+                }}
+              />
+            )}
+            {itemConfig?.label}
+          </div>,
+        );
+        return acc;
+      }, [])}
     </div>
   );
 }
