@@ -273,16 +273,17 @@ function TimelineItem({
 }
 
 function TimelineOriginItem({ course }: { course: Course }) {
-  const cfg = statusConfig.approved;
+  const cfg = statusConfig[course.status];
   const date = course.statusOriginRecordedAt ? new Date(course.statusOriginRecordedAt) : null;
   const gradeText =
     course.statusOriginGrade === null || course.statusOriginGrade === undefined
       ? null
       : `${Math.round(course.statusOriginGrade)}`;
+  const statusLabel = statusLabels[course.status];
   const originLabel =
     course.statusOriginType === "same_course_global"
-      ? `Aprobado en otro plan como ${course.statusOriginCourseCode ?? "este mismo curso"}`
-      : `Aprobado por equivalencia con ${course.statusOriginCourseCode ?? "otro curso"}`;
+      ? `${statusLabel} en otro plan como ${course.statusOriginCourseCode ?? "este mismo curso"}`
+      : `${statusLabel} por equivalencia con ${course.statusOriginCourseCode ?? "otro curso"}`;
   const originDetail = course.statusOriginCourseName
     ? `${originLabel}: ${course.statusOriginCourseName}`
     : originLabel;
@@ -304,7 +305,7 @@ function TimelineOriginItem({ course }: { course: Course }) {
       <div className="min-w-0 flex-1 pb-6">
         <div className="mb-1 flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-foreground text-sm font-semibold">Aprobado</span>
+            <span className="text-foreground text-sm font-semibold">{statusLabel}</span>
             {date ? (
               <span className="text-muted-foreground text-xs">{date.toLocaleDateString()}</span>
             ) : null}
@@ -802,8 +803,8 @@ export function CourseDetails({
   /* --- derived state for hero --- */
   const currentStatus = course.status;
   const requiresProgressGrade = progressStatus === "approved" || progressStatus === "failed";
-  const isApprovedFromAnotherSource =
-    currentStatus === "approved" &&
+  const isStatusFromAnotherSource =
+    (currentStatus === "approved" || currentStatus === "in_progress") &&
     (course.statusOriginType === "same_course_global" || course.statusOriginType === "equivalent");
 
   const progressForm = (
@@ -1004,7 +1005,7 @@ export function CourseDetails({
                 </div>
               ))}
             </div>
-          ) : attempts.length === 0 && !isApprovedFromAnotherSource ? (
+          ) : attempts.length === 0 && !isStatusFromAnotherSource ? (
             <div className="border-border flex flex-col items-center justify-center rounded-2xl border border-dashed py-12 text-center">
               <GraduationCap className="text-muted-foreground/50 mb-3 size-8" />
               <p className="text-foreground text-sm font-medium">Aún no hay intentos registrados</p>
@@ -1014,7 +1015,7 @@ export function CourseDetails({
             </div>
           ) : (
             <div className="pl-1">
-              {isApprovedFromAnotherSource ? <TimelineOriginItem course={course} /> : null}
+              {isStatusFromAnotherSource ? <TimelineOriginItem course={course} /> : null}
               {attempts.map((attempt: CourseAttempt) => (
                 <TimelineItem
                   key={attempt.id}
