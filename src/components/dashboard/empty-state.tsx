@@ -17,7 +17,7 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
       : "Completa tu perfil académico";
 
   const description = !isAuthenticated
-    ? "Inicia sesión para ver tu plan de estudios y seguimiento de progreso académico."
+    ? "Explora el creador de horarios TEC, planes de estudio y reseñas de profes antes de iniciar sesión."
     : hasProfile
       ? "Selecciona tu universidad, sede, carrera y plan de estudios para ver tu progreso académico."
       : "Agrega tu universidad, sede, carrera y plan para que podamos armar tu dashboard.";
@@ -29,7 +29,7 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
       <div className="bg-primary/10 mb-4 rounded-full p-4">
         <GraduationCap className="text-primary size-12" />
       </div>
-      <h2 className="mb-2 text-xl font-semibold">{title}</h2>
+      <h1 className="mb-2 text-xl font-semibold">{title}</h1>
       <p className="text-muted-foreground mb-6 max-w-md text-center">{description}</p>
       {isAuthenticated ? (
         <a href={actionHref}>
@@ -39,13 +39,38 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
           </Button>
         </a>
       ) : (
-        <div className="flex gap-3">
-          <a href="/auth/signin">
-            <Button>Iniciar sesión</Button>
-          </a>
-          <a href="/auth/signup">
-            <Button variant="outline">Registrarse</Button>
-          </a>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-3">
+            <a href="/auth/signin">
+              <Button>Iniciar sesión</Button>
+            </a>
+            <a href="/auth/signup">
+              <Button variant="outline">Registrarse</Button>
+            </a>
+          </div>
+          <nav
+            aria-label="Explorar Claustrum"
+            className="flex flex-wrap justify-center gap-3 text-sm"
+          >
+            <a
+              className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              href="/schedule/"
+            >
+              Creador de horarios TEC
+            </a>
+            <a
+              className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              href="/curriculum/"
+            >
+              Plan de estudios TEC
+            </a>
+            <a
+              className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              href="/professors/"
+            >
+              Reseñas de profes TEC
+            </a>
+          </nav>
         </div>
       )}
     </div>

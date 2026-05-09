@@ -959,6 +959,15 @@ export function SchedulePage() {
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <header className="sr-only">
+              <h1>Creador de horarios TEC</h1>
+              <p>
+                Crea horarios del TEC, explora cursos por sede y periodo, compara grupos y arma una
+                combinacion clara para organizar tu semestre. Tambien puedes usarlo para buscar
+                variantes como crear horarios TEC o planificar horarios academicos por carrera.
+              </p>
+            </header>
+
             <div className="px-4 lg:px-6">
               <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <div className="min-w-0 flex-1">

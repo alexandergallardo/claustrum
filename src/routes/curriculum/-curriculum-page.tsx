@@ -217,6 +217,15 @@ export function CurriculumPage() {
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <header className="sr-only">
+            <h1>Plan de estudios TEC</h1>
+            <p>
+              Consulta planes de estudio del TEC por sede, carrera y plan. Revisa cursos,
+              requisitos, correquisitos, equivalencias y avance academico para entender mejor tu
+              malla curricular.
+            </p>
+          </header>
+
           <div className="px-4 lg:px-6">
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <div className="min-w-0 flex-1">
@@ -294,7 +303,7 @@ export function CurriculumPage() {
             <div className="flex flex-1 px-4 lg:px-6">
               <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 text-center md:min-h-96">
                 <p className="text-muted-foreground max-w-sm text-sm md:text-base">
-                  Selecciona una carrera para visualizar el plan de estudios
+                  Selecciona una carrera para visualizar el plan de estudios del TEC.
                 </p>
               </Card>
             </div>

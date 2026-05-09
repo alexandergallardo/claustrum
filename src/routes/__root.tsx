@@ -14,6 +14,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Kbd } from "@/components/ui/kbd";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuthUser, useOnboardingStatus, useProfileContext } from "@/lib/hooks/use-queries";
+import { useRouteSeo } from "@/lib/seo";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -23,6 +24,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  useRouteSeo(pathname);
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const profileContext = useProfileContext(authUser?.id ?? null);
   const onboardingStatus = useOnboardingStatus(authUser?.id ?? null);

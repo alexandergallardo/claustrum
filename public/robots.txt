@@ -1,3 +1,15 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /moderation
+Disallow: /settings/
+
+Allow: /schedule/
+Allow: /curriculum/
+Allow: /professors/
+Allow: /policies/
+
+Sitemap: https://claustrum.maugp.com/sitemap.xml

@@ -1,6 +1,7 @@
 {
   "short_name": "Claustrum",
-  "name": "Claustrum",
+  "name": "Claustrum - Horarios y progreso academico TEC",
+  "description": "Organiza horarios, cursos, evaluaciones y progreso academico del TEC.",
   "icons": [
     {
       "src": "logo.svg",
@@ -19,8 +20,8 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#000000",
+  "theme_color": "#111111",
   "background_color": "#ffffff"
 }

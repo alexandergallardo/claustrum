@@ -150,6 +150,15 @@ export function ProfessorsReviewsPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+      <header className="sr-only">
+        <h1>Reseñas de profes TEC</h1>
+        <p>
+          Busca reseñas de profes del TEC, filtra por curso y compara experiencias academicas de
+          estudiantes. Esta seccion tambien ayuda a encontrar referencias relacionadas con mis
+          profes TEC, profesores TEC y opiniones de cursos.
+        </p>
+      </header>
+
       <Collapsible open={filtersExpanded} onOpenChange={setFiltersExpanded}>
         <div className="flex items-end gap-2">
           <div className="flex-1 space-y-2">
