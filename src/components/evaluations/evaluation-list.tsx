@@ -31,7 +31,7 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
   if (isLoading) {
     return (
       <div className="rounded-md border">
-        <div className="text-muted-foreground p-4 text-sm">Cargando evaluaciones...</div>
+        <div className="text-muted-foreground p-4 text-sm">Cargando evaluaciones…</div>
       </div>
     );
   }

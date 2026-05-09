@@ -146,7 +146,7 @@ export default {
 
       return badRequest("Not found");
     } catch (error) {
-      console.error("Worker error:", error);
+      // console.error("Worker error:", error);
       return badRequest(error instanceof Error ? error.message : "Internal error");
     }
   },

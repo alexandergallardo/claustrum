@@ -546,7 +546,7 @@ export function EvaluationUploadDialog({
             <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
               <Suspense
                 fallback={
-                  <span className="text-muted-foreground text-sm">Cargando verificación...</span>
+                  <span className="text-muted-foreground text-sm">Cargando verificación…</span>
                 }
               >
                 <Turnstile

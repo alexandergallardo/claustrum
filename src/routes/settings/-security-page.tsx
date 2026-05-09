@@ -398,7 +398,7 @@ export function SecurityPage() {
           {isLoadingMfa ? (
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Loader2Icon className="size-4 animate-spin" />
-              Cargando configuración de 2FA...
+              Cargando configuración de 2FA…
             </div>
           ) : verifiedTotpFactorId ? (
             <>

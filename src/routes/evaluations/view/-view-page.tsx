@@ -149,7 +149,7 @@ export function EvaluationViewPage() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-        <p className="text-muted-foreground text-sm">Cargando documento...</p>
+        <p className="text-muted-foreground text-sm">Cargando documento…</p>
       </div>
     );
   }
@@ -171,7 +171,7 @@ export function EvaluationViewPage() {
       {!isViewerReady && (
         <div className="bg-background absolute inset-0 z-50 flex flex-col items-center justify-center gap-4">
           <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground text-sm">Cargando documento...</p>
+          <p className="text-muted-foreground text-sm">Cargando documento…</p>
         </div>
       )}
 

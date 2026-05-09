@@ -13,7 +13,7 @@ const CODE_LENGTH = 6;
 export function AuthTwoFactorPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [code, setCode] = useState<string[]>(Array.from({ length: CODE_LENGTH }, () => ""));
+  const [code, setCode] = useState<string[]>(() => Array.from({ length: CODE_LENGTH }, () => ""));
   const [factorId, setFactorId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadingFactor, setIsLoadingFactor] = useState(true);

@@ -42,7 +42,7 @@ export function AdminModerationPage() {
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const isAdminQuery = useIsAdmin();
 
-  const canModerate = useMemo(() => isAdminQuery.data === true, [isAdminQuery.data]);
+  const canModerate = isAdminQuery.data === true;
 
   useEffect(() => {
     if (isAuthLoading || isAdminQuery.isLoading) return;
@@ -143,7 +143,7 @@ export function AdminModerationPage() {
   if (isAuthLoading || isAdminQuery.isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
-        <p className="text-muted-foreground text-sm">Verificando permisos...</p>
+        <p className="text-muted-foreground text-sm">Verificando permisos…</p>
       </div>
     );
   }
@@ -288,7 +288,7 @@ function ReviewSection({
       >
         <div className="flex min-h-0 flex-1 flex-col gap-1">
           {isLoading ? (
-            <p className="text-muted-foreground px-1 text-sm">Cargando reseñas...</p>
+            <p className="text-muted-foreground px-1 text-sm">Cargando reseñas…</p>
           ) : rows.length === 0 ? (
             <p className="text-muted-foreground px-1 text-sm">No hay reseñas pendientes.</p>
           ) : (
@@ -453,7 +453,7 @@ function EvaluationSection({
       >
         <div className="flex min-h-0 flex-1 flex-col gap-1">
           {isLoading ? (
-            <p className="text-muted-foreground px-1 text-sm">Cargando evaluaciones...</p>
+            <p className="text-muted-foreground px-1 text-sm">Cargando evaluaciones…</p>
           ) : rows.length === 0 ? (
             <p className="text-muted-foreground px-1 text-sm">No hay evaluaciones pendientes.</p>
           ) : (

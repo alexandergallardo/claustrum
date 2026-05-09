@@ -210,7 +210,7 @@ export function SiteHeader() {
           className="bg-background text-muted-foreground ring-border/60 hover:text-foreground hover:ring-primary/30 focus-visible:ring-ring/50 hidden h-11 items-center gap-3 rounded-full px-5 shadow-sm ring-1 transition-colors focus-visible:ring-2 focus-visible:outline-none lg:flex"
         >
           <Search className="size-5 shrink-0" />
-          <span className="min-w-0 flex-1 text-left text-sm">Buscar...</span>
+          <span className="min-w-0 flex-1 text-left text-sm">Buscar…</span>
           <KbdGroup>
             <Kbd>Ctrl</Kbd>
             <Kbd>K</Kbd>

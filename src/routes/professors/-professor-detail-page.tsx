@@ -186,7 +186,7 @@ export function ProfessorDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1
-            className="text-2xl font-bold"
+            className="text-2xl font-semibold"
             style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
           >
             {headingProfessorName}
@@ -225,7 +225,7 @@ export function ProfessorDetailPage() {
           <div className="border-t pt-3">
             <p className="mb-2 text-sm font-medium">Etiquetas destacadas</p>
             {summaryQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">Cargando etiquetas...</p>
+              <p className="text-muted-foreground text-sm">Cargando etiquetas…</p>
             ) : summary?.tag_counts?.length ? (
               <div className="flex flex-wrap gap-2">
                 {summary.tag_counts.slice(0, 10).map((tag) => (

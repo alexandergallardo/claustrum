@@ -174,7 +174,7 @@ export default function VerifyEmailPage() {
                   Reenviar correo de verificación
                 </Button>
                 {resending && (
-                  <p className="text-muted-foreground text-center text-xs">Enviando...</p>
+                  <p className="text-muted-foreground text-center text-xs">Enviando…</p>
                 )}
               </>
             ))}

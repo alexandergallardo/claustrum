@@ -178,9 +178,7 @@ export function ReviewComposer({
                   )}
                 >
                   {courseQueryDebouncer.state.isPending || courseSearchQuery.isFetching ? (
-                    <div className="text-muted-foreground px-3 py-2 text-sm">
-                      Buscando cursos...
-                    </div>
+                    <div className="text-muted-foreground px-3 py-2 text-sm">Buscando cursos…</div>
                   ) : null}
 
                   {!courseQueryDebouncer.state.isPending && !courseSearchQuery.isFetching
@@ -358,7 +356,7 @@ export function ReviewComposer({
             <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
               <Suspense
                 fallback={
-                  <span className="text-muted-foreground text-sm">Cargando verificación...</span>
+                  <span className="text-muted-foreground text-sm">Cargando verificación…</span>
                 }
               >
                 <Turnstile

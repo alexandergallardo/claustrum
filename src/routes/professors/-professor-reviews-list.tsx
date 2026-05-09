@@ -58,7 +58,7 @@ export function ProfessorReviewsList({
       <CardContent className="space-y-4 p-4">
         <CardTitle className="text-base">Reseñas</CardTitle>
         {isLoading && reviewRows.length === 0 ? (
-          <div className="text-muted-foreground text-sm">Cargando reseñas...</div>
+          <div className="text-muted-foreground text-sm">Cargando reseñas…</div>
         ) : reviewRows.length === 0 ? (
           <div className="text-muted-foreground text-sm">
             Aún no hay reseñas para este profesor.

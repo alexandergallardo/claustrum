@@ -236,7 +236,7 @@ export function ProfessorsReviewsPage() {
       <Card className="py-0">
         <CardContent className="p-4">
           {rows.length === 0 && query.isLoading ? (
-            <div className="text-muted-foreground text-sm">Cargando profesores...</div>
+            <div className="text-muted-foreground text-sm">Cargando profesores…</div>
           ) : rows.length === 0 ? (
             <div className="text-muted-foreground text-sm">
               No hay resultados para los filtros seleccionados.

@@ -47,7 +47,7 @@ export function FiltersPanel({
           </div>
 
           <CollapsibleContent className="pt-2">
-            <div className="bg-muted/30 space-y-2.5 rounded-lg px-3 py-3">{children}</div>
+            <div className="bg-muted/30 space-y-2.5 rounded-lg p-3">{children}</div>
           </CollapsibleContent>
         </Collapsible>
       </div>
