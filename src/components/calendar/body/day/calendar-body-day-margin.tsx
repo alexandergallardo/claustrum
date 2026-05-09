@@ -29,7 +29,7 @@ export default function CalendarBodyDayMargin({ className }: { className?: strin
                 index === 0 ? "top-1" : "-top-2.5",
               )}
             >
-              {format(new Date().setHours(hour, 0, 0, 0), "h a", { locale: es })}
+              {format(new Date(2000, 0, 1, hour, 0, 0, 0), "h a", { locale: es })}
             </span>
           </div>
         ))}

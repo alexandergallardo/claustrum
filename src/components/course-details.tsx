@@ -611,13 +611,15 @@ export function CourseDetails({
   const latestTermName = latestTermGroups[0]?.termDisplayName ?? null;
   const evaluations = evaluationsQuery.data ?? [];
 
-  const prerequisites = (course.prerequisites || [])
-    .map((id) => courseById.get(id))
-    .filter((item): item is Course => item !== undefined);
+  const prerequisites = (course.prerequisites || []).flatMap((id) => {
+    const item = courseById.get(id);
+    return item ? [item] : [];
+  });
 
-  const corequisites = (course.corequisites || [])
-    .map((id) => courseById.get(id))
-    .filter((item): item is Course => item !== undefined);
+  const corequisites = (course.corequisites || []).flatMap((id) => {
+    const item = courseById.get(id);
+    return item ? [item] : [];
+  });
 
   const isPrerequisiteFor = Array.from(courseById.values()).filter((item) =>
     item.prerequisites?.includes(course.id),

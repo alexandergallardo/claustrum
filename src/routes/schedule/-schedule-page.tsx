@@ -233,10 +233,11 @@ export function SchedulePage() {
 
   const serializedGroups = useMemo(() => {
     if (!search.groups) return [];
-    return search.groups
-      .split(",")
-      .map((value) => value.trim())
-      .flatMap((value) => (value ? [value] : []));
+    return search.groups.split(",").reduce<string[]>((acc, value) => {
+      const trimmed = value.trim();
+      if (trimmed) acc.push(trimmed);
+      return acc;
+    }, []);
   }, [search.groups]);
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();

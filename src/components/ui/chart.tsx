@@ -258,7 +258,7 @@ function ChartLegendContent({
       )}
     >
       {payload
-        .filter((item) => item.type !== "none")
+        .flatMap((item) => (item.type !== "none" ? [item] : []))
         .map((item) => {
           const key = `${String(nameKey || item.dataKey || "value")}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);

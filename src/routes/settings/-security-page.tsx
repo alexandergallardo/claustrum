@@ -206,12 +206,14 @@ export function SecurityPage() {
       const pendingFactors = factors.totp.filter(
         (factor) => (factor.status as string) !== "verified",
       );
-      for (const pendingFactor of pendingFactors) {
-        const { error: unenrollError } = await supabase.auth.mfa.unenroll({
-          factorId: pendingFactor.id,
-        });
-        if (unenrollError) throw unenrollError;
-      }
+      await Promise.all(
+        pendingFactors.map(async (pendingFactor) => {
+          const { error: unenrollError } = await supabase.auth.mfa.unenroll({
+            factorId: pendingFactor.id,
+          });
+          if (unenrollError) throw unenrollError;
+        }),
+      );
 
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",

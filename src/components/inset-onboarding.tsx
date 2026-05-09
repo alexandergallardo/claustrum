@@ -140,10 +140,12 @@ export function InsetOnboardingPage() {
         .from("user")
         .upsert({ id: authUser.id, onboarding_completed_at: new Date().toISOString() });
 
-      await queryClient.invalidateQueries({ queryKey: ["onboardingStatus", authUser.id] });
-      await queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] });
-      await queryClient.invalidateQueries({ queryKey: ["userStudyPlan", authUser.id] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboardStats", authUser.id] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["onboardingStatus", authUser.id] }),
+        queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] }),
+        queryClient.invalidateQueries({ queryKey: ["userStudyPlan", authUser.id] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboardStats", authUser.id] }),
+      ]);
       void navigate({ to: "/" });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "No se pudo guardar el onboarding.");

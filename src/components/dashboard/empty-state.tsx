@@ -55,7 +55,7 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
 function RadialProgressSkeleton() {
   return (
     <div className="bg-muted flex flex-col justify-center gap-4 rounded-lg p-4 md:flex-row md:items-center">
-      <div className="bg-muted-foreground/20 h-[100px] w-[100px] shrink-0 animate-pulse self-center rounded-full md:self-auto" />
+      <div className="bg-muted-foreground/20 size-[100px] shrink-0 animate-pulse self-center rounded-full md:self-auto" />
       <div className="flex w-full flex-col gap-1 text-center md:text-left">
         <div className="bg-muted-foreground/20 mx-auto h-4 w-24 rounded md:mx-0" />
         <div className="bg-muted-foreground/20 mx-auto h-7 w-16 rounded md:mx-0" />
