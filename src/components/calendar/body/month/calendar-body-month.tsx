@@ -9,7 +9,7 @@ import {
   format,
   isWithinInterval,
 } from "date-fns";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { LazyMotion, m, domAnimation, AnimatePresence, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -44,101 +44,103 @@ export default function CalendarBodyMonth() {
   );
 
   return (
-    <div className="flex flex-grow flex-col overflow-hidden">
-      <div className="border-border divide-border hidden grid-cols-6 divide-x md:grid">
-        {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
-          <div
-            key={day}
-            className="text-muted-foreground border-border border-b py-2 text-center text-sm font-medium"
+    <LazyMotion features={domAnimation}>
+      <div className="flex flex-grow flex-col overflow-hidden">
+        <div className="border-border divide-border hidden grid-cols-6 divide-x md:grid">
+          {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
+            <div
+              key={day}
+              className="text-muted-foreground border-border border-b py-2 text-center text-sm font-medium"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait" initial={false}>
+          <m.div
+            key={monthStart.toISOString()}
+            className="relative grid flex-grow overflow-y-auto md:grid-cols-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={
+              shouldReduceMotion
+                ? noMotion
+                : {
+                    duration: 0.2,
+                    ease: "easeInOut",
+                  }
+            }
           >
-            {day}
-          </div>
-        ))}
-      </div>
+            {calendarDays.map((day) => {
+              const dayEvents = visibleEvents.filter((event) => isSameDay(event.start, day));
+              const isToday = isSameDay(day, today);
+              const isCurrentMonth = isSameMonth(day, date);
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={monthStart.toISOString()}
-          className="relative grid flex-grow overflow-y-auto md:grid-cols-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={
-            shouldReduceMotion
-              ? noMotion
-              : {
-                  duration: 0.2,
-                  ease: "easeInOut",
-                }
-          }
-        >
-          {calendarDays.map((day) => {
-            const dayEvents = visibleEvents.filter((event) => isSameDay(event.start, day));
-            const isToday = isSameDay(day, today);
-            const isCurrentMonth = isSameMonth(day, date);
-
-            return (
-              <button
-                type="button"
-                key={day.toISOString()}
-                className={cn(
-                  "relative flex aspect-square cursor-pointer flex-col border-r border-b p-2 text-left",
-                  !isCurrentMonth && "bg-muted/50 hidden md:flex",
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDate(day);
-                  setMode("day");
-                }}
-              >
-                <div
+              return (
+                <button
+                  type="button"
+                  key={day.toISOString()}
                   className={cn(
-                    "flex aspect-square w-fit flex-col items-center justify-center rounded-full p-1 text-sm font-medium",
-                    isToday && "bg-primary text-background",
+                    "relative flex aspect-square cursor-pointer flex-col border-r border-b p-2 text-left",
+                    !isCurrentMonth && "bg-muted/50 hidden md:flex",
                   )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDate(day);
+                    setMode("day");
+                  }}
                 >
-                  {format(day, "d")}
-                </div>
-                <AnimatePresence mode="wait">
-                  <div className="mt-1 flex flex-col gap-1">
-                    {dayEvents.slice(0, 3).map((event) => (
-                      <CalendarEvent
-                        key={event.id}
-                        event={event}
-                        className="relative h-auto"
-                        month
-                      />
-                    ))}
-                    {dayEvents.length > 3 && (
-                      <motion.div
-                        key={`more-${day.toISOString()}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={
-                          shouldReduceMotion
-                            ? noMotion
-                            : {
-                                duration: 0.2,
-                              }
-                        }
-                        className="text-muted-foreground text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDate(day);
-                          setMode("day");
-                        }}
-                      >
-                        +{dayEvents.length - 3} más
-                      </motion.div>
+                  <div
+                    className={cn(
+                      "flex aspect-square w-fit flex-col items-center justify-center rounded-full p-1 text-sm font-medium",
+                      isToday && "bg-primary text-background",
                     )}
+                  >
+                    {format(day, "d")}
                   </div>
-                </AnimatePresence>
-              </button>
-            );
-          })}
-        </motion.div>
-      </AnimatePresence>
-    </div>
+                  <AnimatePresence mode="wait">
+                    <div className="mt-1 flex flex-col gap-1">
+                      {dayEvents.slice(0, 3).map((event) => (
+                        <CalendarEvent
+                          key={event.id}
+                          event={event}
+                          className="relative h-auto"
+                          month
+                        />
+                      ))}
+                      {dayEvents.length > 3 && (
+                        <m.div
+                          key={`more-${day.toISOString()}`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={
+                            shouldReduceMotion
+                              ? noMotion
+                              : {
+                                  duration: 0.2,
+                                }
+                          }
+                          className="text-muted-foreground text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDate(day);
+                            setMode("day");
+                          }}
+                        >
+                          +{dayEvents.length - 3} más
+                        </m.div>
+                      )}
+                    </div>
+                  </AnimatePresence>
+                </button>
+              );
+            })}
+          </m.div>
+        </AnimatePresence>
+      </div>
+    </LazyMotion>
   );
 }

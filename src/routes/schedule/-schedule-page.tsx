@@ -236,7 +236,7 @@ export function SchedulePage() {
     return search.groups
       .split(",")
       .map((value) => value.trim())
-      .filter(Boolean);
+      .flatMap((value) => (value ? [value] : []));
   }, [search.groups]);
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();

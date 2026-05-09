@@ -245,7 +245,7 @@ export function ProfessorsReviewsPage() {
             <div className="relative min-h-[420px]">
               {query.isFetching ? (
                 <div className="bg-background/95 text-muted-foreground absolute top-2 right-2 z-10 rounded-md border px-2 py-1 text-xs">
-                  Actualizando...
+                  Actualizando…
                 </div>
               ) : null}
               <Table>
