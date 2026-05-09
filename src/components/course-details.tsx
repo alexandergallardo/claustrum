@@ -246,7 +246,7 @@ function TimelineItem({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="size-7 shrink-0"
             onClick={() => onEdit(attempt)}
             aria-label="Editar intento"
           >
@@ -1230,7 +1230,7 @@ export function CourseDetails({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="size-7"
                   onClick={() => setEquivalentsPage(Math.max(0, equivalentsPage - 1))}
                   disabled={equivalentsPage === 0}
                 >
@@ -1242,7 +1242,7 @@ export function CourseDetails({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="size-7"
                   onClick={() => setEquivalentsPage(Math.min(totalPages - 1, equivalentsPage + 1))}
                   disabled={equivalentsPage >= totalPages - 1}
                 >

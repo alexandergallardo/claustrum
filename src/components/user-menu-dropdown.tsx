@@ -51,7 +51,7 @@ export function UserMenuDropdown({
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-lg">
+            <Avatar className="size-8 rounded-lg">
               <AvatarImage src={user.avatar} alt={user.name} />
               <AvatarFallback className="rounded-lg">
                 {user.name.charAt(0).toUpperCase()}
@@ -67,7 +67,7 @@ export function UserMenuDropdown({
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link to="/settings/profile">
-              <Settings className="h-4 w-4" />
+              <Settings className="size-4" />
               Configuración
             </Link>
           </DropdownMenuItem>
@@ -80,7 +80,7 @@ export function UserMenuDropdown({
             void navigate({ to: "/auth/signin" });
           }}
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="size-4" />
           Cerrar sesión
         </DropdownMenuItem>
       </DropdownMenuContent>

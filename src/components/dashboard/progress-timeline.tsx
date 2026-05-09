@@ -22,7 +22,7 @@ export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
             <div key={semester.levelNumber} className="flex items-start pb-6 last:pb-0">
               <div className="relative mr-4 flex flex-col items-center">
                 <div
-                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full ${
+                  className={`relative z-10 flex size-8 items-center justify-center rounded-full ${
                     semester.status === "completed"
                       ? "bg-emerald-500 text-white"
                       : semester.status === "in_progress"
@@ -31,11 +31,11 @@ export function ProgressTimeline({ semesters }: ProgressTimelineProps) {
                   }`}
                 >
                   {semester.status === "completed" ? (
-                    <CheckCircle2 className="h-5 w-5" />
+                    <CheckCircle2 className="size-5" />
                   ) : semester.status === "in_progress" ? (
-                    <CircleDashed className="h-5 w-5 animate-pulse" />
+                    <CircleDashed className="size-5 animate-pulse" />
                   ) : (
-                    <Circle className="h-5 w-5" />
+                    <Circle className="size-5" />
                   )}
                 </div>
                 {index < semesters.length - 1 && (

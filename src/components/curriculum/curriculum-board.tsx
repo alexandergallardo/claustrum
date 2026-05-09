@@ -55,12 +55,8 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
   const userId = useMemo(() => authUser?.id ?? undefined, [authUser?.id]);
   const studyPlanId = useMemo(() => planDetail.plan?.id ?? undefined, [planDetail.plan?.id]);
 
-  const [zoom, setZoom] = useState<number>(ZOOM_DEFAULT);
+  const [zoom, setZoom] = useState<number>(() => getInitialZoom());
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(getInitialPanelOpen);
-
-  useEffect(() => {
-    setZoom(getInitialZoom());
-  }, []);
 
   useEffect(() => {
     localStorage.setItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY, isPanelOpen.toString());
@@ -99,7 +95,7 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
           title={isPanelOpen ? "Ocultar controles" : "Mostrar controles"}
         >
           <span className="text-sm font-medium">{Math.round(zoom * 100)}%</span>
-          {isPanelOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {isPanelOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </button>
 
         {isPanelOpen && (
@@ -111,7 +107,7 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
                 className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 title="Alejar"
               >
-                <ZoomOut className="h-4 w-4" />
+                <ZoomOut className="size-4" />
               </button>
               <button
                 onClick={handleZoomIn}
@@ -119,7 +115,7 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
                 className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                 title="Acercar"
               >
-                <ZoomIn className="h-4 w-4" />
+                <ZoomIn className="size-4" />
               </button>
               <div className="bg-border mx-1 h-5 w-px" />
               <button
@@ -127,7 +123,7 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
                 className="hover:bg-muted rounded-md p-2 transition-colors"
                 title="Restablecer tamaño"
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="size-4" />
               </button>
             </div>
 
@@ -135,16 +131,16 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
               <>
                 <div className="border-border mt-2 space-y-2 border-t pt-2">
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <GraduationCap className="h-4 w-4" />
+                    <GraduationCap className="size-4" />
                     <span>{planDetail.plan.academic_degree || "Sin grado"}</span>
                   </div>
                   <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <BookOpen className="h-4 w-4" />
+                    <BookOpen className="size-4" />
                     <span>{planDetail.plan.modality_name || "Sin modalidad"}</span>
                   </div>
                   {planDetail.plan.external_plan_id && (
                     <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="size-4" />
                       <span>Plan: {planDetail.plan.external_plan_id}</span>
                     </div>
                   )}

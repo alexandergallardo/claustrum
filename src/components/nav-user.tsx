@@ -31,7 +31,7 @@ export function NavUser({
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <Link to="/auth/signin">
-              <LogIn className="h-4 w-4" />
+              <LogIn className="size-4" />
               <span className="flex-1 text-left">Iniciar sesión</span>
             </Link>
           </SidebarMenuButton>
@@ -43,7 +43,7 @@ export function NavUser({
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <Link to="/settings/appearance">
-              <Settings className="h-4 w-4" />
+              <Settings className="size-4" />
               <span className="flex-1 text-left">Configuración</span>
             </Link>
           </SidebarMenuButton>
@@ -64,7 +64,7 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-full">
+              <Avatar className="size-8 rounded-full">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback>{userInitial}</AvatarFallback>
               </Avatar>
@@ -72,7 +72,7 @@ export function NavUser({
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">{user.email}</span>
               </div>
-              <EllipsisVertical className="ml-auto h-4 w-4" />
+              <EllipsisVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           }
           align="end"

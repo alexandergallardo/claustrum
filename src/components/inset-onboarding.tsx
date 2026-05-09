@@ -172,7 +172,7 @@ export function InsetOnboardingPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
-        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
+        <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
       </div>
     );
   }
@@ -402,7 +402,7 @@ export function InsetOnboardingPage() {
                 </Button>
               ) : (
                 <Button onClick={finishOnboarding} disabled={isSaving}>
-                  {isSaving ? <Loader2Icon className="h-4 w-4 animate-spin" /> : null}
+                  {isSaving ? <Loader2Icon className="size-4 animate-spin" /> : null}
                   Finalizar
                 </Button>
               )}

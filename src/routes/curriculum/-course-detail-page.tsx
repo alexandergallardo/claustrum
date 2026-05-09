@@ -86,7 +86,7 @@ export function CourseDetailPage() {
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="px-4 lg:px-6">
             <Button variant="ghost" onClick={handleBack} className="-ml-2">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="mr-2 size-4" />
               Volver al plan
             </Button>
           </div>
@@ -94,7 +94,7 @@ export function CourseDetailPage() {
           {planDetailQuery.isError ? (
             <div className="px-4 lg:px-6">
               <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="size-4" />
                 <AlertDescription>
                   Error al cargar el plan de estudios. Intenta de nuevo.
                 </AlertDescription>

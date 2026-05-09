@@ -250,7 +250,7 @@ export function CurriculumPage() {
                   disabled={isUsingProfileDefaults}
                   className="h-8 shrink-0 gap-1.5 text-xs"
                 >
-                  <User className="h-3.5 w-3.5" />
+                  <User className="size-3.5" />
                   {isUsingProfileDefaults ? "Perfil activo" : "Usar mi perfil"}
                 </Button>
               )}
@@ -260,7 +260,7 @@ export function CurriculumPage() {
           {planDetailQuery.isError && (
             <div className="px-4 lg:px-6">
               <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="size-4" />
                 <AlertDescription>
                   Error al cargar el plan de estudios. Intenta de nuevo.
                 </AlertDescription>

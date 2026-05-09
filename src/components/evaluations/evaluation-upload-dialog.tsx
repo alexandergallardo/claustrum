@@ -257,7 +257,7 @@ export function EvaluationUploadDialog({
             }`}
             onClick={() => document.getElementById("evaluation-file-input")?.click()}
           >
-            <FileUp className="text-muted-foreground mx-auto mb-2 h-6 w-6" />
+            <FileUp className="text-muted-foreground mx-auto mb-2 size-6" />
             <p className="text-muted-foreground text-sm">
               Arrastra un PDF aquí o haz clic para seleccionar
             </p>
@@ -275,7 +275,7 @@ export function EvaluationUploadDialog({
               onClick={() => setEvaluationFile(null)}
               aria-label="Quitar archivo"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </Button>
           </div>
         )}
@@ -321,7 +321,7 @@ export function EvaluationUploadDialog({
                 onClick={() => handleEvaluationNumberStep(-1)}
                 aria-label="Disminuir número"
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="size-4" />
               </Button>
               <Input
                 className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
@@ -338,7 +338,7 @@ export function EvaluationUploadDialog({
                 onClick={() => handleEvaluationNumberStep(1)}
                 aria-label="Aumentar número"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="size-4" />
               </Button>
             </div>
           )}
@@ -525,7 +525,7 @@ export function EvaluationUploadDialog({
                 onClick={() => setAnswersFile(null)}
                 aria-label="Quitar archivo"
               >
-                <X className="h-4 w-4" />
+                <X className="size-4" />
               </Button>
             </div>
           )}

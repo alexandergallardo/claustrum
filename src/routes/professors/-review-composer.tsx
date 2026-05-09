@@ -517,7 +517,7 @@ function ScoreInput({
           disabled={isAtMin}
           aria-label={`Disminuir ${label.toLowerCase()}`}
         >
-          <Minus className="h-3.5 w-3.5" />
+          <Minus className="size-3.5" />
         </Button>
         <Button
           type="button"
@@ -527,7 +527,7 @@ function ScoreInput({
           disabled={isAtMax}
           aria-label={`Aumentar ${label.toLowerCase()}`}
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
         </Button>
       </div>
     </div>

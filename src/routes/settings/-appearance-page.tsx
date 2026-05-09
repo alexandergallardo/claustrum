@@ -53,11 +53,11 @@ export function AppearancePage() {
                 >
                   <div
                     className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-full",
+                      "flex size-12 items-center justify-center rounded-full",
                       isActive ? "bg-primary text-primary-foreground" : "bg-muted",
                     )}
                   >
-                    <Icon className="h-6 w-6" />
+                    <Icon className="size-6" />
                   </div>
                   <div className="text-sm font-medium">{themeOption.label}</div>
                   {isActive && <div className="text-primary text-xs font-medium">Activo</div>}

@@ -124,7 +124,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
           title="Exportar calendario"
           onClick={() => setIsOpen(true)}
         >
-          <ImageDown className="h-4 w-4" />
+          <ImageDown className="size-4" />
         </Button>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
@@ -152,7 +152,7 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" title="Exportar calendario">
-          <ImageDown className="h-4 w-4" />
+          <ImageDown className="size-4" />
         </Button>
       </DialogTrigger>
       <DialogContent>

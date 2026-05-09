@@ -183,7 +183,7 @@ export function ProfessorDetailPage() {
             aria-label="Atrás"
             title="Atrás"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
           </Button>
           <h1
             className="text-2xl font-semibold"
@@ -193,7 +193,7 @@ export function ProfessorDetailPage() {
           </h1>
         </div>
         <Button type="button" onClick={() => setIsComposerOpen(true)}>
-          <PenLine className="mr-2 h-4 w-4" />
+          <PenLine className="mr-2 size-4" />
           Escribir reseña
         </Button>
       </div>

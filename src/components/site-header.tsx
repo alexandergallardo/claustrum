@@ -221,7 +221,7 @@ export function SiteHeader() {
           {isAdmin ? (
             <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
               <Link to="/moderation" aria-label="Moderación" title="Moderación">
-                <Shield className="h-[1.2rem] w-[1.2rem]" />
+                <Shield className="size-[1.2rem]" />
                 {totalPending > 0 && (
                   <span className="bg-foreground text-background ring-background absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full text-[8px] font-bold ring-2">
                     {totalPending > 9 ? "9+" : totalPending}
@@ -238,7 +238,7 @@ export function SiteHeader() {
             disabled
             className="rounded-full"
           >
-            <Bell className="h-[1.2rem] w-[1.2rem]" />
+            <Bell className="size-[1.2rem]" />
           </Button>
           <Button
             variant="ghost"
@@ -248,8 +248,8 @@ export function SiteHeader() {
             title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
             className="rounded-full"
           >
-            <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+            <Sun className="size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+            <Moon className="absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
           </Button>
           <Button
             variant="ghost"
@@ -258,7 +258,7 @@ export function SiteHeader() {
             asChild
           >
             <Link to="/settings/appearance" aria-label="Configuración" title="Configuración">
-              <Settings className="h-[1.2rem] w-[1.2rem]" />
+              <Settings className="size-[1.2rem]" />
             </Link>
           </Button>
         </div>

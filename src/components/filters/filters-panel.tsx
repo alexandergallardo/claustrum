@@ -31,7 +31,7 @@ export function FiltersPanel({
         <Collapsible open={isExpanded} onOpenChange={onExpandedChange}>
           <div className="bg-muted/30 flex items-center justify-between gap-2 rounded-lg px-3 py-2">
             <div className="text-muted-foreground flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="size-4" />
               <span className="text-sm font-medium">Filtros</span>
             </div>
             <CollapsibleTrigger asChild>
@@ -41,7 +41,7 @@ export function FiltersPanel({
                 size="icon-sm"
                 aria-label={isExpanded ? "Ocultar filtros" : "Mostrar filtros"}
               >
-                {isExpanded ? <X className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {isExpanded ? <X className="size-4" /> : <ChevronDown className="size-4" />}
               </Button>
             </CollapsibleTrigger>
           </div>

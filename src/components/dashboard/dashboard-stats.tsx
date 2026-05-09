@@ -36,7 +36,7 @@ function RadialProgressCard({
       <CardContent className="flex flex-col justify-center gap-4 p-4 md:flex-row md:items-center">
         <ChartContainer
           config={chartConfig}
-          className="aspect-square h-[100px] w-[100px] shrink-0 self-center md:self-auto"
+          className="aspect-square size-[100px] shrink-0 self-center md:self-auto"
         >
           <RadialBarChart
             data={chartData}
@@ -272,7 +272,7 @@ export function CourseStatusChart({ stats }: CourseStatusChartProps) {
               <div key={item.name} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                    <div className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
                     <span>{item.name}</span>
                   </div>
                   <span className="text-muted-foreground">

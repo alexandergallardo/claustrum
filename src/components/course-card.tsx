@@ -55,17 +55,17 @@ const relationConfig: Record<string, { ringClass: string; icon: React.ReactNode;
   {
     prerequisite: {
       ringClass: "ring-2 ring-amber-500 shadow-md",
-      icon: <Lock className="h-3 w-3 text-amber-600" />,
+      icon: <Lock className="size-3 text-amber-600" />,
       label: "Requisito",
     },
     corequisite: {
       ringClass: "ring-2 ring-blue-500 shadow-md",
-      icon: <Link className="h-3 w-3 text-blue-600" />,
+      icon: <Link className="size-3 text-blue-600" />,
       label: "Correquisito",
     },
     postrequisite: {
       ringClass: "ring-2 ring-emerald-500 shadow-md",
-      icon: <Unlock className="h-3 w-3 text-emerald-600" />,
+      icon: <Unlock className="size-3 text-emerald-600" />,
       label: "Desbloquea",
     },
   };

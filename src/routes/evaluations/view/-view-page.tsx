@@ -148,7 +148,7 @@ export function EvaluationViewPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+        <Loader2 className="text-muted-foreground size-8 animate-spin" />
         <p className="text-muted-foreground text-sm">Cargando documento…</p>
       </div>
     );
@@ -159,7 +159,7 @@ export function EvaluationViewPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
         <p className="text-destructive text-sm">{error ?? "No se pudo cargar el documento"}</p>
         <Button variant="outline" onClick={() => window.history.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="mr-2 size-4" />
           Volver
         </Button>
       </div>
@@ -170,7 +170,7 @@ export function EvaluationViewPage() {
     <div className="bg-background relative flex min-h-0 flex-1 flex-col overflow-hidden">
       {!isViewerReady && (
         <div className="bg-background absolute inset-0 z-50 flex flex-col items-center justify-center gap-4">
-          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+          <Loader2 className="text-muted-foreground size-8 animate-spin" />
           <p className="text-muted-foreground text-sm">Cargando documento…</p>
         </div>
       )}
@@ -211,12 +211,12 @@ export function EvaluationViewPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 cursor-pointer"
+              className="size-8 cursor-pointer"
               onClick={() => window.history.back()}
               aria-label="Volver"
               title="Volver"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </Button>
             <div className="bg-border mx-1 h-4 w-px" />
             <div className="hidden items-center min-[430px]:flex">
@@ -228,12 +228,12 @@ export function EvaluationViewPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 cursor-pointer"
+              className="size-8 cursor-pointer"
               onClick={() => handleZoomChange(-ZOOM_STEP)}
               disabled={zoom <= MIN_ZOOM}
               aria-label="Reducir zoom"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="size-4" />
             </Button>
             <span className="text-muted-foreground w-12 text-center text-sm tabular-nums">
               {Math.round(zoom * 100)}%
@@ -241,22 +241,22 @@ export function EvaluationViewPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 cursor-pointer"
+              className="size-8 cursor-pointer"
               onClick={() => handleZoomChange(ZOOM_STEP)}
               disabled={zoom >= MAX_ZOOM}
               aria-label="Aumentar zoom"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
             </Button>
             <div className="bg-border mx-1 h-4 w-px" />
-            <Button asChild variant="ghost" size="icon" className="h-8 w-8 cursor-pointer">
+            <Button asChild variant="ghost" size="icon" className="size-8 cursor-pointer">
               <a
                 href={blobUrl}
                 download={fileName}
                 aria-label="Descargar PDF"
                 title="Descargar PDF"
               >
-                <Download className="h-4 w-4" />
+                <Download className="size-4" />
               </a>
             </Button>
           </div>

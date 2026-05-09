@@ -57,7 +57,7 @@ export function ScheduleZoomControls({
         title={isPanelOpen ? "Ocultar controles" : "Mostrar controles"}
       >
         <span className="text-sm font-medium">{zoomPercentage}%</span>
-        {isPanelOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {isPanelOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
       </button>
 
       {isPanelOpen && (
@@ -69,7 +69,7 @@ export function ScheduleZoomControls({
               className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               title="Alejar"
             >
-              <ZoomOut className="h-4 w-4" />
+              <ZoomOut className="size-4" />
             </button>
             <button
               onClick={handleZoomIn}
@@ -77,7 +77,7 @@ export function ScheduleZoomControls({
               className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               title="Acercar"
             >
-              <ZoomIn className="h-4 w-4" />
+              <ZoomIn className="size-4" />
             </button>
             <div className="bg-border mx-1 h-5 w-px" />
             <button
@@ -85,7 +85,7 @@ export function ScheduleZoomControls({
               className="hover:bg-muted rounded-md p-2 transition-colors"
               title="Restablecer tamaño"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="size-4" />
             </button>
           </div>
 

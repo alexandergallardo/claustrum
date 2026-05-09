@@ -128,7 +128,7 @@ export function SecurityPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
+        <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
       </div>
     );
   }
@@ -136,7 +136,7 @@ export function SecurityPage() {
   if (!authUser) {
     return (
       <div className="py-12 text-center">
-        <ShieldIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+        <ShieldIcon className="text-muted-foreground mx-auto mb-4 size-12" />
         <h3 className="mb-2 text-lg font-semibold">Inicia sesión para acceder a seguridad</h3>
         <p className="text-muted-foreground mx-auto mb-6 max-w-md">
           Necesitas estar autenticado para cambiar tu contraseña y configurar opciones de seguridad.
@@ -383,7 +383,7 @@ export function SecurityPage() {
               onClick={handlePasswordReset}
               disabled={isSendingPasswordReset || !canSavePassword}
             >
-              {isSendingPasswordReset && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+              {isSendingPasswordReset && <Loader2Icon className="mr-2 size-4 animate-spin" />}
               Guardar contraseña
             </Button>
           </div>

@@ -175,9 +175,9 @@ export function ProfessorsReviewsPage() {
               aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
             >
               {filtersExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="size-4" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="size-4" />
               )}
             </Button>
           </CollapsibleTrigger>

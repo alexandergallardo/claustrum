@@ -29,22 +29,22 @@ export default function CalendarHeaderActionsZoom() {
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="size-8"
         onClick={handleZoomOut}
         disabled={!canZoomOut}
         title="Reducir zoom (Ctrl + rueda del ratón)"
       >
-        <ZoomOut className="h-4 w-4" />
+        <ZoomOut className="size-4" />
       </Button>
       <Button
         variant="outline"
         size="icon"
-        className="h-8 w-8"
+        className="size-8"
         onClick={handleZoomIn}
         disabled={!canZoomIn}
         title="Aumentar zoom (Ctrl + rueda del ratón)"
       >
-        <ZoomIn className="h-4 w-4" />
+        <ZoomIn className="size-4" />
       </Button>
     </div>
   );

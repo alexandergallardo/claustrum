@@ -78,7 +78,7 @@ const CalendarEvent = memo(function CalendarEvent({
               }}
               aria-label="Quitar grupo"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="size-3.5" />
             </button>
           )}
 
@@ -93,16 +93,16 @@ const CalendarEvent = memo(function CalendarEvent({
             </p>
             {!isCompact && showClassroom && (
               <div className="flex items-center gap-2 text-[10px] opacity-90 sm:text-xs">
-                <span className="flex h-3 w-3 shrink-0 items-center justify-center sm:h-4 sm:w-4">
-                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
+                  <MapPin className="size-3 sm:size-4" />
                 </span>
                 <span className="leading-tight">{classroomLabel}</span>
               </div>
             )}
             {!isCompact && (
               <div className="flex items-center gap-2 text-[10px] opacity-85 sm:text-xs">
-                <span className="flex h-3 w-3 shrink-0 items-center justify-center sm:h-4 sm:w-4">
-                  <Layers className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
+                  <Layers className="size-3 sm:size-4" />
                 </span>
                 <span className="leading-tight">{modalityLabel}</span>
               </div>
@@ -113,8 +113,8 @@ const CalendarEvent = memo(function CalendarEvent({
                 isCompact && "hidden",
               )}
             >
-              <span className="flex h-3 w-3 shrink-0 items-center justify-center sm:h-4 sm:w-4">
-                <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
+                <User className="size-3 sm:size-4" />
               </span>
               <span
                 className={cn(
@@ -139,14 +139,14 @@ const CalendarEvent = memo(function CalendarEvent({
             {event.courseCode}: {event.courseName}
           </p>
           <p className="flex items-center gap-2 text-sm">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-              <Users className="h-4 w-4" />
+            <span className="flex size-4 shrink-0 items-center justify-center">
+              <Users className="size-4" />
             </span>
             <span>GRUPO {event.groupCode}</span>
           </p>
           <p className="flex items-center gap-2 text-sm">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-              <Clock className="h-4 w-4" />
+            <span className="flex size-4 shrink-0 items-center justify-center">
+              <Clock className="size-4" />
             </span>
             <span>
               {format(event.start, "h:mm a", { locale: es })} -{" "}
@@ -155,29 +155,29 @@ const CalendarEvent = memo(function CalendarEvent({
           </p>
           {campusLabel && (
             <p className="flex items-center gap-2 text-sm">
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                <Building2 className="h-4 w-4" />
+              <span className="flex size-4 shrink-0 items-center justify-center">
+                <Building2 className="size-4" />
               </span>
               <span className="min-w-0 flex-1 truncate">{campusLabel}</span>
             </p>
           )}
           {showClassroom && (
             <p className="flex items-center gap-2 text-sm">
-              <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                <MapPin className="h-4 w-4" />
+              <span className="flex size-4 shrink-0 items-center justify-center">
+                <MapPin className="size-4" />
               </span>
               <span>{classroomLabel}</span>
             </p>
           )}
           <p className="flex items-center gap-2 text-sm">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-              <Layers className="h-4 w-4" />
+            <span className="flex size-4 shrink-0 items-center justify-center">
+              <Layers className="size-4" />
             </span>
             <span>{modalityLabel}</span>
           </p>
           <p className="flex items-center gap-2 text-sm">
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-              <User className="h-4 w-4" />
+            <span className="flex size-4 shrink-0 items-center justify-center">
+              <User className="size-4" />
             </span>
             <span className="min-w-0 flex-1 truncate">{professorLabel}</span>
           </p>

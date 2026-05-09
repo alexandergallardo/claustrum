@@ -999,7 +999,7 @@ export function SchedulePage() {
                     disabled={isUsingProfileDefaults}
                     className="h-8 shrink-0 gap-1.5 text-xs"
                   >
-                    <User className="h-3.5 w-3.5" />
+                    <User className="size-3.5" />
                     {isUsingProfileDefaults ? "Perfil activo" : "Usar mi perfil"}
                   </Button>
                 )}
@@ -1053,7 +1053,7 @@ export function SchedulePage() {
                             >
                               <ChevronDown
                                 className={cn(
-                                  "h-4 w-4 transition-transform",
+                                  "size-4 transition-transform",
                                   isCourseListOpen ? "rotate-0" : "-rotate-90",
                                 )}
                               />
@@ -1090,7 +1090,7 @@ export function SchedulePage() {
                                     size="icon"
                                     title="Mis horarios guardados"
                                   >
-                                    <Bookmark className="h-4 w-4" />
+                                    <Bookmark className="size-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
@@ -1120,7 +1120,7 @@ export function SchedulePage() {
                                               }
                                             }}
                                           >
-                                            <Trash2 className="h-3.5 w-3.5" />
+                                            <Trash2 className="size-3.5" />
                                           </button>
                                         </div>
                                       </DropdownMenuItem>
@@ -1136,7 +1136,7 @@ export function SchedulePage() {
                                     disabled={!selectedGroups.size}
                                     title="Guardar horario actual"
                                   >
-                                    <Save className="h-4 w-4" />
+                                    <Save className="size-4" />
                                   </Button>
                                 </DialogTrigger>
                                 <DialogContent>
@@ -1167,7 +1167,7 @@ export function SchedulePage() {
                                       className="w-full"
                                     >
                                       {saveScheduleMutation.isPending && (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        <Loader2 className="mr-2 size-4 animate-spin" />
                                       )}
                                       Guardar
                                     </Button>
@@ -1244,7 +1244,7 @@ export function SchedulePage() {
                                       size="icon"
                                       title="Mis horarios guardados"
                                     >
-                                      <Bookmark className="h-4 w-4" />
+                                      <Bookmark className="size-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="w-56">
@@ -1274,7 +1274,7 @@ export function SchedulePage() {
                                                 }
                                               }}
                                             >
-                                              <Trash2 className="h-3.5 w-3.5" />
+                                              <Trash2 className="size-3.5" />
                                             </button>
                                           </div>
                                         </DropdownMenuItem>
@@ -1290,7 +1290,7 @@ export function SchedulePage() {
                                       disabled={!selectedGroups.size}
                                       title="Guardar horario actual"
                                     >
-                                      <Save className="h-4 w-4" />
+                                      <Save className="size-4" />
                                     </Button>
                                   </DialogTrigger>
                                   <DialogContent>
@@ -1321,7 +1321,7 @@ export function SchedulePage() {
                                         className="w-full"
                                       >
                                         {saveScheduleMutation.isPending && (
-                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          <Loader2 className="mr-2 size-4 animate-spin" />
                                         )}
                                         Guardar
                                       </Button>

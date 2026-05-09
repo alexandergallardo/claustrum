@@ -44,7 +44,7 @@ export function SettingsLayout() {
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                     )}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="size-4" />
                     {item.label}
                   </Link>
                 );

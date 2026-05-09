@@ -34,7 +34,7 @@ export function ProfilePageRoute() {
     <ClientOnly
       fallback={
         <div className="flex items-center justify-center py-12">
-          <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
+          <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
         </div>
       }
     >
@@ -272,7 +272,7 @@ function ProfilePage() {
   if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2Icon className="text-muted-foreground h-6 w-6 animate-spin" />
+        <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
       </div>
     );
   }
@@ -289,7 +289,7 @@ function ProfilePage() {
   if (!authUser) {
     return (
       <div className="py-12 text-center">
-        <UserIcon className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+        <UserIcon className="text-muted-foreground mx-auto mb-4 size-12" />
         <h3 className="mb-2 text-lg font-semibold">Inicia sesión para acceder a tu perfil</h3>
         <p className="text-muted-foreground mx-auto mb-6 max-w-md">
           Necesitas estar autenticado para ver y editar tu información académica.
@@ -309,7 +309,7 @@ function ProfilePage() {
       <SettingsSection title="Identidad" description="Visible en tu cuenta y menú de usuario.">
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 rounded-full">
+            <Avatar className="size-16 rounded-full">
               <AvatarImage src={authUser.user_metadata?.avatar_url} />
               <AvatarFallback className="rounded-full text-lg font-medium">
                 {(nameDraft || authUser.email || "U").charAt(0).toUpperCase()}
@@ -317,7 +317,7 @@ function ProfilePage() {
             </Avatar>
             <div className="space-y-1.5">
               <Button disabled size="sm" variant="outline" className="w-fit">
-                <UploadIcon className="mr-2 h-4 w-4" />
+                <UploadIcon className="mr-2 size-4" />
                 Subir foto
               </Button>
               <p className="text-muted-foreground text-xs">PNG o SVG, 1024x1024 máx.</p>
@@ -347,7 +347,7 @@ function ProfilePage() {
               onClick={() => void handleSaveIdentity()}
               disabled={isSavingIdentity || !hasIdentityChanges}
             >
-              {isSavingIdentity && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+              {isSavingIdentity && <Loader2Icon className="mr-2 size-4 animate-spin" />}
               Guardar
             </Button>
           </div>
@@ -506,7 +506,7 @@ function ProfilePage() {
 
           <div className="flex justify-end pt-2">
             <Button onClick={() => void handleSave()} disabled={isSaving || !hasUnsavedChanges}>
-              {isSaving && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+              {isSaving && <Loader2Icon className="mr-2 size-4 animate-spin" />}
               Guardar
             </Button>
           </div>

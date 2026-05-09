@@ -132,23 +132,23 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
             <h3 className="text-foreground mb-3 text-sm font-semibold">Leyenda de estados</h3>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded border-2 border-emerald-500/30 bg-emerald-500/20" />
+                <div className="size-6 rounded border-2 border-emerald-500/30 bg-emerald-500/20" />
                 <span className="text-muted-foreground text-sm">Aprobado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded border-2 border-blue-500/30 bg-blue-500/20" />
+                <div className="size-6 rounded border-2 border-blue-500/30 bg-blue-500/20" />
                 <span className="text-muted-foreground text-sm">En curso</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="bg-muted border-border h-6 w-6 rounded border-2" />
+                <div className="bg-muted border-border size-6 rounded border-2" />
                 <span className="text-muted-foreground text-sm">No cursado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded border-2 border-red-500/30 bg-red-500/20" />
+                <div className="size-6 rounded border-2 border-red-500/30 bg-red-500/20" />
                 <span className="text-muted-foreground text-sm">Reprobado</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded border-2 border-amber-500/30 bg-amber-500/20" />
+                <div className="size-6 rounded border-2 border-amber-500/30 bg-amber-500/20" />
                 <span className="text-muted-foreground text-sm">Retirado</span>
               </div>
             </div>

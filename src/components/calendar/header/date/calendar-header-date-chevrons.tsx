@@ -39,16 +39,16 @@ export default function CalendarHeaderDateChevrons() {
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDateBackward}>
-        <ChevronLeft className="h-4 w-4" />
+      <Button variant="outline" size="icon" className="size-8" onClick={handleDateBackward}>
+        <ChevronLeft className="size-4" />
       </Button>
 
       <span className="min-w-[200px] text-center text-lg font-semibold">
         {format(date, "d 'de' MMMM, yyyy", { locale: es })}
       </span>
 
-      <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleDateForward}>
-        <ChevronRight className="h-4 w-4" />
+      <Button variant="outline" size="icon" className="size-8" onClick={handleDateForward}>
+        <ChevronRight className="size-4" />
       </Button>
     </div>
   );
