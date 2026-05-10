@@ -6,9 +6,16 @@ import { useState } from "react";
 import type { Mode } from "@/components/calendar/calendar-types";
 
 import Calendar from "@/components/calendar/calendar";
+import { CourseRelationFlow } from "@/components/course-relation-flow";
 
-import { demoCalendarEvents } from "./-data";
-import { GraphMock, ReviewsMock } from "./-mocks";
+import {
+  demoCalendarEvents,
+  demoRelationCourse,
+  demoPrerequisites,
+  demoCorequisites,
+  demoDependents,
+} from "./-data";
+import { ReviewsMock } from "./-mocks";
 
 function ScheduleDemo() {
   const [events] = useState(demoCalendarEvents);
@@ -29,6 +36,21 @@ function ScheduleDemo() {
         setHourHeight={setHourHeight}
         dayWidth={150}
         setDayWidth={() => {}}
+      />
+    </div>
+  );
+}
+
+function MallaDemo() {
+  return (
+    <div className="h-full w-full">
+      <CourseRelationFlow
+        course={demoRelationCourse}
+        prerequisites={demoPrerequisites}
+        corequisites={demoCorequisites}
+        dependents={demoDependents}
+        showLegends={false}
+        frameless
       />
     </div>
   );
@@ -137,36 +159,37 @@ export function FeaturesSection() {
         />
       </div>
 
-      <div className="mx-auto mt-20 max-w-[1100px] px-5 pb-[80px] md:mt-[120px] md:px-6 md:pb-[120px]">
-        <div className="space-y-20 md:space-y-[120px]">
-          <Feature
-            watermark="02"
-            label="Malla curricular"
-            title="Visualizá tu progreso académico"
-            desc="La malla se muestra como un grafo interactivo donde podés ver qué cursos ya cursaste, cuáles podés matricular ahora y cuáles faltan."
-            bullets={[
-              "Grafo de requisitos y correquisitos",
-              "Detalle de cada curso con descripción",
-              "Seguimiento de progreso por plan",
-            ]}
-            reverse
-            visual={<GraphMock />}
-          />
+      <div className="mx-auto mt-20 max-w-[1440px] px-5 md:mt-[120px] md:px-6">
+        <Feature
+          watermark="02"
+          label="Malla curricular"
+          title="Visualizá tu progreso académico"
+          desc="La malla se muestra como un grafo interactivo donde podés ver qué cursos ya cursaste, cuáles podés matricular ahora y cuáles faltan."
+          bullets={[
+            "Grafo de requisitos y correquisitos",
+            "Detalle de cada curso con descripción",
+            "Seguimiento de progreso por plan",
+          ]}
+          reverse
+          visual={<MallaDemo />}
+          gridClassName="md:grid-cols-[380px_1fr] md:gap-10"
+        />
+      </div>
 
-          <Feature
-            watermark="03"
-            label="Comunidad"
-            title="Evaluaciones y reseñas de profesores"
-            desc="Subí evaluaciones de cursos en PDF de forma anónima. Leé reseñas de otros estudiantes para decidir con quién matricular."
-            bullets={[
-              "Subida anónima de evaluaciones PDF",
-              "Reseñas con moderación automática",
-              "Búsqueda por profesor y curso",
-            ]}
-            reverse={false}
-            visual={<ReviewsMock />}
-          />
-        </div>
+      <div className="mx-auto mt-20 max-w-[1100px] px-5 pb-[80px] md:mt-[120px] md:px-6 md:pb-[120px]">
+        <Feature
+          watermark="03"
+          label="Comunidad"
+          title="Evaluaciones y reseñas de profesores"
+          desc="Subí evaluaciones de cursos en PDF de forma anónima. Leé reseñas de otros estudiantes para decidir con quién matricular."
+          bullets={[
+            "Subida anónima de evaluaciones PDF",
+            "Reseñas con moderación automática",
+            "Búsqueda por profesor y curso",
+          ]}
+          reverse={false}
+          visual={<ReviewsMock />}
+        />
       </div>
     </section>
   );

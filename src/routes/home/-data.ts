@@ -1,4 +1,4 @@
-import type { CalendarEvent } from "@/lib/types";
+import type { CalendarEvent, Course } from "@/lib/types";
 
 // Real schedule data from 2026-05-04 week (Mon-Sat)
 // Extracted from horario-2026-05-10.ics
@@ -149,5 +149,61 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(5, "15:50"),
     courseId: "CI1230",
     group: 11,
+  },
+];
+
+// Static curriculum data for course relation graph demo
+// Real data from IC4301 - BASES DE DATOS I (plan 48, Ingeniería en Computación 2022)
+export const demoRelationCourse: Course = {
+  id: "IC4301",
+  code: "IC4301",
+  name: "BASES DE DATOS I",
+  credits: 4,
+  hours: 9,
+  semester: 3,
+  status: "not_taken",
+  prerequisites: ["IC2001"],
+  corequisites: ["MA1103"],
+};
+
+export const demoPrerequisites: Course[] = [
+  {
+    id: "IC2001",
+    code: "IC2001",
+    name: "ESTRUCTURAS DE DATOS",
+    credits: 4,
+    hours: 12,
+    semester: 2,
+    status: "not_taken",
+    prerequisites: ["IC1802", "IC1803"],
+    corequisites: [],
+  },
+];
+
+export const demoCorequisites: Course[] = [
+  {
+    id: "MA1103",
+    code: "MA1103",
+    name: "CÁLCULO Y ÁLGEBRA LINEAL",
+    credits: 4,
+    hours: 4,
+    semester: 3,
+    status: "not_taken",
+    prerequisites: ["MA1102"],
+    corequisites: [],
+  },
+];
+
+export const demoDependents: Course[] = [
+  {
+    id: "IC4302",
+    code: "IC4302",
+    name: "BASES DE DATOS II",
+    credits: 3,
+    hours: 9,
+    semester: 4,
+    status: "not_taken",
+    prerequisites: ["IC4301"],
+    corequisites: [],
   },
 ];
