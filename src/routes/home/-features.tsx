@@ -8,14 +8,15 @@ import type { Mode } from "@/components/calendar/calendar-types";
 import Calendar from "@/components/calendar/calendar";
 import { CourseRelationFlow } from "@/components/course-relation-flow";
 
+import { ProfessorReviewsList } from "../professors/-professor-reviews-list";
 import {
   demoCalendarEvents,
   demoRelationCourse,
   demoPrerequisites,
   demoCorequisites,
   demoDependents,
+  demoReviewRows,
 } from "./-data";
-import { ReviewsMock } from "./-mocks";
 
 function ScheduleDemo() {
   const [events] = useState(demoCalendarEvents);
@@ -51,6 +52,30 @@ function MallaDemo() {
         dependents={demoDependents}
         showLegends={false}
         frameless
+      />
+    </div>
+  );
+}
+
+function ReviewsDemo() {
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  return (
+    <div className="h-full w-full overflow-auto">
+      <ProfessorReviewsList
+        reviewRows={demoReviewRows}
+        isLoading={false}
+        isFetching={false}
+        page={page}
+        pageSize={pageSize}
+        totalCount={demoReviewRows.length}
+        totalPages={1}
+        hasMore={false}
+        firstRow={1}
+        lastRow={demoReviewRows.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
       />
     </div>
   );
@@ -188,7 +213,7 @@ export function FeaturesSection() {
             "Búsqueda por profesor y curso",
           ]}
           reverse={false}
-          visual={<ReviewsMock />}
+          visual={<ReviewsDemo />}
         />
       </div>
     </section>

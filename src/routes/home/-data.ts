@@ -1,3 +1,4 @@
+import type { ProfessorReviewPublicRow } from "@/lib/professor-reviews/types";
 import type { CalendarEvent, Course } from "@/lib/types";
 
 // Real schedule data from 2026-05-04 week (Mon-Sat)
@@ -205,5 +206,69 @@ export const demoDependents: Course[] = [
     status: "not_taken",
     prerequisites: ["IC4301"],
     corequisites: [],
+  },
+];
+
+// Static professor review data for landing page demo
+export const demoReviewRows: ProfessorReviewPublicRow[] = [
+  {
+    review_id: 1,
+    professor_id: 1178,
+    course_id: 1037,
+    course_code: "IC4301",
+    course_name: "BASES DE DATOS I",
+    comment:
+      "El profesor explica muy bien los fundamentos de bases de datos relacionales. Los laboratorios son prácticos y ayudan a entender SQL. Eso sí, los exámenes son largos y hay que estudiar bastante.",
+    ease_score: 6.5,
+    quality_score: 9.0,
+    clarity_score: 8.5,
+    fairness_score: 8.0,
+    attendance_required: false,
+    grade_received: "85",
+    engagement_level: 4,
+    tags: ["Explica con claridad", "Proyecto útil", "Exámenes retadores"],
+    status: "approved",
+    created_at: "2026-03-15T14:30:00Z",
+    total_count: 3,
+  },
+  {
+    review_id: 2,
+    professor_id: 1192,
+    course_id: 1037,
+    course_code: "IC4301",
+    course_name: "BASES DE DATOS I",
+    comment:
+      "Muy buen profesor, siempre dispuesto a ayudar. Las clases son interactivas y el proyecto final integra todo lo visto durante el semestre. Recomiendo llevar el curso con él.",
+    ease_score: 7.0,
+    quality_score: 9.5,
+    clarity_score: 9.0,
+    fairness_score: 9.0,
+    attendance_required: true,
+    grade_received: "92",
+    engagement_level: 5,
+    tags: ["Da buena retroalimentación", "Brinda apoyo", "Tomaría su clase nuevamente"],
+    status: "approved",
+    created_at: "2026-04-02T10:15:00Z",
+    total_count: 3,
+  },
+  {
+    review_id: 3,
+    professor_id: 1171,
+    course_id: 1037,
+    course_code: "IC4301",
+    course_name: "BASES DE DATOS I",
+    comment:
+      "Las clases son claras y bien estructuradas. El material de apoyo en el TEC Digital es completo. Los quizzes semanales ayudan a llevar el curso al día. Muy recomendada.",
+    ease_score: 8.0,
+    quality_score: 8.5,
+    clarity_score: 9.5,
+    fairness_score: 7.5,
+    attendance_required: true,
+    grade_received: "78",
+    engagement_level: 3,
+    tags: ["Explica con claridad", "Da buena retroalimentación"],
+    status: "approved",
+    created_at: "2026-02-20T08:00:00Z",
+    total_count: 3,
   },
 ];
