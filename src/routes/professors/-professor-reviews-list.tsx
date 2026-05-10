@@ -67,7 +67,7 @@ export function ProfessorReviewsList({
       ) : reviewRows.length === 0 ? (
         <div className="text-muted-foreground text-sm">Aún no hay reseñas para este profesor.</div>
       ) : (
-        <div className="divide-y rounded-md border">
+        <div className={frameless ? "divide-y" : "divide-y rounded-md border"}>
           {reviewRows.map((review) => (
             <article key={review.review_id} className="space-y-3 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
