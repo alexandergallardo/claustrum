@@ -17,7 +17,6 @@ export default defineConfig({
     exclude: ["html-to-image"],
   },
   build: {
-    modulePreload: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
