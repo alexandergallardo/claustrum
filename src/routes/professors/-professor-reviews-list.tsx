@@ -70,13 +70,8 @@ export function ProfessorReviewsList({
         <div className={frameless ? "divide-y" : "divide-y rounded-md border"}>
           {reviewRows.map((review) => (
             <article key={review.review_id} className="space-y-3 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm font-medium">
-                  {review.course_code} - {review.course_name}
-                </div>
-                <Badge variant={review.status === "approved" ? "default" : "outline"}>
-                  {review.status === "approved" ? "Aprobada" : "En revisión"}
-                </Badge>
+              <div className="text-sm font-medium">
+                {review.course_code}: {review.course_name}
               </div>
 
               <div className="text-muted-foreground grid gap-2 text-xs md:grid-cols-3">

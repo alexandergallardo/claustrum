@@ -204,7 +204,7 @@ export function FeaturesSection() {
         />
       </div>
 
-      <div className="mx-auto mt-20 max-w-[1100px] px-5 pb-[80px] md:mt-[120px] md:px-6 md:pb-[120px]">
+      <div className="mx-auto mt-20 max-w-[1440px] px-5 pb-[80px] md:mt-[120px] md:px-6 md:pb-[120px]">
         <Feature
           watermark="03"
           label="Comunidad"
@@ -217,6 +217,7 @@ export function FeaturesSection() {
           ]}
           reverse={false}
           visual={<ReviewsDemo />}
+          gridClassName="md:grid-cols-[380px_1fr] md:gap-10"
         />
       </div>
     </section>
