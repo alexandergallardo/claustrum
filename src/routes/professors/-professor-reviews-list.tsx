@@ -74,7 +74,7 @@ export function ProfessorReviewsList({
                 {review.course_code}: {review.course_name}
               </div>
 
-              <div className="text-muted-foreground grid gap-2 text-xs md:grid-cols-3">
+              <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
                 <div>
                   Asistencia:{" "}
                   {review.attendance_required === null
@@ -87,7 +87,7 @@ export function ProfessorReviewsList({
                 <div>Interés: {review.engagement_level ?? "En revisión"}</div>
               </div>
 
-              <div className="text-muted-foreground grid gap-2 text-xs md:grid-cols-4">
+              <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
                 <div>Facilidad: {scoreLabel(review.ease_score)}</div>
                 <div>Calidad: {scoreLabel(review.quality_score)}</div>
                 <div>Claridad: {scoreLabel(review.clarity_score)}</div>
