@@ -14,6 +14,18 @@ import { StackSection } from "./-stack";
 
 export const Route = createFileRoute("/home/")({ component: HomePage });
 
+let starsPromise: Promise<number> | null = null;
+
+function fetchGitHubStars(): Promise<number> {
+  if (!starsPromise) {
+    starsPromise = fetch("https://api.github.com/repos/mau671/claustrum")
+      .then((r) => r.json() as Promise<{ stargazers_count?: number }>)
+      .then((data) => data.stargazers_count ?? 0)
+      .catch(() => 0);
+  }
+  return starsPromise;
+}
+
 function HomePage() {
   const [starCount, setStarCount] = useState<number | null>(null);
 
@@ -25,18 +37,7 @@ function HomePage() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    void fetch("https://api.github.com/repos/mau671/claustrum")
-      .then((r) => r.json() as Promise<{ stargazers_count?: number }>)
-      .then((data) => {
-        if (mounted && typeof data.stargazers_count === "number") {
-          setStarCount(data.stargazers_count);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      mounted = false;
-    };
+    fetchGitHubStars().then(setStarCount);
   }, []);
 
   return (

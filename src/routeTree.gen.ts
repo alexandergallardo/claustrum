@@ -78,9 +78,9 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeIndexRoute = HomeIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => HomeRoute,
+  id: '/home/',
+  path: '/home/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
   id: '/curriculum/',
@@ -309,6 +309,7 @@ export interface RootRouteChildren {
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
+  HomeIndexRoute: typeof HomeIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
@@ -383,10 +384,10 @@ declare module '@tanstack/react-router' {
     }
     '/home/': {
       id: '/home/'
-      path: '/'
+      path: '/home'
       fullPath: '/home/'
       preLoaderRoute: typeof HomeIndexRouteImport
-      parentRoute: typeof HomeRoute
+      parentRoute: typeof rootRouteImport
     }
     '/curriculum/': {
       id: '/curriculum/'
@@ -530,6 +531,7 @@ const rootRouteChildren: RootRouteChildren = {
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
+  HomeIndexRoute: HomeIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,

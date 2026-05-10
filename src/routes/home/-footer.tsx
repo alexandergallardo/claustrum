@@ -5,16 +5,18 @@ export function HomeFooter() {
     <footer className="border-border bg-card border-t px-5 py-10 md:px-6">
       <div className="mx-auto flex max-w-[1100px] flex-col items-center justify-between gap-4 md:flex-row">
         <div className="text-muted-foreground flex items-center gap-[10px] font-mono text-[12px]">
-          <Logo className="size-[18px]" main="currentColor" accent="#A6841C" />
-          Hecho con <HeartIcon className="size-3 translate-y-[-1px] text-[#DC2626]" /> por{" "}
-          <a
-            href="https://maugp.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2"
-          >
-            Mauricio González Prendas
-          </a>
+          <Logo className="size-[18px] shrink-0" main="currentColor" accent="#A6841C" />
+          <span>
+            Hecho con <HeartIcon className="inline size-3 translate-y-[-1px] text-[#DC2626]" /> por{" "}
+            <a
+              href="https://maugp.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whitespace-nowrap underline underline-offset-2"
+            >
+              Mauricio González Prendas
+            </a>
+          </span>
         </div>
         <div className="flex gap-7">
           <a
