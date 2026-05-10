@@ -8,7 +8,7 @@ export type ModerationCounts = {
   pendingEvaluations: number;
 };
 
-export function useModerationCounts() {
+export function useModerationCounts(enabled = true) {
   return useQuery({
     queryKey: ["moderationCounts"],
     queryFn: async (): Promise<ModerationCounts> => {
@@ -21,6 +21,7 @@ export function useModerationCounts() {
         pendingEvaluations: evaluations[0]?.total_count ?? 0,
       };
     },
+    enabled,
     staleTime: 30_000,
   });
 }

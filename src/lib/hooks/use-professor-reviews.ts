@@ -75,18 +75,25 @@ export function useSubmitProfessorReview() {
   });
 }
 
-export function useIsAdmin() {
+export function useIsAdmin(userId: string | null) {
   return useQuery({
-    queryKey: ["isAdmin"],
+    queryKey: ["isAdmin", userId],
     queryFn: getCurrentUserIsAdmin,
+    enabled: !!userId,
     staleTime: 60_000,
   });
 }
 
-export function useModerationQueue(status: ProfessorReviewStatus, page: number, pageSize: number) {
+export function useModerationQueue(
+  status: ProfessorReviewStatus,
+  page: number,
+  pageSize: number,
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["professorModerationQueue", status, page, pageSize],
     queryFn: () => getProfessorReviewsForModeration(status, pageSize, page * pageSize),
+    enabled,
     placeholderData: (previousData) => previousData,
   });
 }

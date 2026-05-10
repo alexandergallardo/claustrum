@@ -32,10 +32,12 @@ export function useEvaluationModerationQueue(
   status: EvaluationStatus,
   page: number,
   pageSize: number,
+  enabled = true,
 ) {
   return useQuery({
     queryKey: ["evaluationModerationQueue", status, page, pageSize],
     queryFn: () => getEvaluationModerationQueue(status, pageSize, page * pageSize),
+    enabled,
     placeholderData: (previousData) => previousData,
   });
 }

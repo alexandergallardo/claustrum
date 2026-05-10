@@ -40,9 +40,9 @@ function formatFileSize(bytes: number): string {
 export function AdminModerationPage() {
   const navigate = useNavigate();
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const isAdminQuery = useIsAdmin();
+  const isAdminQuery = useIsAdmin(authUser?.id ?? null);
 
-  const canModerate = isAdminQuery.data === true;
+  const canModerate = !!authUser && isAdminQuery.data === true;
 
   useEffect(() => {
     if (isAuthLoading || isAdminQuery.isLoading) return;
@@ -62,14 +62,25 @@ export function AdminModerationPage() {
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
 
-  const countsQuery = useModerationCounts();
-  const reviewsQuery = useModerationQueue("pending", reviewPage, PAGE_SIZE);
-  const evaluationsQuery = useEvaluationModerationQueue("pending", evaluationPage, PAGE_SIZE);
+  const countsQuery = useModerationCounts(canModerate);
+  const reviewsQuery = useModerationQueue("pending", reviewPage, PAGE_SIZE, canModerate);
+  const evaluationsQuery = useEvaluationModerationQueue(
+    "pending",
+    evaluationPage,
+    PAGE_SIZE,
+    canModerate,
+  );
   const moderateReviewMutation = useModerateProfessorReview();
   const moderateEvaluationMutation = useModerateEvaluation();
 
-  const reviewRows = (reviewsQuery.data ?? []) as ProfessorReviewModerationRow[];
-  const evaluationRows = (evaluationsQuery.data ?? []) as EvaluationModerationRow[];
+  const reviewRows = useMemo(
+    () => (reviewsQuery.data ?? []) as ProfessorReviewModerationRow[],
+    [reviewsQuery.data],
+  );
+  const evaluationRows = useMemo(
+    () => (evaluationsQuery.data ?? []) as EvaluationModerationRow[],
+    [evaluationsQuery.data],
+  );
   const reviewTotal = reviewRows[0]?.total_count ?? 0;
   const evaluationTotal = evaluationRows[0]?.total_count ?? 0;
   const reviewHasMore = reviewTotal > (reviewPage + 1) * PAGE_SIZE;

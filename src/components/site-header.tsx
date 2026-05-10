@@ -34,7 +34,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useModerationCounts } from "@/lib/hooks/use-moderation";
 import { useIsAdmin, useProfessorById } from "@/lib/hooks/use-professor-reviews";
-import { useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
+import { useAuthUser, useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
 
 type BreadcrumbItem = {
   label: string;
@@ -84,8 +84,9 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
-  const { data: isAdmin } = useIsAdmin();
-  const { data: moderationCounts } = useModerationCounts();
+  const { data: authUser } = useAuthUser();
+  const { data: isAdmin } = useIsAdmin(authUser?.id ?? null);
+  const { data: moderationCounts } = useModerationCounts(!!authUser && isAdmin === true);
   const totalPending = isAdmin
     ? (moderationCounts?.pendingReviews ?? 0) + (moderationCounts?.pendingEvaluations ?? 0)
     : 0;
