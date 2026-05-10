@@ -25,6 +25,9 @@ code {
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -430,4 +433,9 @@ code {
   --schedule-event-hover: rgb(226 232 240);
   --schedule-event-border: rgb(203 213 225);
   --schedule-event-text: rgb(15 23 42);
+}
+
+/* Landing page schedule demo: preserve day widths in desktop */
+.schedule-demo-calendar [style*="--week-min-width"] {
+  min-width: var(--week-min-width) !important;
 }

@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ModerationRouteImport } from './routes/moderation'
-import { Route as HomeRouteImport } from './routes/home'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
@@ -19,6 +18,7 @@ import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
 import { Route as PoliciesIndexRouteImport } from './routes/policies/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
+import { Route as HomeIndexRouteImport } from './routes/home/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
@@ -36,11 +36,6 @@ import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/eval
 const ModerationRoute = ModerationRouteImport.update({
   id: '/moderation',
   path: '/moderation',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeRoute = HomeRouteImport.update({
-  id: '/home',
-  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -81,6 +76,11 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/onboarding/',
   path: '/onboarding/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const HomeIndexRoute = HomeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HomeRoute,
 } as any)
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
   id: '/curriculum/',
@@ -153,7 +153,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/home': typeof HomeRoute
   '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -161,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
+  '/home/': typeof HomeIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
@@ -177,7 +177,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/home': typeof HomeRoute
   '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -185,6 +184,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum': typeof CurriculumIndexRoute
+  '/home': typeof HomeIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/policies': typeof PoliciesIndexRoute
   '/professors': typeof ProfessorsIndexRoute
@@ -203,7 +203,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
-  '/home': typeof HomeRoute
   '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -211,6 +210,7 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
+  '/home/': typeof HomeIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
@@ -230,7 +230,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/'
-    | '/home'
     | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
@@ -238,6 +237,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
+    | '/home/'
     | '/onboarding/'
     | '/policies/'
     | '/professors/'
@@ -254,7 +254,6 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/'
-    | '/home'
     | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
@@ -262,6 +261,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum'
+    | '/home'
     | '/onboarding'
     | '/policies'
     | '/professors'
@@ -279,7 +279,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/_index'
-    | '/home'
     | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
@@ -287,6 +286,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
+    | '/home/'
     | '/onboarding/'
     | '/policies/'
     | '/professors/'
@@ -305,7 +305,6 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
-  HomeRoute: typeof HomeRoute
   ModerationRoute: typeof ModerationRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
@@ -324,13 +323,6 @@ declare module '@tanstack/react-router' {
       path: '/moderation'
       fullPath: '/moderation'
       preLoaderRoute: typeof ModerationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home': {
-      id: '/home'
-      path: '/home'
-      fullPath: '/home'
-      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_index': {
@@ -388,6 +380,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/'
       preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/home/': {
+      id: '/home/'
+      path: '/'
+      fullPath: '/home/'
+      preLoaderRoute: typeof HomeIndexRouteImport
+      parentRoute: typeof HomeRoute
     }
     '/curriculum/': {
       id: '/curriculum/'
@@ -527,7 +526,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
-  HomeRoute: HomeRoute,
   ModerationRoute: ModerationRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
