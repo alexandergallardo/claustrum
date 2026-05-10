@@ -395,6 +395,8 @@ interface CourseRelationFlowProps {
   prerequisites: Course[];
   corequisites: Course[];
   dependents: Course[];
+  showLegends?: boolean;
+  frameless?: boolean;
 }
 
 export function CourseRelationFlow({
@@ -402,6 +404,8 @@ export function CourseRelationFlow({
   prerequisites,
   corequisites,
   dependents,
+  showLegends = true,
+  frameless = false,
 }: CourseRelationFlowProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const suppressResizeRef = useRef(false);
@@ -420,6 +424,11 @@ export function CourseRelationFlow({
     if (!instance) return;
 
     requestAnimationFrame(() => {
+      if (frameless) {
+        void instance.fitView({ padding: 0.12, minZoom: 0.1 });
+        return;
+      }
+
       if (isVerticalLayout && container) {
         const flowNodes = instance.getNodes();
         if (flowNodes.length === 0) return;
@@ -522,7 +531,7 @@ export function CourseRelationFlow({
 
       void instance.fitView({ padding: 0.12, minZoom: 0.1 });
     });
-  }, [isVerticalLayout, mobileCardHeight]);
+  }, [isVerticalLayout, mobileCardHeight, frameless]);
 
   const { nodes, edges } = useMemo(() => {
     const nodeList: Node<FlowNodeData>[] = [];
@@ -1074,14 +1083,20 @@ export function CourseRelationFlow({
   }, [fitFlow]);
 
   return (
-    <div className="space-y-3">
+    <div className={cn(showLegends ? "space-y-3" : "h-full")}>
       <div
         ref={containerRef}
         className={cn(
-          "border-border w-full overflow-hidden rounded-xl border bg-[var(--course-relation-flow-background)]",
-          isVerticalLayout ? "min-h-[360px]" : "aspect-[3/2] max-h-[500px] min-h-[240px]",
+          "w-full overflow-hidden",
+          !frameless &&
+            "border-border rounded-xl border bg-[var(--course-relation-flow-background)]",
+          frameless
+            ? "h-full"
+            : isVerticalLayout
+              ? "min-h-[360px]"
+              : "aspect-[3/2] max-h-[500px] min-h-[240px]",
         )}
-        style={isVerticalLayout ? { height: mobileCardHeight } : undefined}
+        style={isVerticalLayout && !frameless ? { height: mobileCardHeight } : undefined}
       >
         <ReactFlow
           nodes={nodes}
@@ -1114,46 +1129,48 @@ export function CourseRelationFlow({
         </ReactFlow>
       </div>
 
-      <div className="border-border border-t pt-3">
-        <div className="flex flex-wrap gap-x-6 gap-y-3 sm:gap-x-8">
-          <div>
-            <h3 className="text-foreground mb-2 text-xs font-semibold sm:mb-3 sm:text-sm">
-              Leyenda de estados
-            </h3>
-            <div className="flex flex-wrap gap-x-3 gap-y-2 sm:gap-4">
-              {STATUS_LEGEND.map(({ status, label, className }) => (
-                <div key={status} className="flex items-center gap-1.5 sm:gap-2">
-                  <div className={cn("size-4 rounded border sm:size-6 sm:border-2", className)} />
-                  <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-foreground mb-2 text-xs font-semibold sm:mb-3 sm:text-sm">
-              Relaciones
-            </h3>
-            <div className="flex flex-wrap gap-x-3 gap-y-2 sm:gap-4">
-              {RELATION_LEGEND.map(({ relation, Icon, className }) => (
-                <div key={relation} className="flex items-center gap-1.5 sm:gap-2">
-                  <div
-                    className={cn(
-                      "bg-background flex size-4 shrink-0 items-center justify-center rounded-full border shadow-sm sm:size-6 sm:border-2",
-                      className,
-                    )}
-                  >
-                    <Icon className="size-2.5 shrink-0 sm:size-3" />
+      {showLegends && (
+        <div className="border-border border-t pt-3">
+          <div className="flex flex-wrap gap-x-6 gap-y-3 sm:gap-x-8">
+            <div>
+              <h3 className="text-foreground mb-2 text-xs font-semibold sm:mb-3 sm:text-sm">
+                Leyenda de estados
+              </h3>
+              <div className="flex flex-wrap gap-x-3 gap-y-2 sm:gap-4">
+                {STATUS_LEGEND.map(({ status, label, className }) => (
+                  <div key={status} className="flex items-center gap-1.5 sm:gap-2">
+                    <div className={cn("size-4 rounded border sm:size-6 sm:border-2", className)} />
+                    <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
                   </div>
-                  <span className="text-muted-foreground text-xs sm:text-sm">
-                    {RELATION_LABELS[relation]}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-foreground mb-2 text-xs font-semibold sm:mb-3 sm:text-sm">
+                Relaciones
+              </h3>
+              <div className="flex flex-wrap gap-x-3 gap-y-2 sm:gap-4">
+                {RELATION_LEGEND.map(({ relation, Icon, className }) => (
+                  <div key={relation} className="flex items-center gap-1.5 sm:gap-2">
+                    <div
+                      className={cn(
+                        "bg-background flex size-4 shrink-0 items-center justify-center rounded-full border shadow-sm sm:size-6 sm:border-2",
+                        className,
+                      )}
+                    >
+                      <Icon className="size-2.5 shrink-0 sm:size-3" />
+                    </div>
+                    <span className="text-muted-foreground text-xs sm:text-sm">
+                      {RELATION_LABELS[relation]}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
