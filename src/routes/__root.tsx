@@ -25,12 +25,13 @@ function RootComponent() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   useRouteSeo(pathname);
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const profileContext = useProfileContext(authUser?.id ?? null);
-  const onboardingStatus = useOnboardingStatus(authUser?.id ?? null);
 
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
   const isPublicRoute = isAuthRoute || pathname.startsWith("/onboarding") || pathname === "/home";
+
+  const { data: authUser, isLoading: isAuthLoading } = useAuthUser({ enabled: !isPublicRoute });
+  const profileContext = useProfileContext(authUser?.id ?? null);
+  const onboardingStatus = useOnboardingStatus(authUser?.id ?? null);
 
   const completed = !!onboardingStatus.data?.onboarding_completed_at;
   const dismissedAtRaw = onboardingStatus.data?.onboarding_dismissed_at;

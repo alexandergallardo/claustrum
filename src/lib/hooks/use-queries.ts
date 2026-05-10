@@ -112,7 +112,7 @@ export function useProfileContext(userId: string | null) {
   });
 }
 
-export function useAuthUser() {
+export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["authUser"],
     queryFn: async () => {
@@ -121,6 +121,7 @@ export function useAuthUser() {
       if (error) return null;
       return data.user;
     },
+    enabled,
     staleTime: 2 * 60 * 1000,
   });
 }
