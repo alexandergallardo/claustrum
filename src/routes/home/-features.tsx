@@ -76,6 +76,9 @@ function ReviewsDemo() {
         lastRow={demoReviewRows.length}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
+        showPagination={false}
+        showTitle={false}
+        frameless
       />
     </div>
   );
