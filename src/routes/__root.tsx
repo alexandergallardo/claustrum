@@ -30,7 +30,7 @@ function RootComponent() {
   const onboardingStatus = useOnboardingStatus(authUser?.id ?? null);
 
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
-  const isPublicRoute = isAuthRoute || pathname.startsWith("/onboarding");
+  const isPublicRoute = isAuthRoute || pathname.startsWith("/onboarding") || pathname === "/home";
 
   const completed = !!onboardingStatus.data?.onboarding_completed_at;
   const dismissedAtRaw = onboardingStatus.data?.onboarding_dismissed_at;

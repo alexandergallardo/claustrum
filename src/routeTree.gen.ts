@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ModerationRouteImport } from './routes/moderation'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
@@ -35,6 +36,11 @@ import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/eval
 const ModerationRoute = ModerationRouteImport.update({
   id: '/moderation',
   path: '/moderation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/home': typeof HomeRoute
   '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/home': typeof HomeRoute
   '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
+  '/home': typeof HomeRoute
   '/moderation': typeof ModerationRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/'
+    | '/home'
     | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/'
+    | '/home'
     | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/_index'
+    | '/home'
     | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
@@ -293,6 +305,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
+  HomeRoute: typeof HomeRoute
   ModerationRoute: typeof ModerationRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/moderation'
       fullPath: '/moderation'
       preLoaderRoute: typeof ModerationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_index': {
@@ -507,6 +527,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
+  HomeRoute: HomeRoute,
   ModerationRoute: ModerationRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
