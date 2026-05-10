@@ -522,7 +522,7 @@ export function CourseRelationFlow({
 
       void instance.fitView({ padding: 0.12, minZoom: 0.1 });
     });
-  }, [isVerticalLayout]);
+  }, [isVerticalLayout, mobileCardHeight]);
 
   const { nodes, edges } = useMemo(() => {
     const nodeList: Node<FlowNodeData>[] = [];
