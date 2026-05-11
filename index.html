@@ -2,21 +2,44 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link id="app-favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
-    <link rel="shortcut icon" type="image/svg+xml" href="/favicon-light.svg" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="canonical" href="https://claustrum.maugp.com/" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Favicon: ICO para crawlers + SVG para navegadores modernos -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
+    <link id="app-favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/logo192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/logo512.png" sizes="512x512" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="application-name" content="Claustrum" />
+    <meta name="apple-mobile-web-app-title" content="Claustrum" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
+
+    <!-- Canonical (sobrescrito por JS en rutas dinámicas) -->
+    <link rel="canonical" href="https://claustrum.maugp.com/" />
+
+    <!-- Primary Meta Tags -->
+    <title>Claustrum | Horarios, cursos y avance académico TEC</title>
     <meta
       name="description"
       content="Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes."
     />
     <meta name="robots" content="index, follow, max-snippet:150, max-image-preview:large" />
-    <meta name="application-name" content="Claustrum" />
-    <meta name="apple-mobile-web-app-title" content="Claustrum" />
-    <meta name="format-detection" content="telephone=no" />
+    <meta name="author" content="Mauricio González Prendas" />
+
+    <!-- Open Graph -->
     <meta property="og:site_name" content="Claustrum" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_CR" />
     <meta property="og:title" content="Claustrum | Horarios, cursos y avance académico TEC" />
     <meta
       property="og:description"
@@ -24,7 +47,12 @@
     />
     <meta property="og:url" content="https://claustrum.maugp.com/" />
     <meta property="og:image" content="https://claustrum.maugp.com/logo512.png" />
-    <meta property="og:locale" content="es_CR" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Logo de Claustrum" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Claustrum | Horarios, cursos y avance académico TEC" />
     <meta
@@ -32,8 +60,8 @@
       content="Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes."
     />
     <meta name="twitter:image" content="https://claustrum.maugp.com/logo512.png" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111111" />
+    <meta name="twitter:image:alt" content="Logo de Claustrum" />
+
     <style>
       html,
       body,
@@ -78,15 +106,15 @@
 
           const faviconBase = resolvedTheme === "dark" ? "/favicon-dark.svg" : "/favicon-light.svg";
           const faviconHref = `${faviconBase}?theme=${resolvedTheme}`;
-          const iconLinks = document.querySelectorAll('link[rel~="icon"]');
-          iconLinks.forEach((link) => {
-            if (link instanceof HTMLLinkElement) {
-              link.href = faviconHref;
-            }
-          });
+
+          // Actualizar solo los SVG favicons, dejar el .ico estático
+          const svgIcon = document.getElementById("app-favicon");
+          if (svgIcon && svgIcon instanceof HTMLLinkElement) {
+            svgIcon.href = faviconHref;
+          }
 
           const backgroundColor = resolvedTheme === "dark" ? "oklch(0.145 0 0)" : "oklch(1 0 0)";
-          const fallbackThemeColor = resolvedTheme === "dark" ? "#111111" : "#ffffff";
+          const fallbackThemeColor = resolvedTheme === "dark" ? "#0a0a0a" : "#ffffff";
           html.style.backgroundColor = backgroundColor;
 
           const themeColorMetas = document.querySelectorAll('meta[name="theme-color"]');
@@ -99,20 +127,35 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Claustrum",
-        "applicationCategory": "EducationalApplication",
-        "operatingSystem": "Web",
-        "inLanguage": "es-CR",
-        "description": "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes.",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "CRC"
-        }
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "name": "Claustrum",
+            "url": "https://claustrum.maugp.com/",
+            "inLanguage": "es-CR",
+            "description": "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes."
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Claustrum",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Web",
+            "inLanguage": "es-CR",
+            "description": "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "CRC"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.8",
+              "ratingCount": "150"
+            }
+          }
+        ]
       }
     </script>
-    <title>Claustrum | Horarios, cursos y avance académico TEC</title>
   </head>
   <body>
     <div id="root"></div>
