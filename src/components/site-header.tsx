@@ -43,7 +43,7 @@ type BreadcrumbItem = {
 };
 
 const quickLinks = [
-  { label: "Inicio", to: "/", icon: Home },
+  { label: "Inicio", to: "/overview", icon: Home },
   { label: "Horarios", to: "/schedule", icon: CalendarDays },
   { label: "Plan de estudios", to: "/curriculum", icon: GraduationCap },
   { label: "Profesores", to: "/professors", icon: Users },
@@ -53,7 +53,7 @@ const quickLinks = [
 ] as const;
 
 const pageTitles: Record<string, string> = {
-  "/": "Inicio",
+  "/overview": "Inicio",
   "/schedule": "Horarios",
   "/curriculum": "Plan de estudios",
   "/professors": "Profesores",

@@ -15,7 +15,7 @@ export function FooterCTA() {
         <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Button asChild>
             <a
-              href="https://claustrum.maugp.com"
+              href="/overview"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2"

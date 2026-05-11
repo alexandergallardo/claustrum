@@ -28,7 +28,7 @@ export function HomeFooter() {
             GitHub
           </a>
           <a
-            href="https://claustrum.maugp.com"
+            href="/overview"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground font-mono text-[12px] tracking-[0.02em] no-underline"

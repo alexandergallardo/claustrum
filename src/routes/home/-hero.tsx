@@ -17,7 +17,7 @@ export function HeroSection({ starCount }: { starCount: number | null }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Button asChild>
             <a
-              href="https://claustrum.maugp.com"
+              href="/overview"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex w-full items-center justify-center gap-2 sm:w-auto"

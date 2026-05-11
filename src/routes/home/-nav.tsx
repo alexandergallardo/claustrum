@@ -54,9 +54,7 @@ export function HomeNav({ starCount }: { starCount: number | null }) {
           </Button>
 
           <Button variant="outline" size="sm" asChild>
-            <a href="https://claustrum.maugp.com" target="_blank" rel="noopener noreferrer">
-              Abrir
-            </a>
+            <a href="/overview">Abrir</a>
           </Button>
 
           <Button size="sm" asChild>
