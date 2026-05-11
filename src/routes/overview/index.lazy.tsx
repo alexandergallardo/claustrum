@@ -1,3 +1,4 @@
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 
 import {
@@ -22,7 +23,11 @@ const CourseStatusChart = lazy(() =>
   })),
 );
 
-export function DashboardPage() {
+export const Route = createLazyFileRoute("/overview/")({
+  component: DashboardPage,
+});
+
+function DashboardPage() {
   const distributionCardRef = useRef<HTMLDivElement | null>(null);
   const [distributionCardHeight, setDistributionCardHeight] = useState<number | null>(null);
 

@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const SecurityPage = lazy(() =>
   import("./-security-page").then((module) => ({ default: module.SecurityPage })),
 );
 
-export const Route = createFileRoute("/settings/security")({
+export const Route = createLazyFileRoute("/settings/security")({
   component: SecurityRoute,
 });
 

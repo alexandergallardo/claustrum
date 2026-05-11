@@ -8,40 +8,51 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ModerationRouteImport } from './routes/moderation'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
-import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
-import { Route as PoliciesIndexRouteImport } from './routes/policies/index'
 import { Route as OverviewIndexRouteImport } from './routes/overview/index'
-import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
-import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
-import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
-import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
-import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
-import { Route as AuthVerifyEmailIndexRouteImport } from './routes/auth/verify-email/index'
-import { Route as AuthSignupIndexRouteImport } from './routes/auth/signup/index'
-import { Route as AuthSigninIndexRouteImport } from './routes/auth/signin/index'
-import { Route as AuthResetPasswordIndexRouteImport } from './routes/auth/reset-password/index'
-import { Route as AuthMagicLinkIndexRouteImport } from './routes/auth/magic-link/index'
-import { Route as Auth2faIndexRouteImport } from './routes/auth/2fa/index'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
-const ModerationRoute = ModerationRouteImport.update({
+const ModerationLazyRouteImport = createFileRoute('/moderation')()
+const ProfessorsIndexLazyRouteImport = createFileRoute('/professors/')()
+const PoliciesIndexLazyRouteImport = createFileRoute('/policies/')()
+const OnboardingIndexLazyRouteImport = createFileRoute('/onboarding/')()
+const SettingsSecurityLazyRouteImport = createFileRoute('/settings/security')()
+const SettingsProfileLazyRouteImport = createFileRoute('/settings/profile')()
+const SettingsAppearanceLazyRouteImport = createFileRoute(
+  '/settings/appearance',
+)()
+const ProfessorsProfessorIdLazyRouteImport = createFileRoute(
+  '/professors/$professorId',
+)()
+const AuthVerifyEmailIndexLazyRouteImport = createFileRoute(
+  '/auth/verify-email/',
+)()
+const AuthSignupIndexLazyRouteImport = createFileRoute('/auth/signup/')()
+const AuthSigninIndexLazyRouteImport = createFileRoute('/auth/signin/')()
+const AuthResetPasswordIndexLazyRouteImport = createFileRoute(
+  '/auth/reset-password/',
+)()
+const AuthMagicLinkIndexLazyRouteImport = createFileRoute('/auth/magic-link/')()
+const Auth2faIndexLazyRouteImport = createFileRoute('/auth/2fa/')()
+
+const ModerationLazyRoute = ModerationLazyRouteImport.update({
   id: '/moderation',
   path: '/moderation',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() => import('./routes/moderation.lazy').then((d) => d.Route))
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() => import('./routes/_index.lazy').then((d) => d.Route))
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -52,177 +63,220 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfessorsIndexLazyRoute = ProfessorsIndexLazyRouteImport.update({
+  id: '/professors/',
+  path: '/professors/',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/professors/index.lazy').then((d) => d.Route),
+)
+const PoliciesIndexLazyRoute = PoliciesIndexLazyRouteImport.update({
+  id: '/policies/',
+  path: '/policies/',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/policies/index.lazy').then((d) => d.Route),
+)
+const OnboardingIndexLazyRoute = OnboardingIndexLazyRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/onboarding/index.lazy').then((d) => d.Route),
+)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => SettingsRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./routes/settings/index.lazy').then((d) => d.Route),
+)
 const ScheduleIndexRoute = ScheduleIndexRouteImport.update({
   id: '/schedule/',
   path: '/schedule/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ProfessorsIndexRoute = ProfessorsIndexRouteImport.update({
-  id: '/professors/',
-  path: '/professors/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PoliciesIndexRoute = PoliciesIndexRouteImport.update({
-  id: '/policies/',
-  path: '/policies/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/schedule/index.lazy').then((d) => d.Route),
+)
 const OverviewIndexRoute = OverviewIndexRouteImport.update({
   id: '/overview/',
   path: '/overview/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
-  id: '/onboarding/',
-  path: '/onboarding/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/overview/index.lazy').then((d) => d.Route),
+)
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
   id: '/curriculum/',
   path: '/curriculum/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsSecurityRoute = SettingsSecurityRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/curriculum/index.lazy').then((d) => d.Route),
+)
+const SettingsSecurityLazyRoute = SettingsSecurityLazyRouteImport.update({
   id: '/security',
   path: '/security',
   getParentRoute: () => SettingsRouteRoute,
-} as any)
-const SettingsProfileRoute = SettingsProfileRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/settings/security.lazy').then((d) => d.Route),
+)
+const SettingsProfileLazyRoute = SettingsProfileLazyRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => SettingsRouteRoute,
-} as any)
-const SettingsAppearanceRoute = SettingsAppearanceRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/settings/profile.lazy').then((d) => d.Route),
+)
+const SettingsAppearanceLazyRoute = SettingsAppearanceLazyRouteImport.update({
   id: '/appearance',
   path: '/appearance',
   getParentRoute: () => SettingsRouteRoute,
-} as any)
-const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
-  id: '/professors/$professorId',
-  path: '/professors/$professorId',
-  getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/settings/appearance.lazy').then((d) => d.Route),
+)
+const ProfessorsProfessorIdLazyRoute =
+  ProfessorsProfessorIdLazyRouteImport.update({
+    id: '/professors/$professorId',
+    path: '/professors/$professorId',
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import('./routes/professors/$professorId.lazy').then((d) => d.Route),
+  )
 const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
   id: '/curriculum/$courseId',
   path: '/curriculum/$courseId',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthVerifyEmailIndexRoute = AuthVerifyEmailIndexRouteImport.update({
-  id: '/verify-email/',
-  path: '/verify-email/',
-  getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthSignupIndexRoute = AuthSignupIndexRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/curriculum/$courseId.lazy').then((d) => d.Route),
+)
+const AuthVerifyEmailIndexLazyRoute =
+  AuthVerifyEmailIndexLazyRouteImport.update({
+    id: '/verify-email/',
+    path: '/verify-email/',
+    getParentRoute: () => AuthRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/auth/verify-email/index.lazy').then((d) => d.Route),
+  )
+const AuthSignupIndexLazyRoute = AuthSignupIndexLazyRouteImport.update({
   id: '/signup/',
   path: '/signup/',
   getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthSigninIndexRoute = AuthSigninIndexRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/auth/signup/index.lazy').then((d) => d.Route),
+)
+const AuthSigninIndexLazyRoute = AuthSigninIndexLazyRouteImport.update({
   id: '/signin/',
   path: '/signin/',
   getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthResetPasswordIndexRoute = AuthResetPasswordIndexRouteImport.update({
-  id: '/reset-password/',
-  path: '/reset-password/',
-  getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthMagicLinkIndexRoute = AuthMagicLinkIndexRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/auth/signin/index.lazy').then((d) => d.Route),
+)
+const AuthResetPasswordIndexLazyRoute =
+  AuthResetPasswordIndexLazyRouteImport.update({
+    id: '/reset-password/',
+    path: '/reset-password/',
+    getParentRoute: () => AuthRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/auth/reset-password/index.lazy').then((d) => d.Route),
+  )
+const AuthMagicLinkIndexLazyRoute = AuthMagicLinkIndexLazyRouteImport.update({
   id: '/magic-link/',
   path: '/magic-link/',
   getParentRoute: () => AuthRouteRoute,
-} as any)
-const Auth2faIndexRoute = Auth2faIndexRouteImport.update({
+} as any).lazy(() =>
+  import('./routes/auth/magic-link/index.lazy').then((d) => d.Route),
+)
+const Auth2faIndexLazyRoute = Auth2faIndexLazyRouteImport.update({
   id: '/2fa/',
   path: '/2fa/',
   getParentRoute: () => AuthRouteRoute,
-} as any)
+} as any).lazy(() =>
+  import('./routes/auth/2fa/index.lazy').then((d) => d.Route),
+)
 const EvaluationsViewEvaluationSlugRoute =
   EvaluationsViewEvaluationSlugRouteImport.update({
     id: '/evaluations/view/$evaluationSlug',
     path: '/evaluations/view/$evaluationSlug',
     getParentRoute: () => rootRouteImport,
-  } as any)
+  } as any).lazy(() =>
+    import('./routes/evaluations/view/$evaluationSlug.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/moderation': typeof ModerationRoute
+  '/moderation': typeof ModerationLazyRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
-  '/professors/$professorId': typeof ProfessorsProfessorIdRoute
-  '/settings/appearance': typeof SettingsAppearanceRoute
-  '/settings/profile': typeof SettingsProfileRoute
-  '/settings/security': typeof SettingsSecurityRoute
+  '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
+  '/settings/appearance': typeof SettingsAppearanceLazyRoute
+  '/settings/profile': typeof SettingsProfileLazyRoute
+  '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum/': typeof CurriculumIndexRoute
-  '/onboarding/': typeof OnboardingIndexRoute
   '/overview/': typeof OverviewIndexRoute
-  '/policies/': typeof PoliciesIndexRoute
-  '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/onboarding/': typeof OnboardingIndexLazyRoute
+  '/policies/': typeof PoliciesIndexLazyRoute
+  '/professors/': typeof ProfessorsIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
-  '/auth/2fa/': typeof Auth2faIndexRoute
-  '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
-  '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
-  '/auth/signin/': typeof AuthSigninIndexRoute
-  '/auth/signup/': typeof AuthSignupIndexRoute
-  '/auth/verify-email/': typeof AuthVerifyEmailIndexRoute
+  '/auth/2fa/': typeof Auth2faIndexLazyRoute
+  '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
+  '/auth/reset-password/': typeof AuthResetPasswordIndexLazyRoute
+  '/auth/signin/': typeof AuthSigninIndexLazyRoute
+  '/auth/signup/': typeof AuthSignupIndexLazyRoute
+  '/auth/verify-email/': typeof AuthVerifyEmailIndexLazyRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/moderation': typeof ModerationRoute
+  '/moderation': typeof ModerationLazyRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
-  '/professors/$professorId': typeof ProfessorsProfessorIdRoute
-  '/settings/appearance': typeof SettingsAppearanceRoute
-  '/settings/profile': typeof SettingsProfileRoute
-  '/settings/security': typeof SettingsSecurityRoute
+  '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
+  '/settings/appearance': typeof SettingsAppearanceLazyRoute
+  '/settings/profile': typeof SettingsProfileLazyRoute
+  '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum': typeof CurriculumIndexRoute
-  '/onboarding': typeof OnboardingIndexRoute
   '/overview': typeof OverviewIndexRoute
-  '/policies': typeof PoliciesIndexRoute
-  '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/onboarding': typeof OnboardingIndexLazyRoute
+  '/policies': typeof PoliciesIndexLazyRoute
+  '/professors': typeof ProfessorsIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
-  '/auth/2fa': typeof Auth2faIndexRoute
-  '/auth/magic-link': typeof AuthMagicLinkIndexRoute
-  '/auth/reset-password': typeof AuthResetPasswordIndexRoute
-  '/auth/signin': typeof AuthSigninIndexRoute
-  '/auth/signup': typeof AuthSignupIndexRoute
-  '/auth/verify-email': typeof AuthVerifyEmailIndexRoute
+  '/auth/2fa': typeof Auth2faIndexLazyRoute
+  '/auth/magic-link': typeof AuthMagicLinkIndexLazyRoute
+  '/auth/reset-password': typeof AuthResetPasswordIndexLazyRoute
+  '/auth/signin': typeof AuthSigninIndexLazyRoute
+  '/auth/signup': typeof AuthSignupIndexLazyRoute
+  '/auth/verify-email': typeof AuthVerifyEmailIndexLazyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
-  '/moderation': typeof ModerationRoute
+  '/moderation': typeof ModerationLazyRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
-  '/professors/$professorId': typeof ProfessorsProfessorIdRoute
-  '/settings/appearance': typeof SettingsAppearanceRoute
-  '/settings/profile': typeof SettingsProfileRoute
-  '/settings/security': typeof SettingsSecurityRoute
+  '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
+  '/settings/appearance': typeof SettingsAppearanceLazyRoute
+  '/settings/profile': typeof SettingsProfileLazyRoute
+  '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum/': typeof CurriculumIndexRoute
-  '/onboarding/': typeof OnboardingIndexRoute
   '/overview/': typeof OverviewIndexRoute
-  '/policies/': typeof PoliciesIndexRoute
-  '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/onboarding/': typeof OnboardingIndexLazyRoute
+  '/policies/': typeof PoliciesIndexLazyRoute
+  '/professors/': typeof ProfessorsIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
-  '/auth/2fa/': typeof Auth2faIndexRoute
-  '/auth/magic-link/': typeof AuthMagicLinkIndexRoute
-  '/auth/reset-password/': typeof AuthResetPasswordIndexRoute
-  '/auth/signin/': typeof AuthSigninIndexRoute
-  '/auth/signup/': typeof AuthSignupIndexRoute
-  '/auth/verify-email/': typeof AuthVerifyEmailIndexRoute
+  '/auth/2fa/': typeof Auth2faIndexLazyRoute
+  '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
+  '/auth/reset-password/': typeof AuthResetPasswordIndexLazyRoute
+  '/auth/signin/': typeof AuthSigninIndexLazyRoute
+  '/auth/signup/': typeof AuthSignupIndexLazyRoute
+  '/auth/verify-email/': typeof AuthVerifyEmailIndexLazyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -237,12 +291,12 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
-    | '/onboarding/'
     | '/overview/'
-    | '/policies/'
-    | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/onboarding/'
+    | '/policies/'
+    | '/professors/'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -261,12 +315,12 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum'
-    | '/onboarding'
     | '/overview'
-    | '/policies'
-    | '/professors'
     | '/schedule'
     | '/settings'
+    | '/onboarding'
+    | '/policies'
+    | '/professors'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa'
     | '/auth/magic-link'
@@ -286,12 +340,12 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
-    | '/onboarding/'
     | '/overview/'
-    | '/policies/'
-    | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/onboarding/'
+    | '/policies/'
+    | '/professors/'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -305,15 +359,15 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
-  ModerationRoute: typeof ModerationRoute
+  ModerationLazyRoute: typeof ModerationLazyRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
-  ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
+  ProfessorsProfessorIdLazyRoute: typeof ProfessorsProfessorIdLazyRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
-  OnboardingIndexRoute: typeof OnboardingIndexRoute
   OverviewIndexRoute: typeof OverviewIndexRoute
-  PoliciesIndexRoute: typeof PoliciesIndexRoute
-  ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
+  OnboardingIndexLazyRoute: typeof OnboardingIndexLazyRoute
+  PoliciesIndexLazyRoute: typeof PoliciesIndexLazyRoute
+  ProfessorsIndexLazyRoute: typeof ProfessorsIndexLazyRoute
   EvaluationsViewEvaluationSlugRoute: typeof EvaluationsViewEvaluationSlugRoute
 }
 
@@ -323,7 +377,7 @@ declare module '@tanstack/react-router' {
       id: '/moderation'
       path: '/moderation'
       fullPath: '/moderation'
-      preLoaderRoute: typeof ModerationRouteImport
+      preLoaderRoute: typeof ModerationLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_index': {
@@ -347,6 +401,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/professors/': {
+      id: '/professors/'
+      path: '/professors'
+      fullPath: '/professors/'
+      preLoaderRoute: typeof ProfessorsIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policies/': {
+      id: '/policies/'
+      path: '/policies'
+      fullPath: '/policies/'
+      preLoaderRoute: typeof PoliciesIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/': {
       id: '/settings/'
       path: '/'
@@ -361,32 +436,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/professors/': {
-      id: '/professors/'
-      path: '/professors'
-      fullPath: '/professors/'
-      preLoaderRoute: typeof ProfessorsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/policies/': {
-      id: '/policies/'
-      path: '/policies'
-      fullPath: '/policies/'
-      preLoaderRoute: typeof PoliciesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/overview/': {
       id: '/overview/'
       path: '/overview'
       fullPath: '/overview/'
       preLoaderRoute: typeof OverviewIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/': {
-      id: '/onboarding/'
-      path: '/onboarding'
-      fullPath: '/onboarding/'
-      preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/curriculum/': {
@@ -400,28 +454,28 @@ declare module '@tanstack/react-router' {
       id: '/settings/security'
       path: '/security'
       fullPath: '/settings/security'
-      preLoaderRoute: typeof SettingsSecurityRouteImport
+      preLoaderRoute: typeof SettingsSecurityLazyRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
     '/settings/profile': {
       id: '/settings/profile'
       path: '/profile'
       fullPath: '/settings/profile'
-      preLoaderRoute: typeof SettingsProfileRouteImport
+      preLoaderRoute: typeof SettingsProfileLazyRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
     '/settings/appearance': {
       id: '/settings/appearance'
       path: '/appearance'
       fullPath: '/settings/appearance'
-      preLoaderRoute: typeof SettingsAppearanceRouteImport
+      preLoaderRoute: typeof SettingsAppearanceLazyRouteImport
       parentRoute: typeof SettingsRouteRoute
     }
     '/professors/$professorId': {
       id: '/professors/$professorId'
       path: '/professors/$professorId'
       fullPath: '/professors/$professorId'
-      preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
+      preLoaderRoute: typeof ProfessorsProfessorIdLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/curriculum/$courseId': {
@@ -435,42 +489,42 @@ declare module '@tanstack/react-router' {
       id: '/auth/verify-email/'
       path: '/verify-email'
       fullPath: '/auth/verify-email/'
-      preLoaderRoute: typeof AuthVerifyEmailIndexRouteImport
+      preLoaderRoute: typeof AuthVerifyEmailIndexLazyRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/signup/': {
       id: '/auth/signup/'
       path: '/signup'
       fullPath: '/auth/signup/'
-      preLoaderRoute: typeof AuthSignupIndexRouteImport
+      preLoaderRoute: typeof AuthSignupIndexLazyRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/signin/': {
       id: '/auth/signin/'
       path: '/signin'
       fullPath: '/auth/signin/'
-      preLoaderRoute: typeof AuthSigninIndexRouteImport
+      preLoaderRoute: typeof AuthSigninIndexLazyRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/reset-password/': {
       id: '/auth/reset-password/'
       path: '/reset-password'
       fullPath: '/auth/reset-password/'
-      preLoaderRoute: typeof AuthResetPasswordIndexRouteImport
+      preLoaderRoute: typeof AuthResetPasswordIndexLazyRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/magic-link/': {
       id: '/auth/magic-link/'
       path: '/magic-link'
       fullPath: '/auth/magic-link/'
-      preLoaderRoute: typeof AuthMagicLinkIndexRouteImport
+      preLoaderRoute: typeof AuthMagicLinkIndexLazyRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/auth/2fa/': {
       id: '/auth/2fa/'
       path: '/2fa'
       fullPath: '/auth/2fa/'
-      preLoaderRoute: typeof Auth2faIndexRouteImport
+      preLoaderRoute: typeof Auth2faIndexLazyRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/evaluations/view/$evaluationSlug': {
@@ -484,21 +538,21 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthRouteRouteChildren {
-  Auth2faIndexRoute: typeof Auth2faIndexRoute
-  AuthMagicLinkIndexRoute: typeof AuthMagicLinkIndexRoute
-  AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
-  AuthSigninIndexRoute: typeof AuthSigninIndexRoute
-  AuthSignupIndexRoute: typeof AuthSignupIndexRoute
-  AuthVerifyEmailIndexRoute: typeof AuthVerifyEmailIndexRoute
+  Auth2faIndexLazyRoute: typeof Auth2faIndexLazyRoute
+  AuthMagicLinkIndexLazyRoute: typeof AuthMagicLinkIndexLazyRoute
+  AuthResetPasswordIndexLazyRoute: typeof AuthResetPasswordIndexLazyRoute
+  AuthSigninIndexLazyRoute: typeof AuthSigninIndexLazyRoute
+  AuthSignupIndexLazyRoute: typeof AuthSignupIndexLazyRoute
+  AuthVerifyEmailIndexLazyRoute: typeof AuthVerifyEmailIndexLazyRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
-  Auth2faIndexRoute: Auth2faIndexRoute,
-  AuthMagicLinkIndexRoute: AuthMagicLinkIndexRoute,
-  AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
-  AuthSigninIndexRoute: AuthSigninIndexRoute,
-  AuthSignupIndexRoute: AuthSignupIndexRoute,
-  AuthVerifyEmailIndexRoute: AuthVerifyEmailIndexRoute,
+  Auth2faIndexLazyRoute: Auth2faIndexLazyRoute,
+  AuthMagicLinkIndexLazyRoute: AuthMagicLinkIndexLazyRoute,
+  AuthResetPasswordIndexLazyRoute: AuthResetPasswordIndexLazyRoute,
+  AuthSigninIndexLazyRoute: AuthSigninIndexLazyRoute,
+  AuthSignupIndexLazyRoute: AuthSignupIndexLazyRoute,
+  AuthVerifyEmailIndexLazyRoute: AuthVerifyEmailIndexLazyRoute,
 }
 
 const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
@@ -506,16 +560,16 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface SettingsRouteRouteChildren {
-  SettingsAppearanceRoute: typeof SettingsAppearanceRoute
-  SettingsProfileRoute: typeof SettingsProfileRoute
-  SettingsSecurityRoute: typeof SettingsSecurityRoute
+  SettingsAppearanceLazyRoute: typeof SettingsAppearanceLazyRoute
+  SettingsProfileLazyRoute: typeof SettingsProfileLazyRoute
+  SettingsSecurityLazyRoute: typeof SettingsSecurityLazyRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
-  SettingsAppearanceRoute: SettingsAppearanceRoute,
-  SettingsProfileRoute: SettingsProfileRoute,
-  SettingsSecurityRoute: SettingsSecurityRoute,
+  SettingsAppearanceLazyRoute: SettingsAppearanceLazyRoute,
+  SettingsProfileLazyRoute: SettingsProfileLazyRoute,
+  SettingsSecurityLazyRoute: SettingsSecurityLazyRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 
@@ -527,15 +581,15 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
-  ModerationRoute: ModerationRoute,
+  ModerationLazyRoute: ModerationLazyRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
-  ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
+  ProfessorsProfessorIdLazyRoute: ProfessorsProfessorIdLazyRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
-  OnboardingIndexRoute: OnboardingIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
-  PoliciesIndexRoute: PoliciesIndexRoute,
-  ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
+  OnboardingIndexLazyRoute: OnboardingIndexLazyRoute,
+  PoliciesIndexLazyRoute: PoliciesIndexLazyRoute,
+  ProfessorsIndexLazyRoute: ProfessorsIndexLazyRoute,
   EvaluationsViewEvaluationSlugRoute: EvaluationsViewEvaluationSlugRoute,
 }
 export const routeTree = rootRouteImport

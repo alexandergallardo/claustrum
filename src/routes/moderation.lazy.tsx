@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const AdminModerationPage = lazy(() =>
   import("./-admin-moderation-page").then((module) => ({ default: module.AdminModerationPage })),
 );
 
-export const Route = createFileRoute("/moderation")({
+export const Route = createLazyFileRoute("/moderation")({
   component: ModerationRoute,
 });
 

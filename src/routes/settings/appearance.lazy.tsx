@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const AppearancePage = lazy(() =>
   import("./-appearance-page").then((module) => ({ default: module.AppearancePage })),
 );
 
-export const Route = createFileRoute("/settings/appearance")({
+export const Route = createLazyFileRoute("/settings/appearance")({
   component: AppearanceRoute,
 });
 

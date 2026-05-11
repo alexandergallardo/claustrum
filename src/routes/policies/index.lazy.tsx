@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const PoliciesPage = lazy(() =>
   import("./-policies-page").then((module) => ({ default: module.PoliciesPage })),
 );
 
-export const Route = createFileRoute("/policies/")({
+export const Route = createLazyFileRoute("/policies/")({
   component: PoliciesRoute,
 });
 

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { Mail, CheckCircle, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -8,11 +8,11 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 const VERIFY_EMAIL_KEY = "claustrum.auth.verify_email";
 
-export const Route = createFileRoute("/auth/verify-email/")({
+export const Route = createLazyFileRoute("/auth/verify-email/")({
   component: VerifyEmailPage,
 });
 
-export default function VerifyEmailPage() {
+function VerifyEmailPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "success" | "pending">("loading");
   const [resending, setResending] = useState(false);

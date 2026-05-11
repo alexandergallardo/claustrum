@@ -22,7 +22,11 @@ export function HomeNav({ starCount }: { starCount: number | null }) {
     <nav className="border-border bg-background/95 fixed inset-x-0 top-0 z-[100] border-b backdrop-blur-[12px]">
       <div className="mx-auto flex h-14 max-w-[1100px] items-center justify-between px-5 md:h-16 md:px-6">
         <a
-          href="#"
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
           className="flex items-center gap-[10px] text-[15px] font-semibold tracking-[-0.01em] no-underline"
         >
           <Logo className="h-[26px] w-[26px] shrink-0" main="currentColor" accent="#C9A227" />

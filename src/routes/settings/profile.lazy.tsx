@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const ProfilePageRoute = lazy(() =>
   import("./-profile-page").then((module) => ({ default: module.ProfilePageRoute })),
 );
 
-export const Route = createFileRoute("/settings/profile")({
+export const Route = createLazyFileRoute("/settings/profile")({
   component: ProfileRoute,
 });
 

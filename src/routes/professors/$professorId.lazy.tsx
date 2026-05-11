@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const ProfessorDetailPage = lazy(() =>
   import("./-professor-detail-page").then((module) => ({ default: module.ProfessorDetailPage })),
 );
 
-export const Route = createFileRoute("/professors/$professorId")({
+export const Route = createLazyFileRoute("/professors/$professorId")({
   component: ProfessorDetailRoute,
 });
 

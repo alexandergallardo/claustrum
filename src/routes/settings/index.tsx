@@ -4,9 +4,4 @@ export const Route = createFileRoute("/settings/")({
   beforeLoad: () => {
     throw redirect({ to: "/settings/profile" });
   },
-  component: SettingsIndex,
 });
-
-function SettingsIndex() {
-  return null;
-}
