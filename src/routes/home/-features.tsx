@@ -1,12 +1,9 @@
 import type { ReactNode } from "react";
 
 import { startOfWeek } from "date-fns";
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 
 import type { Mode } from "@/components/calendar/calendar-types";
-
-import Calendar from "@/components/calendar/calendar";
-import { CourseRelationFlow } from "@/components/course-relation-flow";
 
 import { ProfessorReviewsList } from "../professors/-professor-reviews-list";
 import {
@@ -18,6 +15,13 @@ import {
   demoReviewRows,
 } from "./-data";
 
+const Calendar = lazy(() => import("@/components/calendar/calendar"));
+const CourseRelationFlow = lazy(() =>
+  import("@/components/course-relation-flow").then((module) => ({
+    default: module.CourseRelationFlow,
+  })),
+);
+
 function ScheduleDemo() {
   const [events] = useState(demoCalendarEvents);
   const [mode] = useState<Mode>("week");
@@ -26,18 +30,20 @@ function ScheduleDemo() {
 
   return (
     <div className="schedule-demo-calendar flex h-full flex-col">
-      <Calendar
-        events={events}
-        setEvents={() => {}}
-        mode={mode}
-        setMode={() => {}}
-        date={date}
-        setDate={() => {}}
-        hourHeight={hourHeight}
-        setHourHeight={setHourHeight}
-        dayWidth={150}
-        setDayWidth={() => {}}
-      />
+      <Suspense fallback={<div className="bg-background flex-1" />}>
+        <Calendar
+          events={events}
+          setEvents={() => {}}
+          mode={mode}
+          setMode={() => {}}
+          date={date}
+          setDate={() => {}}
+          hourHeight={hourHeight}
+          setHourHeight={setHourHeight}
+          dayWidth={150}
+          setDayWidth={() => {}}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -45,14 +51,16 @@ function ScheduleDemo() {
 function MallaDemo() {
   return (
     <div className="h-full w-full">
-      <CourseRelationFlow
-        course={demoRelationCourse}
-        prerequisites={demoPrerequisites}
-        corequisites={demoCorequisites}
-        dependents={demoDependents}
-        showLegends={false}
-        frameless
-      />
+      <Suspense fallback={<div className="bg-background flex-1" />}>
+        <CourseRelationFlow
+          course={demoRelationCourse}
+          prerequisites={demoPrerequisites}
+          corequisites={demoCorequisites}
+          dependents={demoDependents}
+          showLegends={false}
+          frameless
+        />
+      </Suspense>
     </div>
   );
 }
