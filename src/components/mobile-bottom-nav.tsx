@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const mainNavItems = [
   {
     title: "Inicio",
-    url: "/",
+    url: "/overview",
     icon: IconDashboard,
   },
   {
