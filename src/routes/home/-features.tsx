@@ -62,7 +62,7 @@ function ReviewsDemo() {
   const [pageSize, setPageSize] = useState(10);
 
   return (
-    <div className="h-full w-full overflow-auto">
+    <div className="w-full">
       <ProfessorReviewsList
         reviewRows={demoReviewRows}
         isLoading={false}
@@ -217,6 +217,7 @@ export function FeaturesSection() {
           ]}
           reverse={false}
           visual={<ReviewsDemo />}
+          visualClassName="min-h-[320px] md:min-h-0"
           gridClassName="md:grid-cols-[380px_1fr] md:gap-10"
         />
       </div>
