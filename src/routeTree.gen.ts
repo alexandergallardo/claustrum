@@ -101,9 +101,9 @@ const OverviewIndexRoute = OverviewIndexRouteImport.update({
   import('./routes/overview/index.lazy').then((d) => d.Route),
 )
 const ModerationIndexRoute = ModerationIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ModerationLazyRoute,
+  id: '/moderation/',
+  path: '/moderation/',
+  getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import('./routes/moderation/index.lazy').then((d) => d.Route),
 )
@@ -364,6 +364,7 @@ export interface RootRouteChildren {
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdLazyRoute: typeof ProfessorsProfessorIdLazyRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
+  ModerationIndexRoute: typeof ModerationIndexRoute
   OverviewIndexRoute: typeof OverviewIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
   OnboardingIndexLazyRoute: typeof OnboardingIndexLazyRoute
@@ -439,10 +440,10 @@ declare module '@tanstack/react-router' {
     }
     '/moderation/': {
       id: '/moderation/'
-      path: '/'
+      path: '/moderation'
       fullPath: '/moderation/'
       preLoaderRoute: typeof ModerationIndexRouteImport
-      parentRoute: typeof ModerationLazyRoute
+      parentRoute: typeof rootRouteImport
     }
     '/curriculum/': {
       id: '/curriculum/'
@@ -585,6 +586,7 @@ const rootRouteChildren: RootRouteChildren = {
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdLazyRoute: ProfessorsProfessorIdLazyRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
+  ModerationIndexRoute: ModerationIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
   OnboardingIndexLazyRoute: OnboardingIndexLazyRoute,

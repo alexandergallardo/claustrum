@@ -8,7 +8,6 @@ import { FooterCTA } from "@/routes/home/-footer-cta";
 import { HeroSection } from "@/routes/home/-hero";
 import { HomeNav } from "@/routes/home/-nav";
 import { OpenSourceSection } from "@/routes/home/-open-source";
-import { OverviewSection } from "@/routes/home/-overview";
 import { StackSection } from "@/routes/home/-stack";
 
 let starsPromise: Promise<number> | null = null;
@@ -48,12 +47,6 @@ function HomePage() {
 
         <main id="main-content">
           <HeroSection starCount={starCount} />
-
-          <div className="mx-auto max-w-[1100px]">
-            <Separator />
-          </div>
-
-          <OverviewSection />
 
           <div className="mx-auto max-w-[1100px]">
             <Separator />
