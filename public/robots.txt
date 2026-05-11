@@ -6,6 +6,7 @@ Disallow: /api/
 Disallow: /auth/
 Disallow: /moderation
 Disallow: /settings/
+Disallow: /overview
 
 Allow: /schedule/
 Allow: /curriculum/

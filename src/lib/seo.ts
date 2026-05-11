@@ -80,6 +80,14 @@ function getSeoConfig(pathname: string): SeoConfig {
     };
   }
 
+  if (pathname.startsWith("/overview")) {
+    return {
+      title: "Inicio | Claustrum",
+      description: "Panel de inicio con tu progreso academico, proximos cursos y estadisticas.",
+      robots: "noindex, follow",
+    };
+  }
+
   return {
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
