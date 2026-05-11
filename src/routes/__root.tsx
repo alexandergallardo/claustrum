@@ -27,7 +27,7 @@ function RootComponent() {
   useRouteSeo(pathname);
 
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
-  const isPublicRoute = isAuthRoute || pathname.startsWith("/onboarding") || pathname === "/home";
+  const isPublicRoute = isAuthRoute || pathname.startsWith("/onboarding") || pathname === "/";
 
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser({ enabled: !isPublicRoute });
   const profileContext = useProfileContext(authUser?.id ?? null);
@@ -74,7 +74,7 @@ function RootComponent() {
     }
 
     if (shouldLeaveOnboarding) {
-      void navigate({ to: "/", replace: true });
+      void navigate({ to: "/overview", replace: true });
     }
   }, [navigate, needsOnboardingRedirect, shouldLeaveOnboarding]);
 

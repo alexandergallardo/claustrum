@@ -17,8 +17,8 @@ import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
 import { Route as PoliciesIndexRouteImport } from './routes/policies/index'
+import { Route as OverviewIndexRouteImport } from './routes/overview/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
-import { Route as HomeIndexRouteImport } from './routes/home/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
@@ -72,14 +72,14 @@ const PoliciesIndexRoute = PoliciesIndexRouteImport.update({
   path: '/policies/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OverviewIndexRoute = OverviewIndexRouteImport.update({
+  id: '/overview/',
+  path: '/overview/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/onboarding/',
   path: '/onboarding/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HomeIndexRoute = HomeIndexRouteImport.update({
-  id: '/home/',
-  path: '/home/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
@@ -160,8 +160,8 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
-  '/home/': typeof HomeIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/overview/': typeof OverviewIndexRoute
   '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
@@ -184,8 +184,8 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum': typeof CurriculumIndexRoute
-  '/home': typeof HomeIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/overview': typeof OverviewIndexRoute
   '/policies': typeof PoliciesIndexRoute
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
@@ -210,8 +210,8 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/curriculum/': typeof CurriculumIndexRoute
-  '/home/': typeof HomeIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/overview/': typeof OverviewIndexRoute
   '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
@@ -237,8 +237,8 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
-    | '/home/'
     | '/onboarding/'
+    | '/overview/'
     | '/policies/'
     | '/professors/'
     | '/schedule/'
@@ -261,8 +261,8 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum'
-    | '/home'
     | '/onboarding'
+    | '/overview'
     | '/policies'
     | '/professors'
     | '/schedule'
@@ -286,8 +286,8 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
-    | '/home/'
     | '/onboarding/'
+    | '/overview/'
     | '/policies/'
     | '/professors/'
     | '/schedule/'
@@ -309,8 +309,8 @@ export interface RootRouteChildren {
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
-  HomeIndexRoute: typeof HomeIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
+  OverviewIndexRoute: typeof OverviewIndexRoute
   PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
@@ -375,18 +375,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoliciesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/overview/': {
+      id: '/overview/'
+      path: '/overview'
+      fullPath: '/overview/'
+      preLoaderRoute: typeof OverviewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding/': {
       id: '/onboarding/'
       path: '/onboarding'
       fullPath: '/onboarding/'
       preLoaderRoute: typeof OnboardingIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/home/': {
-      id: '/home/'
-      path: '/home'
-      fullPath: '/home/'
-      preLoaderRoute: typeof HomeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/curriculum/': {
@@ -531,8 +531,8 @@ const rootRouteChildren: RootRouteChildren = {
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
-  HomeIndexRoute: HomeIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
+  OverviewIndexRoute: OverviewIndexRoute,
   PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
