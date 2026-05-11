@@ -27,7 +27,7 @@ export function OverviewSection() {
           {OVERVIEW_ITEMS.map((item, index) => (
             <div
               key={item.number}
-              className={`px-6 py-10 md:px-9 md:py-14 ${index < 2 ? "border-border border-b md:border-r md:border-b-0" : ""}`}
+              className={`bg-background px-6 py-10 md:px-9 md:py-14 ${index < 2 ? "border-border border-b md:border-r md:border-b-0" : ""}`}
             >
               <div className="mb-5 flex items-center gap-[10px] font-mono text-[11px] tracking-[0.06em] text-[#A6841C] before:block before:h-px before:w-4 before:bg-[#C9A227]">
                 {item.number}
