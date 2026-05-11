@@ -101,7 +101,7 @@ export function AppSidebar() {
       className="peer/sidebar group/sidebar bg-muted text-muted-foreground fixed inset-y-0 left-0 z-50 hidden w-20 flex-col px-4 pt-1 pb-4 transition-[width] duration-200 ease-out hover:w-72 data-[user-menu=open]:w-72 md:flex"
     >
       <Link
-        to="/"
+        to="/overview"
         preload="intent"
         aria-label="Claustrum"
         className="text-foreground hover:bg-background/70 flex h-12 items-center gap-3 rounded-full transition-colors"
