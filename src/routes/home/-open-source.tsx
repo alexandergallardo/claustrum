@@ -2,16 +2,16 @@ import { BoxIcon } from "./-icons";
 
 const OSS_CARDS = [
   {
-    title: "Licencia MIT",
-    body: "El código es libre. Podés usarlo, modificarlo y distribuirlo sin restricciones.",
+    title: "Código abierto",
+    body: "Licencia MIT que permite usar, modificar y distribuir el código libremente, y si querés contribuir con una carrera nueva, un diseño mejor o un bug report, los pull requests siempre son bienvenidos.",
   },
   {
     title: "Sin anuncios ni rastreo",
     body: "No hay monetización. Los datos se manejan con el mínimo necesario y nunca se venden.",
   },
   {
-    title: "Contribuciones abiertas",
-    body: "Si querés agregar una carrera, mejorar el diseño o reportar un bug, los PRs son bienvenidos.",
+    title: "Independiente",
+    body: "Sin dependencias institucionales ni burocracia. Las mejoras salen cuando la comunidad las propone, no cuando un comité las aprueba.",
   },
 ];
 

@@ -28,3 +28,4 @@ supabase/tec-data/**/__pycache__/
 supabase/tec-data/.pytest_cache/
 supabase/tec-data/.ruff_cache/
 playwright-debug-*.png
+lighthouse-*.json
