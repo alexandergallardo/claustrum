@@ -1,7 +1,6 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { Separator } from "@/components/ui/separator";
 import { FeaturesSection } from "@/routes/home/-features";
 import { HomeFooter } from "@/routes/home/-footer";
 import { FooterCTA } from "@/routes/home/-footer-cta";
@@ -47,10 +46,6 @@ function HomePage() {
 
         <main id="main-content">
           <HeroSection starCount={starCount} />
-
-          <div className="mx-auto max-w-[1100px]">
-            <Separator />
-          </div>
 
           <FeaturesSection />
 
