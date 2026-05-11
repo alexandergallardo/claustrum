@@ -759,7 +759,7 @@ function SignUpForm() {
       } = await supabase.auth.getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        void navigate({ to: "/", replace: true });
+        void navigate({ to: "/overview", replace: true });
       }
     };
 
@@ -837,7 +837,7 @@ function SignUpForm() {
 
     if (data.session) {
       await invalidateAuthFlowQueries(queryClient, data.session.user.id);
-      void navigate({ to: "/", replace: true });
+      void navigate({ to: "/overview", replace: true });
     } else {
       window.sessionStorage.setItem(VERIFY_EMAIL_KEY, email.trim());
       void navigate({ to: "/auth/verify-email", replace: true });

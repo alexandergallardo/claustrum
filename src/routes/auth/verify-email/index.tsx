@@ -47,7 +47,7 @@ export default function VerifyEmailPage() {
         if (session) {
           setStatus("success");
           setTimeout(() => {
-            void navigate({ to: "/" });
+            void navigate({ to: "/overview" });
           }, 2000);
         } else {
           setStatus("pending");
@@ -70,7 +70,7 @@ export default function VerifyEmailPage() {
         }
         setStatus("success");
         setTimeout(() => {
-          void navigate({ to: "/" });
+          void navigate({ to: "/overview" });
         }, 2000);
       }
     });

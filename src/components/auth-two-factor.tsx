@@ -39,7 +39,7 @@ export function AuthTwoFactorPage() {
       }
 
       if (aal?.currentLevel === "aal2") {
-        void navigate({ to: "/", replace: true });
+        void navigate({ to: "/overview", replace: true });
         return;
       }
 
@@ -136,7 +136,7 @@ export function AuthTwoFactorPage() {
     }
 
     setIsVerifying(false);
-    void navigate({ to: "/", replace: true });
+    void navigate({ to: "/overview", replace: true });
   }
 
   return (

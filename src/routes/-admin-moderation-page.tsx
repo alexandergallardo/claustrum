@@ -51,7 +51,7 @@ export function AdminModerationPage() {
       return;
     }
     if (!canModerate) {
-      void navigate({ to: "/", replace: true });
+      void navigate({ to: "/overview", replace: true });
     }
   }, [authUser, canModerate, isAuthLoading, isAdminQuery.isLoading, navigate]);
 
