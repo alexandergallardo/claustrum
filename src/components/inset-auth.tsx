@@ -487,7 +487,7 @@ async function getPostSignInRedirect(supabase: ReturnType<typeof getSupabaseBrow
   if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") {
     return "/auth/2fa" as const;
   }
-  return "/" as const;
+  return "/overview" as const;
 }
 
 function MagicLinkButton({ email = "" }: { email?: string }) {

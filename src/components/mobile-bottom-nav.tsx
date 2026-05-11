@@ -37,7 +37,7 @@ export function MobileBottomNav() {
   const profileUrl = authUser ? "/settings/profile" : "/auth/signin";
 
   const isActive = (url: string) =>
-    url === "/" ? location.pathname === url : location.pathname.startsWith(url);
+    url === "/overview" ? location.pathname === url : location.pathname.startsWith(url);
 
   return (
     <nav className="border-border/60 bg-background fixed inset-x-0 bottom-0 z-50 flex h-[72px] items-stretch justify-around border-t pb-[env(safe-area-inset-bottom)] md:hidden">

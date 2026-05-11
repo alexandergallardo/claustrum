@@ -19,7 +19,7 @@ const data = {
   navMain: [
     {
       title: "Inicio",
-      url: "/",
+      url: "/overview",
       icon: IconDashboard,
     },
     {
@@ -93,7 +93,7 @@ export function AppSidebar() {
   const userInitial = user?.name.charAt(0).toUpperCase() ?? "M";
 
   const isActive = (url: string) =>
-    url === "/" ? location.pathname === url : location.pathname.startsWith(url);
+    url === "/overview" ? location.pathname === url : location.pathname.startsWith(url);
 
   return (
     <aside
