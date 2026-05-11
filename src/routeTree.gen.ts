@@ -17,11 +17,11 @@ import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as OverviewIndexRouteImport } from './routes/overview/index'
+import { Route as ModerationIndexRouteImport } from './routes/moderation/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
-const ModerationLazyRouteImport = createFileRoute('/moderation')()
 const ProfessorsIndexLazyRouteImport = createFileRoute('/professors/')()
 const PoliciesIndexLazyRouteImport = createFileRoute('/policies/')()
 const OnboardingIndexLazyRouteImport = createFileRoute('/onboarding/')()
@@ -44,11 +44,6 @@ const AuthResetPasswordIndexLazyRouteImport = createFileRoute(
 const AuthMagicLinkIndexLazyRouteImport = createFileRoute('/auth/magic-link/')()
 const Auth2faIndexLazyRouteImport = createFileRoute('/auth/2fa/')()
 
-const ModerationLazyRoute = ModerationLazyRouteImport.update({
-  id: '/moderation',
-  path: '/moderation',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/moderation.lazy').then((d) => d.Route))
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
   getParentRoute: () => rootRouteImport,
@@ -104,6 +99,13 @@ const OverviewIndexRoute = OverviewIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import('./routes/overview/index.lazy').then((d) => d.Route),
+)
+const ModerationIndexRoute = ModerationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ModerationLazyRoute,
+} as any).lazy(() =>
+  import('./routes/moderation/index.lazy').then((d) => d.Route),
 )
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
   id: '/curriculum/',
@@ -207,13 +209,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/moderation': typeof ModerationLazyRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
   '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum/': typeof CurriculumIndexRoute
+  '/moderation/': typeof ModerationIndexRoute
   '/overview/': typeof OverviewIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -231,13 +233,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
-  '/moderation': typeof ModerationLazyRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
   '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum': typeof CurriculumIndexRoute
+  '/moderation': typeof ModerationIndexRoute
   '/overview': typeof OverviewIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
@@ -257,13 +259,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
-  '/moderation': typeof ModerationLazyRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
   '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum/': typeof CurriculumIndexRoute
+  '/moderation/': typeof ModerationIndexRoute
   '/overview/': typeof OverviewIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -284,13 +286,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/'
-    | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
+    | '/moderation/'
     | '/overview/'
     | '/schedule/'
     | '/settings/'
@@ -308,13 +310,13 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/'
-    | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum'
+    | '/moderation'
     | '/overview'
     | '/schedule'
     | '/settings'
@@ -333,13 +335,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/_index'
-    | '/moderation'
     | '/curriculum/$courseId'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
+    | '/moderation/'
     | '/overview/'
     | '/schedule/'
     | '/settings/'
@@ -359,7 +361,6 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
-  ModerationLazyRoute: typeof ModerationLazyRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   ProfessorsProfessorIdLazyRoute: typeof ProfessorsProfessorIdLazyRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
@@ -373,13 +374,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/moderation': {
-      id: '/moderation'
-      path: '/moderation'
-      fullPath: '/moderation'
-      preLoaderRoute: typeof ModerationLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_index': {
       id: '/_index'
       path: ''
@@ -442,6 +436,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/overview/'
       preLoaderRoute: typeof OverviewIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/moderation/': {
+      id: '/moderation/'
+      path: '/'
+      fullPath: '/moderation/'
+      preLoaderRoute: typeof ModerationIndexRouteImport
+      parentRoute: typeof ModerationLazyRoute
     }
     '/curriculum/': {
       id: '/curriculum/'
@@ -581,7 +582,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
-  ModerationLazyRoute: ModerationLazyRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   ProfessorsProfessorIdLazyRoute: ProfessorsProfessorIdLazyRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,

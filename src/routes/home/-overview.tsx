@@ -23,7 +23,7 @@ export function OverviewSection() {
   return (
     <section>
       <div className="mx-auto max-w-[1100px] px-5 md:px-6">
-        <div className="border-border grid md:grid-cols-3">
+        <div className="border-border bg-background grid overflow-hidden md:grid-cols-3">
           {OVERVIEW_ITEMS.map((item, index) => (
             <div
               key={item.number}

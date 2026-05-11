@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -37,7 +37,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function AdminModerationPage() {
+function AdminModerationPage() {
   const navigate = useNavigate();
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const isAdminQuery = useIsAdmin(authUser?.id ?? null);
@@ -607,3 +607,7 @@ function EvaluationSection({
     </div>
   );
 }
+
+export const Route = createLazyFileRoute("/moderation/")({
+  component: AdminModerationPage,
+});
