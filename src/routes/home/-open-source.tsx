@@ -38,10 +38,10 @@ export function OpenSourceSection() {
               key={card.title}
               className="bg-card hover:bg-accent/50 px-8 py-9 transition-colors"
             >
-              <h4 className="mb-[10px] flex items-center gap-2.5 text-[14px] font-semibold">
+              <h3 className="mb-[10px] flex items-center gap-2.5 text-[14px] font-semibold">
                 <BoxIcon className="size-4 text-[#A6841C]" />
                 {card.title}
-              </h4>
+              </h3>
               <p className="text-muted-foreground text-[13px] leading-[1.5]">{card.body}</p>
             </div>
           ))}

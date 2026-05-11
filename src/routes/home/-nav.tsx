@@ -58,7 +58,12 @@ export function HomeNav({ starCount }: { starCount: number | null }) {
           </Button>
 
           <Button size="sm" asChild>
-            <a href="https://github.com/mau671/claustrum" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/mau671/claustrum"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Ver repositorio en GitHub"
+            >
               <GitHubIcon className="size-[15px]" />
               <span className="hidden sm:inline">GitHub</span>
               <span className="bg-primary-foreground/15 text-primary-foreground hidden items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] sm:inline-flex">

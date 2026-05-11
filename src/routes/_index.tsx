@@ -46,31 +46,33 @@ function HomePage() {
       <div className="relative z-10">
         <HomeNav starCount={starCount} />
 
-        <HeroSection starCount={starCount} />
+        <main id="main-content">
+          <HeroSection starCount={starCount} />
 
-        <div className="mx-auto max-w-[1100px]">
-          <Separator />
-        </div>
+          <div className="mx-auto max-w-[1100px]">
+            <Separator />
+          </div>
 
-        <OverviewSection />
+          <OverviewSection />
 
-        <div className="mx-auto max-w-[1100px]">
-          <Separator />
-        </div>
+          <div className="mx-auto max-w-[1100px]">
+            <Separator />
+          </div>
 
-        <FeaturesSection />
+          <FeaturesSection />
 
-        <StackSection />
+          <StackSection />
 
-        <OpenSourceSection />
+          <OpenSourceSection />
 
-        <div className="mx-auto max-w-[1100px]">
-          <Separator />
-        </div>
+          <div className="mx-auto max-w-[1100px]">
+            <Separator />
+          </div>
 
-        <FooterCTA />
+          <FooterCTA />
 
-        <HomeFooter />
+          <HomeFooter />
+        </main>
       </div>
     </div>
   );

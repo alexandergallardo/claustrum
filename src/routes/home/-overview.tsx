@@ -32,9 +32,9 @@ export function OverviewSection() {
               <div className="mb-5 flex items-center gap-[10px] font-mono text-[11px] tracking-[0.06em] text-[#A6841C] before:block before:h-px before:w-4 before:bg-[#C9A227]">
                 {item.number}
               </div>
-              <h3 className="mb-[10px] text-[17px] font-semibold tracking-[-0.01em]">
+              <h2 className="mb-[10px] text-[17px] font-semibold tracking-[-0.01em]">
                 {item.title}
-              </h3>
+              </h2>
               <p className="text-muted-foreground text-[14px] leading-[1.55]">{item.description}</p>
             </div>
           ))}
