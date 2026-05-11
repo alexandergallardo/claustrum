@@ -7,6 +7,7 @@ Disallow: /auth/
 Disallow: /moderation
 Disallow: /settings/
 Disallow: /overview
+Disallow: /onboarding
 
 Allow: /schedule/
 Allow: /curriculum/
