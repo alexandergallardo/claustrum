@@ -98,7 +98,7 @@
     "wrangler": "^4.59.2"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx lint-staged"
+    "pre-commit": "pnpm exec lint-staged"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs}": [
