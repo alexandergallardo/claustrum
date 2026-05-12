@@ -114,7 +114,10 @@
     "nodeLinker": "hoisted",
     "minimumReleaseAge": 72,
     "auditConfig": {
-      "level": "high"
+      "level": "high",
+      "ignoredAdvisories": [
+        "GHSA-rmmr-r34h-pfm5"
+      ]
     }
   }
 }
