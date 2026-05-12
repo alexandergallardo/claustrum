@@ -13,5 +13,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
     "zod": "^4.3.5"
-  }
+  },
+  "packageManager": "pnpm@11.1.0"
 }
