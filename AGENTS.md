@@ -32,10 +32,13 @@ This document provides guidelines for AI agents operating in this repository.
 
 - Start local Supabase: `pnpm run supabase:start`
 - Stop Supabase: `pnpm run supabase:stop`
-- Reset database: `pnpm run supabase:reset`
 - Run migrations: `pnpm run supabase:migrate`
 - Seed database: `pnpm run supabase:seed`
 - Full setup: `pnpm run supabase:setup`
+- **NEVER reset the database** (`supabase:reset`, `supabase db reset`, or any equivalent).
+  Resets wipe all data irreversibly. If a migration needs to be applied, use
+  `supabase:migrate` which only runs pending migrations without deleting data.
+- Do NOT use `pnpm run supabase:stop` or any destructive operation on production databases
 
 ## Code Style Guidelines
 

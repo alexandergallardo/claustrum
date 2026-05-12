@@ -109,5 +109,12 @@
       "oxfmt --write"
     ]
   },
-  "packageManager": "pnpm@11.1.0"
+  "packageManager": "pnpm@11.1.0",
+  "pnpm": {
+    "nodeLinker": "hoisted",
+    "minimumReleaseAge": 72,
+    "auditConfig": {
+      "level": "high"
+    }
+  }
 }
