@@ -108,5 +108,6 @@
     "*.{json,jsonc,yaml,yml,md,css,html}": [
       "oxfmt --write"
     ]
-  }
+  },
+  "packageManager": "pnpm@11.1.0"
 }

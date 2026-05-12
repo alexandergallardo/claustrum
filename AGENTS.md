@@ -6,11 +6,11 @@ This document provides guidelines for AI agents operating in this repository.
 
 ### Package Manager
 
-- **Always use Bun** for all package management operations
-- Never use npm, npx, pnpm, or yarn
-- Use `bun install` to install dependencies
-- Use `bun add <package>` to add new dependencies
-- Use `bun remove <package>` to remove dependencies
+- **Always use pnpm** for all package management operations
+- Never use npm, npx, bun, or yarn
+- Use `pnpm install` to install dependencies
+- Use `pnpm add <package>` to add new dependencies
+- Use `pnpm remove <package>` to remove dependencies
 
 ### Development
 
@@ -18,24 +18,24 @@ This document provides guidelines for AI agents operating in this repository.
 
 ### Building
 
-- Build for production: `bun run build`
-- Preview production build: `bun run preview`
-- Deploy to Cloudflare: `bun run deploy`
+- Build for production: `pnpm run build`
+- Preview production build: `pnpm run preview`
+- Deploy to Cloudflare: `pnpm run deploy`
 
 ### Testing
 
 - **No tests exist in this project**
-- Do NOT run `bun run test` or any test commands
+- Do NOT run `pnpm run test` or any test commands
 - If asked to run tests, inform the user that this project has no tests configured
 
 ### Supabase (when needed)
 
-- Start local Supabase: `bun run supabase:start`
-- Stop Supabase: `bun run supabase:stop`
-- Reset database: `bun run supabase:reset`
-- Run migrations: `bun run supabase:migrate`
-- Seed database: `bun run supabase:seed`
-- Full setup: `bun run supabase:setup`
+- Start local Supabase: `pnpm run supabase:start`
+- Stop Supabase: `pnpm run supabase:stop`
+- Reset database: `pnpm run supabase:reset`
+- Run migrations: `pnpm run supabase:migrate`
+- Seed database: `pnpm run supabase:seed`
+- Full setup: `pnpm run supabase:setup`
 
 ## Code Style Guidelines
 

@@ -38,7 +38,7 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 
 ## Stack técnico
 
-- Runtime y gestor de paquetes: Bun.
+- Runtime y gestor de paquetes: pnpm.
 - Frontend: React 19, TypeScript, Vite 7.
 - Enrutamiento: TanStack Router con rutas basadas en archivos.
 - Obtención de datos y caché: TanStack Query.
@@ -76,7 +76,7 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 
 ## Requisitos
 
-- Bun instalado.
+- pnpm instalado.
 - Supabase CLI disponible mediante las dependencias del proyecto.
 - Docker si se va a levantar Supabase localmente.
 - Cuenta/proyecto de Supabase para usar datos remotos o configurar producción.
@@ -88,7 +88,7 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 1. Instalar dependencias:
 
 ```bash
-bun install
+pnpm install
 ```
 
 2. Crear archivo de entorno local:
@@ -102,19 +102,19 @@ cp .env.example .env.local
 4. Si se usará Supabase local, iniciar los servicios:
 
 ```bash
-bun run supabase:start
+pnpm run supabase:start
 ```
 
 5. Ejecutar migraciones si aplica:
 
 ```bash
-bun run supabase:migrate
+pnpm run supabase:migrate
 ```
 
 6. Iniciar la aplicación web:
 
 ```bash
-bun run dev
+pnpm run dev
 ```
 
 La app queda disponible en `http://localhost:3000`.
@@ -140,37 +140,37 @@ Archivos de referencia:
 
 ## Comandos disponibles
 
-Todos los comandos del proyecto principal deben ejecutarse con Bun.
+Todos los comandos del proyecto principal deben ejecutarse con pnpm.
 
-| Comando                    | Descripción                                                           |
-| -------------------------- | --------------------------------------------------------------------- |
-| `bun install`              | Instala dependencias según `bun.lock`                                 |
-| `bun run dev`              | Inicia Vite en `http://localhost:3000`                                |
-| `bun run build`            | Ejecuta `tsc` y genera build de producción en `dist/`                 |
-| `bun run preview`          | Sirve localmente el build de producción                               |
-| `bun run supabase:start`   | Levanta Supabase local                                                |
-| `bun run supabase:stop`    | Detiene Supabase local                                                |
-| `bun run supabase:status`  | Muestra estado y credenciales locales de Supabase                     |
-| `bun run supabase:reset`   | Restablece la base local y aplica migraciones/seed según Supabase CLI |
-| `bun run supabase:migrate` | Aplica migraciones pendientes                                         |
+| Comando                     | Descripción                                                           |
+| --------------------------- | --------------------------------------------------------------------- |
+| `pnpm install`              | Instala dependencias según `pnpm-lock.yaml`                           |
+| `pnpm run dev`              | Inicia Vite en `http://localhost:3000`                                |
+| `pnpm run build`            | Ejecuta `tsc` y genera build de producción en `dist/`                 |
+| `pnpm run preview`          | Sirve localmente el build de producción                               |
+| `pnpm run supabase:start`   | Levanta Supabase local                                                |
+| `pnpm run supabase:stop`    | Detiene Supabase local                                                |
+| `pnpm run supabase:status`  | Muestra estado y credenciales locales de Supabase                     |
+| `pnpm run supabase:reset`   | Restablece la base local y aplica migraciones/seed según Supabase CLI |
+| `pnpm run supabase:migrate` | Aplica migraciones pendientes                                         |
 
-Existe un script `bun run test` en `package.json`, pero este repositorio no mantiene actualmente una suite de pruebas consolidada para el flujo habitual. La verificación mínima antes de abrir cambios es `bun run build`.
+Existe un script `pnpm run test` en `package.json`, pero este repositorio no mantiene actualmente una suite de pruebas consolidada para el flujo habitual. La verificación mínima antes de abrir cambios es `pnpm run build`.
 
 ## Entorno de desarrollo
 
 El flujo recomendado para trabajar localmente es:
 
 ```bash
-bun install
+pnpm install
 cp .env.example .env.local
-bun run supabase:start
-bun run supabase:migrate
-bun run dev
+pnpm run supabase:start
+pnpm run supabase:migrate
+pnpm run dev
 ```
 
 Notas importantes:
 
-- No uses `npm`, `npx`, `pnpm` ni `yarn` en este repositorio.
+- No uses `npm`, `npx`, `bun` ni `yarn` en este repositorio.
 - No confirmes en Git archivos `.env`, `.env.local`, `.dev.vars`, `dist/`, `.wrangler/`, `node_modules/` ni datos generados.
 - El servidor de desarrollo usa Vite en el puerto `3000`.
 - El cliente de Supabase valida variables públicas con Zod en `src/lib/env/public.ts`.
@@ -237,9 +237,9 @@ El Worker ubicado en `workers/api` es el backend unificado de la aplicación. Ma
 Ejecutar desde `workers/api`:
 
 ```bash
-bun install
-bun run dev
-bun run deploy
+pnpm install
+pnpm run dev
+pnpm run deploy
 ```
 
 Configuración principal:
@@ -343,8 +343,8 @@ El despliegue está automatizado con GitHub Actions y Cloudflare.
 Flujo: `.github/workflows/preview.yml`
 
 - Se ejecuta al hacer push a `development`.
-- Instala dependencias con Bun.
-- Ejecuta `bun run build`.
+- Instala dependencias con pnpm.
+- Ejecuta `pnpm run build`.
 - Publica `dist/` en Cloudflare Pages con branch `development`.
 
 ### Producción
@@ -352,8 +352,8 @@ Flujo: `.github/workflows/preview.yml`
 Flujo: `.github/workflows/production.yml`
 
 - Se ejecuta al hacer push a `main`.
-- Instala dependencias con Bun.
-- Ejecuta `bun run build`.
+- Instala dependencias con pnpm.
+- Ejecuta `pnpm run build`.
 - Despliega el Worker `workers/api`.
 - Publica `dist/` en Cloudflare Pages con proyecto `claustrum`.
 
@@ -379,7 +379,7 @@ git checkout -b feat/descripcion-corta
 2. Instala dependencias y configura el entorno:
 
 ```bash
-bun install
+pnpm install
 cp .env.example .env.local
 ```
 
@@ -388,7 +388,7 @@ cp .env.example .env.local
 4. Verifica que el build pase:
 
 ```bash
-bun run build
+pnpm run build
 ```
 
 5. Revisa los cambios antes de confirmarlos en Git:
@@ -408,7 +408,7 @@ git commit -m "feat: agregar filtro de horarios por campus"
 
 - Resumen del cambio.
 - Contexto o problema que resuelve.
-- Evidencia de verificación, por ejemplo `bun run build`.
+- Evidencia de verificación, por ejemplo `pnpm run build`.
 - Capturas si el cambio afecta UI.
 - Notas de migración si toca Supabase, Worker, variables de entorno o datos.
 
