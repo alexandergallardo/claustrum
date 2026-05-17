@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",
-    "build": "tsc && vite build",
+    "build": "fumadocs-mdx && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "oxlint",
