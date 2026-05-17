@@ -1,11 +1,13 @@
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
+import mdx from "fumadocs-mdx/vite";
 import { defineConfig } from "vite";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [
+    mdx(),
     TanStackRouterVite({ autoCodeSplitting: true }),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],

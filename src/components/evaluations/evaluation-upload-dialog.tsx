@@ -394,7 +394,7 @@ export function EvaluationUploadDialog({
                 >
                   <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
                   <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-                  <ComboboxList className="max-h-48 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {(term) => (
                       <ComboboxItem key={term.id} value={term}>
                         <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
@@ -440,7 +440,7 @@ export function EvaluationUploadDialog({
                 >
                   <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
                   <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>
-                  <ComboboxList className="max-h-48 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {(prof) => (
                       <ComboboxItem key={prof.professorId} value={prof}>
                         <span className="block min-w-0 flex-1 truncate">{prof.professorName}</span>

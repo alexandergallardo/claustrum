@@ -145,7 +145,7 @@ function FilterCombobox({
           >
             <ComboboxInput showTrigger={false} placeholder={`Buscar ${label.toLowerCase()}`} />
             <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-            <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(item) => (
                 <ComboboxItem key={item.id} value={item}>
                   <span className="block w-full min-w-0 truncate">

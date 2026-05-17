@@ -1,0 +1,49 @@
+---
+title: Despliegue y variables de entorno
+description: Operación del proyecto en local y producción con Supabase, Cloudflare Pages y Workers.
+---
+
+## Entornos
+
+La aplicación se despliega en tres servicios distintos. El frontend estático se
+publica en Cloudflare Pages, la API de evaluaciones y reseñas corre como
+Cloudflare Worker en `workers/api/`, y la base de datos con autenticación en
+tiempo real usa Supabase.
+
+## Variables de entorno
+
+Cada servicio requiere su propio conjunto de variables. El frontend necesita
+`VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` para conectarse a Supabase
+desde el cliente, y `VITE_API_BASE_URL` para apuntar al Worker de evaluaciones.
+El Worker necesita `SUPABASE_URL` y `SUPABASE_SECRET_KEY` para operaciones
+seguras contra la base de datos, más `TURNSTILE_SECRET_KEY` para validación de
+formularios.
+
+El repositorio incluye archivos de ejemplo con la estructura esperada de cada
+entorno: `.env.example` para desarrollo local, `.env.production.local.example`
+para producción y `workers/api/.dev.vars.example` para el Worker en desarrollo.
+
+## Flujo mínimo local
+
+```bash title="Iniciar entorno local"
+pnpm install
+cp .env.example .env.local
+pnpm run supabase:start
+pnpm run supabase:migrate
+pnpm run dev
+```
+
+Estos comandos instalan dependencias, copian la configuración base, inician
+Supabase local, aplican migraciones y arrancan el servidor de desarrollo en
+Vite. La base de datos local usa valores por defecto de Supabase
+(`postgres:postgres@localhost:54322`) y no requiere configuración adicional
+siempre que los puertos estén disponibles.
+
+## CI/CD
+
+El despliegue continuo usa dos ramas principales: `development` genera previews
+automáticos y `main` publica a producción. Antes de cada publicación se ejecuta
+`pnpm run build` para validar que el proyecto compile sin errores, y el despliegue
+falla si el build no pasa. No hay pruebas automatizadas configuradas en el
+proyecto, por lo que la validación previa al merge depende de la revisión manual
+y del build.

@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@xyflow/react/dist/style.css";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -11,6 +13,10 @@ body {
     "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scrollbar-gutter: stable;
 }
 
 code {

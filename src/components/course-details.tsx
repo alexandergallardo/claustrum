@@ -837,7 +837,7 @@ export function CourseDetails({
           >
             <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
             <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-            <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(term) => (
                 <ComboboxItem key={term.id} value={term}>
                   <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
@@ -1341,7 +1341,7 @@ export function CourseDetails({
                 >
                   <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
                   <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-                  <ComboboxList className="max-h-56 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {(term) => (
                       <ComboboxItem key={term.id} value={term}>
                         <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>

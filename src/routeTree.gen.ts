@@ -18,7 +18,9 @@ import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as OverviewIndexRouteImport } from './routes/overview/index'
 import { Route as ModerationIndexRouteImport } from './routes/moderation/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
@@ -107,6 +109,11 @@ const ModerationIndexRoute = ModerationIndexRouteImport.update({
 } as any).lazy(() =>
   import('./routes/moderation/index.lazy').then((d) => d.Route),
 )
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CurriculumIndexRoute = CurriculumIndexRouteImport.update({
   id: '/curriculum/',
   path: '/curriculum/',
@@ -143,6 +150,11 @@ const ProfessorsProfessorIdLazyRoute =
   } as any).lazy(() =>
     import('./routes/professors/$professorId.lazy').then((d) => d.Route),
   )
+const DocsSplatRoute = DocsSplatRouteImport.update({
+  id: '/docs/$',
+  path: '/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
   id: '/curriculum/$courseId',
   path: '/curriculum/$courseId',
@@ -210,11 +222,13 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
+  '/docs/$': typeof DocsSplatRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
   '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum/': typeof CurriculumIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/overview/': typeof OverviewIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
@@ -234,11 +248,13 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
+  '/docs/$': typeof DocsSplatRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
   '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum': typeof CurriculumIndexRoute
+  '/docs': typeof DocsIndexRoute
   '/moderation': typeof ModerationIndexRoute
   '/overview': typeof OverviewIndexRoute
   '/schedule': typeof ScheduleIndexRoute
@@ -260,11 +276,13 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
+  '/docs/$': typeof DocsSplatRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdLazyRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
   '/settings/security': typeof SettingsSecurityLazyRoute
   '/curriculum/': typeof CurriculumIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/overview/': typeof OverviewIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
@@ -287,11 +305,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/'
     | '/curriculum/$courseId'
+    | '/docs/$'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
+    | '/docs/'
     | '/moderation/'
     | '/overview/'
     | '/schedule/'
@@ -311,11 +331,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/'
     | '/curriculum/$courseId'
+    | '/docs/$'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum'
+    | '/docs'
     | '/moderation'
     | '/overview'
     | '/schedule'
@@ -336,11 +358,13 @@ export interface FileRouteTypes {
     | '/settings'
     | '/_index'
     | '/curriculum/$courseId'
+    | '/docs/$'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
     | '/settings/security'
     | '/curriculum/'
+    | '/docs/'
     | '/moderation/'
     | '/overview/'
     | '/schedule/'
@@ -362,8 +386,10 @@ export interface RootRouteChildren {
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
+  DocsSplatRoute: typeof DocsSplatRoute
   ProfessorsProfessorIdLazyRoute: typeof ProfessorsProfessorIdLazyRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
+  DocsIndexRoute: typeof DocsIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
   OverviewIndexRoute: typeof OverviewIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
@@ -445,6 +471,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModerationIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/curriculum/': {
       id: '/curriculum/'
       path: '/curriculum'
@@ -478,6 +511,13 @@ declare module '@tanstack/react-router' {
       path: '/professors/$professorId'
       fullPath: '/professors/$professorId'
       preLoaderRoute: typeof ProfessorsProfessorIdLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$': {
+      id: '/docs/$'
+      path: '/docs/$'
+      fullPath: '/docs/$'
+      preLoaderRoute: typeof DocsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/curriculum/$courseId': {
@@ -584,8 +624,10 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
+  DocsSplatRoute: DocsSplatRoute,
   ProfessorsProfessorIdLazyRoute: ProfessorsProfessorIdLazyRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
+  DocsIndexRoute: DocsIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,

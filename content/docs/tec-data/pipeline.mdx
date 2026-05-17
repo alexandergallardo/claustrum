@@ -1,0 +1,232 @@
+---
+title: Extracción de datos del ITCR
+description: Flujo completo de descarga, procesamiento, generación SQL y sincronización idempotente desde fuentes externas.
+---
+
+El pipeline de extracción vive en `supabase/tec-data/` y convierte datos obtenidos
+de servicios del ITCR en registros normalizados listos para poblar Supabase, y
+está diseñado para ser repetible e idempotente de modo que ejecutarlo múltiples
+veces con la misma fuente produzca el mismo resultado.
+
+## Etapas del pipeline
+
+El pipeline tiene cuatro etapas que se pueden ejecutar por separado o juntas
+mediante el comando `sync`.
+
+<div className='fd-steps [&_h3]:fd-step'>
+
+### Descarga
+
+La etapa de descarga obtiene datos crudos desde APIs del ITCR y los guarda como
+archivos JSON en `data/raw/{entidad}/`, de forma independiente por entidad aunque
+respetando el orden de dependencias (una entidad puede necesitar datos de otra
+que ya deben estar disponibles localmente).
+
+Las fuentes principales son dos. Las APIs públicas de `tecdigital.tec.ac.cr`
+entregan catálogos base como sedes, unidades académicas, carreras, cursos,
+periodos y planes de estudio; la descarga de planes requiere más requests porque
+cada plan necesita un detalle individual. Los endpoints de
+`tec-appsext.itcr.ac.cr/guiahorarios` entregan la oferta académica y horarios
+por año, sede y carrera, donde la oferta (`course_offer`) llega como JSON con
+metadatos por curso y la guía de horarios (`schedule_guia`) llega como HTML que
+se parsea a JSON con datos de grupos, reuniones y profesores.
+
+```bash title="Descargar entidades específicas"
+uv run tec-data download --entity study_plan
+uv run tec-data download --entity course_offer --year 2026
+uv run tec-data download --entity schedule_guia --year 2026
+```
+
+El flag `--concurrency` controla cuántos detalles de plan pueden descargarse en
+paralelo (por defecto 3, máximo 10).
+
+### Procesamiento
+
+La etapa de procesamiento transforma los JSON crudos en `data.json` normalizados
+por entidad, y cada entidad tiene su propia lógica de transformación. Las
+entidades de catálogo (`campus`, `academic_unit`, `academic_period`) se procesan
+limpiando texto, unificando mayúsculas y resolviendo identificadores; el
+procesamiento de `campus` combina dos fuentes (JSON API + HTML) para obtener
+nombres más completos.
+
+El procesamiento de `study_plan` es el más complejo, ya que a partir de los
+detalles descargados genera `study_plan`, `study_plan_campus`,
+`study_plan_level`, `course`, `study_plan_level_course` y `course_relation`. Este
+paso es incremental: carga los `data.json` existentes, preserva IDs y hace merge
+en lugar de reemplazar.
+
+```bash title="Procesar entidades"
+uv run tec-data process --entity campus
+uv run tec-data process --entity academic_period --years 2024,2025,2026
+uv run tec-data process --entity course_offering --years 2026
+```
+
+### Mezcla de oferta y horarios
+
+La oferta académica de un periodo no viene en un solo archivo, sino que el
+pipeline combina dos fuentes para construir las entidades de oferta.
+`course_offer` contiene metadatos por curso (sede, año, modalidad, periodo y
+horas semanales), llega como JSON agrupado por código de escuela y se organiza
+en un diccionario indexado por código de curso. `schedule_guia` contiene datos
+por grupo (curso, grupo, reuniones, profesores y aula), se parsea desde HTML a
+JSON y se almacena por
+`{sede}_{carrera}_{año}_{modalidad}_{periodo}`.
+
+El proceso de mezcla itera cada entrada de `schedule_guia`, busca el código de
+curso en el catálogo procesado y construye cinco entidades:
+`course_offering`, `course_offering_group`,
+`course_offering_group_professor`, `course_offering_meeting` y `professor`.
+
+Para cada grupo se determina el tipo mediante `normalize_group_type()`, que
+convierte valores como "GRUPO RN" a "RN" y valida contra los enums de la base
+de datos. Los nombres de profesor se filtran para descartar placeholders
+conocidos como "SIN PROFESOR ASIGNADO", y las reuniones se construyen a partir
+de entradas multi-día como "LUNES - 07:00:12:00" que se parsean a día de
+semana, hora inicio y hora fin.
+
+```bash title="Flags para procesar oferta"
+uv run tec-data process --entity course_offering --years 2026
+```
+
+### Generación SQL
+
+La etapa SQL construye un archivo con sentencias upsert para poblar la base de
+datos, usando `ON CONFLICT DO UPDATE` para que sean idempotentes: si el registro
+ya existe se actualiza, si no se inserta. El archivo generado también incluye
+lógica de soft delete, de modo que después de los upserts desactiva filas de
+oferta que ya no aparecen en la fuente y filas de catálogo que quedaron
+huérfanas.
+
+```bash title="Generar SQL"
+uv run tec-data sql --output ../seed.sql
+```
+
+El archivo generado también incluye lógica de soft delete, de modo que después de los upserts desactiva filas de oferta que ya no aparecen en la fuente y filas de catálogo que quedaron huérfanas.
+
+</div>
+
+## Sync unificado
+
+El comando `sync` ejecuta las cuatro etapas en secuencia pero añadiendo dos pasos
+críticos entre el procesamiento y la generación SQL:
+
+```bash title="Sync completo"
+uv run tec-data sync --target local --years 2026
+```
+
+### Remapeo de IDs
+
+Antes de generar SQL, `sync` consulta la base de destino para obtener los IDs
+existentes de cada entidad indexados por su clave natural (por ejemplo, `campus`
+por código, `course` por código, `professor` por nombre completo). Para cada
+fila local, si la clave natural existe en la base se usa el ID existente (así
+las relaciones con datos previos se mantienen) y si no existe se genera un ID
+determinista usando la función `deterministic_id()`. El remapeo es transitivo:
+los IDs de entidades base como `country` o `campus` se resuelven primero, y
+esos IDs actualizados se usan para resolver las claves foráneas de entidades
+dependientes como `course_offering`.
+
+### Aplicación y verificación
+
+Por defecto `sync` aplica el SQL generado contra la base y ejecuta consultas de
+verificación que muestran conteos activos de entidades clave, y si algo falla el
+comando reporta el error sin destruir datos existentes.
+
+```bash title="Sync con opciones"
+uv run tec-data sync --target remote --years 2026 --skip-pipeline
+uv run tec-data sync --target db-url --db-url "postgresql://..." --years 2026
+```
+
+`--skip-pipeline` reutiliza los datos ya procesados, lo que es útil para repetir
+el remapeo o la aplicación sin volver a descargar, y `--keep-sql` conserva el
+archivo SQL generado para inspección manual.
+
+## IDs deterministas
+
+Los IDs de entidades clave se generan con la función `deterministic_id()` para
+garantizar que la misma fuente produzca siempre los mismos identificadores.
+
+```python title="Algoritmo de ID determinista"
+def deterministic_id(namespace: str, *parts: object) -> int:
+    raw = f"{namespace}|" + "|".join(
+        str(p).strip().upper() for p in parts
+    )
+    digest = hashlib.blake2b(
+        raw.encode("utf-8"), digest_size=8
+    ).digest()
+    identifier = int.from_bytes(digest, "big") & ((1 << 63) - 1)
+    return identifier or 1
+```
+
+La entrada es un namespace (por ejemplo, `"campus"`, `"course_offering"`) más las
+partes de la clave natural, y el hash Blake2b produce 64 bits que se enmascaran
+para que quepan en un `BIGINT` positivo con signo.
+
+| Entidad | Namespace | Partes de la clave |
+|---|---|---|
+| country | `"country"` | iso2_code |
+| campus | `"campus"` | code |
+| academic_unit | `"academic_unit"` | code |
+| course | `"course"` | code |
+| professor | `"professor"` | full_name |
+| study_plan | `"study_plan"` | unit_code, external_plan_id |
+| course_offering | `"course_offering"` | course_id, campus_id, unit_id, term_id |
+| course_offering_group | `"course_offering_group"` | offering_id, group_code |
+| course_offering_meeting | `"course_offering_meeting"` | group_id, weekday, starts_at, ends_at |
+
+## Orden de dependencias entre entidades
+
+Cada entidad depende de que sus referencias existan antes de ser procesada. El
+orden completo es:
+
+| # | Entidad | Depende de | Descripción |
+|---|---|---|---|
+| 1 | country | - | País de referencia (Costa Rica) |
+| 2 | university | country | Universidad (ITCR) |
+| 3 | campus | university | Sedes del TEC |
+| 4 | academic_unit | university, campus | Escuelas y carreras |
+| 5 | academic_unit_campus | academic_unit, campus | Relación muchos a muchos |
+| 6 | academic_modality | - | Semestre, trimestre, etc. |
+| 7 | academic_term | academic_modality | Periodo concreto |
+| 8 | study_plan | academic_unit, academic_modality | Plan de estudios |
+| 9 | study_plan_campus | study_plan, campus | Sedes donde se ofrece |
+| 10 | study_plan_level | study_plan | Niveles del plan |
+| 11 | course | - | Catálogo de cursos |
+| 12 | study_plan_level_course | study_plan_level, course | Cursos por nivel |
+| 13 | course_relation | study_plan, course | Requisitos y equivalencias |
+| 14 | professor | - | Nombres de profesores |
+| 15 | course_offering | course, campus, academic_unit, academic_term | Oferta de un periodo |
+| 16 | course_offering_group | course_offering | Grupo de una oferta |
+| 17 | course_offering_group_professor | course_offering_group, professor | Profesores del grupo |
+| 18 | course_offering_meeting | course_offering_group | Reuniones del grupo |
+
+## Archivos de implementación
+
+El pipeline está organizado en tres capas dentro de `supabase/tec-data/src/`. La
+capa de API contiene clientes HTTP que envuelven requests a cada endpoint del
+ITCR, donde `api/base.py` define un `APIClient` base con session compartida y
+`api/campus.py`, `api/academic_unit.py`, `api/academic_period.py` y
+`api/study_plan.py` implementan la descarga específica de cada dominio.
+
+La capa de comandos orquesta la lógica de cada etapa:
+`commands/download.py` coordina las descargas por entidad,
+`commands/process.py` transforma los datos crudos,
+`commands/process_course_offering.py` implementa la fusión de oferta y
+horarios, `commands/sql.py` genera el archivo upsert y `commands/sync.py`
+coordina el pipeline completo con remapeo y aplicación. La capa TUI
+(`tui/download.py`) ofrece una interfaz textual opcional para monitorear el
+progreso de descarga de planes de estudio.
+
+## Consideraciones operativas
+
+La extracción respeta estrictamente el orden de dependencias entre entidades, de
+modo que procesar una entidad antes que sus dependencias produce datos
+incompletos. Para `course_offering` se mezclan dos fuentes con formatos
+distintos, y si una fuente falta el pipeline continúa con los datos disponibles
+aunque la oferta puede quedar incompleta. Los IDs deterministas permiten que el
+sync sea idempotente, pero si la clave natural de una entidad cambia en la
+fuente (por ejemplo, un curso cambia de código) el pipeline lo tratará como una
+entidad nueva y la anterior quedará marcada como inactiva por el soft delete. El
+sync no debe ejecutarse contra producción sin antes verificar el SQL generado, y
+usar `--no-apply` combinado con `--keep-sql` permite inspeccionar el archivo
+antes de aplicarlo.

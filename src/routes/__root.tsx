@@ -1,4 +1,5 @@
 import { createRootRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { SearchIcon } from "lucide-react";
 import { useEffect } from "react";
 
@@ -27,7 +28,11 @@ function RootComponent() {
   useRouteSeo(pathname);
 
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
-  const isPublicRoute = isAuthRoute || pathname.startsWith("/onboarding") || pathname === "/";
+  const isPublicRoute =
+    isAuthRoute ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/docs") ||
+    pathname === "/";
 
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser({ enabled: !isPublicRoute });
   const profileContext = useProfileContext(authUser?.id ?? null);
@@ -79,7 +84,30 @@ function RootComponent() {
   }, [navigate, needsOnboardingRedirect, shouldLeaveOnboarding]);
 
   return (
-    <>
+    <RootProvider
+      key={pathname.startsWith("/docs") ? "docs-framework" : "app-framework"}
+      theme={{
+        enabled: pathname.startsWith("/docs"),
+        storageKey: "docs-theme",
+        defaultTheme: "system",
+        attribute: "class",
+      }}
+      search={{ enabled: pathname.startsWith("/docs") }}
+      i18n={{
+        translations: {
+          chooseLanguage: "Elegir idioma",
+          chooseTheme: "Tema",
+          editOnGithub: "Editar en GitHub",
+          lastUpdate: "Última actualización",
+          nextPage: "Página siguiente",
+          previousPage: "Página anterior",
+          search: "Buscar",
+          searchNoResult: "No se encontraron resultados",
+          toc: "En esta página",
+          tocNoHeadings: "Sin encabezados",
+        },
+      }}
+    >
       {isPublicRoute ? (
         <Outlet />
       ) : shouldHoldPrivateRender ? (
@@ -92,7 +120,7 @@ function RootComponent() {
         </AppLayoutWrapper>
       )}
       <Toaster />
-    </>
+    </RootProvider>
   );
 }
 

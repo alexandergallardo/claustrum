@@ -1,0 +1,48 @@
+---
+title: Frontend y rutas
+description: Arquitectura del frontend con React, TanStack Router, TanStack Query y convenciones de UI.
+---
+
+## Stack de frontend
+
+La aplicación usa React 19 con TypeScript sobre Vite 7 como bundler. El
+enrutamiento es file-based con TanStack Router, los datos y la caché se manejan
+con TanStack Query y la interfaz se construye con Tailwind CSS v4 combinado con
+componentes de shadcn/ui sobre Radix.
+
+## Estructura de rutas
+
+Las rutas siguen una organización file-based dentro de `src/routes/` donde el
+nombre del archivo determina la URL. El layout global y las reglas de navegación
+se definen en `src/routes/__root.tsx`, que envuelve todas las páginas con los
+providers necesarios (tema, autenticación, query client y Fumadocs para la
+sección de documentación).
+
+La landing pública y las rutas de acceso (`src/routes/home/*`, `src/routes/auth/*`
+y `src/routes/onboarding/*`) gestionan la experiencia inicial del usuario antes
+de que acceda al producto. Las rutas del producto principal
+(`src/routes/overview`, `curriculum`, `schedule`, `professors`) corresponden a
+las secciones centrales de la aplicación: dashboard, malla curricular,
+planificador de horarios y explorador de profesores.
+
+Las rutas de documentación (`src/routes/docs/`) están separadas del producto
+principal porque usan Fumadocs con su propio layout, sidebar y sistema de
+navegación entre páginas. El patrón `$.tsx` captura rutas anidadas dinámicas
+dentro de `/docs/*`.
+
+## Criterios de diseño del proyecto
+
+La consistencia visual se mantiene con tokens definidos en `src/styles.css` y
+clases utilitarias de Tailwind, siguiendo las convenciones de shadcn/ui para
+componentes como botones, diálogos, formularios y tablas.
+
+Antes de crear un componente nuevo hay que revisar si ya existe uno equivalente
+en `src/components/ui/` (la colección de componentes base shadcn) o si el
+problema se resuelve combinando componentes existentes. Los componentes de
+negocio reutilizables (como `CourseCard`, `ScheduleGrid` o `ReviewComposer`) se
+separan de los componentes de página para que puedan importarse desde distintas
+rutas sin duplicación.
+
+Todos los imports internos usan el alias `@/` que mapea a `src/`, y los imports
+se agrupan con los externos (React, TanStack, etc.) primero seguidos de los
+locales.
