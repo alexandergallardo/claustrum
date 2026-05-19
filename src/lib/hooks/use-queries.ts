@@ -386,6 +386,35 @@ export function useCourseInferredAcademicTerms(
   });
 }
 
+export function useCourseOfferingTerms(
+  courseId: number | null,
+  campusId: number | null,
+  academicUnitId: number | null,
+) {
+  return useQuery({
+    queryKey: ["courseOfferingTerms", courseId, campusId, academicUnitId],
+    queryFn: async () => {
+      if (!courseId) return [];
+
+      const sb = getSupabaseBrowserClient();
+      const { data, error } = await sb
+        .rpc("get_course_offering_terms", {
+          p_course_id: courseId,
+          p_campus_id: campusId,
+          p_academic_unit_id: academicUnitId,
+        })
+        .select("*")
+        .order("year", { ascending: false })
+        .order("period_number", { ascending: false });
+
+      if (error) throw error;
+      return (data ?? []) as AcademicTerm[];
+    },
+    enabled: !!courseId,
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useScheduleCourses(params: {
   termId: number | null;
   campusId: number | null;
@@ -772,9 +801,10 @@ export function useCourseRecentProfessors(
   courseId: number | null,
   campusId: number | null,
   academicUnitId: number | null,
+  academicTermId: number | null = null,
 ) {
   return useQuery({
-    queryKey: ["courseRecentProfessors", courseId, campusId, academicUnitId],
+    queryKey: ["courseRecentProfessors", courseId, campusId, academicUnitId, academicTermId],
     queryFn: async () => {
       if (!courseId) return [] as CourseRecentProfessor[];
 
@@ -784,6 +814,7 @@ export function useCourseRecentProfessors(
         p_campus_id: campusId,
         p_academic_unit_id: academicUnitId,
         p_year_window: 2,
+        p_academic_term_id: academicTermId,
       });
 
       if (error) throw error;
@@ -820,9 +851,10 @@ export function useCourseLatestTermGroups(
   courseId: number | null,
   campusId: number | null,
   academicUnitId: number | null,
+  academicTermId: number | null = null,
 ) {
   return useQuery({
-    queryKey: ["courseLatestTermGroups", courseId, campusId, academicUnitId],
+    queryKey: ["courseLatestTermGroups", courseId, campusId, academicUnitId, academicTermId],
     queryFn: async () => {
       if (!courseId) return [] as CourseLatestTermGroup[];
 
@@ -831,6 +863,7 @@ export function useCourseLatestTermGroups(
         p_course_id: courseId,
         p_campus_id: campusId,
         p_academic_unit_id: academicUnitId,
+        p_academic_term_id: academicTermId,
       });
 
       if (error) throw error;
