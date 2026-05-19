@@ -2,28 +2,23 @@
 
 import hashlib
 import json
+import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
 
 def remove_accents(text: str) -> str:
     """Remove accents from text for SQL enum compatibility."""
-    accents = {
-        "Á": "A",
-        "É": "E",
-        "Í": "I",
-        "Ó": "O",
-        "Ú": "U",
-        "á": "a",
-        "é": "e",
-        "í": "i",
-        "ó": "o",
-        "ú": "u",
-    }
-    result = text
-    for acc, plain in accents.items():
-        result = result.replace(acc, plain)
-    return result
+    normalized = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+
+
+def normalize_group_type_key(raw_group_type: str) -> str:
+    """Normalize group type to a comparable uppercase key without accents."""
+    normalized = remove_accents(raw_group_type.upper().strip())
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized
 
 
 def deterministic_id(namespace: str, *parts: object) -> int:
@@ -36,21 +31,29 @@ def deterministic_id(namespace: str, *parts: object) -> int:
 
 def normalize_group_type(raw_group_type: str) -> str:
     """Normalize external group type values to DB enum-compatible values."""
-    normalized = remove_accents(raw_group_type.upper().strip())
-    if normalized == "GRUPO RN":
-        return "RN"
+    normalized = normalize_group_type_key(raw_group_type)
 
-    valid_group_types = {
-        "REGULAR",
-        "SEMIPRESENCIAL",
-        "VIRTUAL",
-        "ASISTIDA",
-        "TUTORIA",
-        "LABORATORIO",
-        "RN",
+    aliases = {
+        "GRUPO RN": "RN",
+        "RN": "RN",
+        "PRESENCIAL": "REGULAR",
+        "REGULAR": "REGULAR",
+        "SEMIPRESENCIAL": "SEMIPRESENCIAL",
+        "VIRTUAL": "VIRTUAL",
+        "ASISTIDA": "ASISTIDA",
+        "TUTORIA": "TUTORIA",
+        "LABORATORIO": "LABORATORIO",
+        "ENSEÑANZA REMOTA": "ENSEÑANZA REMOTA",
+        "ENSENANZA REMOTA": "ENSEÑANZA REMOTA",
+        "TRABAJO FINAL DE GRADUACION": "TRABAJO FINAL DE GRADUACIÓN",
+        "TRABAJO FINAL DE GRADUACION (TFG)": "TRABAJO FINAL DE GRADUACIÓN",
+        "TRABAJO FINAL DE GRADUACION TFG": "TRABAJO FINAL DE GRADUACIÓN",
+        "TFG": "TRABAJO FINAL DE GRADUACIÓN",
     }
-    if normalized in valid_group_types:
-        return normalized
+
+    canonical = aliases.get(normalized)
+    if canonical:
+        return canonical
 
     msg = f"Unknown group type: {raw_group_type!r} (normalized={normalized!r})"
     raise ValueError(msg)
@@ -134,6 +137,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     course_code_to_data = {c["code"]: c for c in courses}
 
     professors = {}
+    existing_professor_count = 0
     if professor_path.exists():
         professor_list = json.loads(professor_path.read_text())
         for p in professor_list:
@@ -141,6 +145,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
             if is_placeholder_professor_name(name):
                 continue
             professors[name] = deterministic_id("professor", name)
+        existing_professor_count = len(professors)
 
     updated_course_names: list[tuple[str, str]] = []
 
@@ -300,7 +305,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
             try:
                 group_type = normalize_group_type(raw_group_type)
             except ValueError:
-                normalized_raw = remove_accents(str(raw_group_type).upper().strip())
+                normalized_raw = normalize_group_type_key(str(raw_group_type))
                 unknown_group_types[normalized_raw] = (
                     unknown_group_types.get(normalized_raw, 0) + 1
                 )
@@ -442,4 +447,5 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     print(f"  - Groups: {len(groups)}")
     print(f"  - Group-Professor: {len(group_professors)}")
     print(f"  - Meetings: {len(meetings)}")
-    print(f"  - New professors: {len(professor_list)}")
+    print(f"  - Professors in snapshot: {len(professor_list)}")
+    print(f"  - New professors discovered: {max(len(professor_list) - existing_professor_count, 0)}")
