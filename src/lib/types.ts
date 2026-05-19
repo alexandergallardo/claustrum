@@ -159,6 +159,9 @@ export interface DashboardStats {
 
 export interface CourseAttempt {
   id: number;
+  courseId: number;
+  courseCode: string | null;
+  courseName: string | null;
   attemptNumber: number;
   status: Exclude<CourseStatus, "not_taken">;
   grade: number | null;

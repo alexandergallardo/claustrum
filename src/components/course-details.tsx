@@ -88,7 +88,7 @@ interface CourseDetailsProps {
   modalityName?: string;
   transitionName?: string;
   onCreateAttempt: (
-    courseId: string,
+    targetCourseId: string,
     attempt: {
       status: Exclude<CourseStatus, "not_taken">;
       grade: number | null;
@@ -254,6 +254,7 @@ function TimelineItem({
           </Button>
         </div>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          {attempt.courseCode ? <span>Curso {attempt.courseCode}</span> : null}
           {gradeText ? (
             <span className="inline-flex items-center gap-1">
               <GraduationCap className="size-3.5" />
@@ -561,7 +562,9 @@ export function CourseDetails({
   const [editingAttempt, setEditingAttempt] = useState<CourseAttempt | null>(null);
   const [editAcademicTermId, setEditAcademicTermId] = useState<string>("");
   const [editGradeInput, setEditGradeInput] = useState("");
+  const [attemptCourseId, setAttemptCourseId] = useState(course.id);
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
+  const attemptCourseTriggerRef = useRef<HTMLButtonElement | null>(null);
   const progressTermTriggerRef = useRef<HTMLButtonElement | null>(null);
   const editTermTriggerRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
@@ -574,12 +577,19 @@ export function CourseDetails({
     setProgressStatus("approved");
     setIsProgressSheetOpen(false);
     setEquivalentsPage(0);
+    setAttemptCourseId(course.id);
   }, [course.id]);
 
+  const attemptCourseNumericId = Number.parseInt(attemptCourseId, 10);
+  const inferredCourseId = Number.isNaN(attemptCourseNumericId)
+    ? Number.parseInt(course.id, 10)
+    : attemptCourseNumericId;
+
   const inferredTermsQuery = useCourseInferredAcademicTerms(
-    parseInt(course.id),
+    inferredCourseId,
     campusId ?? null,
     null,
+    studyPlanId ?? null,
   );
   const academicTerms = useMemo(() => inferredTermsQuery.data ?? [], [inferredTermsQuery.data]);
 
@@ -595,6 +605,12 @@ export function CourseDetails({
     equivalentsPage,
     EQUIVALENTS_PER_PAGE,
   );
+  const attemptTargetsQuery = useCourseEquivalents(
+    studyPlanId ?? null,
+    parseInt(course.id),
+    0,
+    10000,
+  );
 
   const attemptsQuery = useCourseAttempts(userId ?? null, studyPlanId ?? null, parseInt(course.id));
 
@@ -606,6 +622,34 @@ export function CourseDetails({
   const totalEquivalents = queryResult.data?.totalCount ?? 0;
   const equivalents = equivalentsResult?.data ?? [];
   const totalPages = Math.ceil(totalEquivalents / EQUIVALENTS_PER_PAGE);
+  const attemptTargetEquivalents = attemptTargetsQuery.data?.data ?? [];
+  const attemptTargets = useMemo(() => {
+    const meaningfulEquivalents = attemptTargetEquivalents.filter((eq) => {
+      const code = (eq.code ?? "").trim().toUpperCase();
+      const name = (eq.name ?? "").trim().toUpperCase();
+      return !!code && !!name && code !== name;
+    });
+    const options = [
+      {
+        id: Number.parseInt(course.id, 10),
+        code: course.code,
+        name: course.name,
+      },
+      ...meaningfulEquivalents.map((eq) => ({
+        id: eq.id,
+        code: eq.code ?? String(eq.id),
+        name: eq.name ?? "",
+      })),
+    ];
+    const dedup = new Map<number, { id: number; code: string; name: string }>();
+    for (const option of options) {
+      if (!Number.isInteger(option.id)) continue;
+      dedup.set(option.id, option);
+    }
+    return Array.from(dedup.values()).sort((a, b) => a.code.localeCompare(b.code));
+  }, [attemptTargetEquivalents, course.code, course.id, course.name]);
+  const selectedAttemptTarget =
+    attemptTargets.find((option) => String(option.id) === attemptCourseId) ?? null;
 
   const recentProfessors = recentProfessorsQuery.data ?? [];
   const latestTermGroups = latestGroupsQuery.data ?? [];
@@ -666,7 +710,7 @@ export function CourseDetails({
 
     setIsSaving(true);
     try {
-      const result = await onCreateAttempt(course.id, {
+      const result = await onCreateAttempt(attemptCourseId, {
         status: progressStatus,
         grade: requiresGrade ? parsedGrade : null,
         academicTermId: parsedAcademicTermId,
@@ -809,6 +853,44 @@ export function CourseDetails({
 
   const progressForm = (
     <div className="space-y-6">
+      <div>
+        <Label className="text-sm">Curso a registrar</Label>
+        <Combobox
+          items={attemptTargets}
+          value={selectedAttemptTarget}
+          onValueChange={(target) => setAttemptCourseId(target ? String(target.id) : course.id)}
+          itemToStringValue={(target) => `${target.code} - ${target.name}`}
+        >
+          <ComboboxTrigger
+            ref={attemptCourseTriggerRef}
+            render={
+              <Button variant="outline" className="mt-2 w-full justify-between font-normal" />
+            }
+          >
+            <span
+              className={`block min-w-0 flex-1 truncate text-left ${!selectedAttemptTarget ? "text-muted-foreground" : ""}`}
+            >
+              {selectedAttemptTarget
+                ? `${selectedAttemptTarget.code} - ${selectedAttemptTarget.name}`
+                : "Selecciona un curso"}
+            </span>
+          </ComboboxTrigger>
+          <ComboboxContent anchor={attemptCourseTriggerRef} container={comboboxPortalContainerRef}>
+            <ComboboxInput showTrigger={false} placeholder="Buscar curso equivalente..." />
+            <ComboboxEmpty>No se encontraron cursos.</ComboboxEmpty>
+            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {(target) => (
+                <ComboboxItem key={target.id} value={target}>
+                  <span className="block min-w-0 flex-1 truncate">
+                    {target.code} - {target.name}
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+
       <div>
         <Label className="text-sm">Periodo</Label>
         <Combobox

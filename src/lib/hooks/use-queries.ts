@@ -345,9 +345,10 @@ export function useCourseInferredAcademicTerms(
   courseId: number | null,
   campusId: number | null,
   academicUnitId: number | null,
+  studyPlanId: number | null,
 ) {
   return useQuery({
-    queryKey: ["courseInferredAcademicTerms", courseId, campusId, academicUnitId],
+    queryKey: ["courseInferredAcademicTerms", courseId, campusId, academicUnitId, studyPlanId],
     queryFn: async () => {
       if (!courseId) return [];
 
@@ -357,6 +358,7 @@ export function useCourseInferredAcademicTerms(
           p_course_id: courseId,
           p_campus_id: campusId,
           p_academic_unit_id: academicUnitId,
+          p_study_plan_id: studyPlanId,
         })
         .select("*")
         .order("year", { ascending: false })
@@ -580,7 +582,7 @@ export function useCreateCourseAttempt() {
         queryKey: ["dashboardStats", variables.userId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId],
+        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId],
       });
     },
   });
@@ -617,7 +619,7 @@ export function useUpdateCourseAttempt() {
         queryKey: ["dashboardStats", variables.userId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId, variables.courseId],
+        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId],
       });
     },
   });
@@ -645,6 +647,9 @@ export function useCourseAttempts(
       return (data ?? []).map(
         (attempt: {
           id: number;
+          course_id: number;
+          course_code: string | null;
+          course_name: string | null;
           attempt_number: number;
           status: string;
           grade: number | null;
@@ -653,6 +658,9 @@ export function useCourseAttempts(
         }) =>
           ({
             id: attempt.id,
+            courseId: attempt.course_id,
+            courseCode: attempt.course_code,
+            courseName: attempt.course_name,
             attemptNumber: attempt.attempt_number,
             status: attempt.status.toLowerCase() as CourseAttempt["status"],
             grade: attempt.grade,
