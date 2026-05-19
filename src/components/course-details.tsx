@@ -70,6 +70,7 @@ import {
   useCourseAttempts,
   useCourseEquivalents,
   useCourseLatestTermGroups,
+  useCourseOfferingTerms,
   useCourseRecentProfessors,
   useUpdateCourseAttempt,
 } from "@/lib/hooks/use-queries";
@@ -562,6 +563,7 @@ export function CourseDetails({
   const [editingAttempt, setEditingAttempt] = useState<CourseAttempt | null>(null);
   const [editAcademicTermId, setEditAcademicTermId] = useState<string>("");
   const [editGradeInput, setEditGradeInput] = useState("");
+  const [offeringTermId, setOfferingTermId] = useState<string>("");
   const [attemptCourseId, setAttemptCourseId] = useState(course.id);
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
   const attemptCourseTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -614,8 +616,25 @@ export function CourseDetails({
 
   const attemptsQuery = useCourseAttempts(userId ?? null, studyPlanId ?? null, parseInt(course.id));
 
-  const recentProfessorsQuery = useCourseRecentProfessors(parseInt(course.id), null, null);
-  const latestGroupsQuery = useCourseLatestTermGroups(parseInt(course.id), null, null);
+  const offeringTermsQuery = useCourseOfferingTerms(parseInt(course.id), null, null);
+  const selectedOfferingTermNumericId =
+    offeringTermId.trim() === "" ? null : Number.parseInt(offeringTermId, 10);
+  const normalizedOfferingTermId = Number.isNaN(selectedOfferingTermNumericId ?? Number.NaN)
+    ? null
+    : selectedOfferingTermNumericId;
+
+  const recentProfessorsQuery = useCourseRecentProfessors(
+    parseInt(course.id),
+    null,
+    null,
+    normalizedOfferingTermId,
+  );
+  const latestGroupsQuery = useCourseLatestTermGroups(
+    parseInt(course.id),
+    null,
+    null,
+    normalizedOfferingTermId,
+  );
   const evaluationsQuery = useCourseEvaluations(parseInt(course.id));
 
   const equivalentsResult = queryResult.data;
@@ -653,8 +672,21 @@ export function CourseDetails({
 
   const recentProfessors = recentProfessorsQuery.data ?? [];
   const latestTermGroups = latestGroupsQuery.data ?? [];
-  const latestTermName = latestTermGroups[0]?.termDisplayName ?? null;
+  const offeringTerms = useMemo(() => offeringTermsQuery.data ?? [], [offeringTermsQuery.data]);
+  const selectedOfferingTerm =
+    offeringTerms.find((term) => String(term.id) === offeringTermId) ?? null;
   const evaluations = evaluationsQuery.data ?? [];
+
+  useEffect(() => {
+    if (!offeringTermId && offeringTerms.length > 0) {
+      setOfferingTermId(String(offeringTerms[0].id));
+      return;
+    }
+
+    if (offeringTermId && !offeringTerms.some((term) => String(term.id) === offeringTermId)) {
+      setOfferingTermId(offeringTerms.length > 0 ? String(offeringTerms[0].id) : "");
+    }
+  }, [offeringTermId, offeringTerms]);
 
   const prerequisites = (course.prerequisites || []).flatMap((id) => {
     const item = courseById.get(id);
@@ -1241,9 +1273,40 @@ export function CourseDetails({
 
       {/* ========== PROFESSORS ========== */}
       <section>
-        <SectionHeader title="Profesores recientes" />
+        <div className="mb-3 space-y-2">
+          <h2 className="text-xl font-semibold tracking-tight">Periodo</h2>
+          <Combobox
+            items={offeringTerms}
+            value={selectedOfferingTerm}
+            onValueChange={(term) => setOfferingTermId(term ? String(term.id) : "")}
+            itemToStringValue={(term) => term.display_name}
+          >
+            <ComboboxTrigger
+              render={<Button variant="outline" className="w-full justify-between sm:w-80" />}
+            >
+              <span
+                className={`block min-w-0 flex-1 truncate text-left ${!selectedOfferingTerm ? "text-muted-foreground" : ""}`}
+              >
+                {selectedOfferingTerm?.display_name ??
+                  (offeringTermsQuery.isLoading ? "Cargando periodos..." : "Selecciona un periodo")}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent className="w-80">
+              <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
+              <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
+              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(term) => (
+                  <ComboboxItem key={term.id} value={term}>
+                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </div>
+        <SectionHeader title="Profesores" />
         {recentProfessorsQuery.isLoading ? (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="bg-muted h-16 animate-pulse rounded-xl" />
             ))}
@@ -1259,7 +1322,7 @@ export function CourseDetails({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {recentProfessors.map((professor: CourseRecentProfessor) => (
               <ProfessorCard
                 key={professor.professorId}
@@ -1273,20 +1336,11 @@ export function CourseDetails({
 
       {/* ========== SCHEDULES ========== */}
       <section>
-        <SectionHeader
-          title="Horarios disponibles"
-          action={
-            latestTermName ? (
-              <Badge variant="outline" className="text-xs">
-                {latestTermName}
-              </Badge>
-            ) : null
-          }
-        />
+        <SectionHeader title="Horarios" />
         {latestGroupsQuery.isLoading ? (
-          <div className="columns-1 gap-4 md:columns-2 2xl:columns-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-muted mb-4 h-48 animate-pulse rounded-xl" />
+              <div key={i} className="bg-muted h-48 animate-pulse rounded-xl" />
             ))}
           </div>
         ) : latestTermGroups.length === 0 ? (
@@ -1298,9 +1352,9 @@ export function CourseDetails({
             </p>
           </div>
         ) : (
-          <div className="columns-1 gap-4 md:columns-2 2xl:columns-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {latestTermGroups.map((group: CourseLatestTermGroup) => (
-              <div key={group.groupId} className="mb-4 break-inside-avoid">
+              <div key={group.groupId}>
                 <ScheduleGroupCard group={group} onPrepareTransition={prepareProfessorTransition} />
               </div>
             ))}
