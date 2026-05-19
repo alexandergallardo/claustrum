@@ -31,10 +31,28 @@ def download_cmd(
     year: str | None = typer.Option(
         None, "--year", "-y", help="Year for course_offer download (e.g., 2026)"
     ),
+    years: str | None = typer.Option(
+        None,
+        "--years",
+        help="Comma-separated years for offering downloads (e.g., 2024,2025)",
+    ),
 ) -> None:
     """Download raw data from TEC APIs."""
-    download(output_dir=data_dir, entity=entity, concurrency=concurrency, year=year)
-    if entity != "study_plan":
+    if year and years:
+        raise typer.BadParameter("Use either --year or --years, not both.")
+
+    years_list: list[str] | None = None
+    if years:
+        years_list = [item.strip() for item in years.split(",") if item.strip()]
+
+    success = download(
+        output_dir=data_dir,
+        entity=entity,
+        concurrency=concurrency,
+        year=year,
+        years=years_list,
+    )
+    if success and entity != "study_plan":
         typer.echo(f"Downloaded raw data to {data_dir}")
 
 

@@ -114,7 +114,8 @@ def download(
     verify_ssl: bool = False,
     concurrency: int = 3,
     year: str | None = None,
-) -> None:
+    years: list[str] | None = None,
+) -> bool:
     """Download raw data from TEC APIs.
 
     When entity is None, downloads all available data in order:
@@ -199,7 +200,7 @@ def download(
             print(
                 "Please run 'process' command first to generate academic_unit_campus data."
             )
-            return
+            return False
 
         relations = json.loads(relation_path.read_text())
 
@@ -211,7 +212,7 @@ def download(
             campus_id_to_code = {c["id"]: c["code"] for c in campuses}
         else:
             print(f"Error: campus data not found at {campus_path}")
-            return
+            return False
 
         # Load academic_unit data to map unit id -> code
         unit_path = output_dir / "academic_unit" / "data.json"
@@ -220,7 +221,7 @@ def download(
             unit_id_to_code = {u["id"]: u["code"] for u in units}
         else:
             print(f"Error: academic_unit data not found at {unit_path}")
-            return
+            return False
 
         # Build list of (campus_code, academic_unit_code) combinations
         academic_unit_campus_data = []
@@ -256,47 +257,86 @@ def download(
         finally:
             client.close()
 
+    years_list = [item.strip() for item in (years or []) if item and item.strip()]
+    if year:
+        years_list.append(year.strip())
+    years_list = sorted(set(years_list))
+
+    if entity in {"course_offer", "schedule_guia", "offering"} and not years_list:
+        print("Error: --year or --years is required for offering downloads")
+        return False
+
     if entity == "course_offer":
-        if not year:
-            print("Error: --year is required for course_offer download")
-            return
-
-        typer.echo(f"{_progress_prefix('download')} fetching course_offer for year={year}...")
-
         unit_path = output_dir / "academic_unit" / "data.json"
         if not unit_path.exists():
             print(f"Error: academic_unit data not found at {unit_path}")
             print("Please run 'process' command first to generate academic_unit data.")
-            return
+            return False
 
         units = json.loads(unit_path.read_text())
         school_codes = [u["code"] for u in units]
 
         client = AcademicUnitClient(verify_ssl=verify_ssl)
         try:
-            files = client.download_oferta_cursos(output_dir, school_codes, year)
-            for code, path in files.items():
-                print(f"Saved course_offer for {code} to: {path}")
+            for current_year in years_list:
+                typer.echo(
+                    f"{_progress_prefix('download')} fetching course_offer for year={current_year}..."
+                )
+                files = client.download_oferta_cursos(output_dir, school_codes, current_year)
+                for code, path in files.items():
+                    print(f"Saved course_offer for {code} to: {path}")
         finally:
             client.close()
 
     if entity == "schedule_guia":
-        if not year:
-            print("Error: --year is required for schedule_guia download")
-            return
+        client = AcademicUnitClient(verify_ssl=verify_ssl)
+        try:
+            for current_year in years_list:
+                typer.echo(
+                    f"{_progress_prefix('download')} fetching schedule_guia for year={current_year}..."
+                )
 
-        typer.echo(f"{_progress_prefix('download')} fetching schedule_guia for year={year}...")
+                course_offer_path = output_dir / "course_offer" / current_year
+                if not course_offer_path.exists():
+                    print(f"Error: course_offer data not found at {course_offer_path}")
+                    print(
+                        f"Please run 'download --entity course_offer --year {current_year}' first."
+                    )
+                    return False
 
-        course_offer_path = output_dir / "course_offer" / year
-        if not course_offer_path.exists():
-            print(f"Error: course_offer data not found at {course_offer_path}")
-            print("Please run 'download --entity course_offer --year {year}' first.")
-            return
+                files = client.download_horarios_from_course_offer(output_dir, current_year)
+                for file_name, path in files.items():
+                    print(f"Saved schedule_guia {file_name} to: {path}")
+        finally:
+            client.close()
+
+    if entity == "offering":
+        unit_path = output_dir / "academic_unit" / "data.json"
+        if not unit_path.exists():
+            print(f"Error: academic_unit data not found at {unit_path}")
+            print("Please run 'process' command first to generate academic_unit data.")
+            return False
+
+        units = json.loads(unit_path.read_text())
+        school_codes = [u["code"] for u in units]
 
         client = AcademicUnitClient(verify_ssl=verify_ssl)
         try:
-            files = client.download_horarios_from_course_offer(output_dir, year)
-            for file_name, path in files.items():
-                print(f"Saved schedule_guia {file_name} to: {path}")
+            for current_year in years_list:
+                typer.echo(
+                    f"{_progress_prefix('download')} fetching course_offer for year={current_year}..."
+                )
+                files = client.download_oferta_cursos(output_dir, school_codes, current_year)
+                for code, path in files.items():
+                    print(f"Saved course_offer for {code} to: {path}")
+
+                typer.echo(
+                    f"{_progress_prefix('download')} fetching schedule_guia for year={current_year}..."
+                )
+                files = client.download_horarios_from_course_offer(output_dir, current_year)
+                for file_name, path in files.items():
+                    print(f"Saved schedule_guia {file_name} to: {path}")
         finally:
             client.close()
+
+    return True

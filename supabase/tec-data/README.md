@@ -59,10 +59,14 @@ uv run tec-data download --entity study_plan
 
 ```bash
 uv run tec-data download --entity course_offer --year 2026
+
+# O varios años en una sola ejecución
+uv run tec-data download --entity course_offer --years 2024,2025,2026
 ```
 
 **Parámetros**:
 - `--year` o `-y`: Año académico (ej: 2026)
+- `--years`: Lista separada por coma para múltiples años (ej: 2024,2025,2026)
 
 **Requiere**: `academic_unit/data.json` generado durante el process.
 
@@ -73,12 +77,25 @@ Archivos generados:
 
 ```bash
 uv run tec-data download --entity schedule_guia --year 2026
+
+# O varios años en una sola ejecución
+uv run tec-data download --entity schedule_guia --years 2024,2025,2026
 ```
 
 **Requiere**: Datos de `course_offer` del mismo año.
 
 Archivos generados:
 - `data/raw/schedule_guia/{year}/*.json`
+
+#### Paso 4.1: Descargar oferta + horarios en un solo comando
+
+```bash
+uv run tec-data download --entity offering --years 2024,2025,2026
+```
+
+Este comando descarga por cada año:
+- `course_offer`
+- `schedule_guia`
 
 ### Procesamiento de Datos
 
@@ -147,6 +164,7 @@ uv run tec-data process --entity course_offering --years 2026
 | `study_plan` | process (academic_unit_campus) | `data/raw/study_plan/` |
 | `course_offer` | process (academic_unit) | `data/raw/course_offer/{year}/` |
 | `schedule_guia` | course_offer | `data/raw/schedule_guia/{year}/` |
+| `offering` | process (academic_unit) | `data/raw/course_offer/{year}/`, `data/raw/schedule_guia/{year}/` |
 
 ### Process
 
@@ -178,6 +196,9 @@ uv run tec-data download --entity course_offer --year 2026
 
 # 6. Descargar horarios (año específico)
 uv run tec-data download --entity schedule_guia --year 2026
+
+# Alternativa: descargar oferta + horarios para varios años
+uv run tec-data download --entity offering --years 2024,2025,2026
 
 # 7. Procesar oferta de cursos y horarios (año específico)
 uv run tec-data process --entity course_offering --years 2026

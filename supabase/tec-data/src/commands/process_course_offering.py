@@ -43,6 +43,7 @@ def normalize_group_type(raw_group_type: str) -> str:
         "ASISTIDA": "ASISTIDA",
         "TUTORIA": "TUTORIA",
         "LABORATORIO": "LABORATORIO",
+        "TALLER": "TALLER",
         "ENSEÑANZA REMOTA": "ENSEÑANZA REMOTA",
         "ENSENANZA REMOTA": "ENSEÑANZA REMOTA",
         "TRABAJO FINAL DE GRADUACION": "TRABAJO FINAL DE GRADUACIÓN",
