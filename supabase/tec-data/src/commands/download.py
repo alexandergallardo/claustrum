@@ -3,14 +3,109 @@
 import json
 import warnings
 from pathlib import Path
+from typing import Any
 
+import typer
+
+from src.api.academic_period import AcademicPeriodClient
 from src.api.academic_unit import AcademicUnitClient
 from src.api.campus import CampusClient
 from src.api.study_plan import StudyPlanClient
-from src.api.academic_period import AcademicPeriodClient
 
 # Suppress SSL warnings
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+
+
+def _progress_prefix(label: str) -> str:
+    return f"[{label}]"
+
+
+def run_study_plan_download_cli(
+    output_dir: Path,
+    academic_unit_campus_data: list[dict[str, Any]],
+    verify_ssl: bool,
+    concurrency: int,
+) -> None:
+    """Run study plan download with plain CLI progress output."""
+    total_combos = len(academic_unit_campus_data)
+    typer.echo(
+        f"{_progress_prefix('study_plan')} Starting download for {total_combos} campus-unit combinations"
+    )
+
+    state = {
+        "combo_processed": 0,
+        "combo_total": total_combos,
+        "plans_found": 0,
+        "unique_plans": 0,
+        "plans_total": 0,
+        "fetched": 0,
+        "failed": 0,
+    }
+
+    def progress_callback(payload: dict[str, Any]) -> None:
+        event = payload.get("event")
+        if event == "combination":
+            state["combo_processed"] = int(payload.get("processed", state["combo_processed"]))
+            state["combo_total"] = int(payload.get("total", state["combo_total"]))
+            state["plans_found"] = int(payload.get("plans_found", state["plans_found"]))
+            state["unique_plans"] = int(payload.get("unique_plans", state["unique_plans"]))
+            processed = state["combo_processed"]
+            total = max(state["combo_total"], 1)
+            pct = (processed / total) * 100
+            typer.echo(
+                f"{_progress_prefix('study_plan')} combinations {processed}/{state['combo_total']} ({pct:.1f}%) | plans found={state['plans_found']} unique={state['unique_plans']}"
+            )
+            return
+
+        if event == "plans_total":
+            state["plans_total"] = int(payload.get("total", 0))
+            typer.echo(
+                f"{_progress_prefix('study_plan')} fetching detailed plans: total={state['plans_total']}"
+            )
+            return
+
+        if event == "plan_detail":
+            state["fetched"] = int(payload.get("fetched", state["fetched"]))
+            state["failed"] = int(payload.get("failed", state["failed"]))
+            total = int(payload.get("total", state["plans_total"]))
+            total = max(total, 1)
+            done = state["fetched"] + state["failed"]
+            pct = (done / total) * 100
+            typer.echo(
+                f"{_progress_prefix('study_plan')} plan details {done}/{total} ({pct:.1f}%) | fetched={state['fetched']} failed={state['failed']}"
+            )
+            return
+
+        if event == "no_plans":
+            typer.echo(
+                f"{_progress_prefix('study_plan')} careers without plans: {payload.get('count', 0)}"
+            )
+            return
+
+        if event == "errors":
+            typer.echo(
+                f"{_progress_prefix('study_plan')} fetch errors: {payload.get('count', 0)}"
+            )
+            return
+
+        if event == "complete":
+            files = payload.get("files", {})
+            typer.echo(
+                f"{_progress_prefix('study_plan')} completed | found={payload.get('plans_found', state['plans_found'])} fetched={payload.get('plans_fetched', state['fetched'])} failed={payload.get('plans_failed', state['failed'])}"
+            )
+            for name, path in files.items():
+                typer.echo(f"{_progress_prefix('study_plan')} saved {name}: {path}")
+
+    client = StudyPlanClient(verify_ssl=verify_ssl)
+    try:
+        client.download_raw(
+            output_dir,
+            academic_unit_campus_data,
+            max_concurrency=concurrency,
+            progress_callback=progress_callback,
+        )
+    finally:
+        client.close()
 
 
 def download(
@@ -36,6 +131,7 @@ def download(
     """
     # Download campus (always needed)
     if entity is None or entity == "campus":
+        typer.echo(f"{_progress_prefix('download')} fetching campus data...")
         client = CampusClient()
         try:
             files = client.download_raw(output_dir)
@@ -46,6 +142,7 @@ def download(
 
     # Download academic_unit (always needed for study_plan later)
     if entity is None or entity == "academic_unit":
+        typer.echo(f"{_progress_prefix('download')} fetching academic_unit data...")
         # Load campus data to get campus codes
         campus_path = output_dir / "campus" / "data.json"
         if campus_path.exists():
@@ -64,6 +161,7 @@ def download(
 
     # Download academic_period (modalities and terms)
     if entity is None or entity == "academic_period":
+        typer.echo(f"{_progress_prefix('download')} fetching academic_period data...")
         client = AcademicPeriodClient(verify_ssl=verify_ssl)
         try:
             files = client.download_raw(output_dir)
@@ -74,6 +172,7 @@ def download(
 
     # Download study_plan only if requested explicitly (requires process first)
     if entity == "study_plan":
+        typer.echo(f"{_progress_prefix('download')} preparing study_plan dependencies...")
         # Load campus data to get campus codes
         campus_path = output_dir / "campus" / "data.json"
         if campus_path.exists():
@@ -92,6 +191,7 @@ def download(
 
     # Download study_plan only if requested explicitly
     if entity == "study_plan":
+        typer.echo(f"{_progress_prefix('download')} fetching study_plan data...")
         # Load academic_unit_campus data to get valid combinations
         relation_path = output_dir / "academic_unit_campus" / "data.json"
         if not relation_path.exists():
@@ -139,9 +239,7 @@ def download(
                     }
                 )
 
-        from src.tui.download import run_study_plan_download
-
-        run_study_plan_download(
+        run_study_plan_download_cli(
             output_dir=output_dir,
             academic_unit_campus_data=academic_unit_campus_data,
             verify_ssl=verify_ssl,
@@ -162,6 +260,8 @@ def download(
         if not year:
             print("Error: --year is required for course_offer download")
             return
+
+        typer.echo(f"{_progress_prefix('download')} fetching course_offer for year={year}...")
 
         unit_path = output_dir / "academic_unit" / "data.json"
         if not unit_path.exists():
@@ -184,6 +284,8 @@ def download(
         if not year:
             print("Error: --year is required for schedule_guia download")
             return
+
+        typer.echo(f"{_progress_prefix('download')} fetching schedule_guia for year={year}...")
 
         course_offer_path = output_dir / "course_offer" / year
         if not course_offer_path.exists():
