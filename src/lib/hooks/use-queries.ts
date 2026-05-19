@@ -322,12 +322,26 @@ export function useUserStudyPlan(userId: string | null, enabled = true) {
   });
 }
 
-export function useAcademicTerms(campusId: number | null) {
+export function useAcademicTerms(campusId: number | null, studyPlanId?: number | null) {
   return useQuery({
-    queryKey: ["academicTerms", campusId],
+    queryKey: ["academicTerms", campusId, studyPlanId],
     queryFn: async () => {
       if (!campusId) return [];
       const sb = getSupabaseBrowserClient();
+
+      if (studyPlanId) {
+        const { data, error } = await sb
+          .rpc("get_academic_terms_by_plan", {
+            p_study_plan_id: studyPlanId,
+            p_campus_id: campusId,
+          })
+          .select("*")
+          .order("year", { ascending: false })
+          .order("period_number", { ascending: false });
+        if (error) throw error;
+        return (data ?? []) as AcademicTerm[];
+      }
+
       const { data, error } = await sb
         .rpc("get_active_academic_terms")
         .select("*")

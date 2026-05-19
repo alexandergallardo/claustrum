@@ -244,7 +244,7 @@ export function SchedulePage() {
   const campusesQuery = useCampuses(selectedUniversityId);
   const careersQuery = useAcademicUnits(selectedCampusId);
   const plansQuery = useStudyPlans(selectedCareerId);
-  const termsQuery = useAcademicTerms(selectedCampusId);
+  const termsQuery = useAcademicTerms(selectedCampusId, selectedPlanId);
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const isAuthenticated = !!authUser;
   const effectiveShowAllCourses = isAuthenticated ? showAllCourses : true;
