@@ -112,7 +112,7 @@
       "oxlint --fix",
       "oxfmt --write"
     ],
-    "*.{json,jsonc,yaml,yml,md,css,html}": [
+    "*.{json,jsonc,yaml,yml,css,html}": [
       "oxfmt --write"
     ]
   },
