@@ -8,14 +8,17 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import typer
 
 from src.commands.download import download
 from src.commands.process import run_process
-from src.commands.sql import generate_seed
+from src.commands.sql import format_value
 
 LOCAL_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 SYNC_TABLES = [
@@ -39,6 +42,34 @@ SYNC_TABLES = [
     "course_offering_meeting",
 ]
 
+OFFERING_TABLES = {
+    "course_offering",
+    "course_offering_group",
+    "course_offering_group_professor",
+    "course_offering_meeting",
+}
+
+TABLE_CONFLICT_COLUMNS: dict[str, list[str]] = {
+    "country": ["iso2_code"],
+    "university": ["id"],
+    "campus": ["code"],
+    "academic_unit": ["code"],
+    "academic_modality": ["code"],
+    "academic_term": ["external_key"],
+    "academic_unit_campus": ["academic_unit_id", "campus_id"],
+    "study_plan": ["academic_unit_id", "external_plan_id"],
+    "study_plan_campus": ["study_plan_id", "campus_id"],
+    "study_plan_level": ["study_plan_id", "level_number"],
+    "course": ["code"],
+    "study_plan_level_course": ["study_plan_level_id", "course_id"],
+    "course_relation": ["study_plan_id", "from_course_id", "to_course_id", "relation_type"],
+    "professor": ["full_name"],
+    "course_offering": ["course_id", "campus_id", "academic_unit_id", "academic_term_id"],
+    "course_offering_group": ["course_offering_id", "group_code"],
+    "course_offering_group_professor": ["course_offering_group_id", "professor_id"],
+    "course_offering_meeting": ["course_offering_group_id", "weekday", "starts_at", "ends_at"],
+}
+
 
 def deterministic_id(namespace: str, *parts: object) -> int:
     """Build a stable positive BIGINT-compatible identifier."""
@@ -56,6 +87,47 @@ def query_rows(db_url: str, sql: str) -> list[str]:
     return [line for line in output.splitlines() if line.strip()]
 
 
+def quote_literal(value: str) -> str:
+    return value.replace("'", "''")
+
+
+def sql_int_array(values: list[int]) -> str:
+    if not values:
+        return "ARRAY[]::INTEGER[]"
+    return "ARRAY[" + ", ".join(str(v) for v in values) + "]::INTEGER[]"
+
+
+def sql_text_array(values: list[str]) -> str:
+    if not values:
+        return "ARRAY[]::TEXT[]"
+    escaped = ", ".join(f"'{quote_literal(v)}'" for v in values)
+    return f"ARRAY[{escaped}]::TEXT[]"
+
+
+def seed_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def compute_sync_fingerprint(data_dir: Path, tables: list[str]) -> str:
+    hasher = hashlib.sha256()
+    for table in tables:
+        data_path = data_dir / table / "data.json"
+        if not data_path.exists():
+            continue
+        payload = load_json(data_path)
+        canonical_rows = sorted(canonical_json(row) for row in payload)
+        hasher.update(table.encode("utf-8"))
+        hasher.update(b"\n")
+        for row in canonical_rows:
+            hasher.update(row.encode("utf-8"))
+            hasher.update(b"\n")
+    return hasher.hexdigest()
+
+
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
@@ -63,6 +135,21 @@ def write_json(path: Path, payload: Any) -> None:
 
 def load_json(path: Path) -> list[dict[str, Any]]:
     return json.loads(path.read_text())
+
+
+def collect_term_external_keys(data_dir: Path, years: list[int]) -> list[str]:
+    term_path = data_dir / "academic_term" / "data.json"
+    if not term_path.exists():
+        return []
+    terms = load_json(term_path)
+    year_set = set(years)
+    return sorted(
+        {
+            str(term["external_key"])
+            for term in terms
+            if int(term.get("year", 0)) in year_set and term.get("external_key")
+        }
+    )
 
 
 def build_db_url_from_env(env_file: Path) -> str:
@@ -93,15 +180,397 @@ def resolve_db_url(target: str, db_url: str | None, env_file: Path) -> str:
     return db_url
 
 
-def run_sync_pipeline(data_dir: Path, years: list[int]) -> None:
+def infer_environment_id(db_url: str) -> str:
+    parsed = urlparse(db_url)
+    host = parsed.hostname or "unknown-host"
+    db_name = (parsed.path or "/postgres").lstrip("/") or "postgres"
+    project_ref = ""
+    match = re.match(r"^db\.([^.]+)\.supabase\.co$", host)
+    if match:
+        project_ref = match.group(1)
+    if project_ref:
+        return f"{project_ref}|{host}|{db_name}"
+    return f"{host}|{db_name}"
+
+
+def parse_seed_metadata(seed_path: Path) -> dict[str, str]:
+    metadata: dict[str, str] = {}
+    with seed_path.open(encoding="utf-8") as handle:
+        for _ in range(80):
+            line = handle.readline()
+            if not line:
+                break
+            if not line.startswith("-- TEC-DATA-META "):
+                continue
+            payload = line.removeprefix("-- TEC-DATA-META ").strip()
+            if "=" not in payload:
+                continue
+            key, value = payload.split("=", 1)
+            metadata[key.strip()] = value.strip()
+    return metadata
+
+
+def normalize_for_compare(value: Any, value_type: str) -> Any:
+    if value is None:
+        return None
+    if value_type in {"INTEGER", "BIGINT", "SMALLINT"}:
+        return int(value)
+    if value_type == "BOOLEAN":
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in {"t", "true", "1"}
+    return str(value)
+
+
+def load_existing_rows_by_id(
+    db_url: str,
+    table: str,
+    columns: list[str],
+    column_types: dict[str, str],
+) -> dict[int, dict[str, Any]]:
+    query_columns = ", ".join(columns)
+    output = subprocess.check_output(
+        [
+            "psql",
+            db_url,
+            "-At",
+            "-F",
+            "\t",
+            "-P",
+            "null=\\N",
+            "-c",
+            f"SELECT {query_columns} FROM public.{table}",
+        ],
+        text=True,
+    )
+    rows: dict[int, dict[str, Any]] = {}
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        values = line.split("\t")
+        row: dict[str, Any] = {}
+        for index, col in enumerate(columns):
+            raw = values[index] if index < len(values) else "\\N"
+            value = None if raw == "\\N" else raw
+            row[col] = normalize_for_compare(value, column_types.get(col, "TEXT"))
+        rows[int(row["id"])] = row
+    return rows
+
+
+def pg_type_to_generic(data_type: str, udt_name: str) -> str:
+    dt = (data_type or "").lower()
+    udt = (udt_name or "").lower()
+    if dt in {"bigint", "integer", "smallint"}:
+        return dt.upper()
+    if dt in {"numeric", "real", "double precision", "decimal"}:
+        return "NUMERIC"
+    if dt == "boolean":
+        return "BOOLEAN"
+    if dt == "date":
+        return "DATE"
+    if dt == "time without time zone":
+        return "TIME"
+    if dt in {"timestamp with time zone", "timestamp without time zone"}:
+        return "TIMESTAMPTZ"
+    if dt == "uuid":
+        return "UUID"
+    if dt == "user-defined" and udt:
+        return "TEXT"
+    return "TEXT"
+
+
+def get_table_schema(db_url: str, table: str) -> tuple[list[str], dict[str, str], set[str]]:
+    sql = f"""
+    SELECT column_name, data_type, udt_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = '{quote_literal(table)}'
+    ORDER BY ordinal_position;
+    """
+    rows = query_rows(db_url, sql)
+    if not rows:
+        raise RuntimeError(f"Table public.{table} not found while introspecting schema")
+    columns: list[str] = []
+    column_types: dict[str, str] = {}
+    column_set: set[str] = set()
+    for row in rows:
+        col_name, data_type, udt_name = row.split("\t")
+        columns.append(col_name)
+        column_set.add(col_name)
+        column_types[col_name] = pg_type_to_generic(data_type, udt_name)
+    return columns, column_types, column_set
+
+
+def build_insert_statement(
+    table: str,
+    rows: list[dict[str, Any]],
+    columns: list[str],
+    column_types: dict[str, str],
+    available_columns: set[str],
+) -> list[str]:
+    if not rows:
+        return []
+    lines = [f"INSERT INTO public.{table}", f"  ({', '.join(columns)})", "VALUES"]
+    values_lines: list[str] = []
+    for row in rows:
+        formatted = [format_value(row.get(col), column_types.get(col, "TEXT")) for col in columns]
+        values_lines.append(f"  ({', '.join(formatted)})")
+    conflict_columns = TABLE_CONFLICT_COLUMNS.get(table, ["id"])
+    updatable = [col for col in columns if col not in set(conflict_columns)]
+    lines.append(",\n".join(values_lines))
+    if updatable:
+        update_sql = ", ".join(f"{col} = EXCLUDED.{col}" for col in updatable)
+        lifecycle = []
+        if "is_active" in available_columns and "is_active" not in columns:
+            lifecycle.append("is_active = TRUE")
+        if "deactivated_at" in available_columns and "deactivated_at" not in columns:
+            lifecycle.append("deactivated_at = NULL")
+        if "updated_at" in available_columns and "updated_at" not in columns:
+            lifecycle.append("updated_at = NOW()")
+        if lifecycle:
+            update_sql = ", ".join([update_sql, *lifecycle])
+        lines.append(f"ON CONFLICT ({', '.join(conflict_columns)}) DO UPDATE SET {update_sql};")
+    else:
+        lines.append(f"ON CONFLICT ({', '.join(conflict_columns)}) DO NOTHING;")
+    return lines
+
+
+def write_noop_seed(
+    output_path: Path,
+    environment_id: str,
+    years: list[int],
+    term_external_keys: list[str],
+    fingerprint: str,
+    scope: str,
+) -> tuple[Path, dict[str, dict[str, int]]]:
+    lines = [
+        "-- ============================================================================",
+        "-- TEC-DATA DELTA SEED (NOOP)",
+        "-- ============================================================================",
+        f"-- TEC-DATA-META environment_id={environment_id}",
+        f"-- TEC-DATA-META scope={scope}",
+        f"-- TEC-DATA-META years={','.join(str(y) for y in sorted(set(years)))}",
+        f"-- TEC-DATA-META term_external_keys={','.join(sorted(set(term_external_keys)))}",
+        f"-- TEC-DATA-META data_fingerprint={fingerprint}",
+        f"-- TEC-DATA-META generated_at_utc={datetime.now(UTC).isoformat()}",
+        "",
+        "BEGIN;",
+        "-- NOOP: no row-level changes detected for selected scope",
+        "COMMIT;",
+        "",
+    ]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    stats = {table: {"inserted": 0, "updated": 0, "soft_deleted": 0} for table in SYNC_TABLES}
+    return output_path, stats
+
+
+def build_update_statement(
+    table: str,
+    row: dict[str, Any],
+    changed_columns: Iterable[str],
+    column_types: dict[str, str],
+    available_columns: set[str],
+) -> str:
+    assignments = ", ".join(
+        f"{column} = {format_value(row.get(column), column_types.get(column, 'TEXT'))}"
+        for column in changed_columns
+    )
+    lifecycle: list[str] = []
+    if "is_active" in available_columns:
+        lifecycle.append("is_active = TRUE")
+    if "deactivated_at" in available_columns:
+        lifecycle.append("deactivated_at = NULL")
+    if "updated_at" in available_columns:
+        lifecycle.append("updated_at = NOW()")
+    all_assignments = ", ".join([assignments, *lifecycle]) if lifecycle else assignments
+    return f"UPDATE public.{table} SET {all_assignments} WHERE id = {int(row['id'])};"
+
+
+def payload_row_normalized(
+    row: dict[str, Any],
+    columns: list[str],
+    column_types: dict[str, str],
+) -> dict[str, Any]:
+    return {
+        col: normalize_for_compare(row.get(col), column_types.get(col, "TEXT"))
+        for col in columns
+    }
+
+
+def generate_minimal_delta_seed(
+    db_url: str,
+    data_dir: Path,
+    output_path: Path,
+    years: list[int],
+    term_external_keys: list[str],
+    environment_id: str,
+    fingerprint: str,
+    scope: str = "mixed",
+) -> tuple[Path, dict[str, dict[str, int]], bool]:
+    term_ids = {
+        int(row["id"])
+        for row in load_json(data_dir / "academic_term" / "data.json")
+        if int(row.get("year", 0)) in set(years)
+    }
+    lines: list[str] = [
+        "-- ============================================================================",
+        "-- TEC-DATA DELTA SEED",
+        "-- ============================================================================",
+        f"-- TEC-DATA-META environment_id={environment_id}",
+        f"-- TEC-DATA-META scope={scope}",
+        f"-- TEC-DATA-META years={','.join(str(y) for y in sorted(set(years)))}",
+        f"-- TEC-DATA-META term_external_keys={','.join(sorted(set(term_external_keys)))}",
+        f"-- TEC-DATA-META data_fingerprint={fingerprint}",
+        f"-- TEC-DATA-META generated_at_utc={datetime.now(UTC).isoformat()}",
+        "",
+        "BEGIN;",
+        "SET LOCAL TIME ZONE 'UTC';",
+    ]
+
+    table_stats: dict[str, dict[str, int]] = {}
+
+    for table in SYNC_TABLES:
+        db_columns, db_column_types, db_column_set = get_table_schema(db_url, table)
+        payload_path = data_dir / table / "data.json"
+        payload_rows = load_json(payload_path) if payload_path.exists() else []
+        payload_columns = sorted({key for row in payload_rows for key in row.keys()})
+        columns = [col for col in db_columns if col in payload_columns]
+        if "id" not in columns and "id" in db_column_set:
+            columns = ["id", *columns]
+        if not columns:
+            table_stats[table] = {"inserted": 0, "updated": 0, "soft_deleted": 0}
+            continue
+
+        column_types = {col: db_column_types.get(col, "TEXT") for col in columns}
+        normalized_payload = {
+            int(row["id"]): payload_row_normalized(row, columns, column_types)
+            for row in payload_rows
+            if row.get("id") is not None
+        }
+        existing_rows = load_existing_rows_by_id(db_url, table, columns, column_types)
+
+        insert_rows: list[dict[str, Any]] = []
+        update_rows: list[str] = []
+
+        for row_id, normalized_row in normalized_payload.items():
+            current = existing_rows.get(row_id)
+            if current is None:
+                insert_rows.append(normalized_row)
+                continue
+            changed_columns = [
+                col
+                for col in columns
+                if col != "id" and normalize_for_compare(current.get(col), column_types.get(col, "TEXT"))
+                != normalize_for_compare(normalized_row.get(col), column_types.get(col, "TEXT"))
+            ]
+            if changed_columns:
+                update_rows.append(
+                    build_update_statement(
+                        table,
+                        normalized_row,
+                        changed_columns,
+                        column_types,
+                        db_column_set,
+                    )
+                )
+
+        stale_ids = sorted(set(existing_rows.keys()) - set(normalized_payload.keys()))
+        soft_delete_statements: list[str] = []
+        if stale_ids:
+            stale_ids_literal = ", ".join(str(value) for value in stale_ids)
+            if table in OFFERING_TABLES:
+                if table == "course_offering":
+                    soft_delete_statements.append(
+                        "UPDATE public.course_offering "
+                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                        f"WHERE id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        f"AND academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]);"
+                    )
+                elif table == "course_offering_group":
+                    soft_delete_statements.append(
+                        "UPDATE public.course_offering_group g "
+                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                        f"WHERE g.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        "AND EXISTS (SELECT 1 FROM public.course_offering co "
+                        "WHERE co.id = g.course_offering_id "
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                    )
+                elif table == "course_offering_group_professor":
+                    soft_delete_statements.append(
+                        "UPDATE public.course_offering_group_professor gp "
+                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                        f"WHERE gp.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
+                        "JOIN public.course_offering co ON co.id = g.course_offering_id "
+                        "WHERE g.id = gp.course_offering_group_id "
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                    )
+                elif table == "course_offering_meeting":
+                    soft_delete_statements.append(
+                        "UPDATE public.course_offering_meeting m "
+                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                        f"WHERE m.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
+                        "JOIN public.course_offering co ON co.id = g.course_offering_id "
+                        "WHERE g.id = m.course_offering_group_id "
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                    )
+            elif scope != "offering":
+                soft_delete_statements.append(
+                    f"UPDATE public.{table} "
+                    "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                    f"WHERE id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]);"
+                )
+
+        table_stats[table] = {
+            "inserted": len(insert_rows),
+            "updated": len(update_rows),
+            "soft_deleted": len(soft_delete_statements),
+        }
+
+        if insert_rows or update_rows or soft_delete_statements:
+            lines.append("")
+            lines.append(f"-- table: {table}")
+            if insert_rows:
+                lines.extend(
+                    build_insert_statement(
+                        table,
+                        insert_rows,
+                        columns,
+                        column_types,
+                        db_column_set,
+                    )
+                )
+            lines.extend(update_rows)
+            lines.extend(soft_delete_statements)
+
+    has_changes = any(
+        stats["inserted"] > 0 or stats["updated"] > 0 or stats["soft_deleted"] > 0
+        for stats in table_stats.values()
+    )
+    if not has_changes:
+        lines.append("")
+        lines.append("-- NOOP: no row-level changes detected for selected scope")
+
+    lines.extend(["", "COMMIT;", ""])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    return output_path, table_stats, not has_changes
+
+
+def run_sync_pipeline(data_dir: Path, years: list[int], skip_download: bool = False) -> None:
     year_list = sorted(set(years))
 
-    download(output_dir=data_dir)
+    if not skip_download:
+        download(output_dir=data_dir)
     run_process(data_dir=data_dir, entity="campus")
     run_process(data_dir=data_dir, entity="academic_unit")
     run_process(data_dir=data_dir, entity="academic_period", years=year_list)
 
-    download(output_dir=data_dir, entity="study_plan")
+    if not skip_download:
+        download(output_dir=data_dir, entity="study_plan")
     run_process(data_dir=data_dir, entity="study_plan")
 
     merged_offerings: dict[int, dict[str, Any]] = {}
@@ -112,8 +581,9 @@ def run_sync_pipeline(data_dir: Path, years: list[int]) -> None:
 
     for year in year_list:
         year_str = str(year)
-        download(output_dir=data_dir, entity="course_offer", year=year_str)
-        download(output_dir=data_dir, entity="schedule_guia", year=year_str)
+        if not skip_download:
+            download(output_dir=data_dir, entity="course_offer", year=year_str)
+            download(output_dir=data_dir, entity="schedule_guia", year=year_str)
         run_process(data_dir=data_dir, entity="course_offering", years=[year])
 
         offerings = load_json(data_dir / "course_offering" / "data.json")
@@ -550,6 +1020,122 @@ def run_command(command: list[str], cwd: Path) -> None:
     subprocess.run(command, cwd=cwd, check=True)
 
 
+def run_sql_command(db_url: str, sql: str, cwd: Path) -> None:
+    subprocess.run(
+        ["psql", db_url, "-q", "-v", "ON_ERROR_STOP=1", "-c", sql],
+        cwd=cwd,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+
+def ledger_seed_exists(db_url: str, sha256: str) -> bool:
+    rows = query_rows(
+        db_url,
+        "SELECT 1 FROM public.sync_seed_run "
+        f"WHERE seed_sha256 = '{quote_literal(sha256)}' LIMIT 1",
+    )
+    return bool(rows)
+
+
+def ledger_fingerprint_applied(
+    db_url: str,
+    scope: str,
+    years: list[int],
+    term_external_keys: list[str],
+    fingerprint: str,
+) -> bool:
+    years_literal = "{" + ",".join(str(v) for v in years) + "}"
+    terms_literal = "{" + ",".join(term_external_keys) + "}"
+    sql = f"""
+    SELECT 1
+    FROM public.sync_seed_run
+    WHERE status = 'applied'
+      AND scope = '{quote_literal(scope)}'
+      AND years = '{quote_literal(years_literal)}'::INTEGER[]
+      AND term_external_keys = '{quote_literal(terms_literal)}'::TEXT[]
+      AND metadata ->> 'sync_fingerprint' = '{quote_literal(fingerprint)}'
+    LIMIT 1;
+    """
+    return bool(query_rows(db_url, sql))
+
+
+def record_seed_generated(
+    db_url: str,
+    cwd: Path,
+    file_name: str,
+    sha256: str,
+    scope: str,
+    years: list[int],
+    term_external_keys: list[str],
+    generated_at_utc: datetime,
+    metadata: dict[str, Any],
+) -> None:
+    metadata_json = json.dumps(metadata, ensure_ascii=False)
+    sql = f"""
+    INSERT INTO public.sync_seed_run (
+      seed_file_name,
+      seed_sha256,
+      scope,
+      years,
+      term_external_keys,
+      generated_at_utc,
+      status,
+      metadata
+    )
+    VALUES (
+      '{quote_literal(file_name)}',
+      '{quote_literal(sha256)}',
+      '{quote_literal(scope)}',
+      {sql_int_array(years)},
+      {sql_text_array(term_external_keys)},
+      '{generated_at_utc.isoformat()}',
+      'generated',
+      '{quote_literal(metadata_json)}'::jsonb
+    )
+    ON CONFLICT (seed_sha256) DO UPDATE
+    SET
+      seed_file_name = EXCLUDED.seed_file_name,
+      scope = EXCLUDED.scope,
+      years = EXCLUDED.years,
+      term_external_keys = EXCLUDED.term_external_keys,
+      status = 'generated',
+      error_message = NULL,
+      metadata = EXCLUDED.metadata,
+      updated_at = NOW();
+    """
+    run_sql_command(db_url, sql, cwd)
+
+
+def mark_seed_status(
+    db_url: str,
+    cwd: Path,
+    sha256: str,
+    status: str,
+    error_message: str | None = None,
+    applied_at_utc: datetime | None = None,
+) -> None:
+    applied_sql = "NULL"
+    if applied_at_utc is not None:
+        applied_sql = f"'{applied_at_utc.isoformat()}'"
+
+    error_sql = "NULL"
+    if error_message:
+        error_sql = f"'{quote_literal(error_message[:4000])}'"
+
+    sql = f"""
+    UPDATE public.sync_seed_run
+    SET
+      status = '{quote_literal(status)}',
+      error_message = {error_sql},
+      applied_at_utc = {applied_sql},
+      updated_at = NOW()
+    WHERE seed_sha256 = '{quote_literal(sha256)}';
+    """
+    run_sql_command(db_url, sql, cwd)
+
+
 def run_verification(db_url: str) -> None:
     subprocess.run(
         [
@@ -570,6 +1156,64 @@ def run_verification(db_url: str) -> None:
     )
 
 
+def collect_upsert_estimate(
+    db_url: str,
+    data_dir: Path,
+    tables: list[str],
+) -> dict[str, dict[str, int]]:
+    estimates: dict[str, dict[str, int]] = {}
+    for table in tables:
+        data_path = data_dir / table / "data.json"
+        if not data_path.exists():
+            continue
+
+        rows = load_json(data_path)
+        payload_ids = {int(row["id"]) for row in rows if row.get("id") is not None}
+        payload_count = len(rows)
+        if payload_count == 0:
+            estimates[table] = {"payload": 0, "insert_estimate": 0, "update_estimate": 0}
+            continue
+
+        existing_rows = query_rows(db_url, f"SELECT id FROM public.{table}")
+        existing_ids = {int(value) for value in existing_rows}
+        insert_estimate = sum(1 for row_id in payload_ids if row_id not in existing_ids)
+        update_estimate = max(payload_count - insert_estimate, 0)
+        estimates[table] = {
+            "payload": payload_count,
+            "insert_estimate": insert_estimate,
+            "update_estimate": update_estimate,
+        }
+
+    return estimates
+
+
+def print_upsert_estimate(estimates: dict[str, dict[str, int]]) -> None:
+    if not estimates:
+        return
+
+    typer.echo("Rough ID-based upsert estimate by table (before apply):")
+    total_payload = 0
+    total_inserts = 0
+    total_updates = 0
+    for table in SYNC_TABLES:
+        table_stats = estimates.get(table)
+        if not table_stats:
+            continue
+        payload = table_stats["payload"]
+        insert_estimate = table_stats["insert_estimate"]
+        update_estimate = table_stats["update_estimate"]
+        total_payload += payload
+        total_inserts += insert_estimate
+        total_updates += update_estimate
+        typer.echo(
+            f"  - {table}: payload={payload}, id-new~{insert_estimate}, id-existing~{update_estimate}"
+        )
+
+    typer.echo(
+        f"Rough totals: payload={total_payload}, id-new~{total_inserts}, id-existing~{total_updates}"
+    )
+
+
 def run_sync(
     data_dir: Path,
     target: str,
@@ -577,19 +1221,25 @@ def run_sync(
     env_file: Path,
     years: list[int],
     skip_pipeline: bool,
+    skip_download: bool,
     apply_seed: bool,
     verify: bool,
-    output: Path,
+    output: Path | None,
     keep_sql: bool,
 ) -> None:
     resolved_db_url = resolve_db_url(target, db_url, env_file)
     year_list = sorted(set(years))
     tec_data_root = Path(__file__).resolve().parents[2]
-    output_path = output if output.is_absolute() else (tec_data_root / output).resolve()
+    output_path: Path | None = None
+    if output is not None:
+        output_path = output if output.is_absolute() else (tec_data_root / output).resolve()
 
     if not skip_pipeline:
-        typer.echo(f"Running full tec-data pipeline for years={year_list}...")
-        run_sync_pipeline(data_dir, year_list)
+        pipeline_mode = "process-only" if skip_download else "download+process"
+        typer.echo(
+            f"Running full tec-data pipeline ({pipeline_mode}) for years={year_list}..."
+        )
+        run_sync_pipeline(data_dir, year_list, skip_download=skip_download)
 
     backup_dir = backup_data_files(data_dir, SYNC_TABLES)
     root_dir = Path(__file__).resolve().parents[3]
@@ -598,22 +1248,177 @@ def run_sync(
         typer.echo("Remapping IDs against destination DB...")
         remap_all_ids_to_db(resolved_db_url, data_dir)
 
-        typer.echo(f"Generating full seed SQL at {output_path}...")
-        generate_seed(data_dir=data_dir, output_path=output_path, tables=SYNC_TABLES)
+        term_external_keys = collect_term_external_keys(data_dir, year_list)
+        environment_id = infer_environment_id(resolved_db_url)
+        sync_fingerprint = compute_sync_fingerprint(data_dir, SYNC_TABLES)
+        fingerprint_already_applied = ledger_fingerprint_applied(
+            resolved_db_url,
+            scope="mixed",
+            years=year_list,
+            term_external_keys=term_external_keys,
+            fingerprint=sync_fingerprint,
+        )
+        if fingerprint_already_applied:
+            typer.echo(
+                "No data changes detected versus latest applied fingerprint. Generating NOOP audit seed."
+            )
+
+        typer.echo("Generating minimal delta seed SQL...")
+        generated_at_utc = datetime.now(UTC)
+        output_path = output_path or (
+            Path("../seeds/tec-data")
+            / f"seed_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.sql"
+        )
+        if fingerprint_already_applied:
+            output_path, table_stats = write_noop_seed(
+                output_path=output_path,
+                environment_id=environment_id,
+                years=year_list,
+                term_external_keys=term_external_keys,
+                fingerprint=sync_fingerprint,
+                scope="mixed",
+            )
+            is_noop = True
+        else:
+            output_path, table_stats, is_noop = generate_minimal_delta_seed(
+                db_url=resolved_db_url,
+                data_dir=data_dir,
+                output_path=output_path,
+                years=year_list,
+                term_external_keys=term_external_keys,
+                environment_id=environment_id,
+                fingerprint=sync_fingerprint,
+                scope="mixed",
+            )
+        if not output_path.is_absolute():
+            output_path = (tec_data_root / output_path).resolve()
+
+        manifest_path = output_path.with_suffix(".json")
+        manifest_payload = {
+            "seed_file": output_path.name,
+            "generated_at_utc": generated_at_utc.isoformat(),
+            "scope": "mixed",
+            "years": year_list,
+            "term_external_keys": term_external_keys,
+            "environment_id": environment_id,
+            "data_fingerprint": sync_fingerprint,
+            "table_stats": table_stats,
+            "noop": is_noop,
+        }
+        manifest_path.write_text(json.dumps(manifest_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        typer.echo(f"Generated manifest: {manifest_path}")
+        typer.echo(f"Generated {output_path}")
+
+        sha256 = seed_sha256(output_path)
+        metadata = {
+            "generator": "tec-data sync",
+            "target": target,
+            "data_dir": str(data_dir),
+            "years": year_list,
+            "sync_fingerprint": sync_fingerprint,
+            "environment_id": environment_id,
+            "table_stats": table_stats,
+            "noop": is_noop,
+        }
+        typer.echo("Delta stats by table:")
+        for table in SYNC_TABLES:
+            stats = table_stats.get(table)
+            if not stats:
+                continue
+            typer.echo(
+                f"  - {table}: inserted={stats['inserted']}, updated={stats['updated']}, soft_deleted={stats['soft_deleted']}"
+            )
+
+        if ledger_seed_exists(resolved_db_url, sha256):
+            typer.echo("Seed already tracked by ledger (same SHA256), marking as skipped.")
+            record_seed_generated(
+                db_url=resolved_db_url,
+                cwd=root_dir,
+                file_name=output_path.name,
+                sha256=sha256,
+                scope="mixed",
+                years=year_list,
+                term_external_keys=term_external_keys,
+                generated_at_utc=generated_at_utc,
+                metadata=metadata,
+            )
+            mark_seed_status(
+                db_url=resolved_db_url,
+                cwd=root_dir,
+                sha256=sha256,
+                status="skipped_duplicate",
+            )
+            apply_seed = False
+        else:
+            record_seed_generated(
+                db_url=resolved_db_url,
+                cwd=root_dir,
+                file_name=output_path.name,
+                sha256=sha256,
+                scope="mixed",
+                years=year_list,
+                term_external_keys=term_external_keys,
+                generated_at_utc=generated_at_utc,
+                metadata=metadata,
+            )
+
+        if is_noop:
+            mark_seed_status(
+                db_url=resolved_db_url,
+                cwd=root_dir,
+                sha256=sha256,
+                status="skipped_duplicate",
+            )
+
+        if is_noop:
+            apply_seed = False
 
         if apply_seed:
+            meta = parse_seed_metadata(output_path)
+            file_environment_id = meta.get("environment_id")
+            if not file_environment_id:
+                raise RuntimeError("Generated seed is missing strict environment metadata")
+            if file_environment_id != environment_id:
+                raise RuntimeError(
+                    "Seed environment mismatch: "
+                    f"file={file_environment_id} destination={environment_id}"
+                )
             typer.echo("Applying seed to destination DB...")
-            run_command(
-                [
-                    "psql",
-                    resolved_db_url,
-                    "-v",
-                    "ON_ERROR_STOP=1",
-                    "-f",
-                    str(output_path),
-                ],
-                cwd=root_dir,
-            )
+            try:
+                subprocess.run(
+                    [
+                        "psql",
+                        resolved_db_url,
+                        "-q",
+                        "-v",
+                        "ON_ERROR_STOP=1",
+                        "-f",
+                        str(output_path),
+                    ],
+                    cwd=root_dir,
+                    text=True,
+                    capture_output=True,
+                    check=True,
+                )
+                mark_seed_status(
+                    db_url=resolved_db_url,
+                    cwd=root_dir,
+                    sha256=sha256,
+                    status="applied",
+                    applied_at_utc=datetime.now(UTC),
+                )
+                typer.echo("Seed apply completed successfully.")
+            except subprocess.CalledProcessError as exc:
+                mark_seed_status(
+                    db_url=resolved_db_url,
+                    cwd=root_dir,
+                    sha256=sha256,
+                    status="failed",
+                    error_message=(exc.stderr or str(exc)),
+                )
+                if exc.stderr:
+                    typer.echo(exc.stderr.strip())
+                raise
 
         if verify and apply_seed:
             typer.echo("Running post-sync verification queries...")
@@ -621,7 +1426,7 @@ def run_sync(
     finally:
         restore_data_files(data_dir, backup_dir)
         shutil.rmtree(backup_dir, ignore_errors=True)
-        if not keep_sql and output_path.exists():
+        if not keep_sql and output_path is not None and output_path.exists():
             output_path.unlink()
 
 
@@ -652,6 +1457,11 @@ def sync_cmd(
         "--skip-pipeline",
         help="Skip download/process pipeline and reuse current data/raw",
     ),
+    skip_download: bool = typer.Option(
+        False,
+        "--skip-download",
+        help="Run process steps only, reusing previously downloaded raw files",
+    ),
     apply_seed: bool = typer.Option(
         True,
         "--apply/--no-apply",
@@ -662,14 +1472,14 @@ def sync_cmd(
         "--verify/--no-verify",
         help="Run verification queries after apply",
     ),
-    output: Path = typer.Option(
-        Path("../seed_sync.sql"),
+    output: Path | None = typer.Option(
+        None,
         "--output",
         "-o",
-        help="Output SQL path",
+        help="Output SQL path (defaults to timestamped seed in ../seeds/tec-data)",
     ),
     keep_sql: bool = typer.Option(
-        False,
+        True,
         "--keep-sql",
         help="Keep generated SQL file after command finishes",
     ),
@@ -686,6 +1496,7 @@ def sync_cmd(
         env_file=env_file,
         years=year_list,
         skip_pipeline=skip_pipeline,
+        skip_download=skip_download,
         apply_seed=apply_seed,
         verify=verify,
         output=output,

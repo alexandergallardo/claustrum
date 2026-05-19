@@ -185,10 +185,17 @@ uv run tec-data process --entity course_offering --years 2026
 
 ## Generación de SQL
 
-Para generar el archivo `../seed.sql` (en la raíz de supabase) con todos los datos:
+Por defecto `tec-data sql` ahora genera un delta versionado con timestamp UTC en
+`../seeds/tec-data/seed_YYYYMMDDTHHMMSSZ.sql`.
 
 ```bash
 uv run tec-data sql
+```
+
+Para generar un archivo puntual (modo full tradicional) en una ruta fija:
+
+```bash
+uv run tec-data sql --mode full --output ../seed.sql
 ```
 
 O para entidades específicas:
@@ -196,6 +203,15 @@ O para entidades específicas:
 ```bash
 uv run tec-data sql --tables campus,university,country
 ```
+
+Opciones nuevas relevantes:
+
+- `--mode delta|full`: `delta` (default) genera archivos versionados, `full` mantiene salida fija.
+- `--scope catalog|offering|mixed`: define alcance lógico de la corrida para trazabilidad.
+- `--years 2026,2027`: metadata de años sincronizados.
+- `--terms 2026_A_1,2026_A_2`: metadata de periodos sincronizados.
+- `--history-dir ../seeds/tec-data`: carpeta de salida para deltas.
+- `--manifest`: genera JSON acompañante con metadata del seed.
 
 ## Sincronización unificada de catálogo + oferta (local/prod)
 
@@ -217,7 +233,7 @@ Qué hace `sync`:
 
 1. Ejecuta el pipeline completo de `download + process`.
 2. Remapea IDs de todas las tablas sincronizadas por llaves naturales contra la DB destino.
-3. Genera SQL full idempotente con upsert por llaves naturales.
+3. Genera SQL delta mínimo (solo inserts/updates/soft-delete necesarios).
 4. Aplica el seed generado en la DB destino.
 5. Ejecuta verificaciones post-sync.
 
@@ -225,4 +241,32 @@ Opciones útiles:
 
 - `--skip-pipeline`: no vuelve a descargar/procesar; usa `data/raw` actual.
 - `--no-apply`: solo genera SQL (no aplica).
-- `--keep-sql`: conserva el archivo SQL generado.
+- `--keep-sql/--no-keep-sql`: conserva o elimina el SQL generado (por defecto se conserva).
+
+### Ledger de seeds aplicados
+
+Cada seed delta se registra en `public.sync_seed_run` con:
+
+- hash SHA256 del archivo
+- alcance (`scope`), años y periodos sincronizados
+- timestamps UTC de generación/aplicación
+- estado: `generated`, `applied`, `failed`, `skipped_duplicate`
+
+Esto permite histórico tipo migraciones y evita reaplicar el mismo archivo.
+
+### Metadata estricta por entorno
+
+Cada seed generado incluye metadata `environment_id` (project_ref + host + db) y
+`data_fingerprint` en cabecera SQL y manifest. Al aplicar, `sync` valida de forma
+estricta que el seed corresponda al entorno destino:
+
+- si no coincide, aborta la ejecución
+- no existe override para cross-environment apply
+
+Si no hay cambios de datos, `sync` genera un seed **NOOP** para auditoría.
+
+### Garantías de alcance por periodo
+
+- Para oferta (`course_offering*`), los soft-delete se aplican solo a términos sincronizados en la corrida.
+- Correr `--years 2026` no afecta oferta 2025.
+- No se generan `DELETE`, solo `INSERT/UPDATE` y soft-delete (`is_active=false`).

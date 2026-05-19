@@ -105,6 +105,11 @@ def sync_cli(
         "--skip-pipeline",
         help="Skip download/process pipeline and reuse current data/raw",
     ),
+    skip_download: bool = typer.Option(
+        False,
+        "--skip-download",
+        help="Run process steps only, reusing previously downloaded raw files",
+    ),
     apply_seed: bool = typer.Option(
         True,
         "--apply/--no-apply",
@@ -115,14 +120,14 @@ def sync_cli(
         "--verify/--no-verify",
         help="Run verification queries after apply",
     ),
-    output: Path = typer.Option(
-        Path("../seed_sync.sql"),
+    output: Path | None = typer.Option(
+        None,
         "--output",
         "-o",
-        help="Output SQL path",
+        help="Output SQL path (defaults to timestamped seed in ../seeds/tec-data)",
     ),
     keep_sql: bool = typer.Option(
-        False,
+        True,
         "--keep-sql",
         help="Keep generated SQL file after command finishes",
     ),
@@ -135,6 +140,7 @@ def sync_cli(
         env_file=env_file,
         years=years,
         skip_pipeline=skip_pipeline,
+        skip_download=skip_download,
         apply_seed=apply_seed,
         verify=verify,
         output=output,
