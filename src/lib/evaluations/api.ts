@@ -15,10 +15,14 @@ async function sha256File(file: File): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function getCourseEvaluations(courseId: number): Promise<EvaluationRow[]> {
+export async function getCourseEvaluations(
+  courseId: number,
+  studyPlanId: number | null,
+): Promise<EvaluationRow[]> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("get_course_evaluations", {
     p_course_id: courseId,
+    p_study_plan_id: studyPlanId,
   });
   if (error) throw error;
   return (data ?? []) as EvaluationRow[];
@@ -56,6 +60,12 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
     formData.append("answersFile", payload.answersFile);
   }
   formData.append("courseId", String(payload.courseId));
+  if (payload.visibleCourseId) {
+    formData.append("visibleCourseId", String(payload.visibleCourseId));
+  }
+  if (payload.studyPlanId) {
+    formData.append("studyPlanId", String(payload.studyPlanId));
+  }
   if (payload.academicTermId) {
     formData.append("academicTermId", String(payload.academicTermId));
   }

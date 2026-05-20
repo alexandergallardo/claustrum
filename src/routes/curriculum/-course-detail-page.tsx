@@ -135,7 +135,6 @@ export function CourseDetailPage() {
                 courseById={courseById}
                 userId={authUser?.id}
                 studyPlanId={selectedPlanId}
-                campusId={search.campus ?? undefined}
                 modalityName={planDetailQuery.data?.plan?.modality_name}
                 transitionName={`course-name-${selectedCourse.id}`}
                 onCreateAttempt={handleCreateAttempt}

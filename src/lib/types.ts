@@ -180,11 +180,26 @@ export interface CourseRecentProfessor {
   termsTaughtCount: number;
 }
 
+export interface CourseDetailRelatedCourse {
+  id: number;
+  code: string;
+  name: string;
+  credits: number | null;
+  weeklyHours: number | null;
+  relationKind: "base" | "equivalent";
+  isPlaceholder: boolean;
+  hasOfferings: boolean;
+  totalEquivalents: number;
+}
+
 export interface CourseLatestTermGroup {
   academicTermId: number;
   termDisplayName: string;
   termYear: number;
   termPeriodNumber: number;
+  sourceCourseId: number;
+  sourceCourseCode: string;
+  sourceCourseName: string;
   groupId: number;
   groupCode: string;
   groupType: string;

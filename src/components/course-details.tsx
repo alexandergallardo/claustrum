@@ -64,9 +64,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatEvaluationFileName, type EvaluationType } from "@/lib/evaluations/types";
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
 import {
-  useCourseInferredAcademicTerms,
   useCourseAttempts,
-  useCourseEquivalents,
+  useCourseDetailRelatedCourses,
   useCourseLatestTermGroups,
   useCourseOfferingTerms,
   useUpdateCourseAttempt,
@@ -82,7 +81,6 @@ interface CourseDetailsProps {
   courseById: Map<string, Course>;
   userId?: string;
   studyPlanId?: number;
-  campusId?: number;
   modalityName?: string;
   transitionName?: string;
   onCreateAttempt: (
@@ -313,15 +311,22 @@ function TimelineOriginItem({ course }: { course: Course }) {
   );
 }
 
+function formatCourseLabel<T extends { code: string; name: string }>(course: T) {
+  return `${course.code}: ${course.name}`;
+}
+
 function ScheduleGroupCard({
   group,
+  currentCourseId,
   onPrepareTransition,
 }: {
   group: CourseLatestTermGroup;
+  currentCourseId: number;
   onPrepareTransition: (key: string, id: number, name: string) => void;
 }) {
   const professors = group.professors ?? [];
   const meetings = group.meetings ?? [];
+  const isFromEquivalentCourse = group.sourceCourseId !== currentCourseId;
 
   return (
     <div className="border-border bg-card space-y-3 rounded-xl border p-4">
@@ -338,6 +343,15 @@ function ScheduleGroupCard({
         <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
           <MapPin className="size-3.5" />
           {group.campusName}
+        </div>
+      ) : null}
+
+      {isFromEquivalentCourse ? (
+        <div className="bg-muted/40 border-border rounded-md border px-2 py-1.5 text-xs">
+          <span className="text-muted-foreground">Oferta de: </span>
+          <span className="text-foreground font-medium">
+            {formatCourseLabel({ code: group.sourceCourseCode, name: group.sourceCourseName })}
+          </span>
         </div>
       ) : null}
 
@@ -408,6 +422,8 @@ function EvaluationDocument({
   courseCode: string;
   evaluation: {
     id: number;
+    course_code?: string;
+    course_name?: string;
     file_key: string;
     evaluation_type: EvaluationType;
     evaluation_number: number | null;
@@ -423,7 +439,7 @@ function EvaluationDocument({
   onPreview: (payload: { id: number }) => void;
 }) {
   const fileName = formatEvaluationFileName(
-    courseCode,
+    evaluation.course_code ?? courseCode,
     evaluation.evaluation_type,
     evaluation.evaluation_number,
     evaluation.custom_name,
@@ -476,7 +492,6 @@ export function CourseDetails({
   courseById,
   userId,
   studyPlanId,
-  campusId,
   modalityName,
   transitionName,
   onCreateAttempt,
@@ -514,31 +529,23 @@ export function CourseDetails({
   }, [course.id]);
 
   const attemptCourseNumericId = Number.parseInt(attemptCourseId, 10);
-  const inferredCourseId = Number.isNaN(attemptCourseNumericId)
+  const progressCourseId = Number.isNaN(attemptCourseNumericId)
     ? Number.parseInt(course.id, 10)
     : attemptCourseNumericId;
 
-  const inferredTermsQuery = useCourseInferredAcademicTerms(
-    inferredCourseId,
-    campusId ?? null,
-    null,
-    studyPlanId ?? null,
+  const progressTermsQuery = useCourseOfferingTerms(progressCourseId, null, null);
+  const academicTerms = useMemo(
+    () => (progressTermsQuery.isPlaceholderData ? [] : (progressTermsQuery.data ?? [])),
+    [progressTermsQuery.data, progressTermsQuery.isPlaceholderData],
   );
-  const academicTerms = useMemo(() => inferredTermsQuery.data ?? [], [inferredTermsQuery.data]);
 
-  useEffect(() => {
-    if (!academicTermId && academicTerms.length > 0) {
-      setAcademicTermId(String(academicTerms[0].id));
-    }
-  }, [academicTermId, academicTerms]);
-
-  const queryResult = useCourseEquivalents(
+  const relatedCoursesQuery = useCourseDetailRelatedCourses(
     studyPlanId ?? null,
     parseInt(course.id),
     equivalentsPage,
     EQUIVALENTS_PER_PAGE,
   );
-  const attemptTargetsQuery = useCourseEquivalents(
+  const allRelatedCoursesQuery = useCourseDetailRelatedCourses(
     studyPlanId ?? null,
     parseInt(course.id),
     0,
@@ -566,40 +573,68 @@ export function CourseDetails({
     normalizedOfferingTermId,
     studyPlanId ?? null,
   );
-  const evaluationsQuery = useCourseEvaluations(parseInt(course.id));
+  const evaluationsQuery = useCourseEvaluations(parseInt(course.id), studyPlanId ?? null);
 
-  const equivalentsResult = queryResult.data;
-  const totalEquivalents = queryResult.data?.totalCount ?? 0;
-  const equivalents = equivalentsResult?.data ?? [];
+  const totalEquivalents = relatedCoursesQuery.data?.totalCount ?? 0;
+  const equivalents = (relatedCoursesQuery.data?.data ?? []).filter(
+    (item) => item.relationKind === "equivalent",
+  );
   const totalPages = Math.ceil(totalEquivalents / EQUIVALENTS_PER_PAGE);
-  const attemptTargetEquivalents = attemptTargetsQuery.data?.data ?? [];
-  const attemptTargets = useMemo(() => {
-    const meaningfulEquivalents = attemptTargetEquivalents.filter((eq) => {
-      const code = (eq.code ?? "").trim().toUpperCase();
-      const name = (eq.name ?? "").trim().toUpperCase();
-      return !!code && !!name && code !== name;
-    });
-    const options = [
-      {
-        id: Number.parseInt(course.id, 10),
-        code: course.code,
-        name: course.name,
-      },
-      ...meaningfulEquivalents.map((eq) => ({
-        id: eq.id,
-        code: eq.code ?? String(eq.id),
-        name: eq.name ?? "",
-      })),
-    ];
-    const dedup = new Map<number, { id: number; code: string; name: string }>();
-    for (const option of options) {
-      if (!Number.isInteger(option.id)) continue;
-      dedup.set(option.id, option);
+  const isPlaceholderCourse = allRelatedCoursesQuery.data?.isPlaceholder ?? false;
+  const baseCourseOption = useMemo(
+    () => ({
+      id: Number.parseInt(course.id, 10),
+      code: course.code,
+      name: course.name,
+      credits: course.credits,
+      weeklyHours: course.hours,
+      relationKind: "base" as const,
+      isPlaceholder: isPlaceholderCourse,
+      hasOfferings: false,
+      totalEquivalents,
+    }),
+    [
+      course.code,
+      course.credits,
+      course.hours,
+      course.id,
+      course.name,
+      isPlaceholderCourse,
+      totalEquivalents,
+    ],
+  );
+  const attemptCourseOptions = useMemo(() => {
+    if (!isPlaceholderCourse) return [baseCourseOption];
+    return (allRelatedCoursesQuery.data?.data ?? [])
+      .filter((option) => option.relationKind === "equivalent")
+      .filter((option) => option.hasOfferings)
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [allRelatedCoursesQuery.data?.data, baseCourseOption, isPlaceholderCourse]);
+  const selectedAttemptCourse =
+    attemptCourseOptions.find((option) => String(option.id) === attemptCourseId) ?? null;
+
+  useEffect(() => {
+    if (!isPlaceholderCourse) {
+      if (attemptCourseId !== course.id) setAttemptCourseId(course.id);
+      return;
     }
-    return Array.from(dedup.values()).sort((a, b) => a.code.localeCompare(b.code));
-  }, [attemptTargetEquivalents, course.code, course.id, course.name]);
-  const selectedAttemptTarget =
-    attemptTargets.find((option) => String(option.id) === attemptCourseId) ?? null;
+
+    if (attemptCourseOptions.length === 0) return;
+    if (!attemptCourseOptions.some((option) => String(option.id) === attemptCourseId)) {
+      setAttemptCourseId(String(attemptCourseOptions[0].id));
+    }
+  }, [attemptCourseId, attemptCourseOptions, course.id, isPlaceholderCourse]);
+
+  useEffect(() => {
+    if (!academicTermId && academicTerms.length > 0) {
+      setAcademicTermId(String(academicTerms[0].id));
+      return;
+    }
+
+    if (academicTermId && !academicTerms.some((term) => String(term.id) === academicTermId)) {
+      setAcademicTermId(academicTerms.length > 0 ? String(academicTerms[0].id) : "");
+    }
+  }, [academicTermId, academicTerms]);
 
   const latestTermGroups = latestGroupsQuery.data ?? [];
   const offeringTerms = useMemo(() => offeringTermsQuery.data ?? [], [offeringTermsQuery.data]);
@@ -809,43 +844,50 @@ export function CourseDetails({
   /* --- derived state for hero --- */
   const currentStatus = course.status;
   const requiresProgressGrade = progressStatus === "approved" || progressStatus === "failed";
+  const canSaveProgress = !!academicTermId && !!selectedAttemptCourse;
   const isStatusFromAnotherSource =
     (currentStatus === "approved" || currentStatus === "in_progress") &&
     (course.statusOriginType === "same_course_global" || course.statusOriginType === "equivalent");
+
+  useEffect(() => {
+    if (!requiresProgressGrade) setGradeInput("");
+  }, [requiresProgressGrade]);
 
   const progressForm = (
     <div className="space-y-6">
       <div>
         <Label className="text-sm">Curso a registrar</Label>
         <Combobox
-          items={attemptTargets}
-          value={selectedAttemptTarget}
+          items={attemptCourseOptions}
+          value={selectedAttemptCourse}
           onValueChange={(target) => setAttemptCourseId(target ? String(target.id) : course.id)}
-          itemToStringValue={(target) => `${target.code} - ${target.name}`}
+          itemToStringValue={formatCourseLabel}
         >
           <ComboboxTrigger
             ref={attemptCourseTriggerRef}
             render={
-              <Button variant="outline" className="mt-2 w-full justify-between font-normal" />
+              <Button
+                variant="outline"
+                className="mt-2 w-full justify-between font-normal"
+                disabled={!isPlaceholderCourse || attemptCourseOptions.length === 0}
+              />
             }
           >
             <span
-              className={`block min-w-0 flex-1 truncate text-left ${!selectedAttemptTarget ? "text-muted-foreground" : ""}`}
+              className={`block min-w-0 flex-1 truncate text-left ${!selectedAttemptCourse ? "text-muted-foreground" : ""}`}
             >
-              {selectedAttemptTarget
-                ? `${selectedAttemptTarget.code} - ${selectedAttemptTarget.name}`
+              {selectedAttemptCourse
+                ? formatCourseLabel(selectedAttemptCourse)
                 : "Selecciona un curso"}
             </span>
           </ComboboxTrigger>
           <ComboboxContent anchor={attemptCourseTriggerRef} container={comboboxPortalContainerRef}>
-            <ComboboxInput showTrigger={false} placeholder="Buscar curso equivalente..." />
+            <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
             <ComboboxEmpty>No se encontraron cursos.</ComboboxEmpty>
             <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {(target) => (
                 <ComboboxItem key={target.id} value={target}>
-                  <span className="block min-w-0 flex-1 truncate">
-                    {target.code} - {target.name}
-                  </span>
+                  <span className="block min-w-0 flex-1 truncate">{formatCourseLabel(target)}</span>
                 </ComboboxItem>
               )}
             </ComboboxList>
@@ -871,7 +913,7 @@ export function CourseDetails({
               className={`block min-w-0 flex-1 truncate text-left ${!selectedQuickTerm ? "text-muted-foreground" : ""}`}
             >
               {selectedQuickTerm?.display_name ??
-                (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+                (progressTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
             </span>
           </ComboboxTrigger>
           <ComboboxContent
@@ -929,39 +971,40 @@ export function CourseDetails({
         </RadioGroup>
       </div>
 
-      {requiresProgressGrade ? (
-        <div>
-          <Label className="text-sm">Nota</Label>
-          <div className="mt-2 flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => handleGradeStep(-1)}
-              aria-label="Disminuir nota"
-            >
-              <Minus className="size-4" />
-            </Button>
-            <Input
-              className="text-center"
-              type="text"
-              inputMode="decimal"
-              value={gradeInput}
-              onChange={(event) => handleGradeInputChange(event.target.value)}
-              placeholder="0-100"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => handleGradeStep(1)}
-              aria-label="Aumentar nota"
-            >
-              <Plus className="size-4" />
-            </Button>
-          </div>
+      <div>
+        <Label className="text-sm">Nota</Label>
+        <div className="mt-2 flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => handleGradeStep(-1)}
+            aria-label="Disminuir nota"
+            disabled={!requiresProgressGrade}
+          >
+            <Minus className="size-4" />
+          </Button>
+          <Input
+            className="text-center"
+            type="text"
+            inputMode="decimal"
+            value={gradeInput}
+            onChange={(event) => handleGradeInputChange(event.target.value)}
+            placeholder={requiresProgressGrade ? "0-100" : "No aplica"}
+            disabled={!requiresProgressGrade}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => handleGradeStep(1)}
+            aria-label="Aumentar nota"
+            disabled={!requiresProgressGrade}
+          >
+            <Plus className="size-4" />
+          </Button>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 
@@ -1102,7 +1145,7 @@ export function CourseDetails({
               <Button
                 type="button"
                 onClick={handleSaveProgress}
-                disabled={isSaving || !academicTermId}
+                disabled={isSaving || !canSaveProgress}
                 className="w-full"
               >
                 {isSaving ? "Guardando..." : "Guardar progreso"}
@@ -1125,7 +1168,7 @@ export function CourseDetails({
               <Button
                 type="button"
                 onClick={handleSaveProgress}
-                disabled={isSaving || !academicTermId}
+                disabled={isSaving || !canSaveProgress}
               >
                 {isSaving ? "Guardando..." : "Guardar progreso"}
               </Button>
@@ -1204,6 +1247,9 @@ export function CourseDetails({
 
         <EvaluationUploadDialog
           courseId={parseInt(course.id)}
+          courseCode={course.code}
+          courseName={course.name}
+          studyPlanId={studyPlanId ?? null}
           open={isExamUploadOpen}
           onOpenChange={setIsExamUploadOpen}
         />
@@ -1261,7 +1307,11 @@ export function CourseDetails({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {latestTermGroups.map((group: CourseLatestTermGroup) => (
               <div key={group.groupId}>
-                <ScheduleGroupCard group={group} onPrepareTransition={prepareProfessorTransition} />
+                <ScheduleGroupCard
+                  group={group}
+                  currentCourseId={parseInt(course.id, 10)}
+                  onPrepareTransition={prepareProfessorTransition}
+                />
               </div>
             ))}
           </div>
@@ -1373,7 +1423,7 @@ export function CourseDetails({
                     className={`block min-w-0 flex-1 truncate text-left ${!selectedEditTerm ? "text-muted-foreground" : ""}`}
                   >
                     {selectedEditTerm?.display_name ??
-                      (inferredTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+                      (progressTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
                   </span>
                 </ComboboxTrigger>
                 <ComboboxContent

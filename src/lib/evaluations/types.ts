@@ -66,6 +66,8 @@ export function formatEvaluationFileName(
 export type EvaluationRow = {
   id: number;
   course_id: number;
+  course_code: string;
+  course_name: string;
   academic_term_id: number | null;
   professor_id: number | null;
   evaluation_type: EvaluationType;
@@ -109,6 +111,8 @@ export type EvaluationModerationRow = {
 
 export type UploadEvaluationPayload = {
   courseId: number;
+  visibleCourseId?: number | null;
+  studyPlanId?: number | null;
   academicTermId: number | null;
   professorId: number | null;
   evaluationType: EvaluationType;
