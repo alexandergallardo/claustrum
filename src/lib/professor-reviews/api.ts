@@ -1,5 +1,6 @@
 import type {
   ProfessorReviewCourseOption,
+  ProfessorReviewTermOption,
   ProfessorReviewModerationRow,
   ProfessorReviewPublicRow,
   ProfessorReviewSummary,
@@ -36,7 +37,7 @@ export async function searchProfessorReviewStats(
 }
 
 export async function getProfessorReviewsPublic(
-  professorId: number,
+  professorId: string,
   limit: number,
   offset: number,
 ): Promise<ProfessorReviewPublicRow[]> {
@@ -52,7 +53,7 @@ export async function getProfessorReviewsPublic(
 }
 
 export async function getProfessorReviewSummary(
-  professorId: number,
+  professorId: string,
 ): Promise<ProfessorReviewSummary> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("get_professor_review_summary", {
@@ -72,7 +73,7 @@ export async function getProfessorReviewSummary(
     would_take_again_percentage: null,
     tag_counts: [],
   }) as {
-    professor_id: number;
+    professor_id: string;
     approved_review_count: number;
     average_overall_score: number | null;
     average_ease_score: number | null;
@@ -94,7 +95,7 @@ export async function getProfessorReviewSummary(
 }
 
 export async function getProfessorById(
-  professorId: number,
+  professorId: string,
 ): Promise<{ id: number; full_name: string } | null> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase
@@ -125,6 +126,34 @@ export async function searchProfessorReviewCourses(
   if (error) throw error;
 
   return (data ?? []) as ProfessorReviewCourseOption[];
+}
+
+export async function getProfessorReviewCourses(
+  professorId: string,
+): Promise<ProfessorReviewCourseOption[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("get_professor_review_courses", {
+    p_professor_id: professorId,
+  });
+
+  if (error) throw error;
+  return (data ?? []) as ProfessorReviewCourseOption[];
+}
+
+export async function getProfessorOfferingTerms(
+  professorId: string,
+): Promise<ProfessorReviewTermOption[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase
+    .rpc("get_professor_offering_terms", {
+      p_professor_id: professorId,
+    })
+    .select("*")
+    .order("year", { ascending: false })
+    .order("period_number", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as ProfessorReviewTermOption[];
 }
 
 export async function submitProfessorReview(payload: SubmitProfessorReviewPayload): Promise<void> {

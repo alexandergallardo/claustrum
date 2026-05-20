@@ -25,7 +25,7 @@ const REVIEW_TAGS = [
 ] as const;
 
 const professorReviewSchema = z.object({
-  professorId: z.number().int().positive(),
+  professorId: z.string().regex(/^\d+$/),
   courseCode: z
     .string()
     .trim()
@@ -33,6 +33,7 @@ const professorReviewSchema = z.object({
     .min(3)
     .max(16)
     .regex(/^[A-Z]{2,4}\d{3,4}$/),
+  academicTermId: z.number().int().positive().nullable().optional(),
   comment: z.string().trim().min(5).max(1000),
   easeScore: z.number().min(0).max(10),
   qualityScore: z.number().min(0).max(10),
@@ -441,11 +442,33 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
     return badRequest("Professor is not eligible for reviews");
   }
 
+  if (parsed.data.academicTermId !== null && parsed.data.academicTermId !== undefined) {
+    const { data: termMatch, error: termMatchError } = await supabase
+      .from("course_offering_group_professor")
+      .select("professor_id, course_offering_group!inner(course_offering!inner(academic_term_id))")
+      .eq("professor_id", parsed.data.professorId)
+      .eq("course_offering_group.course_offering.academic_term_id", parsed.data.academicTermId)
+      .limit(1)
+      .maybeSingle();
+
+    if (termMatchError) {
+      return new Response(JSON.stringify({ error: termMatchError.message }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!termMatch) {
+      return badRequest("Professor has no offering records for that academic term");
+    }
+  }
+
   const { data: inserted, error: insertError } = await supabase
     .from("professor_review")
     .insert({
       professor_id: parsed.data.professorId,
       course_id: course.id,
+      academic_term_id: parsed.data.academicTermId ?? null,
       course_code_snapshot: course.code,
       course_name_snapshot: "",
       comment: parsed.data.comment,

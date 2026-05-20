@@ -1,10 +1,18 @@
-import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Link } from "@tanstack/react-router";
-import { Minus, Plus, Search } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Minus, Plus } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+} from "@/components/ui/combobox";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +21,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,8 +33,10 @@ import {
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useProfessorReviewCourseSearch } from "@/lib/hooks/use-professor-reviews";
+import {
+  useProfessorOfferingTerms,
+  useProfessorReviewCourses,
+} from "@/lib/hooks/use-professor-reviews";
 import { REVIEW_TAG_OPTIONS, type ReviewTag } from "@/lib/professor-reviews/types";
 import { cn } from "@/lib/utils";
 
@@ -41,8 +50,11 @@ type ReviewComposerProps = {
   onOpenChange: (open: boolean) => void;
   submitMutationPending: boolean;
   turnstileSiteKey: string | null;
+  professorId: string | null;
   courseCode: string;
   setCourseCode: (value: string) => void;
+  academicTermId: string;
+  setAcademicTermId: (value: string) => void;
   gradeReceived: string;
   setGradeReceived: (value: string) => void;
   comment: string;
@@ -73,8 +85,11 @@ export function ReviewComposer({
   onOpenChange,
   submitMutationPending,
   turnstileSiteKey,
+  professorId,
   courseCode,
   setCourseCode,
+  academicTermId,
+  setAcademicTermId,
   gradeReceived,
   setGradeReceived,
   comment,
@@ -99,121 +114,136 @@ export function ReviewComposer({
   handleTagToggle,
 }: ReviewComposerProps) {
   const [showReviewExample, setShowReviewExample] = useState(false);
-  const [courseQuery, setCourseQuery] = useState(courseCode);
-  const [isCourseSearchFocused, setIsCourseSearchFocused] = useState(false);
+  const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
+  const termTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const courseTriggerRef = useRef<HTMLButtonElement | null>(null);
   const parsedEngagementLevel = Number(engagementLevel);
   const clampedEngagementLevel = Number.isFinite(parsedEngagementLevel)
     ? Math.min(5, Math.max(1, Math.round(parsedEngagementLevel)))
     : 4;
-  const [debouncedCourseQuery, courseQueryDebouncer] = useDebouncedValue(
-    courseQuery,
-    { wait: 300 },
-    (state) => ({ isPending: state.isPending }),
-  );
-  const courseSearchQuery = useProfessorReviewCourseSearch(debouncedCourseQuery);
-  const courseOptions = courseSearchQuery.data ?? [];
-  const normalizedCourseQuery = courseQuery.trim();
-  const showCourseOptions =
-    isCourseSearchFocused &&
-    normalizedCourseQuery.length >= 2 &&
-    (courseSearchQuery.isFetching ||
-      courseQueryDebouncer.state.isPending ||
-      courseOptions.length > 0);
+  const coursesQuery = useProfessorReviewCourses(professorId);
+  const termsQuery = useProfessorOfferingTerms(professorId);
+
+  const courseOptions = useMemo(() => coursesQuery.data ?? [], [coursesQuery.data]);
+  const termOptions = useMemo(() => termsQuery.data ?? [], [termsQuery.data]);
+
+  const selectedCourse =
+    courseOptions.find((course) => course.code.toUpperCase() === courseCode.toUpperCase()) ?? null;
+  const selectedTerm = termOptions.find((term) => String(term.id) === academicTermId) ?? null;
 
   useEffect(() => {
-    if (!courseCode) return;
-    if (courseCode === courseQuery) return;
-    setCourseQuery(courseCode);
-  }, [courseCode, courseQuery]);
+    if (academicTermId && !termOptions.some((term) => String(term.id) === academicTermId)) {
+      setAcademicTermId("");
+    }
+  }, [academicTermId, setAcademicTermId, termOptions]);
 
-  const handleCourseQueryChange = (value: string) => {
-    const normalizedValue = value.toUpperCase();
-    const matchedCourseCode = normalizedValue.match(/^[A-Z]{2,4}\d{3,4}/)?.[0] ?? "";
-
-    setIsCourseSearchFocused(true);
-    setCourseQuery(normalizedValue);
-    setCourseCode(matchedCourseCode);
-  };
-
-  const handleCourseSelect = (selectedCourse: { code: string; name: string }) => {
-    setCourseCode(selectedCourse.code);
-    setCourseQuery(`${selectedCourse.code}: ${selectedCourse.name}`);
-    setIsCourseSearchFocused(false);
-  };
+  useEffect(() => {
+    if (
+      courseCode &&
+      !courseOptions.some((course) => course.code.toUpperCase() === courseCode.toUpperCase())
+    ) {
+      setCourseCode("");
+    }
+  }, [courseCode, courseOptions, setCourseCode]);
 
   const form = (
     <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-1 pb-2"}`}>
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="composer-course-code">Curso</Label>
-          <div className="relative">
-            <InputGroup className="h-10">
-              <InputGroupInput
-                id="composer-course-code"
-                className="text-sm md:text-sm"
-                placeholder="Busca por código o nombre del curso"
-                value={courseQuery}
-                onFocus={() => setIsCourseSearchFocused(true)}
-                onBlur={() => {
-                  window.setTimeout(() => setIsCourseSearchFocused(false), 100);
-                }}
-                onChange={(event) => handleCourseQueryChange(event.target.value)}
-                autoComplete="off"
-              />
-              <InputGroupAddon>
-                <Search className="size-4" />
-              </InputGroupAddon>
-            </InputGroup>
+        <div className="space-y-2">
+          <Label>Curso</Label>
+          <Combobox
+            items={courseOptions}
+            value={selectedCourse}
+            onValueChange={(course) => setCourseCode(course?.code ?? "")}
+            itemToStringValue={(course) => `${course.code}: ${course.name}`}
+          >
+            <ComboboxTrigger
+              ref={courseTriggerRef}
+              render={
+                <Button
+                  variant="outline"
+                  className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                  disabled={coursesQuery.isLoading || courseOptions.length === 0}
+                />
+              }
+            >
+              <span
+                className={cn(
+                  "block min-w-0 flex-1 truncate text-left",
+                  !selectedCourse && "text-muted-foreground",
+                )}
+              >
+                {selectedCourse
+                  ? `${selectedCourse.code}: ${selectedCourse.name}`
+                  : coursesQuery.isLoading
+                    ? "Cargando cursos..."
+                    : "Seleccionar curso"}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent
+              anchor={courseTriggerRef}
+              container={comboboxPortalContainerRef}
+              className="w-80"
+            >
+              <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
+              <ComboboxEmpty>No se encontraron cursos para este profesor.</ComboboxEmpty>
+              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(course) => (
+                  <ComboboxItem key={course.id} value={course}>
+                    <span className="block min-w-0 flex-1 truncate">
+                      {course.code}: {course.name}
+                    </span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </div>
 
-            {showCourseOptions ? (
-              <div className="bg-popover text-popover-foreground absolute top-[calc(100%+0.5rem)] z-20 max-h-52 w-full overflow-hidden rounded-md border shadow-md">
-                <ScrollArea
-                  className={cn(
-                    "max-h-52",
-                    courseOptions.length >= 6 ||
-                      courseQueryDebouncer.state.isPending ||
-                      courseSearchQuery.isFetching
-                      ? "h-52"
-                      : "h-auto",
-                  )}
-                >
-                  {courseQueryDebouncer.state.isPending || courseSearchQuery.isFetching ? (
-                    <div className="text-muted-foreground px-3 py-2 text-sm">Buscando cursos…</div>
-                  ) : null}
-
-                  {!courseQueryDebouncer.state.isPending && !courseSearchQuery.isFetching
-                    ? courseOptions.map((course) => (
-                        <Tooltip key={course.id}>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className="hover:bg-accent hover:text-accent-foreground flex w-full items-center px-3 py-2 text-left text-sm"
-                              onMouseDown={(event) => event.preventDefault()}
-                              onClick={() => handleCourseSelect(course)}
-                            >
-                              <span className="truncate">
-                                {course.code}: {course.name}
-                              </span>
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" sideOffset={8}>
-                            {course.name}
-                          </TooltipContent>
-                        </Tooltip>
-                      ))
-                    : null}
-
-                  {!courseQueryDebouncer.state.isPending &&
-                  !courseSearchQuery.isFetching &&
-                  courseOptions.length === 0 ? (
-                    <div className="text-muted-foreground px-3 py-2 text-sm">
-                      No se encontraron cursos con ese criterio.
-                    </div>
-                  ) : null}
-                </ScrollArea>
-              </div>
-            ) : null}
-          </div>
+        <div className="space-y-2">
+          <Label>Periodo (opcional)</Label>
+          <Combobox
+            items={termOptions}
+            value={selectedTerm}
+            onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
+            itemToStringValue={(term) => term.display_name}
+          >
+            <ComboboxTrigger
+              ref={termTriggerRef}
+              render={
+                <Button
+                  variant="outline"
+                  className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                  disabled={termsQuery.isLoading || termOptions.length === 0}
+                />
+              }
+            >
+              <span
+                className={cn(
+                  "block min-w-0 flex-1 truncate text-left",
+                  !selectedTerm && "text-muted-foreground",
+                )}
+              >
+                {selectedTerm?.display_name ??
+                  (termsQuery.isLoading ? "Cargando periodos..." : "Sin periodo")}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent
+              anchor={termTriggerRef}
+              container={comboboxPortalContainerRef}
+              className="w-72"
+            >
+              <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
+              <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
+              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(term) => (
+                  <ComboboxItem key={term.id} value={term}>
+                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
         </div>
 
         <div className="space-y-2 md:col-span-2">
@@ -397,6 +427,7 @@ export function ReviewComposer({
         }}
       >
         <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
+          <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <SheetHeader>
             <SheetTitle>Enviar reseña</SheetTitle>
             <SheetDescription className="space-y-2">
@@ -431,6 +462,7 @@ export function ReviewComposer({
       }}
     >
       <DialogContent className="max-h-[90vh] max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+        <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
         <DialogHeader>
           <DialogTitle>Enviar reseña</DialogTitle>
           <DialogDescription className="space-y-2">

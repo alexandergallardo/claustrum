@@ -93,9 +93,16 @@ export function SiteHeader() {
 
   const professorId = getNumericPathSegment(pathname, "/professors/");
   const isProfessorDetail = professorId !== null;
-  const professorQuery = useProfessorById(professorId);
-  const cachedProfessor = professorId
-    ? queryClient.getQueryData<{ id: number; full_name: string }>(["professorById", professorId])
+  const professorIdText = isProfessorDetail
+    ? (pathname.split("/professors/")[1]?.split("/")[0] ?? null)
+    : null;
+  const normalizedProfessorIdText = /^\d+$/.test(professorIdText ?? "") ? professorIdText : null;
+  const professorQuery = useProfessorById(normalizedProfessorIdText);
+  const cachedProfessor = normalizedProfessorIdText
+    ? queryClient.getQueryData<{ id: number; full_name: string }>([
+        "professorById",
+        normalizedProfessorIdText,
+      ])
     : null;
   const professorName = professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? null;
 

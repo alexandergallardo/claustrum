@@ -12,7 +12,7 @@ export type ReviewTag = (typeof REVIEW_TAG_OPTIONS)[number];
 export type ProfessorReviewStatus = "pending" | "approved" | "rejected";
 
 export type ProfessorReviewStatsRow = {
-  professor_id: number;
+  professor_id: string;
   professor_name: string;
   approved_review_count: number;
   average_overall_score: number | null;
@@ -27,7 +27,7 @@ export type ProfessorReviewStatsRow = {
 
 export type ProfessorReviewPublicRow = {
   review_id: number;
-  professor_id: number;
+  professor_id: string;
   course_id: number;
   course_code: string;
   course_name: string;
@@ -79,8 +79,19 @@ export type ProfessorReviewCourseOption = {
   name: string;
 };
 
+export type ProfessorReviewTermOption = {
+  id: number;
+  academic_modality_id: number;
+  year: number;
+  period_number: number;
+  external_key: string;
+  display_name: string;
+  starts_on: string | null;
+  ends_on: string | null;
+};
+
 export type ProfessorReviewSummary = {
-  professor_id: number;
+  professor_id: string;
   approved_review_count: number;
   average_overall_score: number | null;
   average_ease_score: number | null;
@@ -102,8 +113,9 @@ export type SearchProfessorReviewStatsParams = {
 };
 
 export type SubmitProfessorReviewPayload = {
-  professorId: number;
+  professorId: string;
   courseCode: string;
+  academicTermId?: number | null;
   comment: string;
   easeScore: number;
   qualityScore: number;

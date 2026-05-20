@@ -33,6 +33,7 @@ const reviewFormSchema = z.object({
     .trim()
     .toUpperCase()
     .regex(/^[A-Z]{2,4}\d{3,4}$/),
+  academicTermId: z.number().int().positive().nullable().optional(),
   comment: z.string().trim().min(5).max(1000),
   easeScore: z.number().min(0).max(10),
   qualityScore: z.number().min(0).max(10),
@@ -64,6 +65,7 @@ export function ProfessorDetailPage() {
   const [isComposerOpen, setIsComposerOpen] = useState(false);
 
   const [courseCode, setCourseCode] = useState("");
+  const [academicTermId, setAcademicTermId] = useState("");
   const [comment, setComment] = useState("");
   const [easeScore, setEaseScore] = useState("8.0");
   const [qualityScore, setQualityScore] = useState("8.0");
@@ -77,16 +79,17 @@ export function ProfessorDetailPage() {
 
   const turnstileSiteKey = getTurnstileSiteKey();
   const parsedProfessorId = Number.isFinite(professorId) && professorId > 0 ? professorId : null;
-  const cachedProfessor = parsedProfessorId
+  const professorIdText = /^\d+$/.test(params.professorId) ? params.professorId : null;
+  const cachedProfessor = professorIdText
     ? queryClient.getQueryData<{ id: number; full_name: string }>([
         "professorById",
-        parsedProfessorId,
+        professorIdText,
       ])
     : null;
 
-  const professorQuery = useProfessorById(parsedProfessorId);
-  const summaryQuery = useProfessorReviewSummary(parsedProfessorId);
-  const reviewsQuery = useProfessorReviewsPublic(parsedProfessorId, page, pageSize);
+  const professorQuery = useProfessorById(professorIdText);
+  const summaryQuery = useProfessorReviewSummary(professorIdText);
+  const reviewsQuery = useProfessorReviewsPublic(professorIdText, page, pageSize);
   const submitMutation = useSubmitProfessorReview();
   const headingProfessorName =
     professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? "Profesor";
@@ -111,6 +114,7 @@ export function ProfessorDetailPage() {
 
   const resetComposer = () => {
     setCourseCode("");
+    setAcademicTermId("");
     setComment("");
     setEaseScore("8.0");
     setQualityScore("8.0");
@@ -131,10 +135,11 @@ export function ProfessorDetailPage() {
   };
 
   const handleSubmit = async () => {
-    if (parsedProfessorId === null) return;
+    if (parsedProfessorId === null || professorIdText === null) return;
 
     const parsed = reviewFormSchema.safeParse({
       courseCode,
+      academicTermId: academicTermId ? Number(academicTermId) : null,
       comment,
       easeScore: Number(easeScore),
       qualityScore: Number(qualityScore),
@@ -154,7 +159,7 @@ export function ProfessorDetailPage() {
 
     try {
       await submitMutation.mutateAsync({
-        professorId: parsedProfessorId,
+        professorId: professorIdText,
         ...parsed.data,
       });
       toast.success("Reseña enviada. Quedará visible cuando sea aprobada por administración.");
@@ -173,8 +178,8 @@ export function ProfessorDetailPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3 md:hidden">
           <Button
             type="button"
             variant="outline"
@@ -185,17 +190,45 @@ export function ProfessorDetailPage() {
           >
             <ArrowLeft className="size-4" />
           </Button>
+          <Button type="button" onClick={() => setIsComposerOpen(true)}>
+            <PenLine className="mr-2 size-4" />
+            Escribir reseña
+          </Button>
+        </div>
+
+        <div className="min-w-0 md:hidden">
           <h1
-            className="text-2xl font-semibold"
+            className="w-full text-xl leading-tight font-semibold break-words"
             style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
           >
             {headingProfessorName}
           </h1>
         </div>
-        <Button type="button" onClick={() => setIsComposerOpen(true)}>
-          <PenLine className="mr-2 size-4" />
-          Escribir reseña
-        </Button>
+
+        <div className="hidden min-w-0 items-center justify-between gap-3 md:flex">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={handleBack}
+              aria-label="Atrás"
+              title="Atrás"
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+            <h1
+              className="min-w-0 text-2xl leading-tight font-semibold break-words"
+              style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
+            >
+              {headingProfessorName}
+            </h1>
+          </div>
+          <Button type="button" className="shrink-0" onClick={() => setIsComposerOpen(true)}>
+            <PenLine className="mr-2 size-4" />
+            Escribir reseña
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -271,8 +304,11 @@ export function ProfessorDetailPage() {
             }}
             submitMutationPending={submitMutation.isPending}
             turnstileSiteKey={turnstileSiteKey}
+            professorId={professorIdText}
             courseCode={courseCode}
             setCourseCode={setCourseCode}
+            academicTermId={academicTermId}
+            setAcademicTermId={setAcademicTermId}
             gradeReceived={gradeReceived}
             setGradeReceived={setGradeReceived}
             comment={comment}

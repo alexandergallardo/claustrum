@@ -8,6 +8,8 @@ import type {
 
 import {
   getCurrentUserIsAdmin,
+  getProfessorOfferingTerms,
+  getProfessorReviewCourses,
   getProfessorById,
   getProfessorReviewSummary,
   getProfessorReviewsForModeration,
@@ -27,7 +29,7 @@ export function useProfessorReviewStats(params: SearchProfessorReviewStatsParams
 }
 
 export function useProfessorReviewsPublic(
-  professorId: number | null,
+  professorId: string | null,
   page: number,
   pageSize: number,
 ) {
@@ -39,7 +41,7 @@ export function useProfessorReviewsPublic(
   });
 }
 
-export function useProfessorReviewSummary(professorId: number | null) {
+export function useProfessorReviewSummary(professorId: string | null) {
   return useQuery({
     queryKey: ["professorReviewSummary", professorId],
     queryFn: () => getProfessorReviewSummary(professorId!),
@@ -47,7 +49,7 @@ export function useProfessorReviewSummary(professorId: number | null) {
   });
 }
 
-export function useProfessorById(professorId: number | null) {
+export function useProfessorById(professorId: string | null) {
   return useQuery({
     queryKey: ["professorById", professorId],
     queryFn: () => getProfessorById(professorId!),
@@ -72,6 +74,26 @@ export function useSubmitProfessorReview() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
     },
+  });
+}
+
+export function useProfessorReviewCourses(professorId: string | null) {
+  return useQuery({
+    queryKey: ["professorReviewCoursesByProfessor", professorId],
+    queryFn: () => getProfessorReviewCourses(professorId!),
+    enabled: professorId !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+}
+
+export function useProfessorOfferingTerms(professorId: string | null) {
+  return useQuery({
+    queryKey: ["professorOfferingTerms", professorId],
+    queryFn: () => getProfessorOfferingTerms(professorId!),
+    enabled: professorId !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }
 

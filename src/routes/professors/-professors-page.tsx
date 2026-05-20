@@ -113,7 +113,7 @@ export function ProfessorsReviewsPage() {
           return (
             <Link
               to="/professors/$professorId"
-              params={{ professorId: String(professorId) }}
+              params={{ professorId }}
               preload="intent"
               viewTransition={{ types: ["professor-open"] }}
               className="font-medium underline-offset-4 hover:underline"

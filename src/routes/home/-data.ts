@@ -213,7 +213,7 @@ export const demoDependents: Course[] = [
 export const demoReviewRows: ProfessorReviewPublicRow[] = [
   {
     review_id: 1,
-    professor_id: 1178,
+    professor_id: "1178",
     course_id: 1037,
     course_code: "IC1400",
     course_name: "FUNDAMENTOS DE ORGANIZACIÓN DE COMPUTADORAS",
@@ -233,7 +233,7 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
   },
   {
     review_id: 2,
-    professor_id: 1192,
+    professor_id: "1192",
     course_id: 1038,
     course_code: "IC3101",
     course_name: "ARQUITECTURA DE COMPUTADORES",
@@ -253,7 +253,7 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
   },
   {
     review_id: 3,
-    professor_id: 1171,
+    professor_id: "1171",
     course_id: 1039,
     course_code: "IC4700",
     course_name: "LENGUAJES DE PROGRAMACIÓN",
