@@ -162,43 +162,43 @@ La entrada es un namespace (por ejemplo, `"campus"`, `"course_offering"`) más l
 partes de la clave natural, y el hash Blake2b produce 64 bits que se enmascaran
 para que quepan en un `BIGINT` positivo con signo.
 
-| Entidad | Namespace | Partes de la clave |
-|---|---|---|
-| country | `"country"` | iso2_code |
-| campus | `"campus"` | code |
-| academic_unit | `"academic_unit"` | code |
-| course | `"course"` | code |
-| professor | `"professor"` | full_name |
-| study_plan | `"study_plan"` | unit_code, external_plan_id |
-| course_offering | `"course_offering"` | course_id, campus_id, unit_id, term_id |
-| course_offering_group | `"course_offering_group"` | offering_id, group_code |
-| course_offering_meeting | `"course_offering_meeting"` | group_id, weekday, starts_at, ends_at |
+| Entidad                 | Namespace                   | Partes de la clave                     |
+| ----------------------- | --------------------------- | -------------------------------------- |
+| country                 | `"country"`                 | iso2_code                              |
+| campus                  | `"campus"`                  | code                                   |
+| academic_unit           | `"academic_unit"`           | code                                   |
+| course                  | `"course"`                  | code                                   |
+| professor               | `"professor"`               | full_name                              |
+| study_plan              | `"study_plan"`              | unit_code, external_plan_id            |
+| course_offering         | `"course_offering"`         | course_id, campus_id, unit_id, term_id |
+| course_offering_group   | `"course_offering_group"`   | offering_id, group_code                |
+| course_offering_meeting | `"course_offering_meeting"` | group_id, weekday, starts_at, ends_at  |
 
 ## Orden de dependencias entre entidades
 
 Cada entidad depende de que sus referencias existan antes de ser procesada. El
 orden completo es:
 
-| # | Entidad | Depende de | Descripción |
-|---|---|---|---|
-| 1 | country | - | País de referencia (Costa Rica) |
-| 2 | university | country | Universidad (ITCR) |
-| 3 | campus | university | Sedes del TEC |
-| 4 | academic_unit | university, campus | Escuelas y carreras |
-| 5 | academic_unit_campus | academic_unit, campus | Relación muchos a muchos |
-| 6 | academic_modality | - | Semestre, trimestre, etc. |
-| 7 | academic_term | academic_modality | Periodo concreto |
-| 8 | study_plan | academic_unit, academic_modality | Plan de estudios |
-| 9 | study_plan_campus | study_plan, campus | Sedes donde se ofrece |
-| 10 | study_plan_level | study_plan | Niveles del plan |
-| 11 | course | - | Catálogo de cursos |
-| 12 | study_plan_level_course | study_plan_level, course | Cursos por nivel |
-| 13 | course_relation | study_plan, course | Requisitos y equivalencias |
-| 14 | professor | - | Nombres de profesores |
-| 15 | course_offering | course, campus, academic_unit, academic_term | Oferta de un periodo |
-| 16 | course_offering_group | course_offering | Grupo de una oferta |
-| 17 | course_offering_group_professor | course_offering_group, professor | Profesores del grupo |
-| 18 | course_offering_meeting | course_offering_group | Reuniones del grupo |
+| #   | Entidad                         | Depende de                                   | Descripción                     |
+| --- | ------------------------------- | -------------------------------------------- | ------------------------------- |
+| 1   | country                         | -                                            | País de referencia (Costa Rica) |
+| 2   | university                      | country                                      | Universidad (ITCR)              |
+| 3   | campus                          | university                                   | Sedes del TEC                   |
+| 4   | academic_unit                   | university, campus                           | Escuelas y carreras             |
+| 5   | academic_unit_campus            | academic_unit, campus                        | Relación muchos a muchos        |
+| 6   | academic_modality               | -                                            | Semestre, trimestre, etc.       |
+| 7   | academic_term                   | academic_modality                            | Periodo concreto                |
+| 8   | study_plan                      | academic_unit, academic_modality             | Plan de estudios                |
+| 9   | study_plan_campus               | study_plan, campus                           | Sedes donde se ofrece           |
+| 10  | study_plan_level                | study_plan                                   | Niveles del plan                |
+| 11  | course                          | -                                            | Catálogo de cursos              |
+| 12  | study_plan_level_course         | study_plan_level, course                     | Cursos por nivel                |
+| 13  | course_relation                 | study_plan, course                           | Requisitos y equivalencias      |
+| 14  | professor                       | -                                            | Nombres de profesores           |
+| 15  | course_offering                 | course, campus, academic_unit, academic_term | Oferta de un periodo            |
+| 16  | course_offering_group           | course_offering                              | Grupo de una oferta             |
+| 17  | course_offering_group_professor | course_offering_group, professor             | Profesores del grupo            |
+| 18  | course_offering_meeting         | course_offering_group                        | Reuniones del grupo             |
 
 ## Archivos de implementación
 
