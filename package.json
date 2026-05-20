@@ -16,7 +16,8 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
-    "supabase:migrate": "supabase migration up"
+    "supabase:migrate-dev": "supabase migration up",
+    "supabase:migrate-prod": "supabase migration up --linked"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
