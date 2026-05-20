@@ -24,13 +24,11 @@ import type {
   Course,
   CourseAttempt,
   CourseLatestTermGroup,
-  CourseRecentProfessor,
   CourseStatus,
 } from "@/lib/types";
 
 import { CourseRelationFlow } from "@/components/course-relation-flow";
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,7 +69,6 @@ import {
   useCourseEquivalents,
   useCourseLatestTermGroups,
   useCourseOfferingTerms,
-  useCourseRecentProfessors,
   useUpdateCourseAttempt,
 } from "@/lib/hooks/use-queries";
 import { cn } from "@/lib/utils";
@@ -159,23 +156,6 @@ function formatMeetingLine(meeting: {
   const weekday = WEEKDAYS[meeting.weekday] ?? `Dia ${meeting.weekday}`;
   const classroom = meeting.classroom ? ` • Aula ${meeting.classroom}` : "";
   return `${weekday} ${formatTime(meeting.starts_at)}-${formatTime(meeting.ends_at)}${classroom}`;
-}
-
-function getInitials(name: string) {
-  const parts = name.split(" ").filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function stringToColor(str: string) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hues = [15, 45, 160, 200, 260, 320]; // warm, amber, teal, blue, violet, rose
-  const hue = hues[Math.abs(hash) % hues.length];
-  return `hsl(${hue} 70% 45%)`;
 }
 
 function formatFileSize(bytes: number): string {
@@ -330,55 +310,6 @@ function TimelineOriginItem({ course }: { course: Course }) {
         <p className="text-muted-foreground mt-2 text-xs italic">Nota: {originDetail}</p>
       </div>
     </div>
-  );
-}
-
-function ProfessorCard({
-  professor,
-  onPrepareTransition,
-}: {
-  professor: CourseRecentProfessor;
-  onPrepareTransition: (key: string, id: number, name: string) => void;
-}) {
-  const color = stringToColor(professor.professorName);
-  const transitionKey = `prof-${professor.professorId}`;
-
-  return (
-    <Link
-      to="/professors/$professorId"
-      params={{ professorId: String(professor.professorId) }}
-      viewTransition={{ types: ["professor-open"] }}
-      className="group border-border bg-card hover:bg-accent/50 flex items-center gap-3 rounded-xl border p-3 transition-colors"
-      onPointerDown={() =>
-        onPrepareTransition(transitionKey, professor.professorId, professor.professorName)
-      }
-    >
-      <Avatar className="size-10 shrink-0" style={{ backgroundColor: `${color}20` }}>
-        <AvatarFallback className="text-sm font-semibold" style={{ color }}>
-          {getInitials(professor.professorName)}
-        </AvatarFallback>
-      </Avatar>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-foreground truncate text-sm font-medium group-hover:underline">
-          {professor.professorName}
-        </p>
-        <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-          <span>{professor.lastTaughtTermName}</span>
-          <span className="inline-flex items-center gap-1">
-            <Users className="size-3" />
-            {professor.groupsInLastTermCount} grupos
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-end gap-0.5">
-        <span className="text-foreground text-lg leading-none font-bold">
-          {professor.termsTaughtCount}
-        </span>
-        <span className="text-muted-foreground text-[10px] tracking-wider uppercase">periodos</span>
-      </div>
-    </Link>
   );
 }
 
@@ -623,12 +554,6 @@ export function CourseDetails({
     ? null
     : selectedOfferingTermNumericId;
 
-  const recentProfessorsQuery = useCourseRecentProfessors(
-    parseInt(course.id),
-    null,
-    null,
-    normalizedOfferingTermId,
-  );
   const latestGroupsQuery = useCourseLatestTermGroups(
     parseInt(course.id),
     null,
@@ -670,7 +595,6 @@ export function CourseDetails({
   const selectedAttemptTarget =
     attemptTargets.find((option) => String(option.id) === attemptCourseId) ?? null;
 
-  const recentProfessors = recentProfessorsQuery.data ?? [];
   const latestTermGroups = latestGroupsQuery.data ?? [];
   const offeringTerms = useMemo(() => offeringTermsQuery.data ?? [], [offeringTermsQuery.data]);
   const selectedOfferingTerm =
@@ -1096,15 +1020,16 @@ export function CourseDetails({
           <SectionHeader
             title="Historial de intentos"
             action={
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setIsProgressSheetOpen(true)}
-              >
-                <Plus className="mr-1.5 size-4" />
-                Registrar progreso
-              </Button>
+              !attemptsQuery.isLoading && (attempts.length > 0 || isStatusFromAnotherSource) ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsProgressSheetOpen(true)}
+                >
+                  Registrar progreso
+                </Button>
+              ) : null
             }
           />
           {attemptsQuery.isLoading ? (
@@ -1124,8 +1049,17 @@ export function CourseDetails({
               <GraduationCap className="text-muted-foreground/50 mb-3 size-8" />
               <p className="text-foreground text-sm font-medium">Aún no hay intentos registrados</p>
               <p className="text-muted-foreground mt-1 text-xs">
-                Registra tu primera nota usando el botón de arriba
+                Registra tu primera nota para iniciar el historial
               </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => setIsProgressSheetOpen(true)}
+              >
+                Registrar progreso
+              </Button>
             </div>
           ) : (
             <div className="pl-1">
@@ -1212,11 +1146,11 @@ export function CourseDetails({
         <SectionHeader
           title="Evaluaciones"
           action={
-            <>
+            !evaluationsQuery.isLoading && evaluations.length > 0 ? (
               <Button variant="outline" size="sm" onClick={() => setIsExamUploadOpen(true)}>
                 Subir evaluación
               </Button>
-            </>
+            ) : null
           }
         />
 
@@ -1264,14 +1198,12 @@ export function CourseDetails({
 
         <EvaluationUploadDialog
           courseId={parseInt(course.id)}
-          academicTerms={academicTerms}
-          recentProfessors={recentProfessors}
           open={isExamUploadOpen}
           onOpenChange={setIsExamUploadOpen}
         />
       </section>
 
-      {/* ========== PROFESSORS ========== */}
+      {/* ========== SCHEDULES ========== */}
       <section>
         <div className="mb-3 space-y-2">
           <h2 className="text-xl font-semibold tracking-tight">Periodo</h2>
@@ -1304,38 +1236,6 @@ export function CourseDetails({
             </ComboboxContent>
           </Combobox>
         </div>
-        <SectionHeader title="Profesores" />
-        {recentProfessorsQuery.isLoading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-muted h-16 animate-pulse rounded-xl" />
-            ))}
-          </div>
-        ) : recentProfessors.length === 0 ? (
-          <div className="border-border flex flex-col items-center justify-center rounded-2xl border border-dashed py-12 text-center">
-            <User className="text-muted-foreground/50 mb-3 size-8" />
-            <p className="text-foreground text-sm font-medium">
-              No hay registros de profesores recientes
-            </p>
-            <p className="text-muted-foreground mt-1 text-xs">
-              No se encontraron profesores para este curso en los últimos 2 años
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {recentProfessors.map((professor: CourseRecentProfessor) => (
-              <ProfessorCard
-                key={professor.professorId}
-                professor={professor}
-                onPrepareTransition={prepareProfessorTransition}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ========== SCHEDULES ========== */}
-      <section>
         <SectionHeader title="Horarios" />
         {latestGroupsQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">

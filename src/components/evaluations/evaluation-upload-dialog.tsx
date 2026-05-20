@@ -1,9 +1,8 @@
 import { FileUp, Minus, Plus, X } from "lucide-react";
-import { lazy, Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { CourseRecentProfessor } from "@/lib/types";
-import type { AcademicTerm } from "@/lib/types";
+import type { AcademicTerm, CourseRecentProfessor } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -48,6 +47,7 @@ import {
   type EvaluationType,
 } from "@/lib/evaluations/types";
 import { useUploadEvaluation } from "@/lib/hooks/use-evaluations";
+import { useCourseOfferingTerms, useCourseRecentProfessors } from "@/lib/hooks/use-queries";
 import { cn } from "@/lib/utils";
 
 const Turnstile = lazy(() =>
@@ -56,8 +56,6 @@ const Turnstile = lazy(() =>
 
 interface EvaluationUploadDialogProps {
   courseId: number;
-  academicTerms: AcademicTerm[];
-  recentProfessors: CourseRecentProfessor[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -74,8 +72,6 @@ function formatFileSize(bytes: number): string {
 
 export function EvaluationUploadDialog({
   courseId,
-  academicTerms,
-  recentProfessors,
   open,
   onOpenChange,
 }: EvaluationUploadDialogProps) {
@@ -98,6 +94,20 @@ export function EvaluationUploadDialog({
   const [hasSeparateAnswers, setHasSeparateAnswers] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  const offeringTermsQuery = useCourseOfferingTerms(courseId, null, null);
+  const selectedTermNumericId = academicTermId ? Number(academicTermId) : null;
+  const normalizedTermId = Number.isInteger(selectedTermNumericId) ? selectedTermNumericId : null;
+  const recentProfessorsQuery = useCourseRecentProfessors(courseId, null, null, normalizedTermId);
+
+  const academicTerms = useMemo<AcademicTerm[]>(
+    () => offeringTermsQuery.data ?? [],
+    [offeringTermsQuery.data],
+  );
+  const recentProfessors = useMemo<CourseRecentProfessor[]>(
+    () => (normalizedTermId ? (recentProfessorsQuery.data ?? []) : []),
+    [normalizedTermId, recentProfessorsQuery.data],
+  );
 
   const showNumberInput = EVALUATION_TYPES_WITH_NUMBER.includes(evaluationType);
   const showCustomNameInput = evaluationType === "otro";
@@ -238,6 +248,23 @@ export function EvaluationUploadDialog({
   const selectedProfessor =
     recentProfessors.find((p) => String(p.professorId) === professorId) ?? null;
 
+  useEffect(() => {
+    if (!academicTermId && academicTerms.length > 0) {
+      setAcademicTermId(String(academicTerms[0].id));
+      return;
+    }
+
+    if (academicTermId && !academicTerms.some((term) => String(term.id) === academicTermId)) {
+      setAcademicTermId(academicTerms.length > 0 ? String(academicTerms[0].id) : "");
+    }
+  }, [academicTermId, academicTerms]);
+
+  useEffect(() => {
+    if (professorId && !recentProfessors.some((p) => String(p.professorId) === professorId)) {
+      setProfessorId("");
+    }
+  }, [professorId, recentProfessors]);
+
   const formFields = (
     <div className="space-y-5">
       {/* Evaluation file drop zone */}
@@ -358,101 +385,107 @@ export function EvaluationUploadDialog({
       </div>
 
       {/* Period + Professor */}
-      {(academicTerms.length > 0 || recentProfessors.length > 0) && (
-        <div className="grid grid-cols-2 gap-3">
-          {academicTerms.length > 0 && (
-            <div className="space-y-2">
-              <Label>Período académico</Label>
-              <Combobox
-                items={academicTerms}
-                value={selectedTerm}
-                onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
-                itemToStringValue={(term) => term.display_name}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Período académico</Label>
+          <Combobox
+            items={academicTerms}
+            value={selectedTerm}
+            onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
+            itemToStringValue={(term) => term.display_name}
+          >
+            <ComboboxTrigger
+              ref={termTriggerRef}
+              render={
+                <Button
+                  variant="outline"
+                  className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                  disabled={academicTerms.length === 0}
+                />
+              }
+            >
+              <span
+                className={cn(
+                  "block min-w-0 flex-1 truncate text-left",
+                  !selectedTerm && "text-muted-foreground",
+                )}
               >
-                <ComboboxTrigger
-                  ref={termTriggerRef}
-                  render={
-                    <Button
-                      variant="outline"
-                      className="w-full min-w-0 justify-between overflow-hidden font-normal"
-                    />
-                  }
-                >
-                  <span
-                    className={cn(
-                      "block min-w-0 flex-1 truncate text-left",
-                      !selectedTerm && "text-muted-foreground",
-                    )}
-                  >
-                    {selectedTerm?.display_name ?? "Seleccionar período"}
-                  </span>
-                </ComboboxTrigger>
-                <ComboboxContent
-                  anchor={termTriggerRef}
-                  container={comboboxPortalContainerRef}
-                  className="w-64"
-                >
-                  <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
-                  <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-                  <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {(term) => (
-                      <ComboboxItem key={term.id} value={term}>
-                        <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-            </div>
-          )}
-
-          {recentProfessors.length > 0 && (
-            <div className="space-y-2">
-              <Label>Profesor</Label>
-              <Combobox
-                items={recentProfessors}
-                value={selectedProfessor}
-                onValueChange={(prof) => setProfessorId(prof ? String(prof.professorId) : "")}
-                itemToStringValue={(prof) => prof.professorName}
-              >
-                <ComboboxTrigger
-                  ref={professorTriggerRef}
-                  render={
-                    <Button
-                      variant="outline"
-                      className="w-full min-w-0 justify-between overflow-hidden font-normal"
-                    />
-                  }
-                >
-                  <span
-                    className={cn(
-                      "block min-w-0 flex-1 truncate text-left",
-                      !selectedProfessor && "text-muted-foreground",
-                    )}
-                  >
-                    {selectedProfessor?.professorName ?? "Seleccionar profesor"}
-                  </span>
-                </ComboboxTrigger>
-                <ComboboxContent
-                  anchor={professorTriggerRef}
-                  container={comboboxPortalContainerRef}
-                  className="w-64"
-                >
-                  <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
-                  <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>
-                  <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                    {(prof) => (
-                      <ComboboxItem key={prof.professorId} value={prof}>
-                        <span className="block min-w-0 flex-1 truncate">{prof.professorName}</span>
-                      </ComboboxItem>
-                    )}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
-            </div>
-          )}
+                {selectedTerm?.display_name ??
+                  (offeringTermsQuery.isLoading
+                    ? "Cargando períodos..."
+                    : "Sin períodos con oferta")}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent
+              anchor={termTriggerRef}
+              container={comboboxPortalContainerRef}
+              className="w-64"
+            >
+              <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
+              <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
+              <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(term) => (
+                  <ComboboxItem key={term.id} value={term}>
+                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
         </div>
-      )}
+
+        <div className="space-y-2">
+          <Label>Profesor</Label>
+          <Combobox
+            items={recentProfessors}
+            value={selectedProfessor}
+            onValueChange={(prof) => setProfessorId(prof ? String(prof.professorId) : "")}
+            itemToStringValue={(prof) => prof.professorName}
+          >
+            <ComboboxTrigger
+              ref={professorTriggerRef}
+              render={
+                <Button
+                  variant="outline"
+                  className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                  disabled={!selectedTerm || recentProfessorsQuery.isLoading}
+                />
+              }
+            >
+              <span
+                className={cn(
+                  "block min-w-0 flex-1 truncate text-left",
+                  !selectedProfessor && "text-muted-foreground",
+                )}
+              >
+                {selectedProfessor?.professorName ??
+                  (!selectedTerm
+                    ? "Selecciona un período"
+                    : recentProfessorsQuery.isLoading
+                      ? "Cargando profesores..."
+                      : recentProfessors.length > 0
+                        ? "Seleccionar profesor"
+                        : "Sin profesores en este período")}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent
+              anchor={professorTriggerRef}
+              container={comboboxPortalContainerRef}
+              className="w-64"
+            >
+              <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
+              <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>
+              <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(prof) => (
+                  <ComboboxItem key={prof.professorId} value={prof}>
+                    <span className="block min-w-0 flex-1 truncate">{prof.professorName}</span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+        </div>
+      </div>
 
       {/* Checkboxes */}
       <div className="space-y-3">
