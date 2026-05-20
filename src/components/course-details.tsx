@@ -1223,7 +1223,7 @@ export function CourseDetails({
                   (offeringTermsQuery.isLoading ? "Cargando periodos..." : "Selecciona un periodo")}
               </span>
             </ComboboxTrigger>
-            <ComboboxContent className="w-80">
+            <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
               <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
               <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
               <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
