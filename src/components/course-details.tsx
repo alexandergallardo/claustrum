@@ -547,7 +547,12 @@ export function CourseDetails({
 
   const attemptsQuery = useCourseAttempts(userId ?? null, studyPlanId ?? null, parseInt(course.id));
 
-  const offeringTermsQuery = useCourseOfferingTerms(parseInt(course.id), null, null);
+  const offeringTermsQuery = useCourseOfferingTerms(
+    parseInt(course.id),
+    null,
+    null,
+    studyPlanId ?? null,
+  );
   const selectedOfferingTermNumericId =
     offeringTermId.trim() === "" ? null : Number.parseInt(offeringTermId, 10);
   const normalizedOfferingTermId = Number.isNaN(selectedOfferingTermNumericId ?? Number.NaN)
@@ -559,6 +564,7 @@ export function CourseDetails({
     null,
     null,
     normalizedOfferingTermId,
+    studyPlanId ?? null,
   );
   const evaluationsQuery = useCourseEvaluations(parseInt(course.id));
 

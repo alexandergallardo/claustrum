@@ -390,9 +390,10 @@ export function useCourseOfferingTerms(
   courseId: number | null,
   campusId: number | null,
   academicUnitId: number | null,
+  studyPlanId: number | null = null,
 ) {
   return useQuery({
-    queryKey: ["courseOfferingTerms", courseId, campusId, academicUnitId],
+    queryKey: ["courseOfferingTerms", courseId, campusId, academicUnitId, studyPlanId],
     queryFn: async () => {
       if (!courseId) return [];
 
@@ -402,6 +403,7 @@ export function useCourseOfferingTerms(
           p_course_id: courseId,
           p_campus_id: campusId,
           p_academic_unit_id: academicUnitId,
+          p_study_plan_id: studyPlanId,
         })
         .select("*")
         .order("year", { ascending: false })
@@ -852,9 +854,17 @@ export function useCourseLatestTermGroups(
   campusId: number | null,
   academicUnitId: number | null,
   academicTermId: number | null = null,
+  studyPlanId: number | null = null,
 ) {
   return useQuery({
-    queryKey: ["courseLatestTermGroups", courseId, campusId, academicUnitId, academicTermId],
+    queryKey: [
+      "courseLatestTermGroups",
+      courseId,
+      campusId,
+      academicUnitId,
+      academicTermId,
+      studyPlanId,
+    ],
     queryFn: async () => {
       if (!courseId) return [] as CourseLatestTermGroup[];
 
@@ -864,6 +874,7 @@ export function useCourseLatestTermGroups(
         p_campus_id: campusId,
         p_academic_unit_id: academicUnitId,
         p_academic_term_id: academicTermId,
+        p_study_plan_id: studyPlanId,
       });
 
       if (error) throw error;
