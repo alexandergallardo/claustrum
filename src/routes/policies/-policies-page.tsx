@@ -134,6 +134,21 @@ const sections: PolicySection[] = [
 ];
 
 export function PoliciesPage() {
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+
+    const targetId = hash.startsWith("#") ? hash.slice(1) : hash;
+    if (!targetId) return;
+
+    requestAnimationFrame(() => {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [hash]);
+
   return (
     <div className="flex flex-1 justify-center px-4 py-8 lg:px-8 lg:py-10">
       <div className="w-full max-w-6xl space-y-12">
@@ -181,3 +196,5 @@ export function PoliciesPage() {
     </div>
   );
 }
+import { useLocation } from "@tanstack/react-router";
+import { useEffect } from "react";
