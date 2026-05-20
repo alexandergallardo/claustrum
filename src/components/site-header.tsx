@@ -120,7 +120,7 @@ export function SiteHeader() {
 
     for (const period of planDetailQuery.data?.periods ?? []) {
       const course = period.courses.find((item) => item.courseId === courseId);
-      if (course) return `${course.courseCode} - ${course.courseName}`;
+      if (course) return `${course.courseCode}: ${course.courseName}`;
     }
 
     return null;
