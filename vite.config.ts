@@ -19,16 +19,17 @@ export default defineConfig({
     exclude: ["html-to-image"],
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes("node_modules/@supabase/supabase-js")) return "vendor-supabase";
-          if (id.includes("node_modules/@tanstack/")) return "vendor-tanstack";
-          if (id.includes("node_modules/recharts")) return "vendor-recharts";
-          if (id.includes("node_modules/framer-motion")) return "vendor-framer-motion";
-          if (id.includes("node_modules/@dnd-kit")) return "vendor-dnd-kit";
-          if (id.includes("node_modules/html-to-image")) return "vendor-html-to-image";
-          return undefined;
+        codeSplitting: {
+          groups: [
+            { test: /node_modules\/@supabase\/supabase-js/, name: "vendor-supabase" },
+            { test: /node_modules\/@tanstack\//, name: "vendor-tanstack" },
+            { test: /node_modules\/recharts/, name: "vendor-recharts" },
+            { test: /node_modules\/framer-motion/, name: "vendor-framer-motion" },
+            { test: /node_modules\/@dnd-kit/, name: "vendor-dnd-kit" },
+            { test: /node_modules\/html-to-image/, name: "vendor-html-to-image" },
+          ],
         },
       },
     },
