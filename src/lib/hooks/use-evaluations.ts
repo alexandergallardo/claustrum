@@ -9,10 +9,10 @@ import {
   uploadEvaluation,
 } from "@/lib/evaluations/api";
 
-export function useCourseEvaluations(courseId: number | null) {
+export function useCourseEvaluations(courseId: number | null, studyPlanId: number | null = null) {
   return useQuery({
-    queryKey: ["courseEvaluations", courseId],
-    queryFn: () => getCourseEvaluations(courseId!),
+    queryKey: ["courseEvaluations", courseId, studyPlanId],
+    queryFn: () => getCourseEvaluations(courseId!, studyPlanId),
     enabled: courseId !== null,
   });
 }
@@ -23,6 +23,11 @@ export function useUploadEvaluation() {
     mutationFn: (payload: UploadEvaluationPayload) => uploadEvaluation(payload),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ["courseEvaluations", variables.courseId] });
+      if (variables.visibleCourseId && variables.visibleCourseId !== variables.courseId) {
+        void queryClient.invalidateQueries({
+          queryKey: ["courseEvaluations", variables.visibleCourseId],
+        });
+      }
       void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
     },
   });

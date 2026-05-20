@@ -2,7 +2,7 @@ import { FileUp, Minus, Plus, X } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { AcademicTerm, CourseRecentProfessor } from "@/lib/types";
+import type { AcademicTerm, CourseDetailRelatedCourse, CourseRecentProfessor } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,7 +47,11 @@ import {
   type EvaluationType,
 } from "@/lib/evaluations/types";
 import { useUploadEvaluation } from "@/lib/hooks/use-evaluations";
-import { useCourseOfferingTerms, useCourseRecentProfessors } from "@/lib/hooks/use-queries";
+import {
+  useCourseDetailRelatedCourses,
+  useCourseOfferingTerms,
+  useCourseRecentProfessors,
+} from "@/lib/hooks/use-queries";
 import { cn } from "@/lib/utils";
 
 const Turnstile = lazy(() =>
@@ -56,6 +60,9 @@ const Turnstile = lazy(() =>
 
 interface EvaluationUploadDialogProps {
   courseId: number;
+  courseCode: string;
+  courseName: string;
+  studyPlanId: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -70,8 +77,15 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatCourseLabel<T extends { code: string; name: string }>(course: T) {
+  return `${course.code}: ${course.name}`;
+}
+
 export function EvaluationUploadDialog({
   courseId,
+  courseCode,
+  courseName,
+  studyPlanId,
   open,
   onOpenChange,
 }: EvaluationUploadDialogProps) {
@@ -81,6 +95,7 @@ export function EvaluationUploadDialog({
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
   const termTriggerRef = useRef<HTMLButtonElement | null>(null);
   const professorTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const courseTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const [evaluationFile, setEvaluationFile] = useState<File | null>(null);
   const [answersFile, setAnswersFile] = useState<File | null>(null);
@@ -88,6 +103,7 @@ export function EvaluationUploadDialog({
   const [evaluationNumberInput, setEvaluationNumberInput] = useState("");
   const [customName, setCustomName] = useState("");
   const [academicTermId, setAcademicTermId] = useState<string>("");
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(String(courseId));
   const [professorId, setProfessorId] = useState<string>("");
   const [isCatedra, setIsCatedra] = useState(false);
   const [includesAnswers, setIncludesAnswers] = useState(false);
@@ -95,10 +111,42 @@ export function EvaluationUploadDialog({
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const offeringTermsQuery = useCourseOfferingTerms(courseId, null, null);
+  const relatedCoursesQuery = useCourseDetailRelatedCourses(studyPlanId, courseId, 0, 10000);
+  const isPlaceholderCourse = relatedCoursesQuery.data?.isPlaceholder ?? false;
+  const baseCourseOption = useMemo<CourseDetailRelatedCourse>(
+    () => ({
+      id: courseId,
+      code: courseCode,
+      name: courseName,
+      credits: null,
+      weeklyHours: null,
+      relationKind: "base",
+      isPlaceholder: isPlaceholderCourse,
+      hasOfferings: false,
+      totalEquivalents: relatedCoursesQuery.data?.totalCount ?? 0,
+    }),
+    [courseCode, courseId, courseName, isPlaceholderCourse, relatedCoursesQuery.data?.totalCount],
+  );
+  const courseOptions = useMemo<CourseDetailRelatedCourse[]>(() => {
+    if (!isPlaceholderCourse) return [baseCourseOption];
+    return (relatedCoursesQuery.data?.data ?? [])
+      .filter((option) => option.relationKind === "equivalent")
+      .filter((option) => option.hasOfferings)
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [baseCourseOption, isPlaceholderCourse, relatedCoursesQuery.data?.data]);
+  const selectedCourse =
+    courseOptions.find((option) => String(option.id) === selectedCourseId) ?? null;
+  const effectiveCourseId = isPlaceholderCourse ? selectedCourse?.id : courseId;
+
+  const offeringTermsQuery = useCourseOfferingTerms(effectiveCourseId ?? null, null, null);
   const selectedTermNumericId = academicTermId ? Number(academicTermId) : null;
   const normalizedTermId = Number.isInteger(selectedTermNumericId) ? selectedTermNumericId : null;
-  const recentProfessorsQuery = useCourseRecentProfessors(courseId, null, null, normalizedTermId);
+  const recentProfessorsQuery = useCourseRecentProfessors(
+    effectiveCourseId ?? null,
+    null,
+    null,
+    normalizedTermId,
+  );
 
   const academicTerms = useMemo<AcademicTerm[]>(
     () => offeringTermsQuery.data ?? [],
@@ -114,11 +162,13 @@ export function EvaluationUploadDialog({
 
   const canSubmit = useMemo(() => {
     if (!evaluationFile || !evaluationType || uploadMutation.isPending) return false;
+    if (!effectiveCourseId) return false;
     if (showCustomNameInput && customName.trim() === "") return false;
     if (!turnstileSiteKey || !turnstileToken) return false;
     return true;
   }, [
     evaluationFile,
+    effectiveCourseId,
     evaluationType,
     uploadMutation.isPending,
     showCustomNameInput,
@@ -134,12 +184,13 @@ export function EvaluationUploadDialog({
     setEvaluationNumberInput("");
     setCustomName("");
     setAcademicTermId("");
+    setSelectedCourseId(String(courseId));
     setProfessorId("");
     setIsCatedra(false);
     setIncludesAnswers(false);
     setHasSeparateAnswers(false);
     setTurnstileToken(null);
-  }, []);
+  }, [courseId]);
 
   const handleClose = useCallback(
     (value: boolean) => {
@@ -213,7 +264,7 @@ export function EvaluationUploadDialog({
   };
 
   const handleSubmit = async () => {
-    if (!evaluationFile) return;
+    if (!evaluationFile || !effectiveCourseId) return;
 
     const parsedTermId = academicTermId ? Number(academicTermId) : null;
     const parsedProfessorId = professorId ? Number(professorId) : null;
@@ -223,7 +274,9 @@ export function EvaluationUploadDialog({
 
     try {
       await uploadMutation.mutateAsync({
-        courseId,
+        courseId: effectiveCourseId,
+        visibleCourseId: courseId,
+        studyPlanId,
         academicTermId: parsedTermId,
         professorId: parsedProfessorId,
         evaluationType,
@@ -247,6 +300,18 @@ export function EvaluationUploadDialog({
   const selectedTerm = academicTerms.find((t) => String(t.id) === academicTermId) ?? null;
   const selectedProfessor =
     recentProfessors.find((p) => String(p.professorId) === professorId) ?? null;
+
+  useEffect(() => {
+    if (!isPlaceholderCourse) {
+      if (selectedCourseId !== String(courseId)) setSelectedCourseId(String(courseId));
+      return;
+    }
+
+    if (courseOptions.length === 0) return;
+    if (!courseOptions.some((option) => String(option.id) === selectedCourseId)) {
+      setSelectedCourseId(String(courseOptions[0].id));
+    }
+  }, [courseId, courseOptions, isPlaceholderCourse, selectedCourseId]);
 
   useEffect(() => {
     if (!academicTermId && academicTerms.length > 0) {
@@ -384,6 +449,51 @@ export function EvaluationUploadDialog({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label>Curso</Label>
+        <Combobox
+          items={courseOptions}
+          value={selectedCourse}
+          onValueChange={(option) => setSelectedCourseId(option ? String(option.id) : "")}
+          itemToStringValue={formatCourseLabel}
+        >
+          <ComboboxTrigger
+            ref={courseTriggerRef}
+            render={
+              <Button
+                variant="outline"
+                className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                disabled={!isPlaceholderCourse || courseOptions.length === 0}
+              />
+            }
+          >
+            <span
+              className={cn(
+                "block min-w-0 flex-1 truncate text-left",
+                !selectedCourse && "text-muted-foreground",
+              )}
+            >
+              {selectedCourse ? formatCourseLabel(selectedCourse) : "Selecciona un curso"}
+            </span>
+          </ComboboxTrigger>
+          <ComboboxContent
+            anchor={courseTriggerRef}
+            container={comboboxPortalContainerRef}
+            className="w-(--anchor-width) min-w-(--anchor-width)"
+          >
+            <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
+            <ComboboxEmpty>No se encontraron cursos.</ComboboxEmpty>
+            <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {(option) => (
+                <ComboboxItem key={option.id} value={option}>
+                  <span className="block min-w-0 flex-1 truncate">{formatCourseLabel(option)}</span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
+
       {/* Period + Professor */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
@@ -400,7 +510,7 @@ export function EvaluationUploadDialog({
                 <Button
                   variant="outline"
                   className="w-full min-w-0 justify-between overflow-hidden font-normal"
-                  disabled={academicTerms.length === 0}
+                  disabled={!effectiveCourseId || academicTerms.length === 0}
                 />
               }
             >
@@ -413,13 +523,15 @@ export function EvaluationUploadDialog({
                 {selectedTerm?.display_name ??
                   (offeringTermsQuery.isLoading
                     ? "Cargando períodos..."
-                    : "Sin períodos con oferta")}
+                    : !effectiveCourseId
+                      ? "Selecciona un curso"
+                      : "Sin períodos con oferta")}
               </span>
             </ComboboxTrigger>
             <ComboboxContent
               anchor={termTriggerRef}
               container={comboboxPortalContainerRef}
-              className="w-64"
+              className="w-(--anchor-width) min-w-(--anchor-width)"
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
               <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
@@ -471,7 +583,7 @@ export function EvaluationUploadDialog({
             <ComboboxContent
               anchor={professorTriggerRef}
               container={comboboxPortalContainerRef}
-              className="w-64"
+              className="w-(--anchor-width) min-w-(--anchor-width)"
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
               <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>

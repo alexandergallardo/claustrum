@@ -15,6 +15,7 @@ import type {
   CourseLatestTermGroup,
   CourseRecentProfessor,
   CourseStatus,
+  CourseDetailRelatedCourse,
 } from "@/lib/types";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -162,11 +163,6 @@ export type AcademicUnitRow = {
   id: number;
   code: string;
   name: string;
-};
-
-export type CourseEquivalentsResult = {
-  data: Array<{ id: number; code: string | null; name: string | null; totalCount: number }>;
-  totalCount: number;
 };
 
 export type CourseRelation = {
@@ -351,37 +347,6 @@ export function useAcademicTerms(campusId: number | null, studyPlanId?: number |
       return (data ?? []) as AcademicTerm[];
     },
     enabled: !!campusId,
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useCourseInferredAcademicTerms(
-  courseId: number | null,
-  campusId: number | null,
-  academicUnitId: number | null,
-  studyPlanId: number | null,
-) {
-  return useQuery({
-    queryKey: ["courseInferredAcademicTerms", courseId, campusId, academicUnitId, studyPlanId],
-    queryFn: async () => {
-      if (!courseId) return [];
-
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .rpc("get_course_active_academic_terms", {
-          p_course_id: courseId,
-          p_campus_id: campusId,
-          p_academic_unit_id: academicUnitId,
-          p_study_plan_id: studyPlanId,
-        })
-        .select("*")
-        .order("year", { ascending: false })
-        .order("period_number", { ascending: false });
-
-      if (error) throw error;
-      return (data ?? []) as AcademicTerm[];
-    },
-    enabled: !!courseId,
     placeholderData: keepPreviousData,
   });
 }
@@ -740,61 +705,58 @@ export function useCoursesByIds(courseIds: number[] | null) {
   });
 }
 
-export function useCourseEquivalents(
+export function useCourseDetailRelatedCourses(
   studyPlanId: number | null,
-  fromCourseId: number | null,
+  courseId: number | null,
   page: number = 0,
-  limit: number = 10,
+  limit: number = 100,
 ) {
   return useQuery({
-    queryKey: ["courseEquivalents", studyPlanId, fromCourseId, page, limit],
+    queryKey: ["courseDetailRelatedCourses", studyPlanId, courseId, page, limit],
     queryFn: async () => {
-      if (!studyPlanId || !fromCourseId) return { data: [], totalCount: 0 };
+      if (!studyPlanId || !courseId) return { data: [], totalCount: 0, isPlaceholder: false };
 
       const sb = getSupabaseBrowserClient();
-
-      const { data, error } = await sb.rpc("get_course_equivalents_for_plan", {
+      const { data, error } = await sb.rpc("get_course_detail_related_courses", {
         p_study_plan_id: studyPlanId,
-        p_from_course_id: fromCourseId,
+        p_course_id: courseId,
         p_limit: limit,
         p_offset: page * limit,
       });
 
       if (error) throw error;
 
-      const equivalents: Array<{
-        id: number;
-        code: string | null;
-        name: string | null;
-        credits: number | null;
-        weeklyHours: number | null;
-        totalCount: number;
-      }> = (data ?? []).map(
+      const relatedCourses: CourseDetailRelatedCourse[] = (data ?? []).map(
         (item: {
-          to_course_id: number;
-          to_course_code: string | null;
-          to_course_name: string | null;
-          to_course_credits: number | null;
-          to_course_weekly_hours: number | null;
-          total_count: number | null;
+          course_id: number;
+          course_code: string | null;
+          course_name: string | null;
+          course_credits: number | null;
+          course_weekly_hours: number | null;
+          relation_kind: "base" | "equivalent";
+          is_placeholder: boolean;
+          has_offerings: boolean | null;
+          total_equivalents: number | null;
         }) => ({
-          id: item.to_course_id,
-          code: item.to_course_code,
-          name: item.to_course_name,
-          credits: item.to_course_credits,
-          weeklyHours: item.to_course_weekly_hours,
-          totalCount: item.total_count ?? 0,
+          id: item.course_id,
+          code: item.course_code ?? String(item.course_id),
+          name: item.course_name ?? "",
+          credits: item.course_credits,
+          weeklyHours: item.course_weekly_hours,
+          relationKind: item.relation_kind,
+          isPlaceholder: item.is_placeholder,
+          hasOfferings: item.has_offerings ?? false,
+          totalEquivalents: item.total_equivalents ?? 0,
         }),
       );
 
-      const totalCount = equivalents.length > 0 ? equivalents[0].totalCount : 0;
-
       return {
-        data: equivalents,
-        totalCount,
+        data: relatedCourses,
+        totalCount: relatedCourses[0]?.totalEquivalents ?? 0,
+        isPlaceholder: relatedCourses[0]?.isPlaceholder ?? false,
       };
     },
-    enabled: !!studyPlanId && !!fromCourseId,
+    enabled: !!studyPlanId && !!courseId,
     placeholderData: (previous) => previous,
   });
 }
@@ -885,6 +847,9 @@ export function useCourseLatestTermGroups(
           term_display_name: string;
           term_year: number;
           term_period_number: number;
+          source_course_id: number;
+          source_course_code: string;
+          source_course_name: string;
           group_id: number;
           group_code: string;
           group_type: string;
@@ -904,6 +869,9 @@ export function useCourseLatestTermGroups(
             termDisplayName: row.term_display_name,
             termYear: row.term_year,
             termPeriodNumber: row.term_period_number,
+            sourceCourseId: row.source_course_id,
+            sourceCourseCode: row.source_course_code,
+            sourceCourseName: row.source_course_name,
             groupId: row.group_id,
             groupCode: row.group_code,
             groupType: row.group_type,
