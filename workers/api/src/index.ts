@@ -25,7 +25,9 @@ const baseCorsHeaders = {
 function getAllowedOrigins(env: Env): string[] {
   return [
     env.BETTER_AUTH_URL,
-    ...(env.CORS_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean) ?? []),
+    ...(env.CORS_ORIGINS?.split(",")
+      .map((value) => value.trim())
+      .filter(Boolean) ?? []),
   ];
 }
 
@@ -178,13 +180,15 @@ app.use(
 );
 
 app.on(["GET", "POST"], "/api/auth/**", async (c) => {
-  const connectionString = c.env.HYPERDRIVE
+  const rawConnectionString = c.env.HYPERDRIVE
     ? c.env.HYPERDRIVE.connectionString
     : c.env.DATABASE_URL;
 
+  const sep = rawConnectionString.includes("?") ? "&" : "?";
+  const connectionString = `${rawConnectionString}${sep}options=-c%20search_path=better_auth`;
+
   const pool = new Pool({
     connectionString,
-    options: "-c search_path=better_auth",
     max: 1,
     connectionTimeoutMillis: 10000,
   });
