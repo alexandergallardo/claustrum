@@ -180,12 +180,9 @@ app.use(
 );
 
 app.on(["GET", "POST"], "/api/auth/**", async (c) => {
-  const rawConnectionString = c.env.HYPERDRIVE
+  const connectionString = c.env.HYPERDRIVE
     ? c.env.HYPERDRIVE.connectionString
     : c.env.DATABASE_URL;
-
-  const sep = rawConnectionString.includes("?") ? "&" : "?";
-  const connectionString = `${rawConnectionString}${sep}options=-c%20search_path=better_auth`;
 
   const pool = new Pool({
     connectionString,
@@ -194,6 +191,7 @@ app.on(["GET", "POST"], "/api/auth/**", async (c) => {
   });
 
   try {
+    await pool.query("SET search_path TO better_auth");
     const response = await createAuth(c.env, pool).handler(c.req.raw);
 
     if (!response) return c.notFound();
