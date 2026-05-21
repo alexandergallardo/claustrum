@@ -1,6 +1,6 @@
+import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";
 import { magicLink, twoFactor, jwt } from "better-auth/plugins";
-import bcrypt from "bcryptjs";
 import { importJWK, SignJWT, type JWK, type JWTPayload } from "jose";
 import { Pool } from "pg";
 import { Resend } from "resend";
@@ -79,7 +79,9 @@ function getSocialProviders(env: AuthEnv) {
 function getTrustedOrigins(env: AuthEnv): string[] {
   return [
     env.BETTER_AUTH_URL,
-    ...(env.CORS_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean) ?? []),
+    ...(env.CORS_ORIGINS?.split(",")
+      .map((value) => value.trim())
+      .filter(Boolean) ?? []),
   ];
 }
 
@@ -129,6 +131,9 @@ export function createAuth(env: AuthEnv, pool: Pool): ReturnType<typeof betterAu
     },
     advanced: {
       useSecureCookies: env.BETTER_AUTH_URL.startsWith("https://"),
+      ipAddress: {
+        ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
+      },
       database: {
         generateId: "uuid",
       },
@@ -138,9 +143,10 @@ export function createAuth(env: AuthEnv, pool: Pool): ReturnType<typeof betterAu
       user: {
         create: {
           after: async (user) => {
-            await pool.query('INSERT INTO public."user" (id) VALUES ($1) ON CONFLICT (id) DO NOTHING', [
-              user.id,
-            ]);
+            await pool.query(
+              'INSERT INTO public."user" (id) VALUES ($1) ON CONFLICT (id) DO NOTHING',
+              [user.id],
+            );
           },
         },
       },

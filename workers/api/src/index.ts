@@ -188,13 +188,10 @@ app.on(["GET", "POST"], "/api/auth/**", async (c) => {
     connectionString,
     max: 1,
     connectionTimeoutMillis: 10000,
+    options: "-c search_path=better_auth,public",
   });
 
   try {
-    const client = await pool.connect();
-    await client.query("SET search_path TO better_auth");
-    client.release();
-
     const response = await createAuth(c.env, pool).handler(c.req.raw);
 
     if (!response) return c.notFound();
