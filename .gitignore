@@ -30,3 +30,5 @@ supabase/tec-data/.pytest_cache/
 supabase/tec-data/.ruff_cache/
 playwright-debug-*.png
 lighthouse-*.json
+supabase-es256-signing-key.json
+supabase/signing_keys.json
