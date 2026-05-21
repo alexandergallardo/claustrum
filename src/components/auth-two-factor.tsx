@@ -5,7 +5,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { authClient, getSession } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 const CODE_LENGTH = 6;
@@ -14,50 +14,29 @@ export function AuthTwoFactorPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [code, setCode] = useState<string[]>(() => Array.from({ length: CODE_LENGTH }, () => ""));
-  const [factorId, setFactorId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadingFactor, setIsLoadingFactor] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const verificationCode = code.join("");
-  const canVerify = verificationCode.length === CODE_LENGTH && !!factorId;
+  const canVerify = verificationCode.length === CODE_LENGTH;
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-
     async function loadFactor() {
       setIsLoadingFactor(true);
       setErrorMessage(null);
 
-      const { data: aal, error: aalError } =
-        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aalError) {
-        setErrorMessage(aalError.message);
+      const { data } = await getSession();
+      if (!data?.user) {
+        setErrorMessage("Debes iniciar sesión antes de verificar 2FA.");
         setIsLoadingFactor(false);
         return;
       }
-
-      if (aal?.currentLevel === "aal2") {
+      if (!data.user.twoFactorEnabled) {
         void navigate({ to: "/overview", replace: true });
         return;
       }
-
-      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-      if (factorsError) {
-        setErrorMessage(factorsError.message);
-        setIsLoadingFactor(false);
-        return;
-      }
-
-      const verifiedTotpFactor = factors.totp.find((factor) => factor.status === "verified");
-      if (!verifiedTotpFactor) {
-        setErrorMessage("No hay un factor de autenticación configurado para esta cuenta.");
-        setIsLoadingFactor(false);
-        return;
-      }
-
-      setFactorId(verifiedTotpFactor.id);
       setIsLoadingFactor(false);
     }
 
@@ -106,32 +85,28 @@ export function AuthTwoFactorPage() {
   async function handleVerify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canVerify || isVerifying) return;
-    if (!factorId) return;
 
     setIsVerifying(true);
     setErrorMessage(null);
 
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.mfa.challengeAndVerify({
-      factorId,
+    const { error } = await authClient.twoFactor.verifyTotp({
       code: verificationCode,
+      trustDevice: true,
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(error.message ?? "Código inválido");
       setIsVerifying(false);
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: session } = await getSession();
     await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-    if (user?.id) {
+    if (session?.user.id) {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["profile", user.id] }),
-        queryClient.invalidateQueries({ queryKey: ["onboardingStatus", user.id] }),
-        queryClient.invalidateQueries({ queryKey: ["userStudyPlan", user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["profile", session.user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["onboardingStatus", session.user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["userStudyPlan", session.user.id] }),
       ]);
     }
 

@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { CardDescription } from "@/components/ui/card";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { authClient } from "@/lib/auth/client";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 type Mode = "request" | "sent" | "update";
 
@@ -20,27 +20,14 @@ export function AuthResetPasswordPage() {
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-
-    const hasRecoveryType =
-      window.location.hash.includes("type=recovery") ||
-      new URLSearchParams(window.location.search).get("type") === "recovery";
-
-    if (hasRecoveryType) {
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (token) {
+      setResetToken(token);
       setMode("update");
     }
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setMode("update");
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const passwordMismatch = useMemo(
@@ -57,8 +44,8 @@ export function AuthResetPasswordPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+    const { error } = await authClient.requestPasswordReset({
+      email: trimmedEmail,
       redirectTo: `${window.location.origin}/auth/reset-password`,
     });
 
@@ -87,10 +74,13 @@ export function AuthResetPasswordPage() {
       setErrorMessage("Las contraseñas no coinciden.");
       return;
     }
+    if (!resetToken) {
+      setErrorMessage("El enlace de restablecimiento no es válido o expiró.");
+      return;
+    }
 
     setPending(true);
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await authClient.resetPassword({ newPassword, token: resetToken });
 
     if (error) {
       setErrorMessage(normalizeAuthError(error, "login").message);

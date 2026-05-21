@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CardDescription } from "@/components/ui/card";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { authClient, getSession } from "@/lib/auth/client";
 
 const VERIFY_EMAIL_KEY = "claustrum.auth.verify_email";
 
@@ -28,11 +28,7 @@ function VerifyEmailPage() {
 
     const checkSession = async () => {
       try {
-        const supabase = getSupabaseBrowserClient();
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
+        const { data: session, error } = await getSession();
 
         if (error) {
           setStatus("pending");
@@ -59,25 +55,7 @@ function VerifyEmailPage() {
 
     void checkSession();
 
-    const supabase = getSupabaseBrowserClient();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        if (session.user?.email) {
-          setEmail(session.user.email);
-          window.sessionStorage.setItem(VERIFY_EMAIL_KEY, session.user.email);
-        }
-        setStatus("success");
-        setTimeout(() => {
-          void navigate({ to: "/overview" });
-        }, 2000);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    return undefined;
   }, [navigate]);
 
   const handleResendEmail = async () => {
@@ -90,15 +68,14 @@ function VerifyEmailPage() {
     setResendError(null);
 
     try {
-      const supabase = getSupabaseBrowserClient();
       const trimmedEmail = email.trim();
-      const { error } = await supabase.auth.resend({
-        type: "signup",
+      const { error } = await authClient.sendVerificationEmail({
         email: trimmedEmail,
+        callbackURL: `${window.location.origin}/auth/verify-email`,
       });
 
       if (error) {
-        setResendError(error.message);
+        setResendError(error.message ?? "No se pudo reenviar el correo");
       } else {
         setResendSuccess(true);
       }

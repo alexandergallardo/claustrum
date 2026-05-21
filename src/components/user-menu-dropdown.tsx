@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { signOut } from "@/lib/auth/client";
 
 interface UserMenuDropdownProps {
   user: {
@@ -75,8 +75,7 @@ export function UserMenuDropdown({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={async () => {
-            const supabase = getSupabaseBrowserClient();
-            await supabase.auth.signOut();
+            await signOut();
             void navigate({ to: "/auth/signin" });
           }}
         >
