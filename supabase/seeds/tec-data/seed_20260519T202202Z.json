@@ -1,0 +1,184 @@
+{
+  "seed_file": "seed_20260519T202202Z.sql",
+  "generated_at_utc": "2026-05-19T20:22:02.720659+00:00",
+  "scope": "mixed",
+  "years": [
+    2024,
+    2025
+  ],
+  "term_external_keys": [
+    "2024_A_1",
+    "2024_B_1",
+    "2024_B_2",
+    "2024_B_3",
+    "2024_B_4",
+    "2024_B_5",
+    "2024_B_6",
+    "2024_B_7",
+    "2024_C_1",
+    "2024_C_2",
+    "2024_C_3",
+    "2024_H_1",
+    "2024_H_2",
+    "2024_H_3",
+    "2024_H_4",
+    "2024_H_5",
+    "2024_H_6",
+    "2024_I_1",
+    "2024_I_2",
+    "2024_M_1",
+    "2024_M_10",
+    "2024_M_11",
+    "2024_M_12",
+    "2024_M_2",
+    "2024_M_3",
+    "2024_M_4",
+    "2024_M_5",
+    "2024_M_6",
+    "2024_M_7",
+    "2024_M_8",
+    "2024_M_9",
+    "2024_N_1",
+    "2024_S_1",
+    "2024_S_2",
+    "2024_T_1",
+    "2024_T_2",
+    "2024_T_3",
+    "2024_T_4",
+    "2024_V_1",
+    "2025_A_1",
+    "2025_B_1",
+    "2025_B_2",
+    "2025_B_3",
+    "2025_B_4",
+    "2025_B_5",
+    "2025_B_6",
+    "2025_B_7",
+    "2025_C_1",
+    "2025_C_2",
+    "2025_C_3",
+    "2025_H_1",
+    "2025_H_2",
+    "2025_H_3",
+    "2025_H_4",
+    "2025_H_5",
+    "2025_H_6",
+    "2025_I_1",
+    "2025_I_2",
+    "2025_M_1",
+    "2025_M_10",
+    "2025_M_11",
+    "2025_M_12",
+    "2025_M_2",
+    "2025_M_3",
+    "2025_M_4",
+    "2025_M_5",
+    "2025_M_6",
+    "2025_M_7",
+    "2025_M_8",
+    "2025_M_9",
+    "2025_N_1",
+    "2025_S_1",
+    "2025_S_2",
+    "2025_T_1",
+    "2025_T_2",
+    "2025_T_3",
+    "2025_T_4",
+    "2025_V_1"
+  ],
+  "environment_id": "jxzkhfclcdpcgtkpyxyk|db.jxzkhfclcdpcgtkpyxyk.supabase.co|postgres",
+  "data_fingerprint": "68239f9458656f0e800337e488098564dc67537ce2768ed7fb961498711d567b",
+  "table_stats": {
+    "country": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "university": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "campus": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "academic_unit": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "academic_modality": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "academic_term": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "academic_unit_campus": {
+      "inserted": 172,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "study_plan": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "study_plan_campus": {
+      "inserted": 664,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "study_plan_level": {
+      "inserted": 0,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "course": {
+      "inserted": 0,
+      "updated": 210,
+      "soft_deleted": 0
+    },
+    "study_plan_level_course": {
+      "inserted": 11167,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "course_relation": {
+      "inserted": 86830,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "professor": {
+      "inserted": 233,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "course_offering": {
+      "inserted": 5608,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "course_offering_group": {
+      "inserted": 9096,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "course_offering_group_professor": {
+      "inserted": 9500,
+      "updated": 0,
+      "soft_deleted": 1
+    },
+    "course_offering_meeting": {
+      "inserted": 12694,
+      "updated": 0,
+      "soft_deleted": 1
+    }
+  },
+  "noop": false
+}
