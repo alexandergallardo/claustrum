@@ -191,7 +191,6 @@ app.on(["GET", "POST"], "/api/auth/**", async (c) => {
   });
 
   try {
-    await pool.query("SET search_path TO better_auth");
     const response = await createAuth(c.env, pool).handler(c.req.raw);
 
     if (!response) return c.notFound();
