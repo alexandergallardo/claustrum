@@ -1,19 +1,44 @@
 import { createClient } from "@supabase/supabase-js";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { importJWK, jwtVerify, type JWK } from "jose";
+import { Pool } from "pg";
 import { z } from "zod";
 
-export interface Env {
+import { createAuth, type AuthEnv } from "./auth";
+
+export interface Env extends AuthEnv {
+  HYPERDRIVE?: Hyperdrive;
   EVALUATIONS_BUCKET: R2Bucket;
   SUPABASE_URL: string;
   SUPABASE_SECRET_KEY: string;
   TURNSTILE_SECRET_KEY: string;
+  CORS_ORIGINS?: string;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const baseCorsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   "Access-Control-Expose-Headers": "Content-Disposition",
 };
+
+function getAllowedOrigins(env: Env): string[] {
+  return [
+    env.BETTER_AUTH_URL,
+    ...(env.CORS_ORIGINS?.split(",").map((value) => value.trim()).filter(Boolean) ?? []),
+  ];
+}
+
+function getCorsHeaders(request: Request, env: Env): Record<string, string> {
+  const origin = request.headers.get("origin");
+  const allowedOrigins = getAllowedOrigins(env);
+  const allowOrigin = origin && allowedOrigins.includes(origin) ? origin : env.BETTER_AUTH_URL;
+  return {
+    ...baseCorsHeaders,
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 const REVIEW_TAGS = [
   "Da buena retroalimentacion",
@@ -54,17 +79,23 @@ function isRealProfessorName(fullName: string): boolean {
   return true;
 }
 
-function badRequest(message: string) {
+function badRequest(message: string, request?: Request, env?: Env) {
   return new Response(JSON.stringify({ error: message }), {
     status: 400,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: {
+      ...(request && env ? getCorsHeaders(request, env) : baseCorsHeaders),
+      "Content-Type": "application/json",
+    },
   });
 }
 
-function ok(data: unknown) {
+function ok(data: unknown, request?: Request, env?: Env) {
   return new Response(JSON.stringify(data), {
     status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: {
+      ...(request && env ? getCorsHeaders(request, env) : baseCorsHeaders),
+      "Content-Type": "application/json",
+    },
   });
 }
 
@@ -100,10 +131,21 @@ async function verifyAuth(request: Request, env: Env): Promise<string | null> {
   if (!authHeader?.startsWith("Bearer ")) return null;
 
   const token = authHeader.slice(7);
-  const supabase = getSupabase(env);
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) return null;
-  return data.user.id;
+  if (!env.SUPABASE_JWT_PRIVATE_JWK) return null;
+
+  try {
+    const publicJwk = JSON.parse(env.SUPABASE_JWT_PRIVATE_JWK) as JWK & { d?: string };
+    delete publicJwk.d;
+    const key = await importJWK(publicJwk, "ES256");
+    const { payload } = await jwtVerify(token, key, {
+      issuer: `${env.SUPABASE_URL}/auth/v1`,
+      audience: "authenticated",
+    });
+    if (payload.role !== "authenticated" || typeof payload.sub !== "string") return null;
+    return payload.sub;
+  } catch {
+    return null;
+  }
 }
 
 async function isAdmin(userId: string, env: Env): Promise<boolean> {
@@ -118,40 +160,65 @@ async function isAdmin(userId: string, env: Env): Promise<boolean> {
   return !!data;
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === "OPTIONS") {
-      return new Response("ok", { headers: corsHeaders });
+const app = new Hono<{ Bindings: Env }>();
+
+app.use(
+  "/api/*",
+  cors({
+    origin: (origin, c) => {
+      const allowedOrigins = getAllowedOrigins(c.env);
+      if (origin && allowedOrigins.includes(origin)) return origin;
+      return c.env.BETTER_AUTH_URL;
+    },
+    allowHeaders: ["Authorization", "X-Client-Info", "Apikey", "Content-Type"],
+    allowMethods: ["POST", "GET", "OPTIONS"],
+    exposeHeaders: ["Content-Disposition", "Content-Length", "set-auth-jwt"],
+    credentials: true,
+  }),
+);
+
+app.on(["GET", "POST"], "/api/auth/**", async (c) => {
+  const connectionString = c.env.HYPERDRIVE
+    ? c.env.HYPERDRIVE.connectionString
+    : c.env.DATABASE_URL;
+
+  const pool = new Pool({
+    connectionString,
+    options: "-c search_path=better_auth",
+    max: 1,
+    connectionTimeoutMillis: 10000,
+  });
+
+  try {
+    const response = await createAuth(c.env, pool).handler(c.req.raw);
+
+    if (!response) return c.notFound();
+
+    const corsHeaders = getCorsHeaders(c.req.raw, c.env);
+    const headers = new Headers(response.headers);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      headers.set(key, value);
     }
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  } finally {
+    c.executionCtx.waitUntil(pool.end().catch(() => {}));
+  }
+});
+app.post("/api/evaluations/upload", async (c) => handleEvaluationUpload(c.req.raw, c.env));
+app.get("/api/evaluations/:id/file", async (c) =>
+  handleEvaluationFileById(c.req.raw, c.env, Number(c.req.param("id"))),
+);
+app.post("/api/evaluations/moderate", async (c) => handleEvaluationModerate(c.req.raw, c.env));
+app.post("/api/professor-reviews", async (c) => handleSubmitProfessorReview(c.req.raw, c.env));
 
-    const url = new URL(request.url);
-    const path = url.pathname;
+app.notFound((c) => badRequest("Not found", c.req.raw, c.env));
+app.onError((error, c) => badRequest(error.message, c.req.raw, c.env));
 
-    try {
-      if (path === "/evaluations/upload" && request.method === "POST") {
-        return await handleEvaluationUpload(request, env);
-      }
-
-      const fileMatch = path.match(/^\/evaluations\/(\d+)\/file$/);
-      if (fileMatch && request.method === "GET") {
-        return await handleEvaluationFileById(request, env, parseInt(fileMatch[1], 10));
-      }
-
-      if (path === "/evaluations/moderate" && request.method === "POST") {
-        return await handleEvaluationModerate(request, env);
-      }
-
-      if (path === "/professor-reviews" && request.method === "POST") {
-        return await handleSubmitProfessorReview(request, env);
-      }
-
-      return badRequest("Not found");
-    } catch (error) {
-      // console.error("Worker error:", error);
-      return badRequest(error instanceof Error ? error.message : "Internal error");
-    }
-  },
-};
+export default app;
 
 async function handleEvaluationUpload(request: Request, env: Env): Promise<Response> {
   const formData = await request.formData();
@@ -174,25 +241,25 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
   const turnstileToken = formData.get("turnstileToken");
 
   if (typeof turnstileToken !== "string" || turnstileToken.trim() === "") {
-    return badRequest("Se requiere completar la verificacion humana");
+    return badRequest("Se requiere completar la verificacion humana", request, env);
   }
 
   if (!env.TURNSTILE_SECRET_KEY) {
-    return badRequest("Turnstile no esta configurado en el servidor");
+    return badRequest("Turnstile no esta configurado en el servidor", request, env);
   }
 
   const remoteIp = request.headers.get("CF-Connecting-IP");
   const isHuman = await verifyTurnstileToken(turnstileToken, env, remoteIp);
   if (!isHuman) {
-    return badRequest("No se pudo verificar el captcha");
+    return badRequest("No se pudo verificar el captcha", request, env);
   }
 
   if (!evaluationFile || evaluationFile.type !== "application/pdf") {
-    return badRequest("Se requiere un archivo PDF valido");
+    return badRequest("Se requiere un archivo PDF valido", request, env);
   }
 
   if (evaluationFile.size > 10 * 1024 * 1024) {
-    return badRequest("El archivo excede el limite de 10 MB");
+    return badRequest("El archivo excede el limite de 10 MB", request, env);
   }
 
   const fileKey = `evaluations/${courseId}/${crypto.randomUUID()}.pdf`;
@@ -203,10 +270,10 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
   let answersKey: string | null = null;
   if (hasSeparateAnswers && answersFile) {
     if (answersFile.type !== "application/pdf") {
-      return badRequest("El archivo de respuestas debe ser PDF");
+      return badRequest("El archivo de respuestas debe ser PDF", request, env);
     }
     if (answersFile.size > 10 * 1024 * 1024) {
-      return badRequest("El archivo de respuestas excede el limite de 10 MB");
+      return badRequest("El archivo de respuestas excede el limite de 10 MB", request, env);
     }
     answersKey = `evaluations/${courseId}/${crypto.randomUUID()}_answers.pdf`;
     await env.EVALUATIONS_BUCKET.put(answersKey, answersFile.stream(), {
@@ -243,7 +310,7 @@ async function handleEvaluationUpload(request: Request, env: Env): Promise<Respo
     throw dbError;
   }
 
-  return ok({ success: true, message: "Evaluacion subida correctamente" });
+  return ok({ success: true, message: "Evaluacion subida correctamente" }, request, env);
 }
 
 function formatFileName(
@@ -279,23 +346,23 @@ async function handleEvaluationFileById(
     .eq("id", evaluationId)
     .single();
 
-  if (error || !evaluation) return badRequest("Evaluacion no encontrada");
+  if (error || !evaluation) return badRequest("Evaluacion no encontrada", request, env);
 
   if (evaluation.status !== "approved") {
     const userId = await verifyAuth(request, env);
     if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: corsHeaders,
+        headers: getCorsHeaders(request, env),
       });
     }
 
     const admin = await isAdmin(userId, env);
-    if (!admin) return badRequest("No tienes acceso a esta evaluacion");
+    if (!admin) return badRequest("No tienes acceso a esta evaluacion", request, env);
   }
 
   const object = await env.EVALUATIONS_BUCKET.get(evaluation.file_key);
-  if (!object) return badRequest("Archivo no encontrado");
+  if (!object) return badRequest("Archivo no encontrado", request, env);
 
   const courseCode = (evaluation.course as { code: string } | null)?.code ?? null;
   const fileName = formatFileName(
@@ -308,7 +375,7 @@ async function handleEvaluationFileById(
   return new Response(object.body, {
     status: 200,
     headers: {
-      ...corsHeaders,
+      ...getCorsHeaders(request, env),
       "Content-Type": "application/pdf",
       "Content-Length": String(object.size),
       "Content-Disposition": `inline; filename="${fileName}"`,
@@ -322,7 +389,7 @@ async function handleEvaluationModerate(request: Request, env: Env): Promise<Res
   if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
-      headers: corsHeaders,
+      headers: getCorsHeaders(request, env),
     });
   }
 
@@ -330,7 +397,7 @@ async function handleEvaluationModerate(request: Request, env: Env): Promise<Res
   if (!admin) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
-      headers: corsHeaders,
+      headers: getCorsHeaders(request, env),
     });
   }
 
@@ -352,20 +419,20 @@ async function handleEvaluationModerate(request: Request, env: Env): Promise<Res
     .eq("id", body.evaluationId);
 
   if (error) throw error;
-  return ok({ success: true });
+  return ok({ success: true }, request, env);
 }
 
 async function handleSubmitProfessorReview(request: Request, env: Env): Promise<Response> {
   const body = await request.json();
   const parsed = professorReviewSchema.safeParse(body);
   if (!parsed.success) {
-    return badRequest("Invalid review payload");
+    return badRequest("Invalid review payload", request, env);
   }
 
   if (!env.TURNSTILE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: "Missing Turnstile secret configuration" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request, env), "Content-Type": "application/json" },
     });
   }
 
@@ -390,7 +457,7 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
   if (!turnstileVerification.ok) {
     return new Response(JSON.stringify({ error: "Could not verify anti-spam token" }), {
       status: 502,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request, env), "Content-Type": "application/json" },
     });
   }
 
@@ -399,7 +466,7 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
     "error-codes"?: string[];
   };
   if (!turnstileJson.success) {
-    return badRequest("Invalid anti-spam token");
+    return badRequest("Invalid anti-spam token", request, env);
   }
 
   const supabase = getSupabase(env);
@@ -413,12 +480,12 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
   if (courseError) {
     return new Response(JSON.stringify({ error: courseError.message }), {
       status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request, env), "Content-Type": "application/json" },
     });
   }
 
   if (!course) {
-    return badRequest("Course code does not exist");
+    return badRequest("Course code does not exist", request, env);
   }
 
   const { data: professorExists, error: professorError } = await supabase
@@ -430,16 +497,16 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
   if (professorError) {
     return new Response(JSON.stringify({ error: professorError.message }), {
       status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request, env), "Content-Type": "application/json" },
     });
   }
 
   if (!professorExists) {
-    return badRequest("Professor does not exist");
+    return badRequest("Professor does not exist", request, env);
   }
 
   if (!isRealProfessorName(professorExists.full_name)) {
-    return badRequest("Professor is not eligible for reviews");
+    return badRequest("Professor is not eligible for reviews", request, env);
   }
 
   if (parsed.data.academicTermId !== null && parsed.data.academicTermId !== undefined) {
@@ -454,12 +521,12 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
     if (termMatchError) {
       return new Response(JSON.stringify({ error: termMatchError.message }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...getCorsHeaders(request, env), "Content-Type": "application/json" },
       });
     }
 
     if (!termMatch) {
-      return badRequest("Professor has no offering records for that academic term");
+      return badRequest("Professor has no offering records for that academic term", request, env);
     }
   }
 
@@ -488,9 +555,9 @@ async function handleSubmitProfessorReview(request: Request, env: Env): Promise<
   if (insertError) {
     return new Response(JSON.stringify({ error: insertError.message }), {
       status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...getCorsHeaders(request, env), "Content-Type": "application/json" },
     });
   }
 
-  return ok({ success: true, review: inserted });
+  return ok({ success: true, review: inserted }, request, env);
 }
