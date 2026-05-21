@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/combobox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { authClient } from "@/lib/auth/client";
 import {
   useAuthUser,
   useUniversities,
@@ -251,13 +252,7 @@ function ProfilePage() {
 
     setIsSavingIdentity(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          ...authUser.user_metadata,
-          full_name: nameDraft,
-        },
-      });
+      const { error } = await authClient.updateUser({ name: nameDraft });
       if (error) throw error;
 
       await queryClient.invalidateQueries({ queryKey: ["authUser"] });

@@ -5,8 +5,8 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { signIn } from "@/lib/auth/client";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 const RESEND_SECONDS = 30;
 const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
@@ -73,12 +73,9 @@ export function AuthMagicLinkSentPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await signIn.magicLink({
       email: trimmedEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/signin`,
-      },
+      callbackURL: `${window.location.origin}/auth/signin`,
     });
 
     if (error) {

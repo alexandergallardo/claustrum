@@ -1,11 +1,11 @@
-import type { User } from "@supabase/supabase-js";
-
 import { createContext, use, useMemo, type ReactNode } from "react";
 
 import { useAuthUser } from "@/lib/hooks/use-queries";
 
+export type AppAuthUser = NonNullable<ReturnType<typeof useAuthUser>["data"]>;
+
 type AppAuthContextValue = {
-  authUser: User | null;
+  authUser: AppAuthUser | null;
   isAuthLoading: boolean;
 };
 

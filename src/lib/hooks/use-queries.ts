@@ -19,6 +19,7 @@ import type {
 } from "@/lib/types";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { getSession } from "@/lib/auth/client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
 export function useUniversities() {
@@ -117,13 +118,24 @@ export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["authUser"],
     queryFn: async () => {
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb.auth.getUser();
-      if (error) return null;
-      return data.user;
+      const { data } = await getSession();
+      if (!data?.user) return null;
+      const userMetadata =
+        "userMetadata" in data.user && typeof data.user.userMetadata === "object"
+          ? data.user.userMetadata
+          : null;
+      return {
+        ...data.user,
+        user_metadata: {
+          ...userMetadata,
+          full_name: data.user.name,
+          avatar_url: data.user.image ?? undefined,
+        },
+      };
     },
     enabled,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
   });
 }
 

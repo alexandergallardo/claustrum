@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { getSession, signIn, signUp } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -434,12 +434,9 @@ function GoogleOAuthButton({ mode = "signin" }: { mode?: "signin" | "signup" }) 
 
   const onGoogleSignIn = async () => {
     setPending(true);
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await signIn.social({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/${mode}`,
-      },
+      callbackURL: `${window.location.origin}/auth/${mode}`,
     });
 
     if (error) {
@@ -482,11 +479,7 @@ async function invalidateAuthFlowQueries(
   }
 }
 
-async function getPostSignInRedirect(supabase: ReturnType<typeof getSupabaseBrowserClient>) {
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal2") {
-    return "/auth/2fa" as const;
-  }
+async function getPostSignInRedirect() {
   return "/overview" as const;
 }
 
@@ -506,12 +499,9 @@ function MagicLinkButton({ email = "" }: { email?: string }) {
     }
 
     setPending(true);
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await signIn.magicLink({
       email: trimmedEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/signin`,
-      },
+      callbackURL: `${window.location.origin}/auth/signin`,
     });
 
     if (error) {
@@ -586,15 +576,11 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-
     const bootstrapSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: session } = await getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-        void navigate({ to: await getPostSignInRedirect(supabase), replace: true });
+        void navigate({ to: await getPostSignInRedirect(), replace: true });
       }
     };
 
@@ -609,8 +595,7 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
     if (!email.trim() || !password) return;
     setPending(true);
 
-    const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await signIn.email({
       email: email.trim(),
       password,
     });
@@ -621,11 +606,14 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    await invalidateAuthFlowQueries(queryClient, user?.id);
-    void navigate({ to: await getPostSignInRedirect(supabase), replace: true });
+    if (data && "twoFactorRedirect" in data && data.twoFactorRedirect) {
+      void navigate({ to: "/auth/2fa", replace: true });
+      return;
+    }
+
+    const { data: session } = await getSession();
+    await invalidateAuthFlowQueries(queryClient, session?.user.id);
+    void navigate({ to: await getPostSignInRedirect(), replace: true });
     setPending(false);
   };
 
@@ -751,12 +739,8 @@ function SignUpForm() {
   );
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-
     const bootstrapSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: session } = await getSession();
       if (session) {
         await queryClient.invalidateQueries({ queryKey: ["authUser"] });
         void navigate({ to: "/overview", replace: true });
@@ -819,14 +803,11 @@ function SignUpForm() {
     if (!validateFields()) return;
     setPending(true);
 
-    const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await signUp.email({
       email,
       password,
-      options: {
-        data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/auth/verify-email`,
-      },
+      name,
+      callbackURL: `${window.location.origin}/auth/verify-email`,
     });
 
     if (error) {
@@ -835,13 +816,9 @@ function SignUpForm() {
       return;
     }
 
-    if (data.session) {
-      await invalidateAuthFlowQueries(queryClient, data.session.user.id);
-      void navigate({ to: "/overview", replace: true });
-    } else {
-      window.sessionStorage.setItem(VERIFY_EMAIL_KEY, email.trim());
-      void navigate({ to: "/auth/verify-email", replace: true });
-    }
+    if (data?.user.id) await invalidateAuthFlowQueries(queryClient, data.user.id);
+    window.sessionStorage.setItem(VERIFY_EMAIL_KEY, email.trim());
+    void navigate({ to: "/auth/verify-email", replace: true });
     setPending(false);
   };
 

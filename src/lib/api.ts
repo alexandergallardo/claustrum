@@ -8,6 +8,7 @@ import type {
   UserProfileContextRow,
 } from "@/lib/types";
 
+import { getSession } from "@/lib/auth/client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export interface UserStudyPlanContext {
@@ -25,12 +26,8 @@ export interface UserStudyPlanContext {
 const supabase = getSupabaseBrowserClient();
 
 export async function getCurrentUser() {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  if (error) throw error;
-  return user;
+  const { data } = await getSession();
+  return data?.user ?? null;
 }
 
 export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {

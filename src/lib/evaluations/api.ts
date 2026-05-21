@@ -6,6 +6,7 @@ import type {
 } from "@/lib/evaluations/types";
 
 import { getApiBaseUrl } from "@/lib/env/public";
+import { authClient } from "@/lib/auth/client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 async function sha256File(file: File): Promise<string> {
@@ -107,9 +108,8 @@ export async function getEvaluationDocument(
     throw new Error("API Worker URL no configurado");
   }
 
-  const supabase = getSupabaseBrowserClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
+  const { data: tokenData } = await authClient.token();
+  const accessToken = tokenData?.token;
 
   const headers = new Headers();
   if (accessToken) {
@@ -147,9 +147,8 @@ export async function moderateEvaluation(
     throw new Error("API Worker URL no configurado");
   }
 
-  const supabase = getSupabaseBrowserClient();
-  const { data: sessionData } = await supabase.auth.getSession();
-  const accessToken = sessionData.session?.access_token;
+  const { data: tokenData } = await authClient.token();
+  const accessToken = tokenData?.token;
   if (!accessToken) {
     throw new Error("Debes iniciar sesión para moderar");
   }

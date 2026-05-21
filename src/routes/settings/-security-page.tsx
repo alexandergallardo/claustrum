@@ -16,8 +16,8 @@ import { SettingsPage, SettingsSection } from "@/components/settings/settings-se
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { authClient, signOut } from "@/lib/auth/client";
 import { useAuthUser } from "@/lib/hooks/use-queries";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
 const passwordRequirements = [
@@ -111,9 +111,8 @@ export function SecurityPage() {
   const [isDisablingMfa, setIsDisablingMfa] = useState(false);
   const [verifiedTotpFactorId, setVerifiedTotpFactorId] = useState<string | null>(null);
   const [totpEnrollment, setTotpEnrollment] = useState<{
-    id: string;
     qrCode: string;
-    secret: string;
+    secret: string | null;
   } | null>(null);
   const [totpCode, setTotpCode] = useState("");
   const [isSigningOutGlobally, setIsSigningOutGlobally] = useState(false);
@@ -149,6 +148,8 @@ export function SecurityPage() {
   }
 
   async function handlePasswordReset() {
+    if (!authUser) return;
+
     if (newPassword !== confirmPassword) {
       toast.error("Las contraseñas no coinciden");
       return;
@@ -161,15 +162,13 @@ export function SecurityPage() {
 
     setIsSendingPasswordReset(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      const { error } = await authClient.requestPasswordReset({
+        email: authUser.email,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
-
       if (error) throw error;
 
-      toast.success("Contraseña actualizada correctamente");
+      toast.success("Te enviamos un enlace para confirmar el cambio de contraseña");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
@@ -182,12 +181,9 @@ export function SecurityPage() {
   async function loadMfaFactors() {
     setIsLoadingMfa(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase.auth.mfa.listFactors();
+      const { data, error } = await authClient.getSession();
       if (error) throw error;
-
-      const verifiedFactor = data.totp.find((factor) => factor.status === "verified") ?? null;
-      setVerifiedTotpFactorId(verifiedFactor?.id ?? null);
+      setVerifiedTotpFactorId(data?.user.twoFactorEnabled ? data.user.id : null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al cargar 2FA");
     } finally {
@@ -199,32 +195,12 @@ export function SecurityPage() {
     setIsEnrollingMfa(true);
     setTotpCode("");
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
-      if (factorsError) throw factorsError;
-
-      const pendingFactors = factors.totp.filter(
-        (factor) => (factor.status as string) !== "verified",
-      );
-      await Promise.all(
-        pendingFactors.map(async (pendingFactor) => {
-          const { error: unenrollError } = await supabase.auth.mfa.unenroll({
-            factorId: pendingFactor.id,
-          });
-          if (unenrollError) throw unenrollError;
-        }),
-      );
-
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: "totp",
-        friendlyName: `Claustrum ${Date.now()}`,
-      });
+      const { data, error } = await authClient.twoFactor.enable({ issuer: "Claustrum" });
       if (error) throw error;
 
       setTotpEnrollment({
-        id: data.id,
-        qrCode: data.totp.qr_code,
-        secret: data.totp.secret,
+        qrCode: data.totpURI,
+        secret: null,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al iniciar 2FA");
@@ -234,23 +210,14 @@ export function SecurityPage() {
   }
 
   async function handleCancelMfaEnrollment() {
-    const pendingFactorId = totpEnrollment?.id;
     setTotpEnrollment(null);
     setTotpCode("");
-    if (!pendingFactorId) return;
-
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.mfa.unenroll({ factorId: pendingFactorId });
-      if (error) throw error;
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al cancelar 2FA");
-    }
   }
 
   async function handleCopyTotpSecret() {
-    if (!totpEnrollment?.secret) return;
-    await navigator.clipboard.writeText(totpEnrollment.secret);
+    const value = totpEnrollment?.secret ?? totpEnrollment?.qrCode;
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
     toast.success("Clave copiada");
   }
 
@@ -259,10 +226,9 @@ export function SecurityPage() {
 
     setIsVerifyingMfa(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.mfa.challengeAndVerify({
-        factorId: totpEnrollment.id,
+      const { error } = await authClient.twoFactor.verifyTotp({
         code: totpCode,
+        trustDevice: true,
       });
       if (error) throw error;
 
@@ -282,8 +248,7 @@ export function SecurityPage() {
 
     setIsDisablingMfa(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.mfa.unenroll({ factorId: verifiedTotpFactorId });
+      const { error } = await authClient.twoFactor.disable({});
       if (error) throw error;
 
       toast.success("Autenticación de dos factores desactivada");
@@ -301,9 +266,7 @@ export function SecurityPage() {
   async function handleGlobalSignOut() {
     setIsSigningOutGlobally(true);
     try {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signOut({ scope: "global" });
-      if (error) throw error;
+      await signOut();
 
       queryClient.clear();
       void navigate({ to: "/auth/signin", replace: true });
@@ -425,11 +388,9 @@ export function SecurityPage() {
                   </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-[176px_minmax(0,1fr)] sm:items-start">
-                  <img
-                    src={totpEnrollment.qrCode}
-                    alt="Código QR para configurar 2FA"
-                    className="size-44 rounded-md bg-white p-2"
-                  />
+                  <div className="bg-background text-muted-foreground flex size-44 items-center justify-center rounded-md border p-3 text-center text-xs">
+                    Copia la clave manual en tu app autenticadora.
+                  </div>
                   <div className="space-y-2">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Clave manual</p>
@@ -439,7 +400,7 @@ export function SecurityPage() {
                     </div>
                     <div className="flex items-start gap-2">
                       <code className="bg-muted text-muted-foreground min-w-0 flex-1 rounded-md px-2 py-1.5 text-xs break-all">
-                        {totpEnrollment.secret}
+                        {totpEnrollment.secret ?? totpEnrollment.qrCode}
                       </code>
                       <button
                         type="button"
