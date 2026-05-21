@@ -1,5 +1,8 @@
+packages:
+  - "workers/*"
+
 allowBuilds:
-  '@prisma/client': true
+  "@prisma/client": true
   better-sqlite3: true
   esbuild: true
   sharp: true
@@ -10,12 +13,12 @@ auditConfig:
   ignoreGhsas:
     - GHSA-rmmr-r34h-pfm5
 minimumReleaseAgeExclude:
-  - '@supabase/cli-darwin-arm64@2.101.0'
-  - '@supabase/cli-darwin-x64@2.101.0'
-  - '@supabase/cli-linux-arm64-musl@2.101.0'
-  - '@supabase/cli-linux-arm64@2.101.0'
-  - '@supabase/cli-linux-x64-musl@2.101.0'
-  - '@supabase/cli-linux-x64@2.101.0'
-  - '@supabase/cli-windows-arm64@2.101.0'
-  - '@supabase/cli-windows-x64@2.101.0'
+  - "@supabase/cli-darwin-arm64@2.101.0"
+  - "@supabase/cli-darwin-x64@2.101.0"
+  - "@supabase/cli-linux-arm64-musl@2.101.0"
+  - "@supabase/cli-linux-arm64@2.101.0"
+  - "@supabase/cli-linux-x64-musl@2.101.0"
+  - "@supabase/cli-linux-x64@2.101.0"
+  - "@supabase/cli-windows-arm64@2.101.0"
+  - "@supabase/cli-windows-x64@2.101.0"
   - supabase@2.101.0
