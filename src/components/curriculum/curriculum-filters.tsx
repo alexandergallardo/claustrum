@@ -184,7 +184,7 @@ function FilterCombobox({
             render={
               <Button
                 variant="outline"
-                className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[280px] sm:min-w-[160px]"
+                className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
               />
             }
           >
