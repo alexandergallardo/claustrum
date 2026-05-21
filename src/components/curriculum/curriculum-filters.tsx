@@ -278,7 +278,7 @@ export function CurriculumFilters({
         isVisible={shouldShowUniversityFilter}
       />
 
-      <FilterSelect
+      <FilterCombobox
         value={selectedCampusId?.toString() || ""}
         placeholder="Sede"
         items={campuses}

@@ -26,13 +26,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -67,7 +60,10 @@ interface EvaluationUploadDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const EVALUATION_TYPES = Object.entries(EVALUATION_TYPE_LABELS) as [EvaluationType, string][];
+const EVALUATION_TYPES = (Object.entries(EVALUATION_TYPE_LABELS) as [EvaluationType, string][]).map(
+  ([value, label]) => ({ value, label }),
+);
+const DEFAULT_EVALUATION_TYPE = EVALUATION_TYPES[0].value;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -96,10 +92,11 @@ export function EvaluationUploadDialog({
   const termTriggerRef = useRef<HTMLButtonElement | null>(null);
   const professorTriggerRef = useRef<HTMLButtonElement | null>(null);
   const courseTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const typeTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const [evaluationFile, setEvaluationFile] = useState<File | null>(null);
   const [answersFile, setAnswersFile] = useState<File | null>(null);
-  const [evaluationType, setEvaluationType] = useState<EvaluationType>("otro");
+  const [evaluationType, setEvaluationType] = useState<EvaluationType>(DEFAULT_EVALUATION_TYPE);
   const [evaluationNumberInput, setEvaluationNumberInput] = useState("");
   const [customName, setCustomName] = useState("");
   const [academicTermId, setAcademicTermId] = useState<string>("");
@@ -159,10 +156,13 @@ export function EvaluationUploadDialog({
 
   const showNumberInput = EVALUATION_TYPES_WITH_NUMBER.includes(evaluationType);
   const showCustomNameInput = evaluationType === "otro";
+  const selectedEvaluationType =
+    EVALUATION_TYPES.find((option) => option.value === evaluationType) ?? EVALUATION_TYPES[0];
 
   const canSubmit = useMemo(() => {
     if (!evaluationFile || !evaluationType || uploadMutation.isPending) return false;
     if (!effectiveCourseId) return false;
+    if (showNumberInput && evaluationNumberInput.trim() === "") return false;
     if (showCustomNameInput && customName.trim() === "") return false;
     if (!turnstileSiteKey || !turnstileToken) return false;
     return true;
@@ -171,6 +171,8 @@ export function EvaluationUploadDialog({
     effectiveCourseId,
     evaluationType,
     uploadMutation.isPending,
+    showNumberInput,
+    evaluationNumberInput,
     showCustomNameInput,
     customName,
     turnstileSiteKey,
@@ -180,7 +182,7 @@ export function EvaluationUploadDialog({
   const resetForm = useCallback(() => {
     setEvaluationFile(null);
     setAnswersFile(null);
-    setEvaluationType("otro");
+    setEvaluationType(DEFAULT_EVALUATION_TYPE);
     setEvaluationNumberInput("");
     setCustomName("");
     setAcademicTermId("");
@@ -275,8 +277,6 @@ export function EvaluationUploadDialog({
     try {
       await uploadMutation.mutateAsync({
         courseId: effectiveCourseId,
-        visibleCourseId: courseId,
-        studyPlanId,
         academicTermId: parsedTermId,
         professorId: parsedProfessorId,
         evaluationType,
@@ -378,75 +378,6 @@ export function EvaluationUploadDialog({
           className="hidden"
           onChange={(e) => handleFileInput(e, "evaluation")}
         />
-      </div>
-
-      {/* Type + Number / Custom name */}
-      <div className="space-y-2">
-        <Label htmlFor="evaluation-type">Tipo de evaluación</Label>
-        <div className="flex gap-3">
-          <Select
-            value={evaluationType}
-            onValueChange={(v) => {
-              setEvaluationType(v as EvaluationType);
-              setEvaluationNumberInput("");
-              setCustomName("");
-            }}
-          >
-            <SelectTrigger id="evaluation-type" className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {EVALUATION_TYPES.map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {showNumberInput && (
-            <div className="flex flex-1 items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => handleEvaluationNumberStep(-1)}
-                aria-label="Disminuir número"
-              >
-                <Minus className="size-4" />
-              </Button>
-              <Input
-                className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
-                type="text"
-                inputMode="numeric"
-                value={evaluationNumberInput}
-                onChange={(event) => handleEvaluationNumberChange(event.target.value)}
-                placeholder="Número de evaluación"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => handleEvaluationNumberStep(1)}
-                aria-label="Aumentar número"
-              >
-                <Plus className="size-4" />
-              </Button>
-            </div>
-          )}
-
-          {showCustomNameInput && (
-            <div className="flex flex-1 items-center gap-2">
-              <Input
-                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
-                value={customName}
-                onChange={(event) => setCustomName(event.target.value)}
-                placeholder="Nombre de la evaluación"
-                maxLength={100}
-              />
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="space-y-2">
@@ -596,6 +527,93 @@ export function EvaluationUploadDialog({
               </ComboboxList>
             </ComboboxContent>
           </Combobox>
+        </div>
+      </div>
+
+      {/* Type + Number / Custom name */}
+      <div className="space-y-2">
+        <Label htmlFor="evaluation-type">Tipo de evaluación</Label>
+        <div className="flex gap-3">
+          <Combobox
+            items={EVALUATION_TYPES}
+            value={selectedEvaluationType}
+            onValueChange={(option) => {
+              if (!option) return;
+              setEvaluationType(option.value);
+              setEvaluationNumberInput("");
+              setCustomName("");
+            }}
+            itemToStringValue={(option) => option.label}
+          >
+            <ComboboxTrigger
+              ref={typeTriggerRef}
+              render={
+                <Button id="evaluation-type" variant="outline" className="w-44 justify-between" />
+              }
+            >
+              <span className="block min-w-0 truncate text-left">
+                {selectedEvaluationType.label}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent
+              anchor={typeTriggerRef}
+              container={comboboxPortalContainerRef}
+              className="w-(--anchor-width) min-w-(--anchor-width)"
+            >
+              <ComboboxInput showTrigger={false} placeholder="Buscar tipo..." />
+              <ComboboxEmpty>No se encontraron tipos.</ComboboxEmpty>
+              <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {(option) => (
+                  <ComboboxItem key={option.value} value={option}>
+                    <span className="block min-w-0 flex-1 truncate">{option.label}</span>
+                  </ComboboxItem>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
+
+          {showNumberInput && (
+            <div className="flex flex-1 items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleEvaluationNumberStep(-1)}
+                aria-label="Disminuir número"
+              >
+                <Minus className="size-4" />
+              </Button>
+              <Input
+                className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
+                type="text"
+                inputMode="numeric"
+                value={evaluationNumberInput}
+                onChange={(event) => handleEvaluationNumberChange(event.target.value)}
+                placeholder="Número de evaluación"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => handleEvaluationNumberStep(1)}
+                aria-label="Aumentar número"
+              >
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          )}
+
+          {showCustomNameInput && (
+            <div className="flex flex-1 items-center gap-2">
+              <Input
+                className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap [&::placeholder]:overflow-hidden [&::placeholder]:text-ellipsis [&::placeholder]:whitespace-nowrap"
+                value={customName}
+                onChange={(event) => setCustomName(event.target.value)}
+                placeholder="Nombre de la evaluación"
+                maxLength={100}
+              />
+            </div>
+          )}
         </div>
       </div>
 

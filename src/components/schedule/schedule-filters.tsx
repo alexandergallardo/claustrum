@@ -20,14 +20,6 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -163,64 +155,6 @@ function FilterCombobox({
   );
 }
 
-function FilterSelect({
-  value,
-  placeholder,
-  items,
-  onChange,
-  isLoading,
-  isVisible,
-  showCode = false,
-}: {
-  value: string;
-  placeholder: string;
-  items: { id: number; code?: string; name: string }[];
-  onChange: (val: string) => void;
-  isLoading: boolean;
-  isVisible: boolean;
-  showCode?: boolean;
-}) {
-  if (!isVisible) return null;
-
-  const hasData = items.length > 0;
-  const showSkeleton = isLoading && !hasData;
-
-  return (
-    <div
-      className={`min-w-0 ${showSkeleton ? "animate-in fade-in-0 slide-in-from-bottom-2 duration-200" : ""}`}
-    >
-      {showSkeleton ? (
-        <FilterSkeleton />
-      ) : (
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger
-            size="sm"
-            className="w-full min-w-0 text-xs sm:max-w-[280px] sm:min-w-[160px]"
-          >
-            <SelectValue
-              placeholder={placeholder}
-              className="block max-w-full min-w-0 truncate text-left"
-            />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]" position="popper" align="start" sideOffset={4}>
-            <SelectGroup>
-              {items.map((item) => (
-                <SelectItem key={item.id} value={item.id.toString()}>
-                  <span className="block w-full min-w-0 truncate">
-                    {showCode && item.code
-                      ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
-                      : normalizeText(item.name)}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      )}
-    </div>
-  );
-}
-
 export function ScheduleFilters({
   universities,
   campuses,
@@ -299,7 +233,8 @@ export function ScheduleFilters({
         isVisible={shouldShowUniversityFilter}
       />
 
-      <FilterSelect
+      <FilterCombobox
+        label="Sede"
         value={selectedCampusId?.toString() || ""}
         placeholder="Sede"
         items={campuses}
