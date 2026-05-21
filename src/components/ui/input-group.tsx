@@ -57,12 +57,12 @@ function InputGroupAddon({
   className,
   align = "inline-start",
   ...props
-}: React.ComponentProps<"button"> & VariantProps<typeof inputGroupAddonVariants>) {
+}: React.ComponentProps<"span"> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
-    <button
-      type="button"
+    <span
       data-slot="input-group-addon"
       data-align={align}
+      role="presentation"
       className={cn(inputGroupAddonVariants({ align }), className)}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest("button")) {
