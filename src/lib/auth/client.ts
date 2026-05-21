@@ -1,7 +1,12 @@
 import { jwtClient, magicLinkClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
+import { getApiBaseUrl } from "@/lib/env/public";
+
+const authBaseUrl = getApiBaseUrl() ?? window.location.origin;
+
 export const authClient = createAuthClient({
+  baseURL: authBaseUrl,
   plugins: [
     magicLinkClient(),
     twoFactorClient({

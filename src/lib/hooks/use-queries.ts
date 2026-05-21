@@ -18,8 +18,8 @@ import type {
   CourseDetailRelatedCourse,
 } from "@/lib/types";
 
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getSession } from "@/lib/auth/client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
 export function useUniversities() {
@@ -135,7 +135,7 @@ export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
     },
     enabled,
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
+    refetchOnMount: "always",
   });
 }
 
