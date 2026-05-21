@@ -21,13 +21,8 @@ export function useUploadEvaluation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: UploadEvaluationPayload) => uploadEvaluation(payload),
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ["courseEvaluations", variables.courseId] });
-      if (variables.visibleCourseId && variables.visibleCourseId !== variables.courseId) {
-        void queryClient.invalidateQueries({
-          queryKey: ["courseEvaluations", variables.visibleCourseId],
-        });
-      }
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["courseEvaluations"] });
       void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
     },
   });

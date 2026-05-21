@@ -5,8 +5,8 @@ import type {
   UploadEvaluationPayload,
 } from "@/lib/evaluations/types";
 
-import { getApiBaseUrl } from "@/lib/env/public";
 import { authClient } from "@/lib/auth/client";
+import { getApiBaseUrl } from "@/lib/env/public";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 async function sha256File(file: File): Promise<string> {
@@ -61,12 +61,6 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
     formData.append("answersFile", payload.answersFile);
   }
   formData.append("courseId", String(payload.courseId));
-  if (payload.visibleCourseId) {
-    formData.append("visibleCourseId", String(payload.visibleCourseId));
-  }
-  if (payload.studyPlanId) {
-    formData.append("studyPlanId", String(payload.studyPlanId));
-  }
   if (payload.academicTermId) {
     formData.append("academicTermId", String(payload.academicTermId));
   }
@@ -142,28 +136,12 @@ export async function moderateEvaluation(
   status: "approved" | "rejected",
   note: string,
 ): Promise<void> {
-  const apiBaseUrl = getApiBaseUrl();
-  if (!apiBaseUrl) {
-    throw new Error("API Worker URL no configurado");
-  }
-
-  const { data: tokenData } = await authClient.token();
-  const accessToken = tokenData?.token;
-  if (!accessToken) {
-    throw new Error("Debes iniciar sesión para moderar");
-  }
-
-  const response = await fetch(`${apiBaseUrl}/evaluations/moderate`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ evaluationId, status, note: note.trim() || undefined }),
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase.rpc("moderate_evaluation", {
+    p_evaluation_id: evaluationId,
+    p_new_status: status,
+    p_moderation_note: note.trim() === "" ? null : note.trim(),
   });
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({ error: "Error desconocido" }));
-    throw new Error(body.error ?? `Error ${response.status}`);
-  }
+  if (error) throw error;
 }

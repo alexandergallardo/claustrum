@@ -111,8 +111,6 @@ export type EvaluationModerationRow = {
 
 export type UploadEvaluationPayload = {
   courseId: number;
-  visibleCourseId?: number | null;
-  studyPlanId?: number | null;
   academicTermId: number | null;
   professorId: number | null;
   evaluationType: EvaluationType;
