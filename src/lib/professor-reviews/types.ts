@@ -11,6 +11,8 @@ export type ReviewTag = (typeof REVIEW_TAG_OPTIONS)[number];
 
 export type ProfessorReviewStatus = "pending" | "approved" | "rejected";
 
+export type ProfessorReviewReaction = "like" | "dislike";
+
 export type ProfessorReviewStatsRow = {
   professor_id: string;
   professor_name: string;
@@ -42,6 +44,9 @@ export type ProfessorReviewPublicRow = {
   tags: string[];
   status: ProfessorReviewStatus;
   created_at: string;
+  like_count: number;
+  dislike_count: number;
+  my_reaction: ProfessorReviewReaction | null;
   total_count: number;
 };
 

@@ -3,6 +3,7 @@ import type {
   ProfessorReviewTermOption,
   ProfessorReviewModerationRow,
   ProfessorReviewPublicRow,
+  ProfessorReviewReaction,
   ProfessorReviewSummary,
   ProfessorReviewTagCount,
   ProfessorReviewStatsRow,
@@ -11,6 +12,7 @@ import type {
   SubmitProfessorReviewPayload,
 } from "@/lib/professor-reviews/types";
 
+import { authClient } from "@/lib/auth/client";
 import { getApiBaseUrl } from "@/lib/env/public";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
@@ -49,7 +51,12 @@ export async function getProfessorReviewsPublic(
   });
 
   if (error) throw error;
-  return (data ?? []) as ProfessorReviewPublicRow[];
+  return ((data ?? []) as ProfessorReviewPublicRow[]).map((row) => ({
+    ...row,
+    like_count: row.like_count ?? 0,
+    dislike_count: row.dislike_count ?? 0,
+    my_reaction: row.my_reaction ?? null,
+  }));
 }
 
 export async function getProfessorReviewSummary(
@@ -168,6 +175,36 @@ export async function submitProfessorReview(payload: SubmitProfessorReviewPayloa
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Error desconocido" }));
+    throw new Error(body.error ?? `Error ${response.status}`);
+  }
+}
+
+export async function setProfessorReviewReaction(
+  reviewId: number,
+  reaction: ProfessorReviewReaction | null,
+): Promise<void> {
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
+  }
+
+  const { data: tokenData } = await authClient.token();
+  const accessToken = tokenData?.token;
+  if (!accessToken) {
+    throw new Error("Debes iniciar sesión para reaccionar a una reseña");
+  }
+
+  const response = await fetch(`${apiBaseUrl}/professor-reviews/${reviewId}/reaction`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ reaction }),
   });
 
   if (!response.ok) {

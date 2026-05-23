@@ -1,6 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
+  ProfessorReviewPublicRow,
+  ProfessorReviewReaction,
   ProfessorReviewStatus,
   SearchProfessorReviewStatsParams,
   SubmitProfessorReviewPayload,
@@ -17,6 +19,7 @@ import {
   moderateProfessorReview,
   searchProfessorReviewCourses,
   searchProfessorReviewStats,
+  setProfessorReviewReaction,
   submitProfessorReview,
 } from "@/lib/professor-reviews/api";
 
@@ -73,6 +76,56 @@ export function useSubmitProfessorReview() {
     mutationFn: (payload: SubmitProfessorReviewPayload) => submitProfessorReview(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
+    },
+  });
+}
+
+export function useSetProfessorReviewReaction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (variables: { reviewId: number; reaction: ProfessorReviewReaction | null }) =>
+      setProfessorReviewReaction(variables.reviewId, variables.reaction),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ["professorReviewsPublic"] });
+
+      const previousRows = queryClient.getQueriesData<ProfessorReviewPublicRow[]>({
+        queryKey: ["professorReviewsPublic"],
+      });
+
+      queryClient.setQueriesData<ProfessorReviewPublicRow[]>(
+        { queryKey: ["professorReviewsPublic"] },
+        (currentRows) =>
+          currentRows?.map((row) => {
+            if (row.review_id !== variables.reviewId) return row;
+
+            const likeCount =
+              row.like_count -
+              (row.my_reaction === "like" ? 1 : 0) +
+              (variables.reaction === "like" ? 1 : 0);
+            const dislikeCount =
+              row.dislike_count -
+              (row.my_reaction === "dislike" ? 1 : 0) +
+              (variables.reaction === "dislike" ? 1 : 0);
+
+            return {
+              ...row,
+              like_count: Math.max(likeCount, 0),
+              dislike_count: Math.max(dislikeCount, 0),
+              my_reaction: variables.reaction,
+            };
+          }),
+      );
+
+      return { previousRows };
+    },
+    onError: (_error, _variables, context) => {
+      context?.previousRows.forEach(([queryKey, rows]) => {
+        queryClient.setQueryData(queryKey, rows);
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["professorReviewsPublic"] });
     },
   });
 }
