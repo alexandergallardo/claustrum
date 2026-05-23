@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Env } from "../types";
 
 import { fail, ok } from "../lib/http";
-import { verifyTurnstileToken } from "../lib/security";
+import { verifyAuth, verifyTurnstileToken } from "../lib/security";
 import { getSupabase } from "../lib/supabase";
 
 const REVIEW_TAGS = [
@@ -36,6 +36,10 @@ const professorReviewSchema = z.object({
   engagementLevel: z.number().int().min(1).max(5),
   tags: z.array(z.enum(REVIEW_TAGS)).max(6),
   turnstileToken: z.string().min(1),
+});
+
+const professorReviewReactionSchema = z.object({
+  reaction: z.enum(["like", "dislike"]).nullable(),
 });
 
 function isRealProfessorName(fullName: string): boolean {
@@ -148,6 +152,100 @@ professorReviewsRoutes.post("/", async (c) => {
   }
 
   return ok({ success: true, review: inserted }, request, c.env);
+});
+
+professorReviewsRoutes.post("/:reviewId/reaction", async (c) => {
+  const request = c.req.raw;
+  const userId = await verifyAuth(request, c.env);
+  if (!userId) {
+    return fail(401, "Debes iniciar sesión para reaccionar a una reseña", request, c.env);
+  }
+
+  const reviewId = c.req.param("reviewId");
+  if (!/^\d+$/.test(reviewId)) {
+    return fail(400, "Invalid review id", request, c.env);
+  }
+
+  const body = await request.json();
+  const parsed = professorReviewReactionSchema.safeParse(body);
+  if (!parsed.success) {
+    return fail(400, "Invalid reaction payload", request, c.env);
+  }
+
+  const supabase = getSupabase(c.env);
+
+  const { data: review, error: reviewError } = await supabase
+    .from("professor_review")
+    .select("id,status")
+    .eq("id", reviewId)
+    .eq("status", "approved")
+    .maybeSingle();
+
+  if (reviewError) {
+    return fail(400, reviewError.message, request, c.env);
+  }
+
+  if (!review) {
+    return fail(404, "Review not found", request, c.env);
+  }
+
+  if (parsed.data.reaction === null) {
+    const { error: deleteError } = await supabase
+      .from("professor_review_reaction")
+      .delete()
+      .eq("review_id", reviewId)
+      .eq("user_id", userId);
+
+    if (deleteError) {
+      return fail(400, deleteError.message, request, c.env);
+    }
+  } else {
+    const { error: upsertError } = await supabase.from("professor_review_reaction").upsert(
+      {
+        review_id: reviewId,
+        user_id: userId,
+        reaction: parsed.data.reaction,
+      },
+      { onConflict: "review_id,user_id" },
+    );
+
+    if (upsertError) {
+      return fail(400, upsertError.message, request, c.env);
+    }
+  }
+
+  const [{ count: likeCount, error: likeError }, { count: dislikeCount, error: dislikeError }] =
+    await Promise.all([
+      supabase
+        .from("professor_review_reaction")
+        .select("id", { count: "exact", head: true })
+        .eq("review_id", reviewId)
+        .eq("reaction", "like"),
+      supabase
+        .from("professor_review_reaction")
+        .select("id", { count: "exact", head: true })
+        .eq("review_id", reviewId)
+        .eq("reaction", "dislike"),
+    ]);
+
+  if (likeError) {
+    return fail(400, likeError.message, request, c.env);
+  }
+
+  if (dislikeError) {
+    return fail(400, dislikeError.message, request, c.env);
+  }
+
+  return ok(
+    {
+      success: true,
+      reaction: parsed.data.reaction,
+      likeCount: likeCount ?? 0,
+      dislikeCount: dislikeCount ?? 0,
+    },
+    request,
+    c.env,
+  );
 });
 
 export default professorReviewsRoutes;

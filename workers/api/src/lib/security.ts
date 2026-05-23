@@ -14,6 +14,7 @@ export async function verifyAuth(request: Request, env: Env): Promise<string | n
   try {
     const publicJwk = JSON.parse(env.SUPABASE_JWT_PRIVATE_JWK) as JWK & { d?: string };
     delete publicJwk.d;
+    delete publicJwk.key_ops;
     const key = await importJWK(publicJwk, "ES256");
     const { payload } = await jwtVerify(token, key, {
       issuer: `${env.SUPABASE_URL}/auth/v1`,
