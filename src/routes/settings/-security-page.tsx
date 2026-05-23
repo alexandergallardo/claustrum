@@ -1,3 +1,4 @@
+import { IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -5,17 +6,26 @@ import {
   CopyIcon,
   EyeIcon,
   EyeOffIcon,
-  ShieldIcon,
+  LinkIcon,
+  MailIcon,
   Loader2Icon,
+  LogOutIcon,
+  MonitorIcon,
+  ShieldIcon,
+  SmartphoneIcon,
+  TabletIcon,
+  GlobeIcon,
   XIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ReactQrCode from "react-qr-code";
 import { toast } from "sonner";
 
 import { SettingsPage, SettingsSection } from "@/components/settings/settings-section";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
+import { StatefulButton } from "@/components/ui/stateful-button";
 import { authClient, signOut } from "@/lib/auth/client";
 import { useAuthUser } from "@/lib/hooks/use-queries";
 import { cn } from "@/lib/utils";
@@ -30,6 +40,28 @@ const passwordRequirements = [
     text: "Al menos 1 carácter especial",
   },
 ];
+
+type ActiveSession = {
+  id: string;
+  token: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  expiresAt: string | Date;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+};
+
+type AuthAccount = {
+  providerId: string;
+};
+
+type AuthConnectionItem = {
+  key: "email" | "google" | "github";
+  label: string;
+  available: boolean;
+  linked: boolean;
+  description: string;
+};
 
 function getStrengthColor(score: number) {
   if (score === 0) return "bg-border";
@@ -46,6 +78,215 @@ function getStrengthText(score: number) {
   if (score <= 3) return "Contraseña media";
   if (score === 4) return "Contraseña fuerte";
   return "Contraseña muy fuerte";
+}
+
+function getSessionDeviceType(userAgent: string | null | undefined) {
+  if (!userAgent) return "unknown" as const;
+
+  const normalizedUserAgent = userAgent.toLowerCase();
+  if (normalizedUserAgent.includes("tablet") || normalizedUserAgent.includes("ipad")) {
+    return "tablet" as const;
+  }
+
+  if (
+    normalizedUserAgent.includes("mobile") ||
+    normalizedUserAgent.includes("android") ||
+    normalizedUserAgent.includes("iphone")
+  ) {
+    return "mobile" as const;
+  }
+
+  if (
+    normalizedUserAgent.includes("windows") ||
+    normalizedUserAgent.includes("macintosh") ||
+    normalizedUserAgent.includes("linux") ||
+    normalizedUserAgent.includes("cros")
+  ) {
+    return "desktop" as const;
+  }
+
+  return "unknown" as const;
+}
+
+function getDeviceName(userAgent: string | null | undefined) {
+  if (!userAgent) return "Dispositivo desconocido";
+
+  const ua = userAgent;
+
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/iPad/i.test(ua)) return "iPad";
+  if (/Macintosh/i.test(ua)) return "Mac";
+  if (/Windows NT/i.test(ua)) return "Windows PC";
+  if (/Android/i.test(ua)) return "Android";
+  if (/Linux/i.test(ua)) return "Linux";
+
+  return "Dispositivo desconocido";
+}
+
+function getBrowserLabel(userAgent: string | null | undefined) {
+  if (!userAgent) return "Navegador desconocido";
+
+  const patterns = [
+    { name: "Edge", regex: /Edg\/(\d+)/i },
+    { name: "Opera", regex: /OPR\/(\d+)/i },
+    { name: "Chrome", regex: /Chrome\/(\d+)/i },
+    { name: "Firefox", regex: /Firefox\/(\d+)/i },
+    { name: "Safari", regex: /Version\/(\d+).+Safari/i },
+  ];
+
+  for (const pattern of patterns) {
+    const match = userAgent.match(pattern.regex);
+    if (match) {
+      const majorVersion = match[1];
+      return `${pattern.name} ${majorVersion}`;
+    }
+  }
+
+  return "Navegador desconocido";
+}
+
+function getSessionMetaItems(session: ActiveSession) {
+  const items = [getBrowserLabel(session.userAgent)];
+
+  const ipAddress = session.ipAddress?.trim();
+  if (ipAddress) items.push(ipAddress);
+
+  return items;
+}
+
+function SessionDeviceIcon({ userAgent }: { userAgent: string | null | undefined }) {
+  const deviceType = getSessionDeviceType(userAgent);
+  if (deviceType === "mobile") return <SmartphoneIcon className="size-4" />;
+  if (deviceType === "tablet") return <TabletIcon className="size-4" />;
+  if (deviceType === "desktop") return <MonitorIcon className="size-4" />;
+  return <GlobeIcon className="size-4" />;
+}
+
+function getReadableErrorMessage(err: unknown, fallback: string) {
+  if (err instanceof Error && err.message.trim()) return err.message;
+  if (typeof err === "string" && err.trim()) return err;
+
+  if (typeof err === "object" && err !== null) {
+    if ("message" in err && typeof err.message === "string" && err.message.trim()) {
+      return err.message;
+    }
+
+    if (
+      "error" in err &&
+      typeof err.error === "object" &&
+      err.error !== null &&
+      "message" in err.error &&
+      typeof err.error.message === "string" &&
+      err.error.message.trim()
+    ) {
+      return err.error.message;
+    }
+  }
+
+  return fallback;
+}
+
+function toErrorWithCode(err: unknown, fallback: string) {
+  const message = getReadableErrorMessage(err, fallback);
+  const wrappedError = new Error(message) as Error & { code?: string };
+
+  if (typeof err === "object" && err !== null && "code" in err && typeof err.code === "string") {
+    wrappedError.code = err.code;
+    return wrappedError;
+  }
+
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "error" in err &&
+    typeof err.error === "object" &&
+    err.error !== null &&
+    "code" in err.error &&
+    typeof err.error.code === "string"
+  ) {
+    wrappedError.code = err.error.code;
+  }
+
+  return wrappedError;
+}
+
+function isUnauthorizedError(err: unknown) {
+  if (!(typeof err === "object" && err !== null)) return false;
+
+  if ("status" in err && err.status === 401) return true;
+  if ("code" in err && err.code === "UNAUTHORIZED") return true;
+
+  if (
+    "error" in err &&
+    typeof err.error === "object" &&
+    err.error !== null &&
+    (("status" in err.error && err.error.status === 401) ||
+      ("code" in err.error && err.error.code === "UNAUTHORIZED"))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function getRelativeLastUsedLabel(session: ActiveSession, isCurrentSession: boolean) {
+  if (isCurrentSession) return "Activa ahora";
+
+  const value = session.updatedAt ?? session.createdAt ?? null;
+  if (!value) return "Ultimo uso no disponible";
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "Ultimo uso no disponible";
+
+  const diffMs = date.getTime() - Date.now();
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+
+  if (Math.abs(diffMinutes) < 60) return rtf.format(diffMinutes, "minute");
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 24) return rtf.format(diffHours, "hour");
+
+  const diffDays = Math.round(diffHours / 24);
+  if (Math.abs(diffDays) < 30) return rtf.format(diffDays, "day");
+
+  const diffMonths = Math.round(diffDays / 30);
+  if (Math.abs(diffMonths) < 12) return rtf.format(diffMonths, "month");
+
+  const diffYears = Math.round(diffDays / 365);
+  return rtf.format(diffYears, "year");
+}
+
+function getTotpSecretFromUri(uri: string) {
+  try {
+    const parsedUri = new URL(uri);
+    const secret = parsedUri.searchParams.get("secret");
+    return secret?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function getSessionLastActivityTimestamp(session: ActiveSession) {
+  const value = session.updatedAt ?? session.createdAt;
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function sortSessionsByActivity(
+  sessions: ActiveSession[],
+  currentToken: string | null,
+): ActiveSession[] {
+  return [...sessions].sort((a, b) => {
+    const isCurrentA = currentToken !== null && a.token === currentToken;
+    const isCurrentB = currentToken !== null && b.token === currentToken;
+
+    if (isCurrentA && !isCurrentB) return -1;
+    if (!isCurrentA && isCurrentB) return 1;
+
+    return getSessionLastActivityTimestamp(b) - getSessionLastActivityTimestamp(a);
+  });
 }
 
 function PasswordStrengthIndicator({ password }: { password: string }) {
@@ -96,6 +337,9 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
 }
 
 export function SecurityPage() {
+  const QRCodeComponent =
+    (ReactQrCode as unknown as { default?: typeof ReactQrCode }).default ?? ReactQrCode;
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: authUser, isLoading } = useAuthUser();
@@ -106,22 +350,64 @@ export function SecurityPage() {
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
   const [isLoadingMfa, setIsLoadingMfa] = useState(false);
-  const [isEnrollingMfa, setIsEnrollingMfa] = useState(false);
-  const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
   const [isDisablingMfa, setIsDisablingMfa] = useState(false);
+  const [isMfaPasswordVerified, setIsMfaPasswordVerified] = useState(false);
+  const [mfaPassword, setMfaPassword] = useState("");
   const [verifiedTotpFactorId, setVerifiedTotpFactorId] = useState<string | null>(null);
   const [totpEnrollment, setTotpEnrollment] = useState<{
     qrCode: string;
     secret: string | null;
   } | null>(null);
   const [totpCode, setTotpCode] = useState("");
-  const [isSigningOutGlobally, setIsSigningOutGlobally] = useState(false);
+  const [isRevokingOtherSessions, setIsRevokingOtherSessions] = useState(false);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
+  const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(null);
+  const [revokingSessionToken, setRevokingSessionToken] = useState<string | null>(null);
+  const [hasCredentialAccount, setHasCredentialAccount] = useState(true);
+  const [linkedProviderIds, setLinkedProviderIds] = useState<Set<string>>(new Set());
+  const pendingTotpEnrollmentRef = useRef<{ qrCode: string; secret: string | null } | null>(null);
+  const pendingTotpActivationRef = useRef(false);
   const canSavePassword = newPassword.length >= 8 && newPassword === confirmPassword;
   const canVerifyMfaEnrollment = totpCode.length === 6 && !!totpEnrollment;
+  const canVerifyMfaPassword =
+    !isMfaPasswordVerified &&
+    !isLoadingMfa &&
+    !verifiedTotpFactorId &&
+    (!hasCredentialAccount || !!mfaPassword.trim());
+  const authConnections: AuthConnectionItem[] = [
+    {
+      key: "email",
+      label: "Correo",
+      available: true,
+      linked:
+        hasCredentialAccount ||
+        linkedProviderIds.has("credential") ||
+        linkedProviderIds.has("email-password") ||
+        linkedProviderIds.has("emailAndPassword"),
+      description: "Ingresa con correo y contraseña",
+    },
+    {
+      key: "google",
+      label: "Google",
+      available: true,
+      linked: linkedProviderIds.has("google"),
+      description: "Conecta tu cuenta de Google",
+    },
+    {
+      key: "github",
+      label: "GitHub",
+      available: false,
+      linked: linkedProviderIds.has("github"),
+      description: "Próximamente disponible",
+    },
+  ];
 
   useEffect(() => {
     if (!authUser) return;
     void loadMfaFactors();
+    void loadActiveSessions();
+    void loadAccountMethods();
   }, [authUser]);
 
   if (isLoading) {
@@ -191,27 +477,60 @@ export function SecurityPage() {
     }
   }
 
-  async function handleStartMfaEnrollment() {
-    setIsEnrollingMfa(true);
-    setTotpCode("");
+  async function loadAccountMethods() {
     try {
-      const { data, error } = await authClient.twoFactor.enable({ issuer: "Claustrum" });
-      if (error) throw error;
+      const client = authClient as unknown as {
+        listAccounts?: () => Promise<{ data: AuthAccount[] | null; error: unknown }>;
+        listUserAccounts?: () => Promise<{ data: AuthAccount[] | null; error: unknown }>;
+      };
 
-      setTotpEnrollment({
-        qrCode: data.totpURI,
-        secret: null,
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al iniciar 2FA");
-    } finally {
-      setIsEnrollingMfa(false);
+      const response = client.listAccounts
+        ? await client.listAccounts()
+        : client.listUserAccounts
+          ? await client.listUserAccounts()
+          : null;
+
+      if (!response) {
+        setHasCredentialAccount(true);
+        return;
+      }
+
+      if (response.error) throw response.error;
+
+      const hasCredential = (response.data ?? []).some((account) =>
+        ["credential", "email-password", "emailAndPassword"].includes(account.providerId),
+      );
+
+      setLinkedProviderIds(new Set((response.data ?? []).map((account) => account.providerId)));
+      setHasCredentialAccount(hasCredential);
+    } catch {
+      setLinkedProviderIds(new Set());
+      setHasCredentialAccount(true);
     }
+  }
+
+  async function handleVerifyMfaPassword() {
+    if (hasCredentialAccount && !mfaPassword.trim()) return;
+
+    const enablePayload = hasCredentialAccount
+      ? { issuer: "Claustrum", password: mfaPassword }
+      : { issuer: "Claustrum" };
+
+    const { data, error } = await authClient.twoFactor.enable(enablePayload);
+    if (error) throw toErrorWithCode(error, "No se pudo verificar la contraseña");
+
+    pendingTotpEnrollmentRef.current = {
+      qrCode: data.totpURI,
+      secret: getTotpSecretFromUri(data.totpURI),
+    };
   }
 
   async function handleCancelMfaEnrollment() {
     setTotpEnrollment(null);
+    pendingTotpEnrollmentRef.current = null;
+    pendingTotpActivationRef.current = false;
     setTotpCode("");
+    setIsMfaPasswordVerified(false);
   }
 
   async function handleCopyTotpSecret() {
@@ -224,23 +543,13 @@ export function SecurityPage() {
   async function handleVerifyMfaEnrollment() {
     if (!totpEnrollment || !canVerifyMfaEnrollment) return;
 
-    setIsVerifyingMfa(true);
-    try {
-      const { error } = await authClient.twoFactor.verifyTotp({
-        code: totpCode,
-        trustDevice: true,
-      });
-      if (error) throw error;
+    const { error } = await authClient.twoFactor.verifyTotp({
+      code: totpCode,
+      trustDevice: true,
+    });
+    if (error) throw toErrorWithCode(error, "Código inválido");
 
-      toast.success("Autenticación de dos factores activada");
-      setTotpEnrollment(null);
-      setTotpCode("");
-      await loadMfaFactors();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Código inválido");
-    } finally {
-      setIsVerifyingMfa(false);
-    }
+    pendingTotpActivationRef.current = true;
   }
 
   async function handleDisableMfa() {
@@ -248,31 +557,88 @@ export function SecurityPage() {
 
     setIsDisablingMfa(true);
     try {
-      const { error } = await authClient.twoFactor.disable({});
+      const disablePayload = hasCredentialAccount && mfaPassword ? { password: mfaPassword } : {};
+      const { error } = await authClient.twoFactor.disable(disablePayload);
       if (error) throw error;
 
       toast.success("Autenticación de dos factores desactivada");
       setVerifiedTotpFactorId(null);
       setTotpEnrollment(null);
       setTotpCode("");
+      setIsMfaPasswordVerified(false);
       await loadMfaFactors();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error al desactivar 2FA");
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        err.code === "INVALID_PASSWORD"
+      ) {
+        toast.error("Contraseña inválida");
+      } else {
+        toast.error(err instanceof Error ? err.message : "Error al desactivar 2FA");
+      }
     } finally {
       setIsDisablingMfa(false);
     }
   }
 
-  async function handleGlobalSignOut() {
-    setIsSigningOutGlobally(true);
+  async function handleRevokeOtherSessions() {
+    setIsRevokingOtherSessions(true);
     try {
-      await signOut();
+      const { error } = await authClient.revokeOtherSessions();
+      if (error) throw error;
 
-      queryClient.clear();
-      void navigate({ to: "/auth/signin", replace: true });
+      await loadActiveSessions();
+      toast.success("Se revocaron todas las demás sesiones");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al cerrar sesiones");
-      setIsSigningOutGlobally(false);
+    } finally {
+      setIsRevokingOtherSessions(false);
+    }
+  }
+
+  async function loadActiveSessions() {
+    setIsLoadingSessions(true);
+    try {
+      const [{ data: sessions, error: listError }, { data: session, error: currentSessionError }] =
+        await Promise.all([authClient.listSessions(), authClient.getSession()]);
+
+      if (listError) throw listError;
+      if (currentSessionError) throw currentSessionError;
+
+      const currentToken = session?.session.token ?? null;
+      const normalizedSessions = (sessions ?? []) as ActiveSession[];
+      setCurrentSessionToken(currentToken);
+      setActiveSessions(sortSessionsByActivity(normalizedSessions, currentToken));
+    } catch (err) {
+      if (isUnauthorizedError(err)) return;
+      toast.error(err instanceof Error ? err.message : "Error al cargar sesiones activas");
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }
+
+  async function handleRevokeSession(sessionToken: string) {
+    setRevokingSessionToken(sessionToken);
+    try {
+      const { error } = await authClient.revokeSession({ token: sessionToken });
+      if (error) throw error;
+
+      setActiveSessions((sessions) => sessions.filter((session) => session.token !== sessionToken));
+
+      if (sessionToken === currentSessionToken) {
+        await signOut();
+        queryClient.clear();
+        void navigate({ to: "/auth/signin", replace: true });
+        return;
+      }
+
+      toast.success("Sesion cerrada");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al cerrar sesion");
+    } finally {
+      setRevokingSessionToken(null);
     }
   }
 
@@ -287,7 +653,7 @@ export function SecurityPage() {
       >
         <div className="max-w-md space-y-4">
           <div className="space-y-4">
-            <Field>
+            <Field data-disabled={!hasCredentialAccount}>
               <FieldLabel htmlFor="new-password">Nueva contraseña</FieldLabel>
               <InputGroup>
                 <InputGroupInput
@@ -296,13 +662,15 @@ export function SecurityPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
+                  disabled={!hasCredentialAccount}
                 />
                 <InputGroupAddon align="inline-end">
                   <button
                     type="button"
                     onClick={() => setIsNewPasswordVisible((value) => !value)}
                     aria-label={isNewPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={!hasCredentialAccount}
                   >
                     {isNewPasswordVisible ? (
                       <EyeOffIcon className="size-4" />
@@ -314,7 +682,7 @@ export function SecurityPage() {
               </InputGroup>
             </Field>
             <PasswordStrengthIndicator password={newPassword} />
-            <Field>
+            <Field data-disabled={!hasCredentialAccount}>
               <FieldLabel htmlFor="confirm-password">Confirmar contraseña</FieldLabel>
               <InputGroup>
                 <InputGroupInput
@@ -323,6 +691,7 @@ export function SecurityPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"
+                  disabled={!hasCredentialAccount}
                 />
                 <InputGroupAddon align="inline-end">
                   <button
@@ -331,7 +700,8 @@ export function SecurityPage() {
                     aria-label={
                       isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"
                     }
-                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={!hasCredentialAccount}
                   >
                     {isConfirmPasswordVisible ? (
                       <EyeOffIcon className="size-4" />
@@ -343,10 +713,16 @@ export function SecurityPage() {
               </InputGroup>
             </Field>
           </div>
+          {!hasCredentialAccount && (
+            <p className="text-muted-foreground text-sm">
+              Tu cuenta inició sesión con Google. Configura una contraseña para habilitar este
+              cambio.
+            </p>
+          )}
           <div className="flex justify-end">
             <Button
               onClick={handlePasswordReset}
-              disabled={isSendingPasswordReset || !canSavePassword}
+              disabled={!hasCredentialAccount || isSendingPasswordReset || !canSavePassword}
             >
               {isSendingPasswordReset && <Loader2Icon className="mr-2 size-4 animate-spin" />}
               Guardar contraseña
@@ -356,10 +732,130 @@ export function SecurityPage() {
       </SettingsSection>
 
       <SettingsSection
+        title="Conexiones"
+        description="Métodos de inicio de sesión vinculados a tu cuenta."
+      >
+        <div className="border-border/70 bg-card/40 max-w-md rounded-xl border">
+          {authConnections.map((connection) => (
+            <div
+              key={connection.key}
+              className={cn(
+                "flex items-center justify-between px-4 py-3",
+                connection.key !== "email" && "border-border/60 border-t",
+                !connection.available && "opacity-60",
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-md">
+                  {connection.key === "email" ? (
+                    <MailIcon className="text-muted-foreground size-4 shrink-0" />
+                  ) : connection.key === "github" ? (
+                    <IconBrandGithub className="text-muted-foreground size-4 shrink-0" />
+                  ) : (
+                    <IconBrandGoogle className="text-muted-foreground size-4 shrink-0" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{connection.label}</p>
+                  <p className="text-muted-foreground text-sm">{connection.description}</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" disabled className="h-8">
+                <LinkIcon className="mr-1.5 size-3.5" />
+                {connection.linked ? "Desvincular" : "Vincular"}
+              </Button>
+            </div>
+          ))}
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
         title="Autenticación de dos factores"
         description="Una capa adicional para proteger el inicio de sesión."
       >
         <div className="max-w-md space-y-4">
+          {hasCredentialAccount && (
+            <Field>
+              <FieldLabel htmlFor="mfa-password">Contraseña actual</FieldLabel>
+              <div className="flex items-center gap-2">
+                <InputGroup>
+                  <InputGroupInput
+                    id="mfa-password"
+                    type="password"
+                    value={mfaPassword}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setMfaPassword(nextValue);
+                      if (isMfaPasswordVerified) {
+                        setIsMfaPasswordVerified(false);
+                      }
+                    }}
+                    autoComplete="current-password"
+                    placeholder={
+                      verifiedTotpFactorId
+                        ? "Ingresa tu contraseña para desactivar"
+                        : "Ingresa tu contraseña para verificar"
+                    }
+                    disabled={isMfaPasswordVerified}
+                  />
+                </InputGroup>
+                {!verifiedTotpFactorId && (
+                  <StatefulButton
+                    onClick={handleVerifyMfaPassword}
+                    disabled={!canVerifyMfaPassword}
+                    className={!canVerifyMfaPassword ? "opacity-50" : undefined}
+                    onComplete={() => {
+                      if (!pendingTotpEnrollmentRef.current) return;
+                      setIsMfaPasswordVerified(true);
+                      setTotpEnrollment(pendingTotpEnrollmentRef.current);
+                      pendingTotpEnrollmentRef.current = null;
+                      setTotpCode("");
+                    }}
+                    onError={(err) => {
+                      pendingTotpEnrollmentRef.current = null;
+                      if (
+                        typeof err === "object" &&
+                        err !== null &&
+                        "code" in err &&
+                        err.code === "INVALID_PASSWORD"
+                      ) {
+                        toast.error("Contraseña inválida");
+                        return;
+                      }
+                      toast.error(
+                        getReadableErrorMessage(err, "No se pudo verificar la contraseña"),
+                      );
+                    }}
+                  >
+                    Verificar
+                  </StatefulButton>
+                )}
+              </div>
+            </Field>
+          )}
+          {!hasCredentialAccount && !verifiedTotpFactorId && !totpEnrollment && (
+            <StatefulButton
+              onClick={handleVerifyMfaPassword}
+              disabled={!canVerifyMfaPassword}
+              className={cn(
+                "w-full px-4 sm:w-auto sm:min-w-[220px] sm:justify-center",
+                !canVerifyMfaPassword && "opacity-50",
+              )}
+              onComplete={() => {
+                if (!pendingTotpEnrollmentRef.current) return;
+                setIsMfaPasswordVerified(true);
+                setTotpEnrollment(pendingTotpEnrollmentRef.current);
+                pendingTotpEnrollmentRef.current = null;
+                setTotpCode("");
+              }}
+              onError={(err) => {
+                pendingTotpEnrollmentRef.current = null;
+                toast.error(getReadableErrorMessage(err, "No se pudo iniciar la configuración"));
+              }}
+            >
+              Configurar autenticación
+            </StatefulButton>
+          )}
           {isLoadingMfa ? (
             <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <Loader2Icon className="size-4 animate-spin" />
@@ -367,16 +863,16 @@ export function SecurityPage() {
             </div>
           ) : verifiedTotpFactorId ? (
             <>
-              <div className="bg-muted/50 rounded-md p-4 text-sm">
-                <p className="font-medium">2FA está activado</p>
-                <p className="text-muted-foreground mt-1">
-                  Se pedirá un código de tu aplicación autenticadora al iniciar sesión.
-                </p>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={handleDisableMfa}
+                  disabled={isDisablingMfa || (hasCredentialAccount && !mfaPassword.trim())}
+                >
+                  {isDisablingMfa && <Loader2Icon className="mr-2 size-4 animate-spin" />}
+                  Desactivar
+                </Button>
               </div>
-              <Button variant="outline" onClick={handleDisableMfa} disabled={isDisablingMfa}>
-                {isDisablingMfa && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-                Desactivar 2FA
-              </Button>
             </>
           ) : totpEnrollment ? (
             <div className="space-y-6">
@@ -387,9 +883,16 @@ export function SecurityPage() {
                     Usa Google Authenticator, 1Password, Authy o cualquier app compatible con TOTP.
                   </p>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-[176px_minmax(0,1fr)] sm:items-start">
-                  <div className="bg-background text-muted-foreground flex size-44 items-center justify-center rounded-md border p-3 text-center text-xs">
-                    Copia la clave manual en tu app autenticadora.
+                <div className="grid gap-4 sm:grid-cols-[176px_minmax(0,1fr)] sm:items-center">
+                  <div className="mx-auto flex size-44 items-center justify-center sm:mx-0">
+                    <div className="border-border rounded-sm border bg-white p-2">
+                      <QRCodeComponent
+                        value={totpEnrollment.qrCode}
+                        size={136}
+                        bgColor="#FFFFFF"
+                        fgColor="#000000"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="space-y-1">
@@ -398,7 +901,7 @@ export function SecurityPage() {
                         Úsala si no puedes escanear el QR.
                       </p>
                     </div>
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-center gap-2">
                       <code className="bg-muted text-muted-foreground min-w-0 flex-1 rounded-md px-2 py-1.5 text-xs break-all">
                         {totpEnrollment.secret ?? totpEnrollment.qrCode}
                       </code>
@@ -442,32 +945,34 @@ export function SecurityPage() {
                 <Button variant="outline" onClick={() => void handleCancelMfaEnrollment()}>
                   Cancelar
                 </Button>
-                <Button
+                <StatefulButton
                   onClick={handleVerifyMfaEnrollment}
-                  disabled={!canVerifyMfaEnrollment || isVerifyingMfa}
+                  disabled={!canVerifyMfaEnrollment}
+                  onComplete={() => {
+                    if (!pendingTotpActivationRef.current) return;
+                    toast.success("Autenticación de dos factores activada");
+                    setTotpEnrollment(null);
+                    pendingTotpEnrollmentRef.current = null;
+                    setTotpCode("");
+                    setIsMfaPasswordVerified(false);
+                    pendingTotpActivationRef.current = false;
+                    void loadMfaFactors();
+                  }}
+                  onError={(err) => {
+                    pendingTotpActivationRef.current = false;
+                    toast.error(getReadableErrorMessage(err, "Código inválido"));
+                  }}
                 >
-                  {isVerifyingMfa && <Loader2Icon className="mr-2 size-4 animate-spin" />}
                   Activar 2FA
-                </Button>
+                </StatefulButton>
               </div>
             </div>
           ) : (
-            <div className="bg-muted/50 space-y-4 rounded-md p-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Autenticación de dos factores desactivada</p>
-                <p className="text-muted-foreground text-sm">
-                  Protege tu cuenta con una app autenticadora antes de acceder a tus datos.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleStartMfaEnrollment}
-                disabled={isEnrollingMfa}
-              >
-                {isEnrollingMfa && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-                Activar autenticación de dos factores
-              </Button>
-            </div>
+            !hasCredentialAccount && (
+              <p className="text-muted-foreground text-sm">
+                Inicia la configuración para continuar.
+              </p>
+            )
           )}
         </div>
       </SettingsSection>
@@ -476,15 +981,78 @@ export function SecurityPage() {
         title="Sesiones activas"
         description="Dispositivos donde tu cuenta tiene sesión iniciada."
       >
-        <div className="max-w-md">
-          <Button
-            variant="destructive"
-            onClick={handleGlobalSignOut}
-            disabled={isSigningOutGlobally}
-          >
-            {isSigningOutGlobally && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-            Cerrar sesión en todos los dispositivos
-          </Button>
+        <div className="max-w-md space-y-4">
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              onClick={handleRevokeOtherSessions}
+              disabled={isRevokingOtherSessions || isLoadingSessions || activeSessions.length <= 1}
+              className="text-destructive hover:text-destructive/90 hover:bg-destructive/5"
+            >
+              {isRevokingOtherSessions ? (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              ) : (
+                <LogOutIcon className="mr-2 size-4" />
+              )}
+              Revocar todas las demás sesiones
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {isLoadingSessions ? (
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <Loader2Icon className="size-4 animate-spin" />
+                Cargando sesiones activas...
+              </div>
+            ) : activeSessions.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No hay sesiones activas.</p>
+            ) : (
+              activeSessions.map((session) => {
+                const isCurrentSession = session.token === currentSessionToken;
+                return (
+                  <div key={session.id} className="bg-muted/40 flex gap-3 rounded-md border p-3">
+                    <div className="text-muted-foreground self-center">
+                      <SessionDeviceIcon userAgent={session.userAgent} />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <span>{getDeviceName(session.userAgent)}</span>
+                          {isCurrentSession && (
+                            <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                              Actual
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          {getSessionMetaItems(session).join(" • ")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 self-start sm:self-center">
+                        <span className="text-muted-foreground text-xs">
+                          {getRelativeLastUsedLabel(session, isCurrentSession)}
+                        </span>
+                        {!isCurrentSession && (
+                          <button
+                            type="button"
+                            onClick={() => void handleRevokeSession(session.token)}
+                            disabled={revokingSessionToken === session.token}
+                            aria-label="Cerrar sesion"
+                            className="text-muted-foreground hover:text-destructive focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {revokingSessionToken === session.token ? (
+                              <Loader2Icon className="size-4 animate-spin" />
+                            ) : (
+                              <LogOutIcon className="size-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </SettingsSection>
     </SettingsPage>

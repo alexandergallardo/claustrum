@@ -28,15 +28,11 @@ export function AuthTwoFactorPage() {
       setErrorMessage(null);
 
       const { data } = await getSession();
-      if (!data?.user) {
-        setErrorMessage("Debes iniciar sesión antes de verificar 2FA.");
-        setIsLoadingFactor(false);
-        return;
-      }
-      if (!data.user.twoFactorEnabled) {
+      if (data?.user && !data.user.twoFactorEnabled) {
         void navigate({ to: "/overview", replace: true });
         return;
       }
+
       setIsLoadingFactor(false);
     }
 
@@ -49,7 +45,14 @@ export function AuthTwoFactorPage() {
   }
 
   function setCodeAt(index: number, value: string) {
-    const digit = value.replace(/\D/g, "").slice(-1);
+    const normalizedValue = value.replace(/\D/g, "");
+
+    if (normalizedValue.length > 1) {
+      handlePaste(normalizedValue);
+      return;
+    }
+
+    const digit = normalizedValue.slice(-1);
     const nextCode = [...code];
     nextCode[index] = digit;
     setCode(nextCode);
@@ -135,9 +138,8 @@ export function AuthTwoFactorPage() {
         </Alert>
       ) : null}
 
-      <div
+      <fieldset
         className="flex items-center justify-center gap-2"
-        role="group"
         aria-label="Código de autenticación"
       >
         {code.map((digit, index) => (
@@ -166,7 +168,7 @@ export function AuthTwoFactorPage() {
             {index === 2 ? <span className="text-muted-foreground">-</span> : null}
           </div>
         ))}
-      </div>
+      </fieldset>
 
       <Button type="submit" size="lg" disabled={!canVerify || isVerifying || isLoadingFactor}>
         {isVerifying && <Loader2Icon className="mr-2 size-4 animate-spin" />}
