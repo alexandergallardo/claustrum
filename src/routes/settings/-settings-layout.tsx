@@ -26,10 +26,10 @@ export function SettingsLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-6">
+    <div className="flex flex-1 flex-col px-4 py-4 lg:px-6 lg:py-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
         <Card className="w-full shrink-0 self-start py-0 lg:w-64">
-          <CardContent className="p-2">
+          <CardContent className="p-3">
             <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
@@ -38,7 +38,7 @@ export function SettingsLayout() {
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
