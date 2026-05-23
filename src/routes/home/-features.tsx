@@ -85,8 +85,6 @@ function ReviewsDemo() {
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         showPagination={false}
-        showTitle={false}
-        frameless
       />
     </div>
   );

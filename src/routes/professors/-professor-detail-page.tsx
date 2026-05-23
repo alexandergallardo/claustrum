@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
@@ -231,47 +232,60 @@ export function ProfessorDetailPage() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="space-y-4 p-4">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <MetricPill
-              label="Promedio general"
-              value={metricLabel(summary?.average_overall_score ?? null)}
-            />
-            <MetricPill
-              label="Facilidad"
-              value={metricLabel(summary?.average_ease_score ?? null)}
-            />
-            <MetricPill
-              label="Calidad"
-              value={metricLabel(summary?.average_quality_score ?? null)}
-            />
-            <MetricPill
-              label="La llevarían otra vez"
-              value={
-                summary?.would_take_again_percentage === null
-                  ? "-"
-                  : `${summary?.would_take_again_percentage.toFixed(1)}%`
-              }
-            />
-          </div>
-          <div className="border-t pt-3">
-            <p className="mb-2 text-sm font-medium">Etiquetas destacadas</p>
-            {summaryQuery.isLoading ? (
-              <p className="text-muted-foreground text-sm">Cargando etiquetas…</p>
-            ) : summary?.tag_counts?.length ? (
-              <div className="flex flex-wrap gap-2">
-                {summary.tag_counts.slice(0, 10).map((tag) => (
-                  <Badge key={tag.tag} variant="secondary">
-                    {tag.tag} ({tag.count})
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Aún no hay etiquetas aprobadas para mostrar.
-              </p>
-            )}
+      <Card className="overflow-hidden py-0">
+        <CardContent className="p-0">
+          <div className="grid grid-cols-[2fr_1fr] md:grid-cols-[25%_auto_15%_auto_1fr]">
+            <div className="flex min-h-36 flex-col items-center justify-center p-5 text-center md:min-h-52 md:p-6">
+              <span className="text-muted-foreground text-sm font-semibold tracking-wide uppercase md:text-base">
+                Calidad general
+              </span>
+              <span className="mt-1 text-5xl leading-none font-bold tracking-tight tabular-nums md:text-6xl">
+                {metricLabel(summary?.average_overall_score ?? null)}
+              </span>
+            </div>
+
+            <Separator orientation="vertical" className="hidden md:block" />
+
+            <div className="grid min-h-36 gap-4 border-l p-5 md:min-h-52 md:items-center md:gap-5 md:border-l-0 md:p-6">
+              <SummaryMetric
+                label="Facilidad"
+                value={metricLabel(summary?.average_ease_score ?? null)}
+              />
+              <SummaryMetric
+                label="Calidad"
+                value={metricLabel(summary?.average_quality_score ?? null)}
+              />
+              <SummaryMetric
+                label="La llevarían otra vez"
+                value={
+                  summary?.would_take_again_percentage === null
+                    ? "-"
+                    : `${summary?.would_take_again_percentage.toFixed(2)}%`
+                }
+              />
+            </div>
+
+            <Separator className="col-span-2 md:hidden" />
+            <Separator orientation="vertical" className="hidden md:block" />
+
+            <div className="col-span-2 flex min-h-32 flex-col justify-start p-5 md:col-auto md:min-h-52 md:p-6">
+              <p className="mb-3 text-base font-semibold">Etiquetas destacadas</p>
+              {summaryQuery.isLoading ? (
+                <p className="text-muted-foreground text-sm">Cargando etiquetas…</p>
+              ) : summary?.tag_counts?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {summary.tag_counts.slice(0, 10).map((tag) => (
+                    <Badge key={tag.tag} variant="secondary">
+                      {tag.tag} ({tag.count})
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Aún no hay etiquetas aprobadas para mostrar.
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -338,10 +352,15 @@ export function ProfessorDetailPage() {
   );
 }
 
-function MetricPill({ label, value }: { label: string; value: string }) {
+function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border px-3 py-2 text-sm">
-      <span className="text-muted-foreground">{label}:</span> {value}
+    <div className="flex flex-col items-center justify-center text-center">
+      <span className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase md:text-xs">
+        {label}
+      </span>
+      <span className="mt-1 text-2xl leading-none font-bold tracking-tight tabular-nums md:text-3xl">
+        {value}
+      </span>
     </div>
   );
 }
