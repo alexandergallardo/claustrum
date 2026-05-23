@@ -229,6 +229,9 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
     tags: ["Explica con claridad", "Proyecto útil", "Exámenes retadores"],
     status: "approved",
     created_at: "2026-03-15T14:30:00Z",
+    like_count: 0,
+    dislike_count: 0,
+    my_reaction: null,
     total_count: 3,
   },
   {
@@ -249,6 +252,9 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
     tags: ["Da buena retroalimentación", "Brinda apoyo", "Tomaría su clase nuevamente"],
     status: "approved",
     created_at: "2026-04-02T10:15:00Z",
+    like_count: 0,
+    dislike_count: 0,
+    my_reaction: null,
     total_count: 3,
   },
   {
@@ -269,6 +275,9 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
     tags: ["Explica con claridad", "Da buena retroalimentación"],
     status: "approved",
     created_at: "2026-02-20T08:00:00Z",
+    like_count: 0,
+    dislike_count: 0,
+    my_reaction: null,
     total_count: 3,
   },
 ];
