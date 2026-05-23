@@ -118,18 +118,24 @@ export function AppSidebar() {
               key={item.title}
               to={item.url}
               preload="intent"
-              activeOptions={{ exact: item.url === "/overview" }}
+              activeOptions={{
+                exact: true,
+                includeSearch: false,
+                includeHash: false,
+              }}
               aria-label={item.title}
               className={cn(
                 "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
                 "data-[status=active]:text-foreground data-[status=active]:group-hover/sidebar:bg-background data-[status=active]:group-data-[user-menu=open]/sidebar:bg-background",
                 "data-[status=active]:group-hover/sidebar:shadow-sm data-[status=active]:group-data-[user-menu=open]/sidebar:shadow-sm",
+                "data-[status=pending]:text-muted-foreground data-[status=pending]:bg-transparent data-[status=pending]:shadow-none",
               )}
             >
               <span
                 className={cn(
                   "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
                   "group-data-[status=active]/nav-item:bg-background group-data-[status=active]/nav-item:shadow-sm",
+                  "group-data-[status=pending]/nav-item:bg-transparent group-data-[status=pending]/nav-item:shadow-none",
                 )}
               >
                 <item.icon className="size-5" />
@@ -149,18 +155,24 @@ export function AppSidebar() {
               key={item.title}
               to={item.url}
               preload="intent"
-              activeOptions={{ exact: true }}
+              activeOptions={{
+                exact: true,
+                includeSearch: false,
+                includeHash: false,
+              }}
               aria-label={item.title}
               className={cn(
                 "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
                 "data-[status=active]:text-foreground data-[status=active]:group-hover/sidebar:bg-background data-[status=active]:group-data-[user-menu=open]/sidebar:bg-background",
                 "data-[status=active]:group-hover/sidebar:shadow-sm data-[status=active]:group-data-[user-menu=open]/sidebar:shadow-sm",
+                "data-[status=pending]:text-muted-foreground data-[status=pending]:bg-transparent data-[status=pending]:shadow-none",
               )}
             >
               <span
                 className={cn(
                   "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
                   "group-data-[status=active]/nav-item:bg-background group-data-[status=active]/nav-item:shadow-sm",
+                  "group-data-[status=pending]/nav-item:bg-transparent group-data-[status=pending]/nav-item:shadow-none",
                 )}
               >
                 <item.icon className="size-5" />
