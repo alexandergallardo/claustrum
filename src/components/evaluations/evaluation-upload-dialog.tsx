@@ -8,11 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
+  ComboboxSeparator,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import {
@@ -33,6 +37,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  formatClosedTermLabel,
+  formatTermNameWithoutYear,
+  groupTermsByYear,
+} from "@/lib/academic-terms";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
   EVALUATION_TYPE_LABELS,
@@ -149,6 +158,7 @@ export function EvaluationUploadDialog({
     () => offeringTermsQuery.data ?? [],
     [offeringTermsQuery.data],
   );
+  const academicTermGroups = useMemo(() => groupTermsByYear(academicTerms), [academicTerms]);
   const recentProfessors = useMemo<CourseRecentProfessor[]>(
     () => (normalizedTermId ? (recentProfessorsQuery.data ?? []) : []),
     [normalizedTermId, recentProfessorsQuery.data],
@@ -431,10 +441,10 @@ export function EvaluationUploadDialog({
         <div className="space-y-2">
           <Label>Período académico</Label>
           <Combobox
-            items={academicTerms}
+            items={academicTermGroups}
             value={selectedTerm}
             onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
-            itemToStringValue={(term) => term.display_name}
+            itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
           >
             <ComboboxTrigger
               ref={termTriggerRef}
@@ -452,12 +462,13 @@ export function EvaluationUploadDialog({
                   !selectedTerm && "text-muted-foreground",
                 )}
               >
-                {selectedTerm?.display_name ??
-                  (offeringTermsQuery.isLoading
+                {selectedTerm
+                  ? formatClosedTermLabel(selectedTerm)
+                  : offeringTermsQuery.isLoading
                     ? "Cargando períodos..."
                     : !effectiveCourseId
                       ? "Selecciona un curso"
-                      : "Sin períodos con oferta")}
+                      : "Sin períodos con oferta"}
               </span>
             </ComboboxTrigger>
             <ComboboxContent
@@ -468,10 +479,20 @@ export function EvaluationUploadDialog({
               <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
               <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
               <ComboboxList className="max-h-48 scrollbar-none">
-                {(term) => (
-                  <ComboboxItem key={term.id} value={term}>
-                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                  </ComboboxItem>
+                {(group, index) => (
+                  <ComboboxGroup key={group.value} items={group.items}>
+                    <ComboboxLabel>{group.value}</ComboboxLabel>
+                    <ComboboxCollection>
+                      {(term) => (
+                        <ComboboxItem key={term.id} value={term}>
+                          <span className="block min-w-0 flex-1 truncate">
+                            {formatTermNameWithoutYear(term.display_name)}
+                          </span>
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                    {index < academicTermGroups.length - 1 && <ComboboxSeparator />}
+                  </ComboboxGroup>
                 )}
               </ComboboxList>
             </ComboboxContent>

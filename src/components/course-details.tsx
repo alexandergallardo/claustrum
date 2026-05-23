@@ -33,11 +33,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
+  ComboboxSeparator,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import {
@@ -61,6 +65,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  formatClosedTermLabel,
+  formatTermNameWithoutYear,
+  groupTermsByYear,
+} from "@/lib/academic-terms";
 import { formatEvaluationFileName, type EvaluationType } from "@/lib/evaluations/types";
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
 import {
@@ -640,6 +649,8 @@ export function CourseDetails({
   const offeringTerms = useMemo(() => offeringTermsQuery.data ?? [], [offeringTermsQuery.data]);
   const selectedOfferingTerm =
     offeringTerms.find((term) => String(term.id) === offeringTermId) ?? null;
+  const academicTermGroups = useMemo(() => groupTermsByYear(academicTerms), [academicTerms]);
+  const offeringTermGroups = useMemo(() => groupTermsByYear(offeringTerms), [offeringTerms]);
   const evaluations = evaluationsQuery.data ?? [];
 
   useEffect(() => {
@@ -898,10 +909,10 @@ export function CourseDetails({
       <div>
         <Label className="text-sm">Periodo</Label>
         <Combobox
-          items={academicTerms}
+          items={academicTermGroups}
           value={selectedQuickTerm}
           onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
-          itemToStringValue={(term) => term.display_name}
+          itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
         >
           <ComboboxTrigger
             ref={progressTermTriggerRef}
@@ -912,8 +923,11 @@ export function CourseDetails({
             <span
               className={`block min-w-0 flex-1 truncate text-left ${!selectedQuickTerm ? "text-muted-foreground" : ""}`}
             >
-              {selectedQuickTerm?.display_name ??
-                (progressTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+              {selectedQuickTerm
+                ? formatClosedTermLabel(selectedQuickTerm)
+                : progressTermsQuery.isLoading
+                  ? "Cargando..."
+                  : "Selecciona un periodo"}
             </span>
           </ComboboxTrigger>
           <ComboboxContent
@@ -924,10 +938,20 @@ export function CourseDetails({
             <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
             <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
             <ComboboxList className="max-h-56 scrollbar-none">
-              {(term) => (
-                <ComboboxItem key={term.id} value={term}>
-                  <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                </ComboboxItem>
+              {(group, index) => (
+                <ComboboxGroup key={group.value} items={group.items}>
+                  <ComboboxLabel>{group.value}</ComboboxLabel>
+                  <ComboboxCollection>
+                    {(term) => (
+                      <ComboboxItem key={term.id} value={term}>
+                        <span className="block min-w-0 flex-1 truncate">
+                          {formatTermNameWithoutYear(term.display_name)}
+                        </span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxCollection>
+                  {index < academicTermGroups.length - 1 && <ComboboxSeparator />}
+                </ComboboxGroup>
               )}
             </ComboboxList>
           </ComboboxContent>
@@ -1260,10 +1284,10 @@ export function CourseDetails({
         <div className="mb-3 space-y-2">
           <h2 className="text-xl font-semibold tracking-tight">Periodo</h2>
           <Combobox
-            items={offeringTerms}
+            items={offeringTermGroups}
             value={selectedOfferingTerm}
             onValueChange={(term) => setOfferingTermId(term ? String(term.id) : "")}
-            itemToStringValue={(term) => term.display_name}
+            itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
           >
             <ComboboxTrigger
               render={<Button variant="outline" className="w-full justify-between sm:w-80" />}
@@ -1271,18 +1295,31 @@ export function CourseDetails({
               <span
                 className={`block min-w-0 flex-1 truncate text-left ${!selectedOfferingTerm ? "text-muted-foreground" : ""}`}
               >
-                {selectedOfferingTerm?.display_name ??
-                  (offeringTermsQuery.isLoading ? "Cargando periodos..." : "Selecciona un periodo")}
+                {selectedOfferingTerm
+                  ? formatClosedTermLabel(selectedOfferingTerm)
+                  : offeringTermsQuery.isLoading
+                    ? "Cargando periodos..."
+                    : "Selecciona un periodo"}
               </span>
             </ComboboxTrigger>
             <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
               <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
               <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
               <ComboboxList className="max-h-56 scrollbar-none">
-                {(term) => (
-                  <ComboboxItem key={term.id} value={term}>
-                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                  </ComboboxItem>
+                {(group, index) => (
+                  <ComboboxGroup key={group.value} items={group.items}>
+                    <ComboboxLabel>{group.value}</ComboboxLabel>
+                    <ComboboxCollection>
+                      {(term) => (
+                        <ComboboxItem key={term.id} value={term}>
+                          <span className="block min-w-0 flex-1 truncate">
+                            {formatTermNameWithoutYear(term.display_name)}
+                          </span>
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                    {index < offeringTermGroups.length - 1 && <ComboboxSeparator />}
+                  </ComboboxGroup>
                 )}
               </ComboboxList>
             </ComboboxContent>
@@ -1404,10 +1441,10 @@ export function CourseDetails({
                 Periodo
               </Label>
               <Combobox
-                items={academicTerms}
+                items={academicTermGroups}
                 value={selectedEditTerm}
                 onValueChange={(term) => setEditAcademicTermId(term ? String(term.id) : "")}
-                itemToStringValue={(term) => term.display_name}
+                itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
               >
                 <ComboboxTrigger
                   ref={editTermTriggerRef}
@@ -1422,8 +1459,11 @@ export function CourseDetails({
                   <span
                     className={`block min-w-0 flex-1 truncate text-left ${!selectedEditTerm ? "text-muted-foreground" : ""}`}
                   >
-                    {selectedEditTerm?.display_name ??
-                      (progressTermsQuery.isLoading ? "Cargando..." : "Selecciona un periodo")}
+                    {selectedEditTerm
+                      ? formatClosedTermLabel(selectedEditTerm)
+                      : progressTermsQuery.isLoading
+                        ? "Cargando..."
+                        : "Selecciona un periodo"}
                   </span>
                 </ComboboxTrigger>
                 <ComboboxContent
@@ -1434,10 +1474,20 @@ export function CourseDetails({
                   <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
                   <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
                   <ComboboxList className="max-h-56 scrollbar-none">
-                    {(term) => (
-                      <ComboboxItem key={term.id} value={term}>
-                        <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                      </ComboboxItem>
+                    {(group, index) => (
+                      <ComboboxGroup key={group.value} items={group.items}>
+                        <ComboboxLabel>{group.value}</ComboboxLabel>
+                        <ComboboxCollection>
+                          {(term) => (
+                            <ComboboxItem key={term.id} value={term}>
+                              <span className="block min-w-0 flex-1 truncate">
+                                {formatTermNameWithoutYear(term.display_name)}
+                              </span>
+                            </ComboboxItem>
+                          )}
+                        </ComboboxCollection>
+                        {index < academicTermGroups.length - 1 && <ComboboxSeparator />}
+                      </ComboboxGroup>
                     )}
                   </ComboboxList>
                 </ComboboxContent>

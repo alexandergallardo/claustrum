@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
+  ComboboxSeparator,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import {
@@ -33,6 +37,11 @@ import {
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  formatClosedTermLabel,
+  formatTermNameWithoutYear,
+  groupTermsByYear,
+} from "@/lib/academic-terms";
 import {
   useProfessorOfferingTerms,
   useProfessorReviewCourses,
@@ -126,6 +135,7 @@ export function ReviewComposer({
 
   const courseOptions = useMemo(() => coursesQuery.data ?? [], [coursesQuery.data]);
   const termOptions = useMemo(() => termsQuery.data ?? [], [termsQuery.data]);
+  const termGroups = useMemo(() => groupTermsByYear(termOptions), [termOptions]);
 
   const selectedCourse =
     courseOptions.find((course) => course.code.toUpperCase() === courseCode.toUpperCase()) ?? null;
@@ -203,10 +213,10 @@ export function ReviewComposer({
         <div className="space-y-2">
           <Label>Periodo (opcional)</Label>
           <Combobox
-            items={termOptions}
+            items={termGroups}
             value={selectedTerm}
             onValueChange={(term) => setAcademicTermId(term ? String(term.id) : "")}
-            itemToStringValue={(term) => term.display_name}
+            itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
           >
             <ComboboxTrigger
               ref={termTriggerRef}
@@ -224,8 +234,11 @@ export function ReviewComposer({
                   !selectedTerm && "text-muted-foreground",
                 )}
               >
-                {selectedTerm?.display_name ??
-                  (termsQuery.isLoading ? "Cargando periodos..." : "Sin periodo")}
+                {selectedTerm
+                  ? formatClosedTermLabel(selectedTerm)
+                  : termsQuery.isLoading
+                    ? "Cargando periodos..."
+                    : "Sin periodo"}
               </span>
             </ComboboxTrigger>
             <ComboboxContent
@@ -236,10 +249,20 @@ export function ReviewComposer({
               <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
               <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
               <ComboboxList className="max-h-56 scrollbar-none">
-                {(term) => (
-                  <ComboboxItem key={term.id} value={term}>
-                    <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
-                  </ComboboxItem>
+                {(group, index) => (
+                  <ComboboxGroup key={group.value} items={group.items}>
+                    <ComboboxLabel>{group.value}</ComboboxLabel>
+                    <ComboboxCollection>
+                      {(term) => (
+                        <ComboboxItem key={term.id} value={term}>
+                          <span className="block min-w-0 flex-1 truncate">
+                            {formatTermNameWithoutYear(term.display_name)}
+                          </span>
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                    {index < termGroups.length - 1 && <ComboboxSeparator />}
+                  </ComboboxGroup>
                 )}
               </ComboboxList>
             </ComboboxContent>

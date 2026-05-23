@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   CatalogUniversity,
@@ -12,17 +12,26 @@ import { FiltersPanel } from "@/components/filters/filters-panel";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
+  ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
+  ComboboxSeparator,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  formatClosedTermLabel,
+  formatTermNameWithoutYear,
+  groupTermsByYear,
+} from "@/lib/academic-terms";
 
 interface ScheduleFiltersProps {
   universities: CatalogUniversity[];
@@ -206,6 +215,9 @@ export function ScheduleFilters({
 
   const showSwitches = !!selectedTermId;
   const isShowAllDisabled = !!showAllDisabled;
+  const termGroups = useMemo(() => groupTermsByYear(terms), [terms]);
+  const termTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const selectedTerm = terms.find((term) => term.id === selectedTermId) ?? null;
 
   const showAllControl = (
     <div className="flex items-center gap-2">
@@ -264,15 +276,62 @@ export function ScheduleFilters({
         isVisible={!!selectedCareerId}
       />
 
-      <FilterCombobox
-        label="Período"
-        value={selectedTermId?.toString() || ""}
-        placeholder="Período académico"
-        items={terms.map((t) => ({ id: t.id, name: t.display_name }))}
-        onChange={(val) => onTermChange(val ? parseInt(val) : null)}
-        isLoading={!terms.length && isLoadingTerms}
-        isVisible={!!selectedCampusId}
-      />
+      {!!selectedCampusId && (
+        <div
+          className={`min-w-0 ${isLoadingTerms && terms.length === 0 ? "animate-in fade-in-0 slide-in-from-bottom-2 duration-200" : ""}`}
+        >
+          {isLoadingTerms && terms.length === 0 ? (
+            <FilterSkeleton />
+          ) : (
+            <Combobox
+              items={termGroups}
+              value={selectedTerm}
+              onValueChange={(term) => onTermChange(term ? term.id : null)}
+              itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
+            >
+              <ComboboxTrigger
+                ref={termTriggerRef}
+                render={
+                  <Button
+                    variant="outline"
+                    className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
+                  />
+                }
+              >
+                <span
+                  className={`block min-w-0 flex-1 truncate text-left ${!selectedTerm ? "text-muted-foreground" : ""}`}
+                >
+                  {selectedTerm ? formatClosedTermLabel(selectedTerm) : "Período académico"}
+                </span>
+              </ComboboxTrigger>
+              <ComboboxContent
+                anchor={termTriggerRef}
+                className="w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)] min-w-[var(--anchor-width)]"
+              >
+                <ComboboxInput showTrigger={false} placeholder="Buscar período" />
+                <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+                <ComboboxList className="max-h-56 scrollbar-none">
+                  {(group, index) => (
+                    <ComboboxGroup key={group.value} items={group.items}>
+                      <ComboboxLabel>{group.value}</ComboboxLabel>
+                      <ComboboxCollection>
+                        {(term) => (
+                          <ComboboxItem key={term.id} value={term}>
+                            <span className="block w-full min-w-0 truncate">
+                              {formatTermNameWithoutYear(term.display_name)}
+                            </span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxCollection>
+                      {index < termGroups.length - 1 && <ComboboxSeparator />}
+                    </ComboboxGroup>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          )}
+        </div>
+      )}
 
       {showSwitches &&
         (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined) && (
