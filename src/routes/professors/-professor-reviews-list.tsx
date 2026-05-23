@@ -292,6 +292,7 @@ type ProfessorReviewsListProps = {
   onPageChange: Dispatch<SetStateAction<number>>;
   onPageSizeChange: Dispatch<SetStateAction<number>>;
   showPagination?: boolean;
+  frameless?: boolean;
 };
 
 export function ProfessorReviewsList({
@@ -308,6 +309,7 @@ export function ProfessorReviewsList({
   onPageChange,
   onPageSizeChange,
   showPagination = true,
+  frameless = false,
 }: ProfessorReviewsListProps) {
   const reactionMutation = useSetProfessorReviewReaction();
   const reportMutation = useSubmitProfessorReviewReport();
@@ -388,7 +390,7 @@ export function ProfessorReviewsList({
         <div className="text-muted-foreground text-sm">Aún no hay reseñas para este profesor.</div>
       ) : (
         <>
-          <div className="bg-card rounded-xl border md:hidden">
+          <div className={frameless ? "md:hidden" : "bg-card rounded-xl border md:hidden"}>
             <div className="divide-y">
               {reviewRows.map((review) => (
                 <article key={review.review_id}>
@@ -503,7 +505,9 @@ export function ProfessorReviewsList({
             </div>
           </div>
 
-          <div className="bg-card hidden rounded-xl border md:block">
+          <div
+            className={frameless ? "hidden md:block" : "bg-card hidden rounded-xl border md:block"}
+          >
             <table className="w-full">
               <thead>
                 {table.getHeaderGroups().map((headerGroup) => (
