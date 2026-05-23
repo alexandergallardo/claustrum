@@ -73,12 +73,12 @@ CREATE TABLE IF NOT EXISTS public.professor_review (
   CONSTRAINT professor_review_tags_allowed_check
     CHECK (
       tags <@ ARRAY[
-        'Da buena retroalimentacion',
-        'Tomaria su clase nuevamente',
+        'Da buena retroalimentación',
+        'Tomaría su clase nuevamente',
         'Brinda apoyo',
         'Explica con claridad',
-        'Examenes retadores',
-        'Proyecto util'
+        'Exámenes retadores',
+        'Proyecto útil'
       ]::TEXT[]
     ),
   CONSTRAINT professor_review_reviewed_status_consistency_check
