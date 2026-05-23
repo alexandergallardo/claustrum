@@ -135,7 +135,6 @@ export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
     },
     enabled,
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: "always",
   });
 }
 
