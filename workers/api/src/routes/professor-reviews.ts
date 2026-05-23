@@ -8,12 +8,12 @@ import { verifyTurnstileToken } from "../lib/security";
 import { getSupabase } from "../lib/supabase";
 
 const REVIEW_TAGS = [
-  "Da buena retroalimentacion",
-  "Tomaria su clase nuevamente",
+  "Da buena retroalimentación",
+  "Tomaría su clase nuevamente",
   "Brinda apoyo",
   "Explica con claridad",
-  "Examenes retadores",
-  "Proyecto util",
+  "Exámenes retadores",
+  "Proyecto útil",
 ] as const;
 
 const professorReviewSchema = z.object({
