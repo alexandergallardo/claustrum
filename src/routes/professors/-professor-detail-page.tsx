@@ -258,9 +258,9 @@ export function ProfessorDetailPage() {
               <SummaryMetric
                 label="La llevarían otra vez"
                 value={
-                  summary?.would_take_again_percentage === null
+                  !summary || summary.would_take_again_percentage === null
                     ? "-"
-                    : `${summary?.would_take_again_percentage.toFixed(2)}%`
+                    : `${summary.would_take_again_percentage.toFixed(2)}%`
                 }
               />
             </div>
