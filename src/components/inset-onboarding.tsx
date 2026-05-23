@@ -252,7 +252,7 @@ export function InsetOnboardingPage() {
                     >
                       <ComboboxInput showTrigger={false} placeholder="Buscar sede" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <ComboboxList className="max-h-56 scrollbar-none">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
                             <span className="block w-full min-w-0 truncate">{item.name}</span>
@@ -311,7 +311,7 @@ export function InsetOnboardingPage() {
                     >
                       <ComboboxInput showTrigger={false} placeholder="Buscar carrera" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <ComboboxList className="max-h-56 scrollbar-none">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
                             <span className="block w-full min-w-0 truncate">
@@ -366,7 +366,7 @@ export function InsetOnboardingPage() {
                     >
                       <ComboboxInput showTrigger={false} placeholder="Buscar plan" />
                       <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                      <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                      <ComboboxList className="max-h-56 scrollbar-none">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
                             <span className="block w-full min-w-0 truncate">{item.name}</span>

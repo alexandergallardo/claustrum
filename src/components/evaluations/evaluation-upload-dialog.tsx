@@ -375,6 +375,7 @@ export function EvaluationUploadDialog({
           id="evaluation-file-input"
           type="file"
           accept="application/pdf"
+          aria-label="Seleccionar PDF de evaluación"
           className="hidden"
           onChange={(e) => handleFileInput(e, "evaluation")}
         />
@@ -414,7 +415,7 @@ export function EvaluationUploadDialog({
           >
             <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
             <ComboboxEmpty>No se encontraron cursos.</ComboboxEmpty>
-            <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <ComboboxList className="max-h-48 scrollbar-none">
               {(option) => (
                 <ComboboxItem key={option.id} value={option}>
                   <span className="block min-w-0 flex-1 truncate">{formatCourseLabel(option)}</span>
@@ -466,7 +467,7 @@ export function EvaluationUploadDialog({
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
               <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-              <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <ComboboxList className="max-h-48 scrollbar-none">
                 {(term) => (
                   <ComboboxItem key={term.id} value={term}>
                     <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
@@ -518,7 +519,7 @@ export function EvaluationUploadDialog({
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar profesor..." />
               <ComboboxEmpty>No se encontraron profesores.</ComboboxEmpty>
-              <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <ComboboxList className="max-h-48 scrollbar-none">
                 {(prof) => (
                   <ComboboxItem key={prof.professorId} value={prof}>
                     <span className="block min-w-0 flex-1 truncate">{prof.professorName}</span>
@@ -562,7 +563,7 @@ export function EvaluationUploadDialog({
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar tipo..." />
               <ComboboxEmpty>No se encontraron tipos.</ComboboxEmpty>
-              <ComboboxList className="max-h-48 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <ComboboxList className="max-h-48 scrollbar-none">
                 {(option) => (
                   <ComboboxItem key={option.value} value={option}>
                     <span className="block min-w-0 flex-1 truncate">{option.label}</span>
@@ -696,6 +697,7 @@ export function EvaluationUploadDialog({
             id="answers-file-input"
             type="file"
             accept="application/pdf"
+            aria-label="Seleccionar PDF de respuestas"
             className="hidden"
             onChange={(e) => handleFileInput(e, "answers")}
           />

@@ -29,13 +29,6 @@ function HomePage() {
   const [starCount, setStarCount] = useState<number | null>(null);
 
   useEffect(() => {
-    document.documentElement.classList.add("app-scrollbar");
-    return () => {
-      document.documentElement.classList.remove("app-scrollbar");
-    };
-  }, []);
-
-  useEffect(() => {
     void fetchGitHubStars().then(setStarCount);
   }, []);
 

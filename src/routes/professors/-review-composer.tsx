@@ -187,7 +187,7 @@ export function ReviewComposer({
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
               <ComboboxEmpty>No se encontraron cursos para este profesor.</ComboboxEmpty>
-              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <ComboboxList className="max-h-56 scrollbar-none">
                 {(course) => (
                   <ComboboxItem key={course.id} value={course}>
                     <span className="block min-w-0 flex-1 truncate">
@@ -235,7 +235,7 @@ export function ReviewComposer({
             >
               <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
               <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
-              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <ComboboxList className="max-h-56 scrollbar-none">
                 {(term) => (
                   <ComboboxItem key={term.id} value={term}>
                     <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>

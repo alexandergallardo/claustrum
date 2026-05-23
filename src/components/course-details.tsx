@@ -884,7 +884,7 @@ export function CourseDetails({
           <ComboboxContent anchor={attemptCourseTriggerRef} container={comboboxPortalContainerRef}>
             <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
             <ComboboxEmpty>No se encontraron cursos.</ComboboxEmpty>
-            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <ComboboxList className="max-h-56 scrollbar-none">
               {(target) => (
                 <ComboboxItem key={target.id} value={target}>
                   <span className="block min-w-0 flex-1 truncate">{formatCourseLabel(target)}</span>
@@ -923,7 +923,7 @@ export function CourseDetails({
           >
             <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
             <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-            <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <ComboboxList className="max-h-56 scrollbar-none">
               {(term) => (
                 <ComboboxItem key={term.id} value={term}>
                   <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
@@ -1278,7 +1278,7 @@ export function CourseDetails({
             <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
               <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
               <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
-              <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <ComboboxList className="max-h-56 scrollbar-none">
                 {(term) => (
                   <ComboboxItem key={term.id} value={term}>
                     <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
@@ -1433,7 +1433,7 @@ export function CourseDetails({
                 >
                   <ComboboxInput showTrigger={false} placeholder="Buscar período..." />
                   <ComboboxEmpty>No se encontraron períodos.</ComboboxEmpty>
-                  <ComboboxList className="max-h-56 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  <ComboboxList className="max-h-56 scrollbar-none">
                     {(term) => (
                       <ComboboxItem key={term.id} value={term}>
                         <span className="block min-w-0 flex-1 truncate">{term.display_name}</span>
