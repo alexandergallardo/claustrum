@@ -27,7 +27,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { StatefulButton } from "@/components/ui/stateful-button";
 import { authClient, signOut } from "@/lib/auth/client";
-import { useAuthUser } from "@/lib/hooks/use-queries";
+import { useAuthAccounts, useAuthUser } from "@/lib/hooks/use-queries";
 import { cn } from "@/lib/utils";
 
 const passwordRequirements = [
@@ -49,10 +49,6 @@ type ActiveSession = {
   expiresAt: string | Date;
   ipAddress?: string | null;
   userAgent?: string | null;
-};
-
-type AuthAccount = {
-  providerId: string;
 };
 
 type AuthConnectionItem = {
@@ -364,8 +360,9 @@ export function SecurityPage() {
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [currentSessionToken, setCurrentSessionToken] = useState<string | null>(null);
   const [revokingSessionToken, setRevokingSessionToken] = useState<string | null>(null);
-  const [hasCredentialAccount, setHasCredentialAccount] = useState(true);
-  const [linkedProviderIds, setLinkedProviderIds] = useState<Set<string>>(new Set());
+  const accountsQuery = useAuthAccounts();
+  const hasCredentialAccount = accountsQuery.data?.hasCredentialAccount ?? true;
+  const linkedProviderIds = accountsQuery.data?.linkedProviderIds ?? [];
   const pendingTotpEnrollmentRef = useRef<{ qrCode: string; secret: string | null } | null>(null);
   const pendingTotpActivationRef = useRef(false);
   const canSavePassword = newPassword.length >= 8 && newPassword === confirmPassword;
@@ -382,23 +379,23 @@ export function SecurityPage() {
       available: true,
       linked:
         hasCredentialAccount ||
-        linkedProviderIds.has("credential") ||
-        linkedProviderIds.has("email-password") ||
-        linkedProviderIds.has("emailAndPassword"),
+        linkedProviderIds.includes("credential") ||
+        linkedProviderIds.includes("email-password") ||
+        linkedProviderIds.includes("emailAndPassword"),
       description: "Ingresa con correo y contraseña",
     },
     {
       key: "google",
       label: "Google",
       available: true,
-      linked: linkedProviderIds.has("google"),
+      linked: linkedProviderIds.includes("google"),
       description: "Conecta tu cuenta de Google",
     },
     {
       key: "github",
       label: "GitHub",
       available: false,
-      linked: linkedProviderIds.has("github"),
+      linked: linkedProviderIds.includes("github"),
       description: "Próximamente disponible",
     },
   ];
@@ -407,7 +404,6 @@ export function SecurityPage() {
     if (!authUser) return;
     void loadMfaFactors();
     void loadActiveSessions();
-    void loadAccountMethods();
   }, [authUser]);
 
   if (isLoading) {
@@ -474,38 +470,6 @@ export function SecurityPage() {
       toast.error(err instanceof Error ? err.message : "Error al cargar 2FA");
     } finally {
       setIsLoadingMfa(false);
-    }
-  }
-
-  async function loadAccountMethods() {
-    try {
-      const client = authClient as unknown as {
-        listAccounts?: () => Promise<{ data: AuthAccount[] | null; error: unknown }>;
-        listUserAccounts?: () => Promise<{ data: AuthAccount[] | null; error: unknown }>;
-      };
-
-      const response = client.listAccounts
-        ? await client.listAccounts()
-        : client.listUserAccounts
-          ? await client.listUserAccounts()
-          : null;
-
-      if (!response) {
-        setHasCredentialAccount(true);
-        return;
-      }
-
-      if (response.error) throw response.error;
-
-      const hasCredential = (response.data ?? []).some((account) =>
-        ["credential", "email-password", "emailAndPassword"].includes(account.providerId),
-      );
-
-      setLinkedProviderIds(new Set((response.data ?? []).map((account) => account.providerId)));
-      setHasCredentialAccount(hasCredential);
-    } catch {
-      setLinkedProviderIds(new Set());
-      setHasCredentialAccount(true);
     }
   }
 
@@ -651,84 +615,93 @@ export function SecurityPage() {
         title="Contraseña"
         description="Credencial principal para acceder a tu cuenta."
       >
-        <div className="max-w-md space-y-4">
-          <div className="space-y-4">
-            <Field data-disabled={!hasCredentialAccount}>
-              <FieldLabel htmlFor="new-password">Nueva contraseña</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  id="new-password"
-                  type={isNewPasswordVisible ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  autoComplete="new-password"
-                  disabled={!hasCredentialAccount}
-                />
-                <InputGroupAddon align="inline-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsNewPasswordVisible((value) => !value)}
-                    aria-label={isNewPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={!hasCredentialAccount}
-                  >
-                    {isNewPasswordVisible ? (
-                      <EyeOffIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
-                  </button>
-                </InputGroupAddon>
-              </InputGroup>
-            </Field>
-            <PasswordStrengthIndicator password={newPassword} />
-            <Field data-disabled={!hasCredentialAccount}>
-              <FieldLabel htmlFor="confirm-password">Confirmar contraseña</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  id="confirm-password"
-                  type={isConfirmPasswordVisible ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  disabled={!hasCredentialAccount}
-                />
-                <InputGroupAddon align="inline-end">
-                  <button
-                    type="button"
-                    onClick={() => setIsConfirmPasswordVisible((value) => !value)}
-                    aria-label={
-                      isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"
-                    }
-                    className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={!hasCredentialAccount}
-                  >
-                    {isConfirmPasswordVisible ? (
-                      <EyeOffIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
-                  </button>
-                </InputGroupAddon>
-              </InputGroup>
-            </Field>
+        {accountsQuery.isLoading ? (
+          <div className="max-w-md space-y-4">
+            <div className="bg-muted h-10 animate-pulse rounded-md" />
+            <div className="bg-muted h-10 animate-pulse rounded-md" />
           </div>
-          {!hasCredentialAccount && (
-            <p className="text-muted-foreground text-sm">
-              Tu cuenta inició sesión con Google. Configura una contraseña para habilitar este
-              cambio.
-            </p>
-          )}
-          <div className="flex justify-end">
-            <Button
-              onClick={handlePasswordReset}
-              disabled={!hasCredentialAccount || isSendingPasswordReset || !canSavePassword}
-            >
-              {isSendingPasswordReset && <Loader2Icon className="mr-2 size-4 animate-spin" />}
-              Guardar contraseña
-            </Button>
+        ) : (
+          <div className="max-w-md space-y-4">
+            <div className="space-y-4">
+              <Field data-disabled={!hasCredentialAccount}>
+                <FieldLabel htmlFor="new-password">Nueva contraseña</FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id="new-password"
+                    type={isNewPasswordVisible ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    disabled={!hasCredentialAccount}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsNewPasswordVisible((value) => !value)}
+                      aria-label={
+                        isNewPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"
+                      }
+                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!hasCredentialAccount}
+                    >
+                      {isNewPasswordVisible ? (
+                        <EyeOffIcon className="size-4" />
+                      ) : (
+                        <EyeIcon className="size-4" />
+                      )}
+                    </button>
+                  </InputGroupAddon>
+                </InputGroup>
+              </Field>
+              {hasCredentialAccount && <PasswordStrengthIndicator password={newPassword} />}
+              <Field data-disabled={!hasCredentialAccount}>
+                <FieldLabel htmlFor="confirm-password">Confirmar contraseña</FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id="confirm-password"
+                    type={isConfirmPasswordVisible ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    disabled={!hasCredentialAccount}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmPasswordVisible((value) => !value)}
+                      aria-label={
+                        isConfirmPasswordVisible ? "Ocultar confirmación" : "Mostrar confirmación"
+                      }
+                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/40 cursor-pointer rounded p-1 transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!hasCredentialAccount}
+                    >
+                      {isConfirmPasswordVisible ? (
+                        <EyeOffIcon className="size-4" />
+                      ) : (
+                        <EyeIcon className="size-4" />
+                      )}
+                    </button>
+                  </InputGroupAddon>
+                </InputGroup>
+              </Field>
+            </div>
+            {!hasCredentialAccount && (
+              <p className="text-muted-foreground text-sm">
+                Tu cuenta inició sesión con Google. Configura una contraseña para habilitar este
+                cambio.
+              </p>
+            )}
+            <div className="flex justify-end">
+              <Button
+                onClick={handlePasswordReset}
+                disabled={!hasCredentialAccount || isSendingPasswordReset || !canSavePassword}
+              >
+                {isSendingPasswordReset && <Loader2Icon className="mr-2 size-4 animate-spin" />}
+                Guardar contraseña
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </SettingsSection>
 
       <SettingsSection

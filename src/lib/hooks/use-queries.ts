@@ -18,7 +18,7 @@ import type {
   CourseDetailRelatedCourse,
 } from "@/lib/types";
 
-import { getSession } from "@/lib/auth/client";
+import { authClient, getSession } from "@/lib/auth/client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
@@ -136,6 +136,54 @@ export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
     enabled,
     staleTime: 5 * 60 * 1000,
     refetchOnMount: "always",
+  });
+}
+
+type AuthAccountsResult = {
+  hasCredentialAccount: boolean;
+  linkedProviderIds: string[];
+};
+
+export function useAuthAccounts(enabled = true) {
+  const { data: authUser } = useAuthUser({ enabled });
+
+  return useQuery({
+    queryKey: ["authAccounts", authUser?.id],
+    queryFn: async (): Promise<AuthAccountsResult> => {
+      const client = authClient as unknown as {
+        listAccounts?: () => Promise<{
+          data: { providerId: string }[] | null;
+          error: unknown;
+        }>;
+        listUserAccounts?: () => Promise<{
+          data: { providerId: string }[] | null;
+          error: unknown;
+        }>;
+      };
+
+      const response = client.listAccounts
+        ? await client.listAccounts()
+        : client.listUserAccounts
+          ? await client.listUserAccounts()
+          : null;
+
+      if (!response) {
+        return { hasCredentialAccount: true, linkedProviderIds: [] };
+      }
+
+      if (response.error) throw response.error;
+
+      const accounts = response.data ?? [];
+      const hasCredentialAccount = accounts.some((account) =>
+        ["credential", "email-password", "emailAndPassword"].includes(account.providerId),
+      );
+      const linkedProviderIds = accounts.map((account) => account.providerId);
+
+      return { hasCredentialAccount, linkedProviderIds };
+    },
+    enabled: !!authUser?.id,
+    staleTime: 30 * 60 * 1000,
+    refetchOnMount: false,
   });
 }
 
