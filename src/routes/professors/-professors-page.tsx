@@ -116,7 +116,7 @@ export function ProfessorsReviewsPage() {
               params={{ professorId }}
               preload="intent"
               viewTransition={{ types: ["professor-open"] }}
-              className="font-medium underline-offset-4 hover:underline"
+              className="block truncate font-medium underline-offset-4 hover:underline"
               style={{ viewTransitionName: getProfessorNameTransitionName(professorId) }}
               onMouseEnter={prefetchProfessorDetail}
               onPointerDown={prefetchProfessorDetail}
@@ -131,12 +131,20 @@ export function ProfessorsReviewsPage() {
       {
         accessorKey: "approved_review_count",
         header: "Reseñas",
-        cell: ({ row }) => row.original.approved_review_count,
+        cell: ({ row }) => (
+          <span className="block text-right tabular-nums">
+            {row.original.approved_review_count}
+          </span>
+        ),
       },
       {
         accessorKey: "average_overall_score",
-        header: "Promedio general",
-        cell: ({ row }) => formatScore(row.original.average_overall_score),
+        header: "Promedio",
+        cell: ({ row }) => (
+          <span className="block text-right tabular-nums">
+            {formatScore(row.original.average_overall_score)}
+          </span>
+        ),
       },
     ],
     [queryClient],
@@ -257,12 +265,22 @@ export function ProfessorsReviewsPage() {
                   Actualizando…
                 </div>
               ) : null}
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
+                        <TableHead
+                          key={header.id}
+                          className={cn(
+                            header.column.id === "professor_name" && "w-[62%]",
+                            header.column.id === "approved_review_count" && "w-[18%]",
+                            header.column.id === "average_overall_score" && "w-[20%]",
+                            (header.column.id === "approved_review_count" ||
+                              header.column.id === "average_overall_score") &&
+                              "text-right",
+                          )}
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
@@ -276,7 +294,13 @@ export function ProfessorsReviewsPage() {
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {cell.column.id === "professor_name" ? (
+                            <div className="max-w-full min-w-0 truncate">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </div>
+                          ) : (
+                            flexRender(cell.column.columnDef.cell, cell.getContext())
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
