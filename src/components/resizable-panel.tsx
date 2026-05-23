@@ -84,10 +84,9 @@ export function ResizablePanel({
         {leftContent}
       </div>
 
-      <div
-        role="separator"
+      <button
+        type="button"
         tabIndex={-1}
-        aria-orientation="vertical"
         aria-label="Redimensionar panel"
         onMouseDown={handleMouseDown}
         className={cn(
@@ -101,7 +100,7 @@ export function ResizablePanel({
             isResizing ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50",
           )}
         />
-      </div>
+      </button>
 
       <div className="w-full flex-1 overflow-hidden lg:h-full">{rightContent}</div>
     </div>

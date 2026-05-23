@@ -5,7 +5,7 @@ import {
   IconSchool,
   IconUsers,
 } from "@tabler/icons-react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { EllipsisVertical, Loader2, LogIn } from "lucide-react";
 import { useState } from "react";
 
@@ -52,7 +52,6 @@ function ClaustrumLogo({ className }: { className?: string }) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 256 256"
-      role="img"
       aria-label="Claustrum logo"
       className={cn("text-[#0F172A] dark:text-[#F8FAFC]", className)}
     >
@@ -80,7 +79,6 @@ function ClaustrumLogo({ className }: { className?: string }) {
 
 export function AppSidebar() {
   const { authUser, isAuthLoading } = useAppAuth();
-  const location = useLocation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const user = authUser
@@ -91,9 +89,6 @@ export function AppSidebar() {
       }
     : null;
   const userInitial = user?.name.charAt(0).toUpperCase() ?? "M";
-
-  const isActive = (url: string) =>
-    url === "/overview" ? location.pathname === url : location.pathname.startsWith(url);
 
   return (
     <aside
@@ -118,25 +113,23 @@ export function AppSidebar() {
 
       <nav className="flex flex-1 flex-col justify-center gap-2 py-8">
         {data.navMain.map((item) => {
-          const active = isActive(item.url);
-
           return (
             <Link
               key={item.title}
               to={item.url}
               preload="intent"
+              activeOptions={{ exact: item.url === "/overview" }}
               aria-label={item.title}
               className={cn(
-                "flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
-                active
-                  ? "text-foreground group-hover/sidebar:bg-background group-data-[user-menu=open]/sidebar:bg-background group-hover/sidebar:shadow-sm group-data-[user-menu=open]/sidebar:shadow-sm"
-                  : "hover:bg-background/70 hover:text-foreground",
+                "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
+                "data-[status=active]:text-foreground data-[status=active]:group-hover/sidebar:bg-background data-[status=active]:group-data-[user-menu=open]/sidebar:bg-background",
+                "data-[status=active]:group-hover/sidebar:shadow-sm data-[status=active]:group-data-[user-menu=open]/sidebar:shadow-sm",
               )}
             >
               <span
                 className={cn(
                   "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
-                  active && "bg-background shadow-sm",
+                  "group-data-[status=active]/nav-item:bg-background group-data-[status=active]/nav-item:shadow-sm",
                 )}
               >
                 <item.icon className="size-5" />
@@ -151,25 +144,23 @@ export function AppSidebar() {
 
       <div className="flex flex-col gap-3">
         {data.navSecondary.map((item) => {
-          const active = isActive(item.url);
-
           return (
             <Link
               key={item.title}
               to={item.url}
               preload="intent"
+              activeOptions={{ exact: true }}
               aria-label={item.title}
               className={cn(
-                "flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
-                active
-                  ? "text-foreground group-hover/sidebar:bg-background group-data-[user-menu=open]/sidebar:bg-background group-hover/sidebar:shadow-sm group-data-[user-menu=open]/sidebar:shadow-sm"
-                  : "hover:bg-background/70 hover:text-foreground",
+                "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",
+                "data-[status=active]:text-foreground data-[status=active]:group-hover/sidebar:bg-background data-[status=active]:group-data-[user-menu=open]/sidebar:bg-background",
+                "data-[status=active]:group-hover/sidebar:shadow-sm data-[status=active]:group-data-[user-menu=open]/sidebar:shadow-sm",
               )}
             >
               <span
                 className={cn(
                   "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
-                  active && "bg-background shadow-sm",
+                  "group-data-[status=active]/nav-item:bg-background group-data-[status=active]/nav-item:shadow-sm",
                 )}
               >
                 <item.icon className="size-5" />

@@ -5,7 +5,6 @@ function ClaustrumLogo({ className }: { className?: string }) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 256 256"
-      role="img"
       aria-label="Claustrum logo"
       className={cn("text-[#0F172A] dark:text-[#F8FAFC]", className)}
     >

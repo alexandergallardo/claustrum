@@ -5,8 +5,8 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { signIn } from "@/lib/auth/client";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
+import { signIn } from "@/lib/auth/client";
 
 const RESEND_SECONDS = 30;
 const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
