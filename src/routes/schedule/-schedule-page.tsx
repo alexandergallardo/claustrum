@@ -1043,7 +1043,7 @@ export function SchedulePage() {
                   {isMobile ? (
                     <div className="flex flex-col">
                       <div className="flex flex-col border-b">
-                        <div className="bg-muted/30 flex h-[33px] shrink-0 items-center px-4">
+                        <div className="bg-muted/30 flex h-10 shrink-0 items-center px-3">
                           <div className="flex w-full items-center justify-between gap-2">
                             <h2 className="text-base leading-none font-semibold">
                               {orderedCourses.length} curso

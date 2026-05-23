@@ -32,11 +32,6 @@ export function AppearancePage() {
         description="Define la superficie visual principal de la aplicación."
       >
         <div className="space-y-6">
-          <p className="text-muted-foreground text-sm">
-            Elige cómo quieres que se vea la aplicación. El tema del sistema se adaptará
-            automáticamente a la configuración de tu dispositivo.
-          </p>
-
           <div className="grid gap-3 sm:grid-cols-3">
             {themes.map((themeOption) => {
               const isActive = theme === themeOption.value;
@@ -45,7 +40,10 @@ export function AppearancePage() {
               return (
                 <button
                   key={themeOption.value}
+                  type="button"
                   onClick={() => setTheme(themeOption.value)}
+                  aria-pressed={isActive}
+                  aria-label={`${themeOption.label}${isActive ? ", activo" : ""}`}
                   className={cn(
                     "hover:border-primary/50 hover:bg-accent/50 flex flex-col items-center gap-3 rounded-lg border p-4 text-center transition-colors",
                     isActive ? "border-primary bg-primary/5" : "border-border bg-background",
@@ -60,7 +58,6 @@ export function AppearancePage() {
                     <Icon className="size-6" />
                   </div>
                   <div className="text-sm font-medium">{themeOption.label}</div>
-                  {isActive && <div className="text-primary text-xs font-medium">Activo</div>}
                 </button>
               );
             })}

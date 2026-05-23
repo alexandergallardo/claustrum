@@ -41,7 +41,7 @@ function SettingsSection({ title, description, children, className }: SettingsSe
     >
       <div className="space-y-1.5">
         <h3 className="text-sm font-medium tracking-tight">{title}</h3>
-        <p className="text-muted-foreground max-w-40 text-sm leading-6">{description}</p>
+        <p className="text-muted-foreground text-sm leading-6 md:max-w-40">{description}</p>
       </div>
       <div className="min-w-0 space-y-4">{children}</div>
     </section>
