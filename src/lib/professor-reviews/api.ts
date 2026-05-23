@@ -1,5 +1,7 @@
 import type {
   ProfessorReviewCourseOption,
+  ProfessorReviewReportModerationRow,
+  ProfessorReviewReportStatus,
   ProfessorReviewTermOption,
   ProfessorReviewModerationRow,
   ProfessorReviewPublicRow,
@@ -10,6 +12,7 @@ import type {
   ProfessorReviewStatus,
   SearchProfessorReviewStatsParams,
   SubmitProfessorReviewPayload,
+  SubmitProfessorReviewReportPayload,
 } from "@/lib/professor-reviews/types";
 
 import { authClient } from "@/lib/auth/client";
@@ -213,6 +216,32 @@ export async function setProfessorReviewReaction(
   }
 }
 
+export async function submitProfessorReviewReport(
+  payload: SubmitProfessorReviewReportPayload,
+): Promise<void> {
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
+  }
+
+  const response = await fetch(`${apiBaseUrl}/professor-reviews/${payload.reviewId}/report`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      reason: payload.reason,
+      description: payload.description,
+      turnstileToken: payload.turnstileToken,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Error desconocido" }));
+    throw new Error(body.error ?? `Error ${response.status}`);
+  }
+}
+
 export async function getProfessorReviewsForModeration(
   status: ProfessorReviewStatus,
   limit: number,
@@ -239,6 +268,37 @@ export async function moderateProfessorReview(
     p_review_id: reviewId,
     p_new_status: status,
     p_moderation_note: note.trim() === "" ? null : note.trim(),
+  });
+
+  if (error) throw error;
+}
+
+export async function getProfessorReviewReportsForModeration(
+  status: ProfessorReviewReportStatus,
+  limit: number,
+  offset: number,
+): Promise<ProfessorReviewReportModerationRow[]> {
+  const supabase = getSupabaseBrowserClient();
+  const { data, error } = await supabase.rpc("get_professor_review_reports_for_moderation", {
+    p_status: status,
+    p_limit: limit,
+    p_offset: offset,
+  });
+
+  if (error) throw error;
+  return (data ?? []) as ProfessorReviewReportModerationRow[];
+}
+
+export async function moderateProfessorReviewReport(
+  reportId: number,
+  status: Exclude<ProfessorReviewReportStatus, "pending">,
+  note: string,
+): Promise<void> {
+  const supabase = getSupabaseBrowserClient();
+  const { error } = await supabase.rpc("moderate_professor_review_report", {
+    p_report_id: reportId,
+    p_new_status: status,
+    p_resolution_note: note.trim() === "" ? null : note.trim(),
   });
 
   if (error) throw error;

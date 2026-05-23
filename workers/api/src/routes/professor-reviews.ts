@@ -42,6 +42,31 @@ const professorReviewReactionSchema = z.object({
   reaction: z.enum(["like", "dislike"]).nullable(),
 });
 
+const PROFESSOR_REVIEW_REPORT_REASONS = [
+  "spam",
+  "ofensivo",
+  "acoso",
+  "datos_personales",
+  "falso_enganoso",
+  "otro",
+] as const;
+
+const professorReviewReportSchema = z
+  .object({
+    reason: z.enum(PROFESSOR_REVIEW_REPORT_REASONS),
+    description: z.string().trim().max(1000).optional(),
+    turnstileToken: z.string().min(1),
+  })
+  .superRefine((value, context) => {
+    if (value.reason === "otro" && (!value.description || value.description.trim().length === 0)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Description is required when reason is 'otro'",
+        path: ["description"],
+      });
+    }
+  });
+
 function isRealProfessorName(fullName: string): boolean {
   const normalized = fullName.trim().toLowerCase();
   if (normalized.length === 0) return false;
@@ -246,6 +271,67 @@ professorReviewsRoutes.post("/:reviewId/reaction", async (c) => {
     request,
     c.env,
   );
+});
+
+professorReviewsRoutes.post("/:reviewId/report", async (c) => {
+  const request = c.req.raw;
+  const reviewId = c.req.param("reviewId");
+  if (!/^\d+$/.test(reviewId)) {
+    return fail(400, "Invalid review id", request, c.env);
+  }
+
+  const body = await request.json();
+  const parsed = professorReviewReportSchema.safeParse(body);
+  if (!parsed.success) {
+    return fail(400, "Invalid report payload", request, c.env);
+  }
+
+  if (!c.env.TURNSTILE_SECRET_KEY) {
+    return fail(500, "Missing Turnstile secret configuration", request, c.env);
+  }
+
+  const isHuman = await verifyTurnstileToken(
+    parsed.data.turnstileToken,
+    c.env,
+    request.headers.get("cf-connecting-ip"),
+  );
+  if (!isHuman) {
+    return fail(400, "Invalid anti-spam token", request, c.env);
+  }
+
+  const supabase = getSupabase(c.env);
+
+  const { data: review, error: reviewError } = await supabase
+    .from("professor_review")
+    .select("id,status")
+    .eq("id", reviewId)
+    .eq("status", "approved")
+    .maybeSingle();
+
+  if (reviewError) {
+    return fail(400, reviewError.message, request, c.env);
+  }
+
+  if (!review) {
+    return fail(404, "Review not found", request, c.env);
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("professor_review_report")
+    .insert({
+      review_id: Number(reviewId),
+      reason: parsed.data.reason,
+      description: parsed.data.description?.trim() || null,
+      status: "pending",
+    })
+    .select("id,review_id,status,created_at")
+    .single();
+
+  if (insertError) {
+    return fail(400, insertError.message, request, c.env);
+  }
+
+  return ok({ success: true, report: inserted }, request, c.env);
 });
 
 export default professorReviewsRoutes;

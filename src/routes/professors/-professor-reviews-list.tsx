@@ -7,11 +7,24 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Flag, ThumbsDown, ThumbsUp } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 
-import type { ProfessorReviewPublicRow } from "@/lib/professor-reviews/types";
+import type {
+  ProfessorReviewPublicRow,
+  ProfessorReviewReportReason,
+} from "@/lib/professor-reviews/types";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationContent,
@@ -27,7 +40,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useSetProfessorReviewReaction } from "@/lib/hooks/use-professor-reviews";
+import { Textarea } from "@/components/ui/textarea";
+import { getTurnstileSiteKey } from "@/lib/env/public";
+import {
+  useSetProfessorReviewReaction,
+  useSubmitProfessorReviewReport,
+} from "@/lib/hooks/use-professor-reviews";
+
+const Turnstile = lazy(() =>
+  import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
+);
+
+const REPORT_REASONS: Array<{ value: ProfessorReviewReportReason; label: string }> = [
+  { value: "spam", label: "Spam" },
+  { value: "ofensivo", label: "Contenido ofensivo" },
+  { value: "acoso", label: "Acoso" },
+  { value: "datos_personales", label: "Datos personales" },
+  { value: "falso_enganoso", label: "Contenido falso o engañoso" },
+  { value: "otro", label: "Otro" },
+];
 
 function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -61,11 +92,13 @@ function ReviewActions({
   mobile = false,
   isPending,
   onReaction,
+  onReport,
 }: {
   review: ProfessorReviewPublicRow;
   mobile?: boolean;
   isPending: boolean;
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void;
+  onReport: (review: ProfessorReviewPublicRow) => void;
 }) {
   const isLiked = review.my_reaction === "like";
   const isDisliked = review.my_reaction === "dislike";
@@ -109,6 +142,7 @@ function ReviewActions({
       <div className="bg-border mx-1 h-4 w-px" />
       <button
         type="button"
+        onClick={() => onReport(review)}
         className="text-muted-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors"
       >
         <Flag className="size-3.5" />
@@ -122,6 +156,7 @@ const columnHelper = createColumnHelper<ProfessorReviewPublicRow>();
 
 function getColumns(
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void,
+  onReport: (review: ProfessorReviewPublicRow) => void,
   isReactionPending: boolean,
 ) {
   return [
@@ -235,6 +270,7 @@ function getColumns(
             review={row.original}
             isPending={isReactionPending}
             onReaction={onReaction}
+            onReport={onReport}
           />
         </div>
       ),
@@ -274,6 +310,12 @@ export function ProfessorReviewsList({
   showPagination = true,
 }: ProfessorReviewsListProps) {
   const reactionMutation = useSetProfessorReviewReaction();
+  const reportMutation = useSubmitProfessorReviewReport();
+  const turnstileSiteKey = getTurnstileSiteKey();
+  const [reviewToReport, setReviewToReport] = useState<ProfessorReviewPublicRow | null>(null);
+  const [reportReason, setReportReason] = useState<ProfessorReviewReportReason>("spam");
+  const [reportDescription, setReportDescription] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   function handleReaction(review: ProfessorReviewPublicRow, reaction: ReactionValue) {
     reactionMutation.mutate(
@@ -289,9 +331,44 @@ export function ProfessorReviewsList({
     );
   }
 
+  function openReportDialog(review: ProfessorReviewPublicRow) {
+    setReviewToReport(review);
+    setReportReason("spam");
+    setReportDescription("");
+    setTurnstileToken(null);
+  }
+
+  async function submitReport() {
+    if (!reviewToReport) return;
+    if (!turnstileToken) {
+      toast.error("Completa la verificación anti-spam para reportar");
+      return;
+    }
+    if (reportReason === "otro" && reportDescription.trim().length === 0) {
+      toast.error("Describe el motivo cuando eliges 'Otro'");
+      return;
+    }
+
+    try {
+      await reportMutation.mutateAsync({
+        reviewId: reviewToReport.review_id,
+        reason: reportReason,
+        description: reportDescription,
+        turnstileToken,
+      });
+      toast.success("Reporte enviado", {
+        description: "Gracias. Nuestro equipo lo revisará pronto.",
+      });
+      setReviewToReport(null);
+      setTurnstileToken(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo enviar el reporte");
+    }
+  }
+
   const table = useReactTable({
     data: reviewRows,
-    columns: getColumns(handleReaction, reactionMutation.isPending),
+    columns: getColumns(handleReaction, openReportDialog, reactionMutation.isPending),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: totalPages,
@@ -418,6 +495,7 @@ export function ProfessorReviewsList({
                       mobile
                       isPending={reactionMutation.isPending}
                       onReaction={handleReaction}
+                      onReport={openReportDialog}
                     />
                   </section>
                 </article>
@@ -534,6 +612,92 @@ export function ProfessorReviewsList({
           </div>
         </div>
       )}
+
+      <Dialog
+        open={reviewToReport !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setReviewToReport(null);
+            setTurnstileToken(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reportar reseña</DialogTitle>
+            <DialogDescription>Reporte anónimo para revisión de moderación.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Motivo</p>
+              <Select
+                value={reportReason}
+                onValueChange={(value) => setReportReason(value as ProfessorReviewReportReason)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPORT_REASONS.map((reason) => (
+                    <SelectItem key={reason.value} value={reason.value}>
+                      {reason.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-sm font-medium">
+                {reportReason === "otro" ? "Descripción" : "Descripción (opcional)"}
+              </p>
+              <Textarea
+                value={reportDescription}
+                onChange={(event) => setReportDescription(event.target.value)}
+                placeholder={
+                  reportReason === "otro"
+                    ? "Describe el motivo del reporte"
+                    : "Contexto adicional para moderación"
+                }
+              />
+            </div>
+
+            {turnstileSiteKey ? (
+              <Suspense
+                fallback={
+                  <div className="text-muted-foreground text-xs">Cargando verificación…</div>
+                }
+              >
+                <Turnstile
+                  siteKey={turnstileSiteKey}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onError={() => setTurnstileToken(null)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </Suspense>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
+                reportes.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              onClick={() => void submitReport()}
+              disabled={
+                !turnstileSiteKey ||
+                reportMutation.isPending ||
+                (reportReason === "otro" && reportDescription.trim().length === 0)
+              }
+            >
+              Enviar reporte
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

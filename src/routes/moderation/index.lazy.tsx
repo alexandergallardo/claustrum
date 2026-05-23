@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { EvaluationModerationRow } from "@/lib/evaluations/types";
-import type { ProfessorReviewModerationRow } from "@/lib/professor-reviews/types";
+import type {
+  ProfessorReviewModerationRow,
+  ProfessorReviewReportModerationRow,
+} from "@/lib/professor-reviews/types";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -21,13 +24,15 @@ import { useEvaluationModerationQueue, useModerateEvaluation } from "@/lib/hooks
 import { useModerationCounts } from "@/lib/hooks/use-moderation";
 import {
   useIsAdmin,
+  useModerateProfessorReviewReport,
   useModerateProfessorReview,
   useModerationQueue,
+  useReportModerationQueue,
 } from "@/lib/hooks/use-professor-reviews";
 import { useAuthUser } from "@/lib/hooks/use-queries";
 import { cn } from "@/lib/utils";
 
-type Tab = "reviews" | "evaluations";
+type Tab = "reviews" | "evaluations" | "review-reports";
 
 const PAGE_SIZE = 20;
 
@@ -58,9 +63,11 @@ function AdminModerationPage() {
   const [tab, setTab] = useState<Tab>("reviews");
   const [reviewPage, setReviewPage] = useState(0);
   const [evaluationPage, setEvaluationPage] = useState(0);
+  const [reviewReportPage, setReviewReportPage] = useState(0);
   const [moderationNote, setModerationNote] = useState<Record<number, string>>({});
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null);
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
+  const [selectedReviewReportId, setSelectedReviewReportId] = useState<number | null>(null);
 
   const countsQuery = useModerationCounts(canModerate);
   const reviewsQuery = useModerationQueue("pending", reviewPage, PAGE_SIZE, canModerate);
@@ -70,8 +77,15 @@ function AdminModerationPage() {
     PAGE_SIZE,
     canModerate,
   );
+  const reviewReportsQuery = useReportModerationQueue(
+    "pending",
+    reviewReportPage,
+    PAGE_SIZE,
+    canModerate,
+  );
   const moderateReviewMutation = useModerateProfessorReview();
   const moderateEvaluationMutation = useModerateEvaluation();
+  const moderateReviewReportMutation = useModerateProfessorReviewReport();
 
   const reviewRows = useMemo(
     () => (reviewsQuery.data ?? []) as ProfessorReviewModerationRow[],
@@ -83,8 +97,14 @@ function AdminModerationPage() {
   );
   const reviewTotal = reviewRows[0]?.total_count ?? 0;
   const evaluationTotal = evaluationRows[0]?.total_count ?? 0;
+  const reviewReportRows = useMemo(
+    () => (reviewReportsQuery.data ?? []) as ProfessorReviewReportModerationRow[],
+    [reviewReportsQuery.data],
+  );
+  const reviewReportTotal = reviewReportRows[0]?.total_count ?? 0;
   const reviewHasMore = reviewTotal > (reviewPage + 1) * PAGE_SIZE;
   const evaluationHasMore = evaluationTotal > (evaluationPage + 1) * PAGE_SIZE;
+  const reviewReportHasMore = reviewReportTotal > (reviewReportPage + 1) * PAGE_SIZE;
 
   const selectedReview = useMemo(
     () => reviewRows.find((r) => r.review_id === selectedReviewId) ?? null,
@@ -93,6 +113,10 @@ function AdminModerationPage() {
   const selectedEvaluation = useMemo(
     () => evaluationRows.find((e) => e.id === selectedEvaluationId) ?? null,
     [evaluationRows, selectedEvaluationId],
+  );
+  const selectedReviewReport = useMemo(
+    () => reviewReportRows.find((r) => r.report_id === selectedReviewReportId) ?? null,
+    [reviewReportRows, selectedReviewReportId],
   );
 
   const handleApproveReview = async (reviewId: number) => {
@@ -151,6 +175,34 @@ function AdminModerationPage() {
     }
   };
 
+  const handleResolveReviewReport = async (reportId: number) => {
+    try {
+      await moderateReviewReportMutation.mutateAsync({
+        reportId,
+        status: "resolved",
+        note: moderationNote[reportId] ?? "",
+      });
+      toast.success("Reporte resuelto");
+      if (selectedReviewReportId === reportId) setSelectedReviewReportId(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo resolver el reporte.");
+    }
+  };
+
+  const handleDismissReviewReport = async (reportId: number) => {
+    try {
+      await moderateReviewReportMutation.mutateAsync({
+        reportId,
+        status: "dismissed",
+        note: moderationNote[reportId] ?? "",
+      });
+      toast.success("Reporte descartado");
+      if (selectedReviewReportId === reportId) setSelectedReviewReportId(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo descartar el reporte.");
+    }
+  };
+
   if (isAuthLoading || isAdminQuery.isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
@@ -165,6 +217,7 @@ function AdminModerationPage() {
 
   const reviewPending = countsQuery.data?.pendingReviews ?? reviewTotal;
   const evaluationPending = countsQuery.data?.pendingEvaluations ?? evaluationTotal;
+  const reviewReportsPending = countsQuery.data?.pendingReviewReports ?? reviewReportTotal;
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
@@ -175,6 +228,7 @@ function AdminModerationPage() {
             setTab("reviews");
             setSelectedReviewId(null);
             setSelectedEvaluationId(null);
+            setSelectedReviewReportId(null);
           }}
         >
           Reseñas
@@ -190,12 +244,29 @@ function AdminModerationPage() {
             setTab("evaluations");
             setSelectedEvaluationId(null);
             setSelectedReviewId(null);
+            setSelectedReviewReportId(null);
           }}
         >
           Evaluaciones
           {evaluationPending > 0 && (
             <span className="bg-foreground text-background ml-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-semibold">
               {evaluationPending > 99 ? "99+" : evaluationPending}
+            </span>
+          )}
+        </TabButton>
+        <TabButton
+          active={tab === "review-reports"}
+          onClick={() => {
+            setTab("review-reports");
+            setSelectedEvaluationId(null);
+            setSelectedReviewId(null);
+            setSelectedReviewReportId(null);
+          }}
+        >
+          Reportes
+          {reviewReportsPending > 0 && (
+            <span className="bg-foreground text-background ml-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-semibold">
+              {reviewReportsPending > 99 ? "99+" : reviewReportsPending}
             </span>
           )}
         </TabButton>
@@ -235,6 +306,176 @@ function AdminModerationPage() {
           onReject={handleRejectEvaluation}
           isPending={moderateEvaluationMutation.isPending}
         />
+      )}
+
+      {tab === "review-reports" && (
+        <ReviewReportSection
+          rows={reviewReportRows}
+          selectedReport={selectedReviewReport}
+          onSelect={setSelectedReviewReportId}
+          page={reviewReportPage}
+          hasMore={reviewReportHasMore}
+          isLoading={reviewReportsQuery.isLoading}
+          isFetching={reviewReportsQuery.isFetching}
+          onPageChange={setReviewReportPage}
+          moderationNote={moderationNote}
+          onNoteChange={(id, value) => setModerationNote((prev) => ({ ...prev, [id]: value }))}
+          onResolve={handleResolveReviewReport}
+          onDismiss={handleDismissReviewReport}
+          isPending={moderateReviewReportMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function ReviewReportSection({
+  rows,
+  selectedReport,
+  onSelect,
+  page,
+  hasMore,
+  isLoading,
+  isFetching,
+  onPageChange,
+  moderationNote,
+  onNoteChange,
+  onResolve,
+  onDismiss,
+  isPending,
+}: {
+  rows: ProfessorReviewReportModerationRow[];
+  selectedReport: ProfessorReviewReportModerationRow | null;
+  onSelect: (id: number | null) => void;
+  page: number;
+  hasMore: boolean;
+  isLoading: boolean;
+  isFetching: boolean;
+  onPageChange: (page: number) => void;
+  moderationNote: Record<number, string>;
+  onNoteChange: (id: number, value: string) => void;
+  onResolve: (id: number) => Promise<void>;
+  onDismiss: (id: number) => Promise<void>;
+  isPending: boolean;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+      <div
+        className={cn("flex w-full flex-col lg:w-72 xl:w-80", selectedReport && "hidden lg:flex")}
+      >
+        <div className="flex min-h-0 flex-1 flex-col gap-1">
+          {isLoading ? (
+            <p className="text-muted-foreground px-1 text-sm">Cargando reportes…</p>
+          ) : rows.length === 0 ? (
+            <p className="text-muted-foreground px-1 text-sm">No hay reportes pendientes.</p>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {rows.map((report) => (
+                <button
+                  key={report.report_id}
+                  type="button"
+                  onClick={() => onSelect(report.report_id)}
+                  className={cn(
+                    "flex w-full flex-col gap-0.5 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                    selectedReport?.report_id === report.report_id
+                      ? "border-foreground/30 bg-accent"
+                      : "hover:bg-muted border-transparent",
+                  )}
+                >
+                  <span className="truncate font-medium">{report.professor_name}</span>
+                  <span className="text-muted-foreground truncate text-xs">{report.reason}</span>
+                  <span className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
+                    {report.comment}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {rows.length > 0 && (
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-muted-foreground text-xs">Pág. {page + 1}</span>
+            <Pagination className="w-auto">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onPageChange(Math.max(page - 1, 0));
+                    }}
+                    aria-disabled={page === 0 || isFetching}
+                    className={page === 0 || isFetching ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onPageChange(page + 1);
+                    }}
+                    aria-disabled={!hasMore || isFetching}
+                    className={!hasMore || isFetching ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
+
+      {selectedReport && (
+        <div className="flex flex-1 flex-col gap-4 lg:max-h-full lg:overflow-y-auto">
+          <div className="flex items-start justify-between gap-2 sm:hidden">
+            <h2 className="text-sm font-semibold">Reporte</h2>
+            <Button variant="ghost" size="sm" onClick={() => onSelect(null)}>
+              Volver
+            </Button>
+          </div>
+          <div className="space-y-3 rounded-lg border p-4">
+            <div>
+              <p className="font-medium">{selectedReport.professor_name}</p>
+              <p className="text-muted-foreground text-sm">
+                {selectedReport.course_code} - {selectedReport.course_name}
+              </p>
+            </div>
+            <Separator />
+            <p className="text-sm">{selectedReport.comment}</p>
+            <div className="text-muted-foreground text-xs">
+              Motivo: {selectedReport.reason}
+              {selectedReport.description ? ` — ${selectedReport.description}` : ""}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`note-report-${selectedReport.report_id}`}>Nota de resolución</Label>
+              <Textarea
+                id={`note-report-${selectedReport.report_id}`}
+                value={moderationNote[selectedReport.report_id] ?? ""}
+                onChange={(e) => onNoteChange(selectedReport.report_id, e.target.value)}
+                className="h-20 min-h-0 text-xs"
+                placeholder="Opcional — contexto de la decisión"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                onClick={() => void onResolve(selectedReport.report_id)}
+                disabled={isPending}
+              >
+                Resolver
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => void onDismiss(selectedReport.report_id)}
+                disabled={isPending}
+              >
+                Descartar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

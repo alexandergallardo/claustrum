@@ -11,6 +11,19 @@ export type ReviewTag = (typeof REVIEW_TAG_OPTIONS)[number];
 
 export type ProfessorReviewStatus = "pending" | "approved" | "rejected";
 
+export type ProfessorReviewReportStatus = "pending" | "resolved" | "dismissed";
+
+export const PROFESSOR_REVIEW_REPORT_REASONS = [
+  "spam",
+  "ofensivo",
+  "acoso",
+  "datos_personales",
+  "falso_enganoso",
+  "otro",
+] as const;
+
+export type ProfessorReviewReportReason = (typeof PROFESSOR_REVIEW_REPORT_REASONS)[number];
+
 export type ProfessorReviewReaction = "like" | "dislike";
 
 export type ProfessorReviewStatsRow = {
@@ -73,6 +86,21 @@ export type ProfessorReviewModerationRow = {
   total_count: number;
 };
 
+export type ProfessorReviewReportModerationRow = {
+  report_id: number;
+  review_id: number;
+  reason: ProfessorReviewReportReason;
+  description: string | null;
+  status: ProfessorReviewReportStatus;
+  created_at: string;
+  professor_id: string;
+  professor_name: string;
+  course_code: string;
+  course_name: string;
+  comment: string;
+  total_count: number;
+};
+
 export type ProfessorReviewTagCount = {
   tag: string;
   count: number;
@@ -130,5 +158,12 @@ export type SubmitProfessorReviewPayload = {
   gradeReceived?: string;
   engagementLevel: number;
   tags: ReviewTag[];
+  turnstileToken: string;
+};
+
+export type SubmitProfessorReviewReportPayload = {
+  reviewId: number;
+  reason: ProfessorReviewReportReason;
+  description?: string;
   turnstileToken: string;
 };

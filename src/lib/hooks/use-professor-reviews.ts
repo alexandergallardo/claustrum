@@ -1,11 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
+  ProfessorReviewReportStatus,
   ProfessorReviewPublicRow,
   ProfessorReviewReaction,
   ProfessorReviewStatus,
   SearchProfessorReviewStatsParams,
   SubmitProfessorReviewPayload,
+  SubmitProfessorReviewReportPayload,
 } from "@/lib/professor-reviews/types";
 
 import {
@@ -13,13 +15,16 @@ import {
   getProfessorOfferingTerms,
   getProfessorReviewCourses,
   getProfessorById,
+  getProfessorReviewReportsForModeration,
   getProfessorReviewSummary,
   getProfessorReviewsForModeration,
   getProfessorReviewsPublic,
+  moderateProfessorReviewReport,
   moderateProfessorReview,
   searchProfessorReviewCourses,
   searchProfessorReviewStats,
   setProfessorReviewReaction,
+  submitProfessorReviewReport,
   submitProfessorReview,
 } from "@/lib/professor-reviews/api";
 
@@ -130,6 +135,13 @@ export function useSetProfessorReviewReaction() {
   });
 }
 
+export function useSubmitProfessorReviewReport() {
+  return useMutation({
+    mutationFn: (payload: SubmitProfessorReviewReportPayload) =>
+      submitProfessorReviewReport(payload),
+  });
+}
+
 export function useProfessorReviewCourses(professorId: string | null) {
   return useQuery({
     queryKey: ["professorReviewCoursesByProfessor", professorId],
@@ -182,6 +194,32 @@ export function useModerateProfessorReview() {
       void queryClient.invalidateQueries({ queryKey: ["professorModerationQueue"] });
       void queryClient.invalidateQueries({ queryKey: ["professorReviewStats"] });
       void queryClient.invalidateQueries({ queryKey: ["professorReviewsPublic"] });
+    },
+  });
+}
+
+export function useReportModerationQueue(
+  status: ProfessorReviewReportStatus,
+  page: number,
+  pageSize: number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["professorReviewReportModerationQueue", status, page, pageSize],
+    queryFn: () => getProfessorReviewReportsForModeration(status, pageSize, page * pageSize),
+    enabled,
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+export function useModerateProfessorReviewReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (variables: { reportId: number; status: "resolved" | "dismissed"; note: string }) =>
+      moderateProfessorReviewReport(variables.reportId, variables.status, variables.note),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["professorReviewReportModerationQueue"] });
+      void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
     },
   });
 }
