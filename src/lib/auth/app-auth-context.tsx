@@ -1,6 +1,7 @@
-import { createContext, use, useMemo, type ReactNode } from "react";
+import { createContext, use, useEffect, useMemo, type ReactNode } from "react";
 
 import { useAuthUser } from "@/lib/hooks/use-queries";
+import { resetSupabaseAuthTokenState } from "@/lib/supabase/browser-client";
 
 export type AppAuthUser = NonNullable<ReturnType<typeof useAuthUser>["data"]>;
 
@@ -13,6 +14,11 @@ const AppAuthContext = createContext<AppAuthContextValue | null>(null);
 
 export function AppAuthProvider({ children }: { children: ReactNode }) {
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
+
+  useEffect(() => {
+    if (!authUser) return;
+    resetSupabaseAuthTokenState();
+  }, [authUser]);
 
   const value = useMemo(
     () => ({ authUser: authUser ?? null, isAuthLoading }),
