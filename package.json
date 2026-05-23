@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
+    "dev": "pnpm run dev:web & pnpm run dev:api",
+    "dev:web": "vite --port 3000",
+    "dev:api": "pnpm --filter claustrum-api dev",
     "build": "fumadocs-mdx && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
