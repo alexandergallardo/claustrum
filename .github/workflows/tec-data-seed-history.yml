@@ -40,7 +40,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -57,6 +57,28 @@ jobs:
           --keep-sql
           --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:5432/postgres
 
+      - name: Capture generated seed path
+        id: generated_seed
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          seed_dir = Path("supabase/seeds/tec-data")
+          seeds = sorted(seed_dir.glob("seed_*.sql"), key=lambda p: p.stat().st_mtime, reverse=True)
+          if not seeds:
+              raise SystemExit("No generated seed SQL file found")
+
+          latest_sql = seeds[0]
+          latest_manifest = latest_sql.with_suffix(".json")
+          if not latest_manifest.exists():
+              raise SystemExit(f"Manifest for generated seed not found: {latest_manifest}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"seed_sql={latest_sql}\n")
+              out.write(f"seed_manifest={latest_manifest}\n")
+          PY
+
       - name: Detect non-noop seed changes
         id: seed_check
         run: |
@@ -65,26 +87,20 @@ jobs:
           import os
           from pathlib import Path
 
-          seed_dir = Path("supabase/seeds/tec-data")
-          manifests = sorted(seed_dir.glob("seed_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-          if not manifests:
-              print("create_pr=false")
-              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-                  out.write("create_pr=false\n")
-              raise SystemExit(0)
-
-          latest = manifests[0]
-          payload = json.loads(latest.read_text(encoding="utf-8"))
+          manifest_path = Path(os.environ["SEED_MANIFEST_PATH"])
+          payload = json.loads(manifest_path.read_text(encoding="utf-8"))
           noop = bool(payload.get("noop", False))
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
               out.write(f"create_pr={'true' if not noop else 'false'}\n")
               out.write(f"seed_file={payload.get('seed_file', '')}\n")
 
-          print(f"Latest manifest: {latest.name}")
+          print(f"Manifest: {manifest_path.name}")
           print(f"Seed file: {payload.get('seed_file', '')}")
           print(f"Noop: {noop}")
           PY
+        env:
+          SEED_MANIFEST_PATH: ${{ steps.generated_seed.outputs.seed_manifest }}
 
       - name: Create pull request with generated seeds
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.seed_check.outputs.create_pr == 'true'
