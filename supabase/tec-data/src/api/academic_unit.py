@@ -2,6 +2,7 @@
 
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -138,7 +139,11 @@ class AcademicUnitClient(APIClient):
             return None
 
     def download_oferta_cursos(
-        self, output_dir: Path, school_codes: list[str], year: str
+        self,
+        output_dir: Path,
+        school_codes: list[str],
+        year: str,
+        progress_callback: Callable[[int, int, str], None] | None = None,
     ) -> dict[str, Path]:
         """Download course offer data for all schools for a given year."""
         output_dir = output_dir / "course_offer" / year
@@ -146,7 +151,8 @@ class AcademicUnitClient(APIClient):
 
         files: dict[str, Path] = {}
 
-        for code in school_codes:
+        total = len(school_codes)
+        for idx, code in enumerate(school_codes, 1):
             try:
                 oferta = self.get_oferta_cursos(code, year)
                 if oferta and self._has_course_offer_data(oferta):
@@ -157,8 +163,12 @@ class AcademicUnitClient(APIClient):
                             json.dumps(data, indent=2, ensure_ascii=False)
                         )
                         files[code] = file_path
+                if progress_callback is not None:
+                    progress_callback(idx, total, code)
             except requests.RequestException as e:
                 print(f"Error downloading course offer for {code}: {e}")
+                if progress_callback is not None:
+                    progress_callback(idx, total, code)
 
         return files
 
@@ -200,7 +210,10 @@ class AcademicUnitClient(APIClient):
             return ""
 
     def download_horarios_from_course_offer(
-        self, output_dir: Path, year: str
+        self,
+        output_dir: Path,
+        year: str,
+        progress_callback: Callable[[int, int, str, str, str], None] | None = None,
     ) -> dict[str, Path]:
         """Download schedule data using already downloaded course offer files."""
         course_offer_dir = output_dir / "course_offer" / year
@@ -245,10 +258,6 @@ class AcademicUnitClient(APIClient):
                     combinaciones[key] = dsc_sede
 
         total_combinaciones = len(combinaciones)
-        print(
-            f"Found {total_combinaciones} unique (sede, carrera, periodo) combinations to download"
-        )
-
         downloaded = 0
         failed = 0
         skipped = 0
@@ -258,10 +267,6 @@ class AcademicUnitClient(APIClient):
             combinaciones.items(), 1
         ):
             try:
-                print(
-                    f"[{idx}/{total_combinaciones}] Downloading {sede}/{carrera}/{periodo}...",
-                    end=" ",
-                )
                 html = self.get_horario_guia(sede, carrera, periodo)
                 if html:
                     parsed_data = self._parse_horario_html(html)
@@ -274,20 +279,19 @@ class AcademicUnitClient(APIClient):
                         files[file_name] = file_path
                         downloaded += 1
                         total_courses += len(parsed_data)
-                        print(f"OK ({len(parsed_data)} courses)")
                     else:
                         skipped += 1
-                        print("SKIPPED (no course data)")
                 else:
                     skipped += 1
-                    print("SKIPPED (empty response)")
             except requests.RequestException as e:
                 failed += 1
-                print(f"FAILED ({e})")
+            if progress_callback is not None:
+                progress_callback(idx, total_combinaciones, sede, carrera, periodo)
 
-        print(
-            f"\nDownload complete: {downloaded} files, {total_courses} courses, {skipped} skipped, {failed} failed"
-        )
+        if progress_callback is None:
+            print(
+                f"Download complete: {downloaded} files, {total_courses} courses, {skipped} skipped, {failed} failed"
+            )
 
         return files
 

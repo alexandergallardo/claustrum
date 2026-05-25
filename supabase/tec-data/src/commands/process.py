@@ -6,6 +6,7 @@ from typing import Any
 
 import typer
 
+from src.commands.scope import normalize_scope
 from src.commands.process_course_offering import run_process_course_offering
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
@@ -748,36 +749,28 @@ def process_study_plan_complete(
 
 def run_process(
     data_dir: Path,
-    entity: str | None = None,
+    scope: str = "all",
     university_id: int | None = None,
     years: list[int] | None = None,
 ) -> None:
-    """Run processing for specified entity."""
-    if entity and entity not in (
-        "academic_unit",
-        "campus",
-        "academic_period",
-        "study_plan",
-        "course",
-        "course_relation",
-        "course_offering",
-    ):
-        typer.echo(f"Entity '{entity}' not implemented yet")
-        raise typer.Exit(1)
+    """Run processing for specified scope."""
+    scope = normalize_scope(scope)
+    run_catalog = scope in {"catalog", "all"}
+    run_offering = scope in {"offering", "all"}
 
     try:
         # Ensure reference data exists (country, university)
         ensure_reference_data(data_dir)
 
         # Process campus if requested or all
-        if entity is None or entity == "campus":
+        if run_catalog:
             campuses = process_campus(data_dir, university_id)
             campus_path = data_dir / "campus" / "data.json"
             campus_path.write_text(json.dumps(campuses, indent=2, ensure_ascii=False))
             typer.echo(f"Processed {len(campuses)} campuses to {campus_path}")
 
         # Process academic_unit if requested or all
-        if entity is None or entity == "academic_unit":
+        if run_catalog:
             academic_units, unit_campus_relations = process_academic_unit(
                 data_dir, university_id
             )
@@ -800,7 +793,7 @@ def run_process(
             )
 
         # Process academic_period if requested or all
-        if entity is None or entity == "academic_period":
+        if run_catalog:
             modalities, terms = process_academic_period(data_dir, years)
 
             # Save academic_modality data
@@ -820,7 +813,7 @@ def run_process(
             typer.echo(f"Processed {len(terms)} academic_term to {term_path}")
 
         # Process study_plan and related entities if requested or all
-        if entity is None or entity in ("study_plan", "course", "course_relation"):
+        if run_catalog:
             (
                 study_plans,
                 plan_campus_relations,
@@ -831,7 +824,7 @@ def run_process(
             ) = process_study_plan_complete(data_dir)
 
             # Save study_plan data
-            if entity is None or entity == "study_plan":
+            if run_catalog:
                 plan_path = data_dir / "study_plan" / "data.json"
                 plan_path.parent.mkdir(parents=True, exist_ok=True)
                 plan_path.write_text(
@@ -870,7 +863,7 @@ def run_process(
                 )
 
             # Save course data (always when processing study_plan)
-            if entity is None or entity in ("study_plan", "course"):
+            if run_catalog:
                 course_path = data_dir / "course" / "data.json"
                 course_path.parent.mkdir(parents=True, exist_ok=True)
                 course_path.write_text(
@@ -879,7 +872,7 @@ def run_process(
                 typer.echo(f"Processed {len(courses)} courses to {course_path}")
 
             # Save course_relation data (always when processing study_plan)
-            if entity is None or entity in ("study_plan", "course_relation"):
+            if run_catalog:
                 course_rel_path = data_dir / "course_relation" / "data.json"
                 course_rel_path.parent.mkdir(parents=True, exist_ok=True)
                 course_rel_path.write_text(
@@ -897,14 +890,12 @@ def run_process(
         raise typer.Exit(1)
 
     # Process course_offering if requested (requires course_offer and schedule_guia first)
-    if entity == "course_offering":
-        if years and len(years) == 1:
-            run_process_course_offering(data_dir, str(years[0]))
-        else:
-            typer.echo(
-                "Error: --years with a single year is required for course_offering processing"
-            )
+    if run_offering:
+        if not years:
+            typer.echo("Error: --years is required for offering processing")
             raise typer.Exit(1)
+        for year in sorted(set(years)):
+            run_process_course_offering(data_dir, str(year))
 
 
 @app.command()
@@ -912,8 +903,8 @@ def process_cmd(
     data_dir: Path = typer.Option(
         Path("data/raw"), "--data-dir", "-d", help="Data directory with raw files"
     ),
-    entity: str | None = typer.Option(
-        None, "--entity", "-e", help="Specific entity to process (e.g., campus)"
+    scope: str = typer.Option(
+        "all", "--scope", "-s", help="Scope to process: catalog, offering, all"
     ),
     university_id: int | None = typer.Option(
         None, "--university-id", "-u", help="University ID for entities"
@@ -930,7 +921,7 @@ def process_cmd(
     if years:
         years_list = [int(y.strip()) for y in years.split(",")]
     run_process(
-        data_dir=data_dir, entity=entity, university_id=university_id, years=years_list
+        data_dir=data_dir, scope=scope, university_id=university_id, years=years_list
     )
 
 

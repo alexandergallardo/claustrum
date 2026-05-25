@@ -7,6 +7,7 @@ from typing import Any
 
 import typer
 
+from src.commands.scope import normalize_scope
 from src.api.academic_period import AcademicPeriodClient
 from src.api.academic_unit import AcademicUnitClient
 from src.api.campus import CampusClient
@@ -18,6 +19,11 @@ warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 def _progress_prefix(label: str) -> str:
     return f"[{label}]"
+
+
+def _render_download_progress(current: int, total: int) -> None:
+    total = max(total, 1)
+    print(f"\r[{current:03d}/{total:03d}] Downloading ...", end="", flush=True)
 
 
 def run_study_plan_download_cli(
@@ -110,28 +116,17 @@ def run_study_plan_download_cli(
 
 def download(
     output_dir: Path = Path("data/raw"),
-    entity: str | None = None,
+    scope: str = "all",
     verify_ssl: bool = False,
     concurrency: int = 3,
-    year: str | None = None,
     years: list[str] | None = None,
 ) -> bool:
-    """Download raw data from TEC APIs.
+    """Download raw data from TEC APIs by scope."""
+    scope = normalize_scope(scope)
+    run_catalog = scope in {"catalog", "all"}
+    run_offering = scope in {"offering", "all"}
 
-    When entity is None, downloads all available data in order:
-    - campus
-    - academic_unit
-    - academic_period
-
-    Note: study_plan requires academic_unit_campus which is generated
-    during 'process', so it must be downloaded separately after processing:
-    1. uv run tec-data download
-    2. uv run tec-data process
-    3. uv run tec-data download --entity study_plan
-    4. uv run tec-data process --entity study_plan
-    """
-    # Download campus (always needed)
-    if entity is None or entity == "campus":
+    if run_catalog:
         typer.echo(f"{_progress_prefix('download')} fetching campus data...")
         client = CampusClient()
         try:
@@ -141,8 +136,7 @@ def download(
         finally:
             client.close()
 
-    # Download academic_unit (always needed for study_plan later)
-    if entity is None or entity == "academic_unit":
+    if run_catalog:
         typer.echo(f"{_progress_prefix('download')} fetching academic_unit data...")
         # Load campus data to get campus codes
         campus_path = output_dir / "campus" / "data.json"
@@ -160,8 +154,7 @@ def download(
         finally:
             client.close()
 
-    # Download academic_period (modalities and terms)
-    if entity is None or entity == "academic_period":
+    if run_catalog:
         typer.echo(f"{_progress_prefix('download')} fetching academic_period data...")
         client = AcademicPeriodClient(verify_ssl=verify_ssl)
         try:
@@ -171,8 +164,7 @@ def download(
         finally:
             client.close()
 
-    # Download study_plan only if requested explicitly (requires process first)
-    if entity == "study_plan":
+    if run_catalog:
         typer.echo(f"{_progress_prefix('download')} preparing study_plan dependencies...")
         # Load campus data to get campus codes
         campus_path = output_dir / "campus" / "data.json"
@@ -190,8 +182,7 @@ def download(
         finally:
             client.close()
 
-    # Download study_plan only if requested explicitly
-    if entity == "study_plan":
+    if run_catalog:
         typer.echo(f"{_progress_prefix('download')} fetching study_plan data...")
         # Load academic_unit_campus data to get valid combinations
         relation_path = output_dir / "academic_unit_campus" / "data.json"
@@ -247,26 +238,14 @@ def download(
             concurrency=concurrency,
         )
 
-    # Download academic_period (modalities and terms)
-    if entity == "academic_period":
-        client = AcademicPeriodClient(verify_ssl=verify_ssl)
-        try:
-            files = client.download_raw(output_dir)
-            for source, path in files.items():
-                print(f"Saved academic_period {source} data to {path}")
-        finally:
-            client.close()
-
     years_list = [item.strip() for item in (years or []) if item and item.strip()]
-    if year:
-        years_list.append(year.strip())
     years_list = sorted(set(years_list))
 
-    if entity in {"course_offer", "schedule_guia", "offering"} and not years_list:
-        print("Error: --year or --years is required for offering downloads")
+    if run_offering and not years_list:
+        print("Error: --years is required for offering downloads")
         return False
 
-    if entity == "course_offer":
+    if run_offering:
         unit_path = output_dir / "academic_unit" / "data.json"
         if not unit_path.exists():
             print(f"Error: academic_unit data not found at {unit_path}")
@@ -282,60 +261,34 @@ def download(
                 typer.echo(
                     f"{_progress_prefix('download')} fetching course_offer for year={current_year}..."
                 )
-                files = client.download_oferta_cursos(output_dir, school_codes, current_year)
-                for code, path in files.items():
-                    print(f"Saved course_offer for {code} to: {path}")
-        finally:
-            client.close()
+                files = client.download_oferta_cursos(
+                    output_dir,
+                    school_codes,
+                    current_year,
+                    progress_callback=lambda idx, total, _code: _render_download_progress(
+                        idx, total
+                    ),
+                )
+                print()
+                typer.echo(
+                    f"{_progress_prefix('download')} course_offer complete: {len(files)} files"
+                )
 
-    if entity == "schedule_guia":
-        client = AcademicUnitClient(verify_ssl=verify_ssl)
-        try:
             for current_year in years_list:
                 typer.echo(
                     f"{_progress_prefix('download')} fetching schedule_guia for year={current_year}..."
                 )
-
-                course_offer_path = output_dir / "course_offer" / current_year
-                if not course_offer_path.exists():
-                    print(f"Error: course_offer data not found at {course_offer_path}")
-                    print(
-                        f"Please run 'download --entity course_offer --year {current_year}' first."
-                    )
-                    return False
-
-                files = client.download_horarios_from_course_offer(output_dir, current_year)
-                for file_name, path in files.items():
-                    print(f"Saved schedule_guia {file_name} to: {path}")
-        finally:
-            client.close()
-
-    if entity == "offering":
-        unit_path = output_dir / "academic_unit" / "data.json"
-        if not unit_path.exists():
-            print(f"Error: academic_unit data not found at {unit_path}")
-            print("Please run 'process' command first to generate academic_unit data.")
-            return False
-
-        units = json.loads(unit_path.read_text())
-        school_codes = [u["code"] for u in units]
-
-        client = AcademicUnitClient(verify_ssl=verify_ssl)
-        try:
-            for current_year in years_list:
-                typer.echo(
-                    f"{_progress_prefix('download')} fetching course_offer for year={current_year}..."
+                files = client.download_horarios_from_course_offer(
+                    output_dir,
+                    current_year,
+                    progress_callback=lambda idx, total, _sede, _carrera, _periodo: _render_download_progress(
+                        idx, total
+                    ),
                 )
-                files = client.download_oferta_cursos(output_dir, school_codes, current_year)
-                for code, path in files.items():
-                    print(f"Saved course_offer for {code} to: {path}")
-
+                print()
                 typer.echo(
-                    f"{_progress_prefix('download')} fetching schedule_guia for year={current_year}..."
+                    f"{_progress_prefix('download')} schedule_guia complete: {len(files)} files"
                 )
-                files = client.download_horarios_from_course_offer(output_dir, current_year)
-                for file_name, path in files.items():
-                    print(f"Saved schedule_guia {file_name} to: {path}")
         finally:
             client.close()
 

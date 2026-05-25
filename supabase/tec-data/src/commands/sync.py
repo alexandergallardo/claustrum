@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
+import socket
 import subprocess
 import tempfile
+import time
+import uuid
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,11 +20,13 @@ from urllib.parse import urlparse
 
 import typer
 
+from src.commands.scope import normalize_scope
 from src.commands.download import download
 from src.commands.process import run_process
 from src.commands.sql import format_value
 
 LOCAL_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+SEED_HISTORY_SERVICE_DB_URL = "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
 SYNC_TABLES = [
     "country",
     "university",
@@ -49,6 +55,16 @@ OFFERING_TABLES = {
     "course_offering_meeting",
 }
 
+
+def tables_for_scope(scope: str) -> list[str]:
+    normalized = normalize_scope(scope)
+    if normalized == "all":
+        return list(SYNC_TABLES)
+    if normalized == "catalog":
+        return [table for table in SYNC_TABLES if table not in OFFERING_TABLES]
+    offering_with_dependencies = {"professor", *OFFERING_TABLES}
+    return [table for table in SYNC_TABLES if table in offering_with_dependencies]
+
 TABLE_CONFLICT_COLUMNS: dict[str, list[str]] = {
     "country": ["iso2_code"],
     "university": ["id"],
@@ -71,12 +87,10 @@ TABLE_CONFLICT_COLUMNS: dict[str, list[str]] = {
 }
 
 
-def deterministic_id(namespace: str, *parts: object) -> int:
-    """Build a stable positive BIGINT-compatible identifier."""
-    raw = f"{namespace}|" + "|".join(str(part).strip().upper() for part in parts)
-    digest = hashlib.blake2b(raw.encode("utf-8"), digest_size=8).digest()
-    identifier = int.from_bytes(digest, "big") & ((1 << 63) - 1)
-    return identifier or 1
+def next_sequential_id(state: dict[str, int], table: str) -> int:
+    """Return next positive sequential BIGINT id for a table."""
+    state[table] = state.get(table, 0) + 1
+    return state[table]
 
 
 def query_rows(db_url: str, sql: str) -> list[str]:
@@ -175,9 +189,216 @@ def resolve_db_url(target: str, db_url: str | None, env_file: Path) -> str:
         return LOCAL_DB_URL
     if target == "remote":
         return build_db_url_from_env(env_file)
+    if target == "seed-history":
+        return LOCAL_DB_URL
     if not db_url:
         raise ValueError("--db-url is required when --target=db-url")
     return db_url
+
+
+def parse_seed_timestamp(path: Path) -> str:
+    match = re.match(r"^seed_(\d{8}T\d{6}Z)(?:_.*)?\.sql$", path.name)
+    if not match:
+        raise ValueError(f"Invalid seed filename format: {path.name}")
+    return match.group(1)
+
+
+def collect_seed_history(seed_dir: Path, baseline_seed: str | None = None) -> list[Path]:
+    candidates = [p for p in seed_dir.glob("seed_*.sql") if p.is_file()]
+    if not candidates:
+        raise ValueError(f"No seed_*.sql files found in {seed_dir}")
+
+    ordered = sorted(candidates, key=parse_seed_timestamp)
+    if baseline_seed is None:
+        return ordered
+
+    baseline_path = seed_dir / baseline_seed
+    if baseline_path not in ordered:
+        raise ValueError(f"Baseline seed not found in {seed_dir}: {baseline_seed}")
+    baseline_idx = ordered.index(baseline_path)
+    return ordered[baseline_idx:]
+
+
+def _find_free_host_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _start_seed_history_postgres_container() -> tuple[str, str]:
+    container_name = f"tec-seed-history-{uuid.uuid4().hex[:8]}"
+    host_port = _find_free_host_port()
+    db_url = f"postgresql://postgres:postgres@127.0.0.1:{host_port}/postgres"
+
+    subprocess.run(
+        [
+            "docker",
+            "run",
+            "-d",
+            "--rm",
+            "--name",
+            container_name,
+            "-e",
+            "POSTGRES_PASSWORD=postgres",
+            "-e",
+            "POSTGRES_USER=postgres",
+            "-e",
+            "POSTGRES_DB=postgres",
+            "-p",
+            f"{host_port}:5432",
+            "postgres:17",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    for _ in range(60):
+        probe = subprocess.run(
+            ["psql", db_url, "-v", "ON_ERROR_STOP=1", "-c", "SELECT 1;"],
+            text=True,
+            capture_output=True,
+        )
+        if probe.returncode == 0:
+            return container_name, db_url
+        time.sleep(1)
+
+    raise RuntimeError("Postgres container did not become ready in time")
+
+
+def _stop_seed_history_postgres_container(container_name: str) -> None:
+    subprocess.run(
+        ["docker", "stop", container_name],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+
+def _apply_migrations(db_url: str, migrations_dir: Path) -> None:
+    bootstrap_sql = """
+    CREATE SCHEMA IF NOT EXISTS auth;
+    CREATE SCHEMA IF NOT EXISTS better_auth;
+    CREATE SCHEMA IF NOT EXISTS extensions;
+
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+        CREATE ROLE anon NOLOGIN;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+        CREATE ROLE authenticated NOLOGIN;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+        CREATE ROLE service_role NOLOGIN;
+      END IF;
+    END
+    $$;
+
+    CREATE TABLE IF NOT EXISTS auth.users (
+      id UUID PRIMARY KEY,
+      email TEXT,
+      encrypted_password TEXT,
+      email_confirmed_at TIMESTAMPTZ,
+      invited_at TIMESTAMPTZ,
+      last_sign_in_at TIMESTAMPTZ,
+      raw_user_meta_data JSONB,
+      raw_app_meta_data JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ,
+      deleted_at TIMESTAMPTZ
+    );
+
+    CREATE TABLE IF NOT EXISTS auth.identities (
+      id UUID PRIMARY KEY,
+      user_id UUID REFERENCES auth.users(id),
+      provider TEXT,
+      provider_id TEXT,
+      identity_data JSONB,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ
+    );
+
+    CREATE OR REPLACE FUNCTION auth.uid()
+    RETURNS UUID
+    LANGUAGE SQL
+    STABLE
+    AS $$
+      SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid;
+    $$;
+    """
+    subprocess.run(
+        ["psql", db_url, "-v", "ON_ERROR_STOP=1", "-c", bootstrap_sql],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    migration_files = sorted(p for p in migrations_dir.glob("*.sql") if p.is_file())
+    if not migration_files:
+        raise RuntimeError(f"No migrations found in {migrations_dir}")
+    for migration in migration_files:
+        subprocess.run(
+            ["psql", db_url, "-v", "ON_ERROR_STOP=1", "-f", str(migration)],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+
+def create_temp_seed_history_db(seed_paths: list[Path], db_url: str, migrations_dir: Path) -> tuple[str | None, str]:
+    admin_db_url = db_url
+    temp_db_url = db_url
+
+    try:
+        _apply_migrations(admin_db_url, migrations_dir)
+        subprocess.run(
+            [
+                "psql",
+                temp_db_url,
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-c",
+                "DO $$ DECLARE tbls TEXT; BEGIN "
+                "SELECT string_agg(format('%I.%I', schemaname, tablename), ', ') INTO tbls "
+                "FROM pg_tables WHERE schemaname = 'public'; "
+                "IF tbls IS NOT NULL THEN EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE'; END IF; "
+                "END $$;",
+            ],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        error_output = (exc.stderr or exc.stdout or "").strip()
+        raise RuntimeError(f"Failed preparing seed-history temporary DB:\n{error_output}") from exc
+
+    for seed_path in seed_paths:
+        try:
+            subprocess.run(
+                ["psql", temp_db_url, "-v", "ON_ERROR_STOP=1", "-f", str(seed_path)],
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            error_output = (exc.stderr or exc.stdout or "").strip()
+            raise RuntimeError(
+                f"Failed applying seed history file {seed_path.name}:\n{error_output}"
+            ) from exc
+
+    return None, temp_db_url
+
+
+def drop_temp_seed_history_db(db_name: str) -> None:
+    parsed = urlparse(LOCAL_DB_URL)
+    admin_db_url = parsed._replace(path="/postgres").geturl()
+    subprocess.run(
+        ["psql", admin_db_url, "-v", "ON_ERROR_STOP=1", "-c", f"DROP DATABASE IF EXISTS {db_name};"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
 
 
 def infer_environment_id(db_url: str) -> str:
@@ -317,7 +538,7 @@ def build_insert_statement(
         formatted = [format_value(row.get(col), column_types.get(col, "TEXT")) for col in columns]
         values_lines.append(f"  ({', '.join(formatted)})")
     conflict_columns = TABLE_CONFLICT_COLUMNS.get(table, ["id"])
-    updatable = [col for col in columns if col not in set(conflict_columns)]
+    updatable = [col for col in columns if col not in set(conflict_columns) and col != "id"]
     lines.append(",\n".join(values_lines))
     if updatable:
         update_sql = ", ".join(f"{col} = EXCLUDED.{col}" for col in updatable)
@@ -407,8 +628,9 @@ def generate_minimal_delta_seed(
     term_external_keys: list[str],
     environment_id: str,
     fingerprint: str,
-    scope: str = "mixed",
+    scope: str = "all",
 ) -> tuple[Path, dict[str, dict[str, int]], bool]:
+    target_tables = tables_for_scope(scope)
     term_ids = {
         int(row["id"])
         for row in load_json(data_dir / "academic_term" / "data.json")
@@ -431,7 +653,7 @@ def generate_minimal_delta_seed(
 
     table_stats: dict[str, dict[str, int]] = {}
 
-    for table in SYNC_TABLES:
+    for table in target_tables:
         db_columns, db_column_types, db_column_set = get_table_schema(db_url, table)
         payload_path = data_dir / table / "data.json"
         payload_rows = load_json(payload_path) if payload_path.exists() else []
@@ -560,31 +782,62 @@ def generate_minimal_delta_seed(
     return output_path, table_stats, not has_changes
 
 
-def run_sync_pipeline(data_dir: Path, years: list[int], skip_download: bool = False) -> None:
+def run_sync_pipeline(
+    data_dir: Path,
+    years: list[int],
+    scope: str,
+    skip_download: bool = False,
+) -> None:
     year_list = sorted(set(years))
+    run_catalog = scope in {"catalog", "all"}
+    run_offering = scope in {"offering", "all"}
 
-    if not skip_download:
-        download(output_dir=data_dir)
-    run_process(data_dir=data_dir, entity="campus")
-    run_process(data_dir=data_dir, entity="academic_unit")
-    run_process(data_dir=data_dir, entity="academic_period", years=year_list)
+    def has_offering_prerequisites() -> bool:
+        required_paths = [
+            data_dir / "campus" / "data.json",
+            data_dir / "academic_unit" / "data.json",
+            data_dir / "academic_term" / "data.json",
+            data_dir / "course" / "data.json",
+        ]
+        return all(path.exists() for path in required_paths)
 
-    if not skip_download:
-        download(output_dir=data_dir, entity="study_plan")
-    run_process(data_dir=data_dir, entity="study_plan")
+    def has_terms_for_years(target_years: list[int]) -> bool:
+        term_path = data_dir / "academic_term" / "data.json"
+        if not term_path.exists():
+            return False
+        terms = load_json(term_path)
+        available = {int(term.get("year", 0)) for term in terms}
+        return set(target_years).issubset(available)
 
-    merged_offerings: dict[int, dict[str, Any]] = {}
-    merged_groups: dict[int, dict[str, Any]] = {}
-    merged_group_professors: dict[int, dict[str, Any]] = {}
-    merged_meetings: dict[int, dict[str, Any]] = {}
-    merged_professors: dict[int, dict[str, Any]] = {}
+    if run_catalog:
+        if not skip_download:
+            download(output_dir=data_dir, scope="catalog")
+        run_process(data_dir=data_dir, scope="catalog", years=year_list)
+
+    if not run_offering:
+        return
+
+    if not has_offering_prerequisites() or not has_terms_for_years(year_list):
+        if skip_download:
+            raise RuntimeError(
+                "Offering scope requires catalog prerequisites (campus, academic_unit, academic_term, course) "
+                "for requested years in data/raw; rerun without --skip-download."
+            )
+        typer.echo("Preparing missing catalog prerequisites for offering scope...")
+        download(output_dir=data_dir, scope="catalog")
+        run_process(data_dir=data_dir, scope="catalog", years=year_list)
+
+    merged_offerings: dict[tuple[int, int, int, int], dict[str, Any]] = {}
+    merged_groups: dict[tuple[int, str], dict[str, Any]] = {}
+    merged_group_professors: dict[tuple[int, int], dict[str, Any]] = {}
+    merged_meetings: dict[tuple[int, int, str, str], dict[str, Any]] = {}
+    merged_professors: dict[str, dict[str, Any]] = {}
 
     for year in year_list:
         year_str = str(year)
         if not skip_download:
-            download(output_dir=data_dir, entity="course_offer", year=year_str)
-            download(output_dir=data_dir, entity="schedule_guia", year=year_str)
-        run_process(data_dir=data_dir, entity="course_offering", years=[year])
+            download(output_dir=data_dir, scope="offering", years=[year_str])
+        run_process(data_dir=data_dir, scope="offering", years=[year])
 
         offerings = load_json(data_dir / "course_offering" / "data.json")
         groups = load_json(data_dir / "course_offering_group" / "data.json")
@@ -594,11 +847,41 @@ def run_sync_pipeline(data_dir: Path, years: list[int], skip_download: bool = Fa
         meetings = load_json(data_dir / "course_offering_meeting" / "data.json")
         professors = load_json(data_dir / "professor" / "data.json")
 
-        merged_offerings.update({int(r["id"]): r for r in offerings})
-        merged_groups.update({int(r["id"]): r for r in groups})
-        merged_group_professors.update({int(r["id"]): r for r in group_professors})
-        merged_meetings.update({int(r["id"]): r for r in meetings})
-        merged_professors.update({int(r["id"]): r for r in professors})
+        merged_offerings.update(
+            {
+                (
+                    int(r["course_id"]),
+                    int(r["campus_id"]),
+                    int(r["academic_unit_id"]),
+                    int(r["academic_term_id"]),
+                ): r
+                for r in offerings
+            }
+        )
+        merged_groups.update(
+            {
+                (int(r["course_offering_id"]), str(r["group_code"])): r
+                for r in groups
+            }
+        )
+        merged_group_professors.update(
+            {
+                (int(r["course_offering_group_id"]), int(r["professor_id"])): r
+                for r in group_professors
+            }
+        )
+        merged_meetings.update(
+            {
+                (
+                    int(r["course_offering_group_id"]),
+                    int(r["weekday"]),
+                    str(r["starts_at"]),
+                    str(r["ends_at"]),
+                ): r
+                for r in meetings
+            }
+        )
+        merged_professors.update({str(r["full_name"]): r for r in professors})
 
     write_json(
         data_dir / "course_offering" / "data.json",
@@ -641,7 +924,7 @@ def restore_data_files(data_dir: Path, backup_dir: Path) -> None:
         shutil.copy2(src, dst)
 
 
-def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
+def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] | None = None) -> None:
     tables = {table: load_json(data_dir / table / "data.json") for table in SYNC_TABLES}
 
     countries = tables["country"]
@@ -671,6 +954,7 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
     local_term_by_id = {int(r["id"]): r for r in terms}
     local_course_by_id = {int(r["id"]): r for r in courses}
     local_professor_by_id = {int(r["id"]): r for r in professors}
+    local_study_plan_level_by_id = {int(r["id"]): r for r in study_plan_levels}
 
     country_by_iso = {
         key: int(pid)
@@ -793,6 +1077,133 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
             pid
         )
 
+    next_ids: dict[str, int] = {
+        "country": max(country_by_iso.values(), default=0),
+        "university": max(university_by_short_name.values(), default=0),
+        "campus": max(campus_by_code.values(), default=0),
+        "academic_unit": max(unit_by_code.values(), default=0),
+        "academic_modality": max(modality_by_code.values(), default=0),
+        "academic_term": max(term_by_external_key.values(), default=0),
+        "course": max(course_by_code.values(), default=0),
+        "professor": max(professor_by_name.values(), default=0),
+        "study_plan": max(study_plan_by_key.values(), default=0),
+        "study_plan_level": max(study_plan_level_by_key.values(), default=0),
+        "course_offering": max(offering_by_key.values(), default=0),
+        "course_offering_group": max(group_by_key.values(), default=0),
+    }
+
+    unit_campus_by_key: dict[tuple[str, str], int] = {}
+    for line in query_rows(
+        db_url,
+        """
+        SELECT auc.id, au.code, cp.code
+        FROM public.academic_unit_campus auc
+        JOIN public.academic_unit au ON au.id = auc.academic_unit_id
+        JOIN public.campus cp ON cp.id = auc.campus_id
+        """,
+    ):
+        pid, unit_code, campus_code = line.split("\t")
+        unit_campus_by_key[(unit_code, campus_code)] = int(pid)
+    next_ids["academic_unit_campus"] = max(unit_campus_by_key.values(), default=0)
+
+    study_plan_campus_by_key: dict[tuple[str, int, str], int] = {}
+    for line in query_rows(
+        db_url,
+        """
+        SELECT spc.id, au.code, sp.external_plan_id, cp.code
+        FROM public.study_plan_campus spc
+        JOIN public.study_plan sp ON sp.id = spc.study_plan_id
+        JOIN public.academic_unit au ON au.id = sp.academic_unit_id
+        JOIN public.campus cp ON cp.id = spc.campus_id
+        """,
+    ):
+        pid, unit_code, external_plan_id, campus_code = line.split("\t")
+        study_plan_campus_by_key[(unit_code, int(external_plan_id), campus_code)] = int(pid)
+    next_ids["study_plan_campus"] = max(study_plan_campus_by_key.values(), default=0)
+
+    level_course_by_key: dict[tuple[str, int, int, str], int] = {}
+    for line in query_rows(
+        db_url,
+        """
+        SELECT splc.id, au.code, sp.external_plan_id, spl.level_number, c.code
+        FROM public.study_plan_level_course splc
+        JOIN public.study_plan_level spl ON spl.id = splc.study_plan_level_id
+        JOIN public.study_plan sp ON sp.id = spl.study_plan_id
+        JOIN public.academic_unit au ON au.id = sp.academic_unit_id
+        JOIN public.course c ON c.id = splc.course_id
+        """,
+    ):
+        pid, unit_code, external_plan_id, level_number, course_code = line.split("\t")
+        level_course_by_key[(unit_code, int(external_plan_id), int(level_number), course_code)] = int(pid)
+    next_ids["study_plan_level_course"] = max(level_course_by_key.values(), default=0)
+
+    relation_by_key: dict[tuple[str, int, str, str, str], int] = {}
+    for line in query_rows(
+        db_url,
+        """
+        SELECT cr.id, au.code, sp.external_plan_id, c_from.code, c_to.code, cr.relation_type::text
+        FROM public.course_relation cr
+        JOIN public.study_plan sp ON sp.id = cr.study_plan_id
+        JOIN public.academic_unit au ON au.id = sp.academic_unit_id
+        JOIN public.course c_from ON c_from.id = cr.from_course_id
+        JOIN public.course c_to ON c_to.id = cr.to_course_id
+        """,
+    ):
+        pid, unit_code, external_plan_id, from_code, to_code, relation_type = line.split("\t")
+        relation_by_key[(unit_code, int(external_plan_id), from_code, to_code, relation_type)] = int(pid)
+    next_ids["course_relation"] = max(relation_by_key.values(), default=0)
+
+    group_professor_by_key: dict[tuple[str, str, str, str, str, str], int] = {}
+    for line in query_rows(
+        db_url,
+        """
+        SELECT gp.id, c.code, cp.code, au.code, at.external_key, g.group_code, p.full_name
+        FROM public.course_offering_group_professor gp
+        JOIN public.course_offering_group g ON g.id = gp.course_offering_group_id
+        JOIN public.professor p ON p.id = gp.professor_id
+        JOIN public.course_offering co ON co.id = g.course_offering_id
+        JOIN public.course c ON c.id = co.course_id
+        JOIN public.campus cp ON cp.id = co.campus_id
+        JOIN public.academic_unit au ON au.id = co.academic_unit_id
+        JOIN public.academic_term at ON at.id = co.academic_term_id
+        """,
+    ):
+        pid, course_code, campus_code, unit_code, external_key, group_code, professor_name = line.split("\t")
+        group_professor_by_key[
+            (course_code, campus_code, unit_code, external_key, group_code, professor_name)
+        ] = int(pid)
+    next_ids["course_offering_group_professor"] = max(group_professor_by_key.values(), default=0)
+
+    meeting_by_key: dict[tuple[str, str, str, str, str, int, str, str], int] = {}
+    for line in query_rows(
+        db_url,
+        """
+        SELECT m.id, c.code, cp.code, au.code, at.external_key, g.group_code, m.weekday, m.starts_at::text, m.ends_at::text
+        FROM public.course_offering_meeting m
+        JOIN public.course_offering_group g ON g.id = m.course_offering_group_id
+        JOIN public.course_offering co ON co.id = g.course_offering_id
+        JOIN public.course c ON c.id = co.course_id
+        JOIN public.campus cp ON cp.id = co.campus_id
+        JOIN public.academic_unit au ON au.id = co.academic_unit_id
+        JOIN public.academic_term at ON at.id = co.academic_term_id
+        """,
+    ):
+        (
+            pid,
+            course_code,
+            campus_code,
+            unit_code,
+            external_key,
+            group_code,
+            weekday,
+            starts_at,
+            ends_at,
+        ) = line.split("\t")
+        meeting_by_key[
+            (course_code, campus_code, unit_code, external_key, group_code, int(weekday), starts_at, ends_at)
+        ] = int(pid)
+    next_ids["course_offering_meeting"] = max(meeting_by_key.values(), default=0)
+
     country_old_to_new: dict[int, int] = {}
     university_old_to_new: dict[int, int] = {}
     campus_old_to_new: dict[int, int] = {}
@@ -843,7 +1254,8 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
     for row in countries:
         old_id = int(row["id"])
         key = str(row["iso2_code"])
-        new_id = country_by_iso.get(key) or deterministic_id("country", key)
+        new_id = country_by_iso.get(key) or next_sequential_id(next_ids, "country")
+        country_by_iso[key] = new_id
         row["id"] = new_id
         country_old_to_new[old_id] = new_id
 
@@ -851,7 +1263,8 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         old_id = int(row["id"])
         key = str(row["short_name"])
         row["country_id"] = country_old_to_new[int(row["country_id"])]
-        new_id = university_by_short_name.get(key) or deterministic_id("university", key)
+        new_id = university_by_short_name.get(key) or next_sequential_id(next_ids, "university")
+        university_by_short_name[key] = new_id
         row["id"] = new_id
         university_old_to_new[old_id] = new_id
 
@@ -859,7 +1272,8 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         old_id = int(row["id"])
         key = str(row["code"])
         row["university_id"] = university_old_to_new[int(row["university_id"])]
-        new_id = campus_by_code.get(key) or deterministic_id("campus", key)
+        new_id = campus_by_code.get(key) or next_sequential_id(next_ids, "campus")
+        campus_by_code[key] = new_id
         row["id"] = new_id
         campus_old_to_new[old_id] = new_id
 
@@ -867,14 +1281,16 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         old_id = int(row["id"])
         key = str(row["code"])
         row["university_id"] = university_old_to_new[int(row["university_id"])]
-        new_id = unit_by_code.get(key) or deterministic_id("academic_unit", key)
+        new_id = unit_by_code.get(key) or next_sequential_id(next_ids, "academic_unit")
+        unit_by_code[key] = new_id
         row["id"] = new_id
         unit_old_to_new[old_id] = new_id
 
     for row in modalities:
         old_id = int(row["id"])
         key = str(row["code"])
-        new_id = modality_by_code.get(key) or deterministic_id("academic_modality", key)
+        new_id = modality_by_code.get(key) or next_sequential_id(next_ids, "academic_modality")
+        modality_by_code[key] = new_id
         row["id"] = new_id
         modality_old_to_new[old_id] = new_id
 
@@ -882,48 +1298,65 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         old_id = int(row["id"])
         key = str(row["external_key"])
         row["academic_modality_id"] = modality_old_to_new[int(row["academic_modality_id"])]
-        new_id = term_by_external_key.get(key) or deterministic_id("academic_term", key)
+        new_id = term_by_external_key.get(key) or next_sequential_id(next_ids, "academic_term")
+        term_by_external_key[key] = new_id
         row["id"] = new_id
         term_old_to_new[old_id] = new_id
 
     for row in courses:
         old_id = int(row["id"])
         key = str(row["code"])
-        new_id = course_by_code.get(key) or deterministic_id("course", key)
+        new_id = course_by_code.get(key) or next_sequential_id(next_ids, "course")
+        course_by_code[key] = new_id
         row["id"] = new_id
         course_old_to_new[old_id] = new_id
 
     for row in professors:
         old_id = int(row["id"])
         key = str(row["full_name"])
-        new_id = professor_by_name.get(key) or deterministic_id("professor", key)
+        new_id = professor_by_name.get(key) or next_sequential_id(next_ids, "professor")
+        professor_by_name[key] = new_id
         row["id"] = new_id
         professor_old_to_new[old_id] = new_id
 
     for row in unit_campus:
+        old_unit_id = int(row["academic_unit_id"])
+        old_campus_id = int(row["campus_id"])
         row["academic_unit_id"] = unit_old_to_new[int(row["academic_unit_id"])]
         row["campus_id"] = campus_old_to_new[int(row["campus_id"])]
-        row["id"] = deterministic_id(
-            "academic_unit_campus", row["academic_unit_id"], row["campus_id"]
+        key = (
+            str(local_unit_by_id[old_unit_id]["code"]),
+            str(local_campus_by_id[old_campus_id]["code"]),
         )
+        new_id = unit_campus_by_key.get(key) or next_sequential_id(next_ids, "academic_unit_campus")
+        unit_campus_by_key[key] = new_id
+        row["id"] = new_id
 
     for row in study_plans:
         old_id = int(row["id"])
         unit_code, external_plan_id = study_plan_old_to_key[old_id]
         row["academic_unit_id"] = unit_old_to_new[int(row["academic_unit_id"])]
         row["academic_modality_id"] = modality_old_to_new[int(row["academic_modality_id"])]
-        new_id = study_plan_by_key.get((unit_code, external_plan_id)) or deterministic_id(
-            "study_plan", unit_code, external_plan_id
+        new_id = study_plan_by_key.get((unit_code, external_plan_id)) or next_sequential_id(
+            next_ids, "study_plan"
         )
+        study_plan_by_key[(unit_code, external_plan_id)] = new_id
         row["id"] = new_id
         study_plan_old_to_new[old_id] = new_id
 
     for row in study_plan_campus:
+        old_plan_id = int(row["study_plan_id"])
+        old_campus_id = int(row["campus_id"])
         row["study_plan_id"] = study_plan_old_to_new[int(row["study_plan_id"])]
         row["campus_id"] = campus_old_to_new[int(row["campus_id"])]
-        row["id"] = deterministic_id(
-            "study_plan_campus", row["study_plan_id"], row["campus_id"]
+        plan_key = study_plan_old_to_key[old_plan_id]
+        campus_code = str(local_campus_by_id[old_campus_id]["code"])
+        spc_key = (plan_key[0], plan_key[1], campus_code)
+        new_spc_id = study_plan_campus_by_key.get(spc_key) or next_sequential_id(
+            next_ids, "study_plan_campus"
         )
+        study_plan_campus_by_key[spc_key] = new_spc_id
+        row["id"] = new_spc_id
 
     for row in study_plan_levels:
         old_id = int(row["id"])
@@ -931,32 +1364,45 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         unit_code, external_plan_id = study_plan_old_to_key[old_plan_id]
         level_number = int(row["level_number"])
         row["study_plan_id"] = study_plan_old_to_new[old_plan_id]
-        new_id = study_plan_level_by_key.get(
-            (unit_code, external_plan_id, level_number)
-        ) or deterministic_id("study_plan_level", row["study_plan_id"], level_number)
+        new_id = study_plan_level_by_key.get((unit_code, external_plan_id, level_number)) or next_sequential_id(
+            next_ids, "study_plan_level"
+        )
+        study_plan_level_by_key[(unit_code, external_plan_id, level_number)] = new_id
         row["id"] = new_id
         study_plan_level_old_to_new[old_id] = new_id
 
     for row in level_courses:
+        old_level_id = int(row["study_plan_level_id"])
+        old_course_id = int(row["course_id"])
         row["study_plan_level_id"] = study_plan_level_old_to_new[
             int(row["study_plan_level_id"])
         ]
         row["course_id"] = course_old_to_new[int(row["course_id"])]
-        row["id"] = deterministic_id(
-            "study_plan_level_course", row["study_plan_level_id"], row["course_id"]
+        old_plan_id_for_level = int(local_study_plan_level_by_id[old_level_id]["study_plan_id"])
+        unit_code, external_plan_id = study_plan_old_to_key[old_plan_id_for_level]
+        level_number = int(local_study_plan_level_by_id[old_level_id]["level_number"])
+        course_code = str(local_course_by_id[old_course_id]["code"])
+        level_course_key = (unit_code, external_plan_id, level_number, course_code)
+        level_course_id = level_course_by_key.get(level_course_key) or next_sequential_id(
+            next_ids, "study_plan_level_course"
         )
+        level_course_by_key[level_course_key] = level_course_id
+        row["id"] = level_course_id
 
     for row in course_relations:
+        old_plan_id = int(row["study_plan_id"])
+        old_from_course_id = int(row["from_course_id"])
+        old_to_course_id = int(row["to_course_id"])
         row["study_plan_id"] = study_plan_old_to_new[int(row["study_plan_id"])]
         row["from_course_id"] = course_old_to_new[int(row["from_course_id"])]
         row["to_course_id"] = course_old_to_new[int(row["to_course_id"])]
-        row["id"] = deterministic_id(
-            "course_relation",
-            row["study_plan_id"],
-            row["from_course_id"],
-            row["to_course_id"],
-            row["relation_type"],
-        )
+        plan_key = study_plan_old_to_key[old_plan_id]
+        from_code = str(local_course_by_id[old_from_course_id]["code"])
+        to_code = str(local_course_by_id[old_to_course_id]["code"])
+        relation_key = (plan_key[0], plan_key[1], from_code, to_code, str(row["relation_type"]))
+        relation_id = relation_by_key.get(relation_key) or next_sequential_id(next_ids, "course_relation")
+        relation_by_key[relation_key] = relation_id
+        row["id"] = relation_id
 
     for row in offerings:
         old_id = int(row["id"])
@@ -965,15 +1411,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         row["campus_id"] = campus_old_to_new[int(row["campus_id"])]
         row["academic_unit_id"] = unit_old_to_new[int(row["academic_unit_id"])]
         row["academic_term_id"] = term_old_to_new[int(row["academic_term_id"])]
-        new_id = offering_by_key.get(
-            (course_code, campus_code, unit_code, external_key)
-        ) or deterministic_id(
-            "course_offering",
-            row["course_id"],
-            row["campus_id"],
-            row["academic_unit_id"],
-            row["academic_term_id"],
-        )
+        offering_key = (course_code, campus_code, unit_code, external_key)
+        new_id = offering_by_key.get(offering_key) or next_sequential_id(next_ids, "course_offering")
+        offering_by_key[offering_key] = new_id
         row["id"] = new_id
         offering_old_to_new[old_id] = new_id
 
@@ -981,38 +1421,62 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path) -> None:
         old_id = int(row["id"])
         key = group_old_to_key[old_id]
         row["course_offering_id"] = offering_old_to_new[int(row["course_offering_id"])]
-        new_id = group_by_key.get(key) or deterministic_id(
-            "course_offering_group", row["course_offering_id"], row["group_code"]
-        )
+        new_id = group_by_key.get(key) or next_sequential_id(next_ids, "course_offering_group")
+        group_by_key[key] = new_id
         row["id"] = new_id
         group_old_to_new[old_id] = new_id
 
     for row in group_professors:
+        old_group_id = int(row["course_offering_group_id"])
+        old_professor_id = int(row["professor_id"])
         row["course_offering_group_id"] = group_old_to_new[
             int(row["course_offering_group_id"])
         ]
         row["professor_id"] = professor_old_to_new.get(
             int(row["professor_id"]), int(row["professor_id"])
         )
-        row["id"] = deterministic_id(
-            "course_offering_group_professor",
-            row["course_offering_group_id"],
-            row["professor_id"],
+        group_key = group_old_to_key[old_group_id]
+        professor_name = str(local_professor_by_id[old_professor_id]["full_name"])
+        gp_key = (
+            group_key[0],
+            group_key[1],
+            group_key[2],
+            group_key[3],
+            group_key[4],
+            professor_name,
         )
+        gp_id = group_professor_by_key.get(gp_key) or next_sequential_id(
+            next_ids, "course_offering_group_professor"
+        )
+        group_professor_by_key[gp_key] = gp_id
+        row["id"] = gp_id
 
     for row in meetings:
+        old_group_id = int(row["course_offering_group_id"])
         row["course_offering_group_id"] = group_old_to_new[
             int(row["course_offering_group_id"])
         ]
-        row["id"] = deterministic_id(
-            "course_offering_meeting",
-            row["course_offering_group_id"],
-            row["weekday"],
-            row["starts_at"],
-            row["ends_at"],
+        group_key = group_old_to_key[old_group_id]
+        meeting_key = (
+            group_key[0],
+            group_key[1],
+            group_key[2],
+            group_key[3],
+            group_key[4],
+            int(row["weekday"]),
+            str(row["starts_at"]),
+            str(row["ends_at"]),
         )
+        meeting_id = meeting_by_key.get(meeting_key) or next_sequential_id(
+            next_ids, "course_offering_meeting"
+        )
+        meeting_by_key[meeting_key] = meeting_id
+        row["id"] = meeting_id
 
+    selected_tables = set(tables_to_write or SYNC_TABLES)
     for table, payload in tables.items():
+        if table not in selected_tables:
+            continue
         write_json(data_dir / table / "data.json", payload)
 
 
@@ -1226,11 +1690,19 @@ def run_sync(
     verify: bool,
     output: Path | None,
     keep_sql: bool,
+    scope: str,
+    seed_dir: Path,
+    baseline_seed: str | None,
+    seed_history_db_url: str,
 ) -> None:
+    scope = normalize_scope(scope)
+    scoped_tables = tables_for_scope(scope)
     resolved_db_url = resolve_db_url(target, db_url, env_file)
     year_list = sorted(set(years))
     tec_data_root = Path(__file__).resolve().parents[2]
     output_path: Path | None = None
+    temp_db_name: str | None = None
+    seed_history_container: str | None = None
     if output is not None:
         output_path = output if output.is_absolute() else (tec_data_root / output).resolve()
 
@@ -1239,21 +1711,36 @@ def run_sync(
         typer.echo(
             f"Running full tec-data pipeline ({pipeline_mode}) for years={year_list}..."
         )
-        run_sync_pipeline(data_dir, year_list, skip_download=skip_download)
+        run_sync_pipeline(data_dir, year_list, scope=scope, skip_download=skip_download)
 
-    backup_dir = backup_data_files(data_dir, SYNC_TABLES)
+    backup_dir = backup_data_files(data_dir, scoped_tables)
     root_dir = Path(__file__).resolve().parents[3]
 
     try:
+        if target == "seed-history":
+            seed_dir_resolved = seed_dir if seed_dir.is_absolute() else (tec_data_root / seed_dir).resolve()
+            seed_paths = collect_seed_history(seed_dir_resolved, baseline_seed=baseline_seed)
+            typer.echo(f"Building local state from {len(seed_paths)} seed files...")
+            migrations_dir = root_dir / "migrations"
+            resolved_db_url = seed_history_db_url
+            if not os.environ.get("GITHUB_ACTIONS"):
+                typer.echo("Starting ephemeral Postgres Docker container for seed-history...")
+                seed_history_container, resolved_db_url = _start_seed_history_postgres_container()
+            temp_db_name, resolved_db_url = create_temp_seed_history_db(
+                seed_paths,
+                db_url=resolved_db_url,
+                migrations_dir=migrations_dir,
+            )
+
         typer.echo("Remapping IDs against destination DB...")
-        remap_all_ids_to_db(resolved_db_url, data_dir)
+        remap_all_ids_to_db(resolved_db_url, data_dir, tables_to_write=scoped_tables)
 
         term_external_keys = collect_term_external_keys(data_dir, year_list)
         environment_id = infer_environment_id(resolved_db_url)
-        sync_fingerprint = compute_sync_fingerprint(data_dir, SYNC_TABLES)
+        sync_fingerprint = compute_sync_fingerprint(data_dir, scoped_tables)
         fingerprint_already_applied = ledger_fingerprint_applied(
             resolved_db_url,
-            scope="mixed",
+            scope=scope,
             years=year_list,
             term_external_keys=term_external_keys,
             fingerprint=sync_fingerprint,
@@ -1276,7 +1763,7 @@ def run_sync(
                 years=year_list,
                 term_external_keys=term_external_keys,
                 fingerprint=sync_fingerprint,
-                scope="mixed",
+                scope=scope,
             )
             is_noop = True
         else:
@@ -1288,7 +1775,7 @@ def run_sync(
                 term_external_keys=term_external_keys,
                 environment_id=environment_id,
                 fingerprint=sync_fingerprint,
-                scope="mixed",
+                scope=scope,
             )
         if not output_path.is_absolute():
             output_path = (tec_data_root / output_path).resolve()
@@ -1297,7 +1784,7 @@ def run_sync(
         manifest_payload = {
             "seed_file": output_path.name,
             "generated_at_utc": generated_at_utc.isoformat(),
-            "scope": "mixed",
+            "scope": scope,
             "years": year_list,
             "term_external_keys": term_external_keys,
             "environment_id": environment_id,
@@ -1321,7 +1808,7 @@ def run_sync(
             "noop": is_noop,
         }
         typer.echo("Delta stats by table:")
-        for table in SYNC_TABLES:
+        for table in scoped_tables:
             stats = table_stats.get(table)
             if not stats:
                 continue
@@ -1329,40 +1816,43 @@ def run_sync(
                 f"  - {table}: inserted={stats['inserted']}, updated={stats['updated']}, soft_deleted={stats['soft_deleted']}"
             )
 
-        if ledger_seed_exists(resolved_db_url, sha256):
-            typer.echo("Seed already tracked by ledger (same SHA256), marking as skipped.")
-            record_seed_generated(
-                db_url=resolved_db_url,
-                cwd=root_dir,
-                file_name=output_path.name,
-                sha256=sha256,
-                scope="mixed",
-                years=year_list,
-                term_external_keys=term_external_keys,
-                generated_at_utc=generated_at_utc,
-                metadata=metadata,
-            )
-            mark_seed_status(
-                db_url=resolved_db_url,
-                cwd=root_dir,
-                sha256=sha256,
-                status="skipped_duplicate",
-            )
-            apply_seed = False
+        if target == "seed-history":
+            typer.echo("Skipping sync_seed_run ledger writes for seed-history target.")
         else:
-            record_seed_generated(
-                db_url=resolved_db_url,
-                cwd=root_dir,
-                file_name=output_path.name,
-                sha256=sha256,
-                scope="mixed",
-                years=year_list,
-                term_external_keys=term_external_keys,
-                generated_at_utc=generated_at_utc,
-                metadata=metadata,
-            )
+            if ledger_seed_exists(resolved_db_url, sha256):
+                typer.echo("Seed already tracked by ledger (same SHA256), marking as skipped.")
+                record_seed_generated(
+                    db_url=resolved_db_url,
+                    cwd=root_dir,
+                    file_name=output_path.name,
+                    sha256=sha256,
+                    scope=scope,
+                    years=year_list,
+                    term_external_keys=term_external_keys,
+                    generated_at_utc=generated_at_utc,
+                    metadata=metadata,
+                )
+                mark_seed_status(
+                    db_url=resolved_db_url,
+                    cwd=root_dir,
+                    sha256=sha256,
+                    status="skipped_duplicate",
+                )
+                apply_seed = False
+            else:
+                record_seed_generated(
+                    db_url=resolved_db_url,
+                    cwd=root_dir,
+                    file_name=output_path.name,
+                    sha256=sha256,
+                    scope=scope,
+                    years=year_list,
+                    term_external_keys=term_external_keys,
+                    generated_at_utc=generated_at_utc,
+                    metadata=metadata,
+                )
 
-        if is_noop:
+        if is_noop and target != "seed-history":
             mark_seed_status(
                 db_url=resolved_db_url,
                 cwd=root_dir,
@@ -1400,22 +1890,24 @@ def run_sync(
                     capture_output=True,
                     check=True,
                 )
-                mark_seed_status(
-                    db_url=resolved_db_url,
-                    cwd=root_dir,
-                    sha256=sha256,
-                    status="applied",
-                    applied_at_utc=datetime.now(UTC),
-                )
+                if target != "seed-history":
+                    mark_seed_status(
+                        db_url=resolved_db_url,
+                        cwd=root_dir,
+                        sha256=sha256,
+                        status="applied",
+                        applied_at_utc=datetime.now(UTC),
+                    )
                 typer.echo("Seed apply completed successfully.")
             except subprocess.CalledProcessError as exc:
-                mark_seed_status(
-                    db_url=resolved_db_url,
-                    cwd=root_dir,
-                    sha256=sha256,
-                    status="failed",
-                    error_message=(exc.stderr or str(exc)),
-                )
+                if target != "seed-history":
+                    mark_seed_status(
+                        db_url=resolved_db_url,
+                        cwd=root_dir,
+                        sha256=sha256,
+                        status="failed",
+                        error_message=(exc.stderr or str(exc)),
+                    )
                 if exc.stderr:
                     typer.echo(exc.stderr.strip())
                 raise
@@ -1426,6 +1918,10 @@ def run_sync(
     finally:
         restore_data_files(data_dir, backup_dir)
         shutil.rmtree(backup_dir, ignore_errors=True)
+        if temp_db_name is not None:
+            drop_temp_seed_history_db(temp_db_name)
+        if seed_history_container is not None:
+            _stop_seed_history_postgres_container(seed_history_container)
         if not keep_sql and output_path is not None and output_path.exists():
             output_path.unlink()
 
@@ -1439,7 +1935,7 @@ def sync_cmd(
         Path("data/raw"), "--data-dir", "-d", help="Data directory for processed files"
     ),
     target: str = typer.Option(
-        "local", "--target", help="Destination target: local, remote, db-url"
+        "local", "--target", help="Destination target: local, remote, db-url, seed-history"
     ),
     db_url: str | None = typer.Option(
         None, "--db-url", help="Destination Postgres URL (required for target=db-url)"
@@ -1483,6 +1979,26 @@ def sync_cmd(
         "--keep-sql",
         help="Keep generated SQL file after command finishes",
     ),
+    scope: str = typer.Option(
+        "all",
+        "--scope",
+        help="Data scope: catalog, offering, all",
+    ),
+    seed_dir: Path = typer.Option(
+        Path("../seeds/tec-data"),
+        "--seed-dir",
+        help="Directory with seed_*.sql history for target=seed-history",
+    ),
+    baseline_seed: str | None = typer.Option(
+        None,
+        "--baseline-seed",
+        help="Baseline seed filename in --seed-dir to start replay from",
+    ),
+    seed_history_db_url: str = typer.Option(
+        SEED_HISTORY_SERVICE_DB_URL,
+        "--seed-history-db-url",
+        help="Postgres URL used by target=seed-history (typically a GitHub service container)",
+    ),
 ) -> None:
     """Run a full idempotent synchronization against local or remote DB."""
     year_list = [int(value.strip()) for value in years.split(",") if value.strip()]
@@ -1501,4 +2017,8 @@ def sync_cmd(
         verify=verify,
         output=output,
         keep_sql=keep_sql,
+        scope=scope,
+        seed_dir=seed_dir,
+        baseline_seed=baseline_seed,
+        seed_history_db_url=seed_history_db_url,
     )

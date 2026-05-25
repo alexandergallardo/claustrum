@@ -1,6 +1,5 @@
 """Process course offering data from schedule_guia and course_offer."""
 
-import hashlib
 import json
 import re
 import unicodedata
@@ -19,14 +18,6 @@ def normalize_group_type_key(raw_group_type: str) -> str:
     normalized = remove_accents(raw_group_type.upper().strip())
     normalized = re.sub(r"\s+", " ", normalized)
     return normalized
-
-
-def deterministic_id(namespace: str, *parts: object) -> int:
-    """Build a stable positive BIGINT-compatible identifier."""
-    raw_key = f"{namespace}|" + "|".join(str(part).strip().upper() for part in parts)
-    digest = hashlib.blake2b(raw_key.encode("utf-8"), digest_size=8).digest()
-    identifier = int.from_bytes(digest, "big") & ((1 << 63) - 1)
-    return identifier or 1
 
 
 def normalize_group_type(raw_group_type: str) -> str:
@@ -79,6 +70,11 @@ def is_placeholder_professor_name(raw_name: str) -> bool:
         "SE IMPARTE EN IDIOMA INGLES",
     }
     return normalized in placeholders
+
+
+def render_progress(current: int, total: int) -> None:
+    total = max(total, 1)
+    print(f"\r[{current:03d}/{total:03d}] Processing ...", end="", flush=True)
 
 
 def run_process_course_offering(data_dir: Path, year: str) -> None:
@@ -139,14 +135,24 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
 
     professors = {}
     existing_professor_count = 0
+    max_professor_id = 0
     if professor_path.exists():
         professor_list = json.loads(professor_path.read_text())
         for p in professor_list:
             name = p["full_name"].upper()
             if is_placeholder_professor_name(name):
                 continue
-            professors[name] = deterministic_id("professor", name)
+            pid = int(p.get("id", 0) or 0)
+            if pid > 0:
+                max_professor_id = max(max_professor_id, pid)
+                professors[name] = pid
         existing_professor_count = len(professors)
+
+    next_professor_id = max_professor_id + 1
+    next_offering_id = 1
+    next_group_id = 1
+    next_group_professor_id = 1
+    next_meeting_id = 1
 
     updated_course_names: list[tuple[str, str]] = []
 
@@ -175,7 +181,8 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     print(f"Loading {len(course_offer_files)} course_offer files for mixing...")
 
     course_offer_data: dict[str, list[dict[str, Any]]] = {}
-    for file in course_offer_files:
+    total_course_offer_files = len(course_offer_files)
+    for idx, file in enumerate(course_offer_files, 1):
         data = json.loads(file.read_text())
         for entry in data:
             code = entry.get("IDE_MATERIA", "")
@@ -183,6 +190,8 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 if code not in course_offer_data:
                     course_offer_data[code] = []
                 course_offer_data[code].append(entry)
+        render_progress(idx, total_course_offer_files)
+    print()
 
     schedule_guia_files = sorted(schedule_guia_dir.glob("*.json"))
     total_files = len(schedule_guia_files)
@@ -193,7 +202,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
         file_name = schedule_file.stem
         parts = file_name.split("_")
         if len(parts) != 5:
-            print(f"  [{idx}/{total_files}] Skipping invalid filename: {file_name}")
+            render_progress(idx, total_files)
             continue
 
         sede_code = parts[0]
@@ -205,32 +214,26 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
 
         campus_id = campus_code_to_id.get(sede_code)
         if not campus_id:
-            print(f"  [{idx}/{total_files}] Campus not found for code: {sede_code}")
+            render_progress(idx, total_files)
             continue
 
         dsc_sede = campus_code_to_name.get(sede_code, "")
 
         academic_unit_id = academic_unit_code_to_id.get(carrera_code)
         if not academic_unit_id:
-            print(
-                f"  [{idx}/{total_files}] Academic unit not found for code: {carrera_code}"
-            )
+            render_progress(idx, total_files)
             continue
 
         academic_term_id = academic_term_external_to_id.get(periodo)
         if not academic_term_id:
-            print(
-                f"  [{idx}/{total_files}] Academic term not found for periodo: {periodo}"
-            )
+            render_progress(idx, total_files)
             continue
 
         schedule_data = json.loads(schedule_file.read_text())
         if not schedule_data:
             continue
 
-        print(
-            f"  [{idx}/{total_files}] Processing {sede_code}/{carrera_code}/{periodo}..."
-        )
+        render_progress(idx, total_files)
 
         for entry in schedule_data:
             course_code = entry.get("IDE_MATERIA", "")
@@ -282,13 +285,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 course_type = entry.get("TIPO_MATERIA", "")
 
                 course_offerings[offering_key] = {
-                    "id": deterministic_id(
-                        "course_offering",
-                        course_id,
-                        campus_id,
-                        academic_unit_id,
-                        academic_term_id,
-                    ),
+                    "id": next_offering_id,
                     "course_id": course_id,
                     "campus_id": campus_id,
                     "academic_unit_id": academic_unit_id,
@@ -297,6 +294,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                     "weekly_hours_snapshot": weekly_hours,
                     "course_type": course_type,
                 }
+                next_offering_id += 1
 
             offering_id = course_offerings[offering_key]["id"]
 
@@ -321,9 +319,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 continue
 
             if group_key not in created_groups:
-                group_id = deterministic_id(
-                    "course_offering_group", offering_id, group_code
-                )
+                group_id = next_group_id
                 group = {
                     "id": group_id,
                     "course_offering_id": offering_id,
@@ -333,28 +329,27 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 }
                 groups.append(group)
                 created_groups[group_key] = group_id
+                next_group_id += 1
 
             group_id = created_groups[group_key]
 
             professor_name = entry.get("NOM_PROFESOR", "").strip().upper()
             if professor_name and not is_placeholder_professor_name(professor_name):
                 if professor_name not in professors:
-                    professors[professor_name] = deterministic_id(
-                        "professor", professor_name
-                    )
+                    professors[professor_name] = next_professor_id
+                    next_professor_id += 1
                 professor_id = professors[professor_name]
 
                 gp_key = (group_id, professor_id)
                 if gp_key not in created_gps:
                     gp = {
-                        "id": deterministic_id(
-                            "course_offering_group_professor", group_id, professor_id
-                        ),
+                        "id": next_group_professor_id,
                         "course_offering_group_id": group_id,
                         "professor_id": professor_id,
                     }
                     group_professors.append(gp)
                     created_gps.add(gp_key)
+                    next_group_professor_id += 1
 
             day_name = entry.get("NOM_DIA", "").upper()
             weekday = day_mapping.get(day_name, 0)
@@ -368,9 +363,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
             meeting_key = (group_id, weekday, starts_at, ends_at)
             if meeting_key not in created_meetings:
                 meeting = {
-                    "id": deterministic_id(
-                        "course_offering_meeting", group_id, weekday, starts_at, ends_at
-                    ),
+                    "id": next_meeting_id,
                     "course_offering_group_id": group_id,
                     "weekday": weekday,
                     "starts_at": starts_at,
@@ -379,6 +372,9 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 }
                 meetings.append(meeting)
                 created_meetings.add(meeting_key)
+                next_meeting_id += 1
+
+    print()
 
     if unknown_group_types:
         detected = ", ".join(

@@ -8,6 +8,7 @@ from src.commands.download import download
 from src.commands.process import run_process
 from src.commands.sql import run_sql
 from src.commands.sync import sync_cmd
+from src.commands.sync import SEED_HISTORY_SERVICE_DB_URL
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 
@@ -17,8 +18,8 @@ def download_cmd(
     data_dir: Path = typer.Option(
         Path("data/raw"), "--data-dir", "-d", help="Data directory for raw files"
     ),
-    entity: str | None = typer.Option(
-        None, "--entity", "-e", help="Specific entity to download (e.g., campus)"
+    scope: str = typer.Option(
+        "all", "--scope", "-s", help="Scope to download: catalog, offering, all"
     ),
     concurrency: int = typer.Option(
         3,
@@ -28,9 +29,6 @@ def download_cmd(
         max=10,
         help="Max concurrent plan detail downloads",
     ),
-    year: str | None = typer.Option(
-        None, "--year", "-y", help="Year for course_offer download (e.g., 2026)"
-    ),
     years: str | None = typer.Option(
         None,
         "--years",
@@ -38,21 +36,17 @@ def download_cmd(
     ),
 ) -> None:
     """Download raw data from TEC APIs."""
-    if year and years:
-        raise typer.BadParameter("Use either --year or --years, not both.")
-
     years_list: list[str] | None = None
     if years:
         years_list = [item.strip() for item in years.split(",") if item.strip()]
 
     success = download(
         output_dir=data_dir,
-        entity=entity,
+        scope=scope,
         concurrency=concurrency,
-        year=year,
         years=years_list,
     )
-    if success and entity != "study_plan":
+    if success:
         typer.echo(f"Downloaded raw data to {data_dir}")
 
 
@@ -61,8 +55,8 @@ def process_cmd_cli(
     data_dir: Path = typer.Option(
         Path("data/raw"), "--data-dir", "-d", help="Data directory with raw files"
     ),
-    entity: str | None = typer.Option(
-        None, "--entity", "-e", help="Specific entity to process (e.g., campus)"
+    scope: str = typer.Option(
+        "all", "--scope", "-s", help="Scope to process: catalog, offering, all"
     ),
     university_id: int | None = typer.Option(
         None, "--university-id", "-u", help="University ID for entities"
@@ -79,7 +73,7 @@ def process_cmd_cli(
     if years:
         years_list = [int(y.strip()) for y in years.split(",")]
     run_process(
-        data_dir=data_dir, entity=entity, university_id=university_id, years=years_list
+        data_dir=data_dir, scope=scope, university_id=university_id, years=years_list
     )
 
 
@@ -88,15 +82,50 @@ def sql_cmd(
     data_dir: Path = typer.Option(
         Path("data/raw"), "--data-dir", "-d", help="Data directory for processed files"
     ),
-    output: Path = typer.Option(
-        Path("../seed.sql"), "--output", "-o", help="Output SQL file path"
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output SQL file path (defaults to timestamped path when mode=delta)",
     ),
     tables: str | None = typer.Option(
         None, "--tables", "-t", help="Comma-separated list of tables to include"
     ),
+    mode: str = typer.Option(
+        "delta", "--mode", help="Generation mode: delta (versioned) or full"
+    ),
+    scope: str = typer.Option(
+        "all", "--scope", help="Data scope: catalog, offering, all"
+    ),
+    years: str | None = typer.Option(
+        None, "--years", "-y", help="Comma-separated years metadata for the run"
+    ),
+    terms: str | None = typer.Option(
+        None, "--terms", help="Comma-separated academic_term external keys metadata"
+    ),
+    history_dir: Path = typer.Option(
+        Path("../seeds/tec-data"),
+        "--history-dir",
+        help="Directory for timestamped seed files when mode=delta",
+    ),
+    manifest: bool = typer.Option(
+        False,
+        "--manifest/--no-manifest",
+        help="Generate a JSON manifest next to the SQL file",
+    ),
 ) -> None:
     """Generate SQL inserts from processed data."""
-    run_sql(data_dir=data_dir, output=output, tables=tables)
+    run_sql(
+        data_dir=data_dir,
+        output=output,
+        tables=tables,
+        mode=mode,
+        scope=scope,
+        years=years,
+        term_external_keys=terms,
+        history_dir=history_dir,
+        manifest=manifest,
+    )
 
 
 @app.command("sync")
@@ -105,7 +134,7 @@ def sync_cli(
         Path("data/raw"), "--data-dir", "-d", help="Data directory for processed files"
     ),
     target: str = typer.Option(
-        "local", "--target", help="Destination target: local, remote, db-url"
+        "local", "--target", help="Destination target: local, remote, db-url, seed-history"
     ),
     db_url: str | None = typer.Option(
         None, "--db-url", help="Destination Postgres URL (required for target=db-url)"
@@ -149,6 +178,26 @@ def sync_cli(
         "--keep-sql",
         help="Keep generated SQL file after command finishes",
     ),
+    scope: str = typer.Option(
+        "all",
+        "--scope",
+        help="Data scope: catalog, offering, all",
+    ),
+    seed_dir: Path = typer.Option(
+        Path("../seeds/tec-data"),
+        "--seed-dir",
+        help="Directory with seed_*.sql history for target=seed-history",
+    ),
+    baseline_seed: str | None = typer.Option(
+        None,
+        "--baseline-seed",
+        help="Baseline seed filename in --seed-dir to start replay from",
+    ),
+    seed_history_db_url: str = typer.Option(
+        SEED_HISTORY_SERVICE_DB_URL,
+        "--seed-history-db-url",
+        help="Postgres URL used by target=seed-history (typically a GitHub service container)",
+    ),
 ) -> None:
     """Run a full idempotent synchronization against local or remote DB."""
     sync_cmd(
@@ -163,6 +212,10 @@ def sync_cli(
         verify=verify,
         output=output,
         keep_sql=keep_sql,
+        scope=scope,
+        seed_dir=seed_dir,
+        baseline_seed=baseline_seed,
+        seed_history_db_url=seed_history_db_url,
     )
 
 

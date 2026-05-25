@@ -7,23 +7,12 @@ from typing import Any
 
 import typer
 
-
-VALID_SCOPES = {"catalog", "offering", "mixed"}
+from src.commands.scope import normalize_scope
 
 
 def utc_timestamp_slug() -> str:
     """Return an UTC timestamp suitable for deterministic file names."""
     return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-
-
-def normalize_scope(scope: str) -> str:
-    """Normalize and validate execution scope."""
-    normalized = scope.strip().lower()
-    if normalized not in VALID_SCOPES:
-        raise typer.BadParameter(
-            f"Invalid scope: {scope!r}. Expected one of: {', '.join(sorted(VALID_SCOPES))}"
-        )
-    return normalized
 
 
 def resolve_output_path(
@@ -110,7 +99,7 @@ def generate_seed(
     output_path: Path | None = None,
     tables: list[str] | None = None,
     mode: str = "full",
-    scope: str = "mixed",
+    scope: str = "all",
     years: list[int] | None = None,
     term_external_keys: list[str] | None = None,
     history_dir: Path = Path("../seeds/tec-data"),
@@ -771,9 +760,9 @@ def run_sql(
         "delta", "--mode", help="Generation mode: delta (versioned) or full"
     ),
     scope: str = typer.Option(
-        "mixed",
+        "all",
         "--scope",
-        help="Data scope: catalog, offering, mixed",
+        help="Data scope: catalog, offering, all",
     ),
     years: str | None = typer.Option(
         None,
