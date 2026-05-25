@@ -293,6 +293,16 @@ def normalize_for_compare(value: Any, value_type: str) -> Any:
             return value
         if isinstance(value, str):
             return value.lower() in {"t", "true", "1"}
+    if value_type == "TIME":
+        text = str(value).strip()
+        if not text:
+            return text
+        parts = text.split(":")
+        if len(parts) == 2:
+            return f"{parts[0].zfill(2)}:{parts[1].zfill(2)}:00"
+        if len(parts) >= 3:
+            return f"{parts[0].zfill(2)}:{parts[1].zfill(2)}:{parts[2].zfill(2)}"
+        return text
     return str(value)
 
 
@@ -329,6 +339,50 @@ def load_existing_rows_by_id(
             row[col] = normalize_for_compare(value, column_types.get(col, "TEXT"))
         rows[int(row["id"])] = row
     return rows
+
+
+def load_offering_existing_ids_for_terms(
+    db_url: str,
+    table: str,
+    term_ids: set[int],
+) -> set[int]:
+    if not term_ids:
+        return set()
+    term_ids_sql = ", ".join(str(value) for value in sorted(term_ids))
+
+    if table == "course_offering":
+        sql = (
+            "SELECT id FROM public.course_offering "
+            f"WHERE academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
+            "AND is_active = TRUE"
+        )
+    elif table == "course_offering_group":
+        sql = (
+            "SELECT g.id FROM public.course_offering_group g "
+            "JOIN public.course_offering co ON co.id = g.course_offering_id "
+            f"WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
+            "AND g.is_active = TRUE"
+        )
+    elif table == "course_offering_group_professor":
+        sql = (
+            "SELECT gp.id FROM public.course_offering_group_professor gp "
+            "JOIN public.course_offering_group g ON g.id = gp.course_offering_group_id "
+            "JOIN public.course_offering co ON co.id = g.course_offering_id "
+            f"WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
+            "AND gp.is_active = TRUE"
+        )
+    elif table == "course_offering_meeting":
+        sql = (
+            "SELECT m.id FROM public.course_offering_meeting m "
+            "JOIN public.course_offering_group g ON g.id = m.course_offering_group_id "
+            "JOIN public.course_offering co ON co.id = g.course_offering_id "
+            f"WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
+            "AND m.is_active = TRUE"
+        )
+    else:
+        return set()
+
+    return {int(value) for value in query_rows(db_url, sql)}
 
 
 def pg_type_to_generic(data_type: str, udt_name: str) -> str:
@@ -534,6 +588,17 @@ def generate_minimal_delta_seed(
             if row.get("id") is not None
         }
         existing_rows = load_existing_rows_by_id(db_url, table, columns, column_types)
+        if scope == "offering" and table in OFFERING_TABLES:
+            scoped_existing_ids = load_offering_existing_ids_for_terms(
+                db_url=db_url,
+                table=table,
+                term_ids=term_ids,
+            )
+            existing_rows = {
+                row_id: row
+                for row_id, row in existing_rows.items()
+                if row_id in scoped_existing_ids
+            }
 
         insert_rows: list[dict[str, Any]] = []
         update_rows: list[str] = []
@@ -616,7 +681,7 @@ def generate_minimal_delta_seed(
         table_stats[table] = {
             "inserted": len(insert_rows),
             "updated": len(update_rows),
-            "soft_deleted": len(soft_delete_statements),
+            "soft_deleted": len(stale_ids) if soft_delete_statements else 0,
         }
 
         if insert_rows or update_rows or soft_delete_statements:
@@ -982,8 +1047,8 @@ def remap_all_ids_to_db(
                 external_key,
                 group_code,
                 int(weekday),
-                starts_at,
-                ends_at,
+                str(normalize_for_compare(starts_at, "TIME")),
+                str(normalize_for_compare(ends_at, "TIME")),
             )
         ] = int(pid)
     next_ids["course_offering_meeting"] = max(meeting_by_key.values(), default=0)
@@ -1269,6 +1334,10 @@ def remap_all_ids_to_db(
             int(row["course_offering_group_id"])
         ]
         group_key = group_old_to_key[old_group_id]
+        starts_at_norm = str(normalize_for_compare(row.get("starts_at"), "TIME"))
+        ends_at_norm = str(normalize_for_compare(row.get("ends_at"), "TIME"))
+        row["starts_at"] = starts_at_norm
+        row["ends_at"] = ends_at_norm
         meeting_key = (
             group_key[0],
             group_key[1],
@@ -1276,8 +1345,8 @@ def remap_all_ids_to_db(
             group_key[3],
             group_key[4],
             int(row["weekday"]),
-            str(row["starts_at"]),
-            str(row["ends_at"]),
+            starts_at_norm,
+            ends_at_norm,
         )
         meeting_id = meeting_by_key.get(meeting_key) or next_sequential_id(
             next_ids, "course_offering_meeting"
