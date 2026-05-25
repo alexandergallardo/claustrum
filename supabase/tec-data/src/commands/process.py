@@ -521,7 +521,7 @@ def process_study_plan_complete(
                 course["default_credits"] = credits
             if hours is not None and course.get("default_weekly_hours", 0) == 0:
                 course["default_weekly_hours"] = hours
-            return course["id"]
+            return int(course["id"])
 
         nonlocal course_id_counter
         new_course = {
@@ -533,7 +533,7 @@ def process_study_plan_complete(
         }
         course_map[normalized_code] = new_course
         course_id_counter += 1
-        return new_course["id"]
+        return int(new_course["id"])
 
     def add_relation(
         study_plan_id: int,

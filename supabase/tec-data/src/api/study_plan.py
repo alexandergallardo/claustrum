@@ -80,8 +80,6 @@ class StudyPlanClient(APIClient):
         Returns:
             Dict with paths to downloaded files
         """
-        import time
-
         output_dir = output_dir / "study_plan"
         output_dir.mkdir(parents=True, exist_ok=True)
 
