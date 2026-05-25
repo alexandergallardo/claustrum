@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from src.commands.process_common import load_campus_id_map
-from src.commands.process_common import normalize_text
+from src.shared.text_and_ids import load_campus_id_map
+from src.shared.text_and_ids import normalize_text
 
 
 def process_study_plan_complete(

@@ -5,13 +5,13 @@ from pathlib import Path
 
 import typer
 
-from src.commands.process_catalog import ensure_reference_data
-from src.commands.process_catalog import process_academic_period
-from src.commands.process_catalog import process_academic_unit
-from src.commands.process_catalog import process_campus
-from src.commands.process_course_offering import run_process_course_offering
-from src.commands.process_study_plan import process_study_plan_complete
-from src.commands.scope import normalize_scope
+from src.domains.catalog.processors import ensure_reference_data
+from src.domains.catalog.processors import process_academic_period
+from src.domains.catalog.processors import process_academic_unit
+from src.domains.catalog.processors import process_campus
+from src.domains.offering.processors import run_process_course_offering
+from src.domains.study_plan.processors import process_study_plan_complete
+from src.shared.scope import normalize_scope
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 

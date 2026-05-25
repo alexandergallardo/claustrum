@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tec-data = "src.main:app"
+tec-data = "src.app.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

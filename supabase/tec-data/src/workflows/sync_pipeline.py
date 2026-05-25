@@ -5,10 +5,10 @@ from typing import Any
 
 import typer
 
-from src.commands.download import download
-from src.commands.process import run_process
-from src.commands.sync_helpers import load_json
-from src.commands.sync_helpers import write_json
+from src.domains.sync.helpers import load_json
+from src.domains.sync.helpers import write_json
+from src.workflows.download_workflow import download
+from src.workflows.process_workflow import run_process
 
 
 def run_sync_pipeline(

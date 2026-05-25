@@ -6,7 +6,7 @@ from typing import Any
 
 import requests
 
-from src.api.base import APIClient
+from src.infra.tec_api.client import APIClient
 
 
 class AcademicPeriodClient(APIClient):

@@ -7,11 +7,11 @@ from typing import Any
 
 import typer
 
-from src.commands.scope import normalize_scope
-from src.api.academic_period import AcademicPeriodClient
-from src.api.academic_unit import AcademicUnitClient
-from src.api.campus import CampusClient
-from src.api.study_plan import StudyPlanClient
+from src.infra.tec_api.endpoints.academic_period import AcademicPeriodClient
+from src.infra.tec_api.endpoints.academic_unit import AcademicUnitClient
+from src.infra.tec_api.endpoints.campus import CampusClient
+from src.infra.tec_api.endpoints.study_plan import StudyPlanClient
+from src.shared.scope import normalize_scope
 
 # Suppress SSL warnings
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
