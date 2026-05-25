@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import os
-import re
 import shutil
 import socket
 import subprocess
@@ -18,52 +15,34 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+import json
+
 import typer
 
-from src.commands.scope import normalize_scope
 from src.commands.download import download
 from src.commands.process import run_process
+from src.commands.scope import normalize_scope
 from src.commands.sql import format_value
+from src.commands.sync_helpers import OFFERING_TABLES
+from src.commands.sync_helpers import SYNC_TABLES
+from src.commands.sync_helpers import collect_seed_history
+from src.commands.sync_helpers import collect_term_external_keys
+from src.commands.sync_helpers import compute_sync_fingerprint
+from src.commands.sync_helpers import infer_environment_id
+from src.commands.sync_helpers import load_json
+from src.commands.sync_helpers import next_sequential_id
+from src.commands.sync_helpers import parse_seed_metadata
+from src.commands.sync_helpers import quote_literal
+from src.commands.sync_helpers import resolve_db_url
+from src.commands.sync_helpers import seed_sha256
+from src.commands.sync_helpers import sql_int_array
+from src.commands.sync_helpers import sql_text_array
+from src.commands.sync_helpers import tables_for_scope
+from src.commands.sync_helpers import write_json
 
 LOCAL_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 SEED_HISTORY_SERVICE_DB_URL = "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
-SYNC_TABLES = [
-    "country",
-    "university",
-    "campus",
-    "academic_unit",
-    "academic_modality",
-    "academic_term",
-    "academic_unit_campus",
-    "study_plan",
-    "study_plan_campus",
-    "study_plan_level",
-    "course",
-    "study_plan_level_course",
-    "course_relation",
-    "professor",
-    "course_offering",
-    "course_offering_group",
-    "course_offering_group_professor",
-    "course_offering_meeting",
-]
 
-OFFERING_TABLES = {
-    "course_offering",
-    "course_offering_group",
-    "course_offering_group_professor",
-    "course_offering_meeting",
-}
-
-
-def tables_for_scope(scope: str) -> list[str]:
-    normalized = normalize_scope(scope)
-    if normalized == "all":
-        return list(SYNC_TABLES)
-    if normalized == "catalog":
-        return [table for table in SYNC_TABLES if table not in OFFERING_TABLES]
-    offering_with_dependencies = {"professor", *OFFERING_TABLES}
-    return [table for table in SYNC_TABLES if table in offering_with_dependencies]
 
 TABLE_CONFLICT_COLUMNS: dict[str, list[str]] = {
     "country": ["iso2_code"],
@@ -78,19 +57,28 @@ TABLE_CONFLICT_COLUMNS: dict[str, list[str]] = {
     "study_plan_level": ["study_plan_id", "level_number"],
     "course": ["code"],
     "study_plan_level_course": ["study_plan_level_id", "course_id"],
-    "course_relation": ["study_plan_id", "from_course_id", "to_course_id", "relation_type"],
+    "course_relation": [
+        "study_plan_id",
+        "from_course_id",
+        "to_course_id",
+        "relation_type",
+    ],
     "professor": ["full_name"],
-    "course_offering": ["course_id", "campus_id", "academic_unit_id", "academic_term_id"],
+    "course_offering": [
+        "course_id",
+        "campus_id",
+        "academic_unit_id",
+        "academic_term_id",
+    ],
     "course_offering_group": ["course_offering_id", "group_code"],
     "course_offering_group_professor": ["course_offering_group_id", "professor_id"],
-    "course_offering_meeting": ["course_offering_group_id", "weekday", "starts_at", "ends_at"],
+    "course_offering_meeting": [
+        "course_offering_group_id",
+        "weekday",
+        "starts_at",
+        "ends_at",
+    ],
 }
-
-
-def next_sequential_id(state: dict[str, int], table: str) -> int:
-    """Return next positive sequential BIGINT id for a table."""
-    state[table] = state.get(table, 0) + 1
-    return state[table]
 
 
 def query_rows(db_url: str, sql: str) -> list[str]:
@@ -101,122 +89,6 @@ def query_rows(db_url: str, sql: str) -> list[str]:
     return [line for line in output.splitlines() if line.strip()]
 
 
-def quote_literal(value: str) -> str:
-    return value.replace("'", "''")
-
-
-def sql_int_array(values: list[int]) -> str:
-    if not values:
-        return "ARRAY[]::INTEGER[]"
-    return "ARRAY[" + ", ".join(str(v) for v in values) + "]::INTEGER[]"
-
-
-def sql_text_array(values: list[str]) -> str:
-    if not values:
-        return "ARRAY[]::TEXT[]"
-    escaped = ", ".join(f"'{quote_literal(v)}'" for v in values)
-    return f"ARRAY[{escaped}]::TEXT[]"
-
-
-def seed_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def canonical_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-
-
-def compute_sync_fingerprint(data_dir: Path, tables: list[str]) -> str:
-    hasher = hashlib.sha256()
-    for table in tables:
-        data_path = data_dir / table / "data.json"
-        if not data_path.exists():
-            continue
-        payload = load_json(data_path)
-        canonical_rows = sorted(canonical_json(row) for row in payload)
-        hasher.update(table.encode("utf-8"))
-        hasher.update(b"\n")
-        for row in canonical_rows:
-            hasher.update(row.encode("utf-8"))
-            hasher.update(b"\n")
-    return hasher.hexdigest()
-
-
-def write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
-
-
-def load_json(path: Path) -> list[dict[str, Any]]:
-    return json.loads(path.read_text())
-
-
-def collect_term_external_keys(data_dir: Path, years: list[int]) -> list[str]:
-    term_path = data_dir / "academic_term" / "data.json"
-    if not term_path.exists():
-        return []
-    terms = load_json(term_path)
-    year_set = set(years)
-    return sorted(
-        {
-            str(term["external_key"])
-            for term in terms
-            if int(term.get("year", 0)) in year_set and term.get("external_key")
-        }
-    )
-
-
-def build_db_url_from_env(env_file: Path) -> str:
-    env_content = env_file.read_text()
-    match_url = re.search(r"^VITE_SUPABASE_URL=(.+)$", env_content, flags=re.M)
-    match_password = re.search(r"^SUPABASE_PASSWORD=(.+)$", env_content, flags=re.M)
-    if not match_url or not match_password:
-        raise ValueError(
-            f"Missing VITE_SUPABASE_URL or SUPABASE_PASSWORD in {env_file}"
-        )
-
-    supabase_url = match_url.group(1).strip()
-    password = match_password.group(1).strip()
-    project_ref = re.sub(r"^https://([^.]+)\.supabase\.co$", r"\1", supabase_url)
-    return (
-        f"postgresql://postgres:{password}@db.{project_ref}.supabase.co:5432/"
-        "postgres?sslmode=require"
-    )
-
-
-def resolve_db_url(target: str, db_url: str | None, env_file: Path) -> str:
-    if target == "local":
-        return LOCAL_DB_URL
-    if target == "remote":
-        return build_db_url_from_env(env_file)
-    if target == "seed-history":
-        return LOCAL_DB_URL
-    if not db_url:
-        raise ValueError("--db-url is required when --target=db-url")
-    return db_url
-
-
-def parse_seed_timestamp(path: Path) -> str:
-    match = re.match(r"^seed_(\d{8}T\d{6}Z)(?:_.*)?\.sql$", path.name)
-    if not match:
-        raise ValueError(f"Invalid seed filename format: {path.name}")
-    return match.group(1)
-
-
-def collect_seed_history(seed_dir: Path, baseline_seed: str | None = None) -> list[Path]:
-    candidates = [p for p in seed_dir.glob("seed_*.sql") if p.is_file()]
-    if not candidates:
-        raise ValueError(f"No seed_*.sql files found in {seed_dir}")
-
-    ordered = sorted(candidates, key=parse_seed_timestamp)
-    if baseline_seed is None:
-        return ordered
-
-    baseline_path = seed_dir / baseline_seed
-    if baseline_path not in ordered:
-        raise ValueError(f"Baseline seed not found in {seed_dir}: {baseline_seed}")
-    baseline_idx = ordered.index(baseline_path)
-    return ordered[baseline_idx:]
 
 
 def _find_free_host_port() -> int:
@@ -346,7 +218,9 @@ def _apply_migrations(db_url: str, migrations_dir: Path) -> None:
         )
 
 
-def create_temp_seed_history_db(seed_paths: list[Path], db_url: str, migrations_dir: Path) -> tuple[str | None, str]:
+def create_temp_seed_history_db(
+    seed_paths: list[Path], db_url: str, migrations_dir: Path
+) -> tuple[str | None, str]:
     admin_db_url = db_url
     temp_db_url = db_url
 
@@ -371,7 +245,9 @@ def create_temp_seed_history_db(seed_paths: list[Path], db_url: str, migrations_
         )
     except subprocess.CalledProcessError as exc:
         error_output = (exc.stderr or exc.stdout or "").strip()
-        raise RuntimeError(f"Failed preparing seed-history temporary DB:\n{error_output}") from exc
+        raise RuntimeError(
+            f"Failed preparing seed-history temporary DB:\n{error_output}"
+        ) from exc
 
     for seed_path in seed_paths:
         try:
@@ -394,41 +270,18 @@ def drop_temp_seed_history_db(db_name: str) -> None:
     parsed = urlparse(LOCAL_DB_URL)
     admin_db_url = parsed._replace(path="/postgres").geturl()
     subprocess.run(
-        ["psql", admin_db_url, "-v", "ON_ERROR_STOP=1", "-c", f"DROP DATABASE IF EXISTS {db_name};"],
+        [
+            "psql",
+            admin_db_url,
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-c",
+            f"DROP DATABASE IF EXISTS {db_name};",
+        ],
         check=True,
         text=True,
         capture_output=True,
     )
-
-
-def infer_environment_id(db_url: str) -> str:
-    parsed = urlparse(db_url)
-    host = parsed.hostname or "unknown-host"
-    db_name = (parsed.path or "/postgres").lstrip("/") or "postgres"
-    project_ref = ""
-    match = re.match(r"^db\.([^.]+)\.supabase\.co$", host)
-    if match:
-        project_ref = match.group(1)
-    if project_ref:
-        return f"{project_ref}|{host}|{db_name}"
-    return f"{host}|{db_name}"
-
-
-def parse_seed_metadata(seed_path: Path) -> dict[str, str]:
-    metadata: dict[str, str] = {}
-    with seed_path.open(encoding="utf-8") as handle:
-        for _ in range(80):
-            line = handle.readline()
-            if not line:
-                break
-            if not line.startswith("-- TEC-DATA-META "):
-                continue
-            payload = line.removeprefix("-- TEC-DATA-META ").strip()
-            if "=" not in payload:
-                continue
-            key, value = payload.split("=", 1)
-            metadata[key.strip()] = value.strip()
-    return metadata
 
 
 def normalize_for_compare(value: Any, value_type: str) -> Any:
@@ -501,7 +354,9 @@ def pg_type_to_generic(data_type: str, udt_name: str) -> str:
     return "TEXT"
 
 
-def get_table_schema(db_url: str, table: str) -> tuple[list[str], dict[str, str], set[str]]:
+def get_table_schema(
+    db_url: str, table: str
+) -> tuple[list[str], dict[str, str], set[str]]:
     sql = f"""
     SELECT column_name, data_type, udt_name
     FROM information_schema.columns
@@ -535,10 +390,14 @@ def build_insert_statement(
     lines = [f"INSERT INTO public.{table}", f"  ({', '.join(columns)})", "VALUES"]
     values_lines: list[str] = []
     for row in rows:
-        formatted = [format_value(row.get(col), column_types.get(col, "TEXT")) for col in columns]
+        formatted = [
+            format_value(row.get(col), column_types.get(col, "TEXT")) for col in columns
+        ]
         values_lines.append(f"  ({', '.join(formatted)})")
     conflict_columns = TABLE_CONFLICT_COLUMNS.get(table, ["id"])
-    updatable = [col for col in columns if col not in set(conflict_columns) and col != "id"]
+    updatable = [
+        col for col in columns if col not in set(conflict_columns) and col != "id"
+    ]
     lines.append(",\n".join(values_lines))
     if updatable:
         update_sql = ", ".join(f"{col} = EXCLUDED.{col}" for col in updatable)
@@ -551,7 +410,9 @@ def build_insert_statement(
             lifecycle.append("updated_at = NOW()")
         if lifecycle:
             update_sql = ", ".join([update_sql, *lifecycle])
-        lines.append(f"ON CONFLICT ({', '.join(conflict_columns)}) DO UPDATE SET {update_sql};")
+        lines.append(
+            f"ON CONFLICT ({', '.join(conflict_columns)}) DO UPDATE SET {update_sql};"
+        )
     else:
         lines.append(f"ON CONFLICT ({', '.join(conflict_columns)}) DO NOTHING;")
     return lines
@@ -583,7 +444,9 @@ def write_noop_seed(
     ]
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text("\n".join(lines), encoding="utf-8")
-    stats = {table: {"inserted": 0, "updated": 0, "soft_deleted": 0} for table in SYNC_TABLES}
+    stats = {
+        table: {"inserted": 0, "updated": 0, "soft_deleted": 0} for table in SYNC_TABLES
+    }
     return output_path, stats
 
 
@@ -684,8 +547,13 @@ def generate_minimal_delta_seed(
             changed_columns = [
                 col
                 for col in columns
-                if col != "id" and normalize_for_compare(current.get(col), column_types.get(col, "TEXT"))
-                != normalize_for_compare(normalized_row.get(col), column_types.get(col, "TEXT"))
+                if col != "id"
+                and normalize_for_compare(
+                    current.get(col), column_types.get(col, "TEXT")
+                )
+                != normalize_for_compare(
+                    normalized_row.get(col), column_types.get(col, "TEXT")
+                )
             ]
             if changed_columns:
                 update_rows.append(
@@ -859,10 +727,7 @@ def run_sync_pipeline(
             }
         )
         merged_groups.update(
-            {
-                (int(r["course_offering_id"]), str(r["group_code"])): r
-                for r in groups
-            }
+            {(int(r["course_offering_id"]), str(r["group_code"])): r for r in groups}
         )
         merged_group_professors.update(
             {
@@ -924,7 +789,9 @@ def restore_data_files(data_dir: Path, backup_dir: Path) -> None:
         shutil.copy2(src, dst)
 
 
-def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] | None = None) -> None:
+def remap_all_ids_to_db(
+    db_url: str, data_dir: Path, tables_to_write: list[str] | None = None
+) -> None:
     tables = {table: load_json(data_dir / table / "data.json") for table in SYNC_TABLES}
 
     countries = tables["country"]
@@ -946,11 +813,8 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
     group_professors = tables["course_offering_group_professor"]
     meetings = tables["course_offering_meeting"]
 
-    local_country_by_id = {int(r["id"]): r for r in countries}
-    local_university_by_id = {int(r["id"]): r for r in universities}
     local_campus_by_id = {int(r["id"]): r for r in campuses}
     local_unit_by_id = {int(r["id"]): r for r in units}
-    local_modality_by_id = {int(r["id"]): r for r in modalities}
     local_term_by_id = {int(r["id"]): r for r in terms}
     local_course_by_id = {int(r["id"]): r for r in courses}
     local_professor_by_id = {int(r["id"]): r for r in professors}
@@ -967,7 +831,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         key: int(pid)
         for pid, key in (
             line.split("\t", 1)
-            for line in query_rows(db_url, "SELECT id, short_name FROM public.university")
+            for line in query_rows(
+                db_url, "SELECT id, short_name FROM public.university"
+            )
         )
     }
     campus_by_code = {
@@ -988,7 +854,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         key: int(pid)
         for pid, key in (
             line.split("\t", 1)
-            for line in query_rows(db_url, "SELECT id, code FROM public.academic_modality")
+            for line in query_rows(
+                db_url, "SELECT id, code FROM public.academic_modality"
+            )
         )
     }
     term_by_external_key = {
@@ -1038,9 +906,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         """,
     ):
         pid, unit_code, external_plan_id, level_number = line.split("\t")
-        study_plan_level_by_key[(unit_code, int(external_plan_id), int(level_number))] = int(
-            pid
-        )
+        study_plan_level_by_key[
+            (unit_code, int(external_plan_id), int(level_number))
+        ] = int(pid)
 
     offering_by_key: dict[tuple[str, str, str, str], int] = {}
     for line in query_rows(
@@ -1073,9 +941,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         pid, course_code, campus_code, unit_code, external_key, group_code = line.split(
             "\t"
         )
-        group_by_key[(course_code, campus_code, unit_code, external_key, group_code)] = int(
-            pid
-        )
+        group_by_key[
+            (course_code, campus_code, unit_code, external_key, group_code)
+        ] = int(pid)
 
     next_ids: dict[str, int] = {
         "country": max(country_by_iso.values(), default=0),
@@ -1118,7 +986,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         """,
     ):
         pid, unit_code, external_plan_id, campus_code = line.split("\t")
-        study_plan_campus_by_key[(unit_code, int(external_plan_id), campus_code)] = int(pid)
+        study_plan_campus_by_key[(unit_code, int(external_plan_id), campus_code)] = int(
+            pid
+        )
     next_ids["study_plan_campus"] = max(study_plan_campus_by_key.values(), default=0)
 
     level_course_by_key: dict[tuple[str, int, int, str], int] = {}
@@ -1134,7 +1004,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         """,
     ):
         pid, unit_code, external_plan_id, level_number, course_code = line.split("\t")
-        level_course_by_key[(unit_code, int(external_plan_id), int(level_number), course_code)] = int(pid)
+        level_course_by_key[
+            (unit_code, int(external_plan_id), int(level_number), course_code)
+        ] = int(pid)
     next_ids["study_plan_level_course"] = max(level_course_by_key.values(), default=0)
 
     relation_by_key: dict[tuple[str, int, str, str, str], int] = {}
@@ -1149,8 +1021,12 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         JOIN public.course c_to ON c_to.id = cr.to_course_id
         """,
     ):
-        pid, unit_code, external_plan_id, from_code, to_code, relation_type = line.split("\t")
-        relation_by_key[(unit_code, int(external_plan_id), from_code, to_code, relation_type)] = int(pid)
+        pid, unit_code, external_plan_id, from_code, to_code, relation_type = (
+            line.split("\t")
+        )
+        relation_by_key[
+            (unit_code, int(external_plan_id), from_code, to_code, relation_type)
+        ] = int(pid)
     next_ids["course_relation"] = max(relation_by_key.values(), default=0)
 
     group_professor_by_key: dict[tuple[str, str, str, str, str, str], int] = {}
@@ -1168,11 +1044,28 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         JOIN public.academic_term at ON at.id = co.academic_term_id
         """,
     ):
-        pid, course_code, campus_code, unit_code, external_key, group_code, professor_name = line.split("\t")
+        (
+            pid,
+            course_code,
+            campus_code,
+            unit_code,
+            external_key,
+            group_code,
+            professor_name,
+        ) = line.split("\t")
         group_professor_by_key[
-            (course_code, campus_code, unit_code, external_key, group_code, professor_name)
+            (
+                course_code,
+                campus_code,
+                unit_code,
+                external_key,
+                group_code,
+                professor_name,
+            )
         ] = int(pid)
-    next_ids["course_offering_group_professor"] = max(group_professor_by_key.values(), default=0)
+    next_ids["course_offering_group_professor"] = max(
+        group_professor_by_key.values(), default=0
+    )
 
     meeting_by_key: dict[tuple[str, str, str, str, str, int, str, str], int] = {}
     for line in query_rows(
@@ -1200,7 +1093,16 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
             ends_at,
         ) = line.split("\t")
         meeting_by_key[
-            (course_code, campus_code, unit_code, external_key, group_code, int(weekday), starts_at, ends_at)
+            (
+                course_code,
+                campus_code,
+                unit_code,
+                external_key,
+                group_code,
+                int(weekday),
+                starts_at,
+                ends_at,
+            )
         ] = int(pid)
     next_ids["course_offering_meeting"] = max(meeting_by_key.values(), default=0)
 
@@ -1229,7 +1131,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         course_code = str(local_course_by_id[int(row["course_id"])]["code"])
         campus_code = str(local_campus_by_id[int(row["campus_id"])]["code"])
         unit_code = str(local_unit_by_id[int(row["academic_unit_id"])]["code"])
-        external_key = str(local_term_by_id[int(row["academic_term_id"])]["external_key"])
+        external_key = str(
+            local_term_by_id[int(row["academic_term_id"])]["external_key"]
+        )
         offering_old_to_key[int(row["id"])] = (
             course_code,
             campus_code,
@@ -1263,7 +1167,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         old_id = int(row["id"])
         key = str(row["short_name"])
         row["country_id"] = country_old_to_new[int(row["country_id"])]
-        new_id = university_by_short_name.get(key) or next_sequential_id(next_ids, "university")
+        new_id = university_by_short_name.get(key) or next_sequential_id(
+            next_ids, "university"
+        )
         university_by_short_name[key] = new_id
         row["id"] = new_id
         university_old_to_new[old_id] = new_id
@@ -1289,7 +1195,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
     for row in modalities:
         old_id = int(row["id"])
         key = str(row["code"])
-        new_id = modality_by_code.get(key) or next_sequential_id(next_ids, "academic_modality")
+        new_id = modality_by_code.get(key) or next_sequential_id(
+            next_ids, "academic_modality"
+        )
         modality_by_code[key] = new_id
         row["id"] = new_id
         modality_old_to_new[old_id] = new_id
@@ -1297,8 +1205,12 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
     for row in terms:
         old_id = int(row["id"])
         key = str(row["external_key"])
-        row["academic_modality_id"] = modality_old_to_new[int(row["academic_modality_id"])]
-        new_id = term_by_external_key.get(key) or next_sequential_id(next_ids, "academic_term")
+        row["academic_modality_id"] = modality_old_to_new[
+            int(row["academic_modality_id"])
+        ]
+        new_id = term_by_external_key.get(key) or next_sequential_id(
+            next_ids, "academic_term"
+        )
         term_by_external_key[key] = new_id
         row["id"] = new_id
         term_old_to_new[old_id] = new_id
@@ -1328,7 +1240,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
             str(local_unit_by_id[old_unit_id]["code"]),
             str(local_campus_by_id[old_campus_id]["code"]),
         )
-        new_id = unit_campus_by_key.get(key) or next_sequential_id(next_ids, "academic_unit_campus")
+        new_id = unit_campus_by_key.get(key) or next_sequential_id(
+            next_ids, "academic_unit_campus"
+        )
         unit_campus_by_key[key] = new_id
         row["id"] = new_id
 
@@ -1336,10 +1250,12 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         old_id = int(row["id"])
         unit_code, external_plan_id = study_plan_old_to_key[old_id]
         row["academic_unit_id"] = unit_old_to_new[int(row["academic_unit_id"])]
-        row["academic_modality_id"] = modality_old_to_new[int(row["academic_modality_id"])]
-        new_id = study_plan_by_key.get((unit_code, external_plan_id)) or next_sequential_id(
-            next_ids, "study_plan"
-        )
+        row["academic_modality_id"] = modality_old_to_new[
+            int(row["academic_modality_id"])
+        ]
+        new_id = study_plan_by_key.get(
+            (unit_code, external_plan_id)
+        ) or next_sequential_id(next_ids, "study_plan")
         study_plan_by_key[(unit_code, external_plan_id)] = new_id
         row["id"] = new_id
         study_plan_old_to_new[old_id] = new_id
@@ -1364,9 +1280,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         unit_code, external_plan_id = study_plan_old_to_key[old_plan_id]
         level_number = int(row["level_number"])
         row["study_plan_id"] = study_plan_old_to_new[old_plan_id]
-        new_id = study_plan_level_by_key.get((unit_code, external_plan_id, level_number)) or next_sequential_id(
-            next_ids, "study_plan_level"
-        )
+        new_id = study_plan_level_by_key.get(
+            (unit_code, external_plan_id, level_number)
+        ) or next_sequential_id(next_ids, "study_plan_level")
         study_plan_level_by_key[(unit_code, external_plan_id, level_number)] = new_id
         row["id"] = new_id
         study_plan_level_old_to_new[old_id] = new_id
@@ -1378,14 +1294,16 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
             int(row["study_plan_level_id"])
         ]
         row["course_id"] = course_old_to_new[int(row["course_id"])]
-        old_plan_id_for_level = int(local_study_plan_level_by_id[old_level_id]["study_plan_id"])
+        old_plan_id_for_level = int(
+            local_study_plan_level_by_id[old_level_id]["study_plan_id"]
+        )
         unit_code, external_plan_id = study_plan_old_to_key[old_plan_id_for_level]
         level_number = int(local_study_plan_level_by_id[old_level_id]["level_number"])
         course_code = str(local_course_by_id[old_course_id]["code"])
         level_course_key = (unit_code, external_plan_id, level_number, course_code)
-        level_course_id = level_course_by_key.get(level_course_key) or next_sequential_id(
-            next_ids, "study_plan_level_course"
-        )
+        level_course_id = level_course_by_key.get(
+            level_course_key
+        ) or next_sequential_id(next_ids, "study_plan_level_course")
         level_course_by_key[level_course_key] = level_course_id
         row["id"] = level_course_id
 
@@ -1399,8 +1317,16 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         plan_key = study_plan_old_to_key[old_plan_id]
         from_code = str(local_course_by_id[old_from_course_id]["code"])
         to_code = str(local_course_by_id[old_to_course_id]["code"])
-        relation_key = (plan_key[0], plan_key[1], from_code, to_code, str(row["relation_type"]))
-        relation_id = relation_by_key.get(relation_key) or next_sequential_id(next_ids, "course_relation")
+        relation_key = (
+            plan_key[0],
+            plan_key[1],
+            from_code,
+            to_code,
+            str(row["relation_type"]),
+        )
+        relation_id = relation_by_key.get(relation_key) or next_sequential_id(
+            next_ids, "course_relation"
+        )
         relation_by_key[relation_key] = relation_id
         row["id"] = relation_id
 
@@ -1412,7 +1338,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         row["academic_unit_id"] = unit_old_to_new[int(row["academic_unit_id"])]
         row["academic_term_id"] = term_old_to_new[int(row["academic_term_id"])]
         offering_key = (course_code, campus_code, unit_code, external_key)
-        new_id = offering_by_key.get(offering_key) or next_sequential_id(next_ids, "course_offering")
+        new_id = offering_by_key.get(offering_key) or next_sequential_id(
+            next_ids, "course_offering"
+        )
         offering_by_key[offering_key] = new_id
         row["id"] = new_id
         offering_old_to_new[old_id] = new_id
@@ -1421,7 +1349,9 @@ def remap_all_ids_to_db(db_url: str, data_dir: Path, tables_to_write: list[str] 
         old_id = int(row["id"])
         key = group_old_to_key[old_id]
         row["course_offering_id"] = offering_old_to_new[int(row["course_offering_id"])]
-        new_id = group_by_key.get(key) or next_sequential_id(next_ids, "course_offering_group")
+        new_id = group_by_key.get(key) or next_sequential_id(
+            next_ids, "course_offering_group"
+        )
         group_by_key[key] = new_id
         row["id"] = new_id
         group_old_to_new[old_id] = new_id
@@ -1635,7 +1565,11 @@ def collect_upsert_estimate(
         payload_ids = {int(row["id"]) for row in rows if row.get("id") is not None}
         payload_count = len(rows)
         if payload_count == 0:
-            estimates[table] = {"payload": 0, "insert_estimate": 0, "update_estimate": 0}
+            estimates[table] = {
+                "payload": 0,
+                "insert_estimate": 0,
+                "update_estimate": 0,
+            }
             continue
 
         existing_rows = query_rows(db_url, f"SELECT id FROM public.{table}")
@@ -1704,7 +1638,9 @@ def run_sync(
     temp_db_name: str | None = None
     seed_history_container: str | None = None
     if output is not None:
-        output_path = output if output.is_absolute() else (tec_data_root / output).resolve()
+        output_path = (
+            output if output.is_absolute() else (tec_data_root / output).resolve()
+        )
 
     if not skip_pipeline:
         pipeline_mode = "process-only" if skip_download else "download+process"
@@ -1718,14 +1654,24 @@ def run_sync(
 
     try:
         if target == "seed-history":
-            seed_dir_resolved = seed_dir if seed_dir.is_absolute() else (tec_data_root / seed_dir).resolve()
-            seed_paths = collect_seed_history(seed_dir_resolved, baseline_seed=baseline_seed)
+            seed_dir_resolved = (
+                seed_dir
+                if seed_dir.is_absolute()
+                else (tec_data_root / seed_dir).resolve()
+            )
+            seed_paths = collect_seed_history(
+                seed_dir_resolved, baseline_seed=baseline_seed
+            )
             typer.echo(f"Building local state from {len(seed_paths)} seed files...")
             migrations_dir = root_dir / "migrations"
             resolved_db_url = seed_history_db_url
             if not os.environ.get("GITHUB_ACTIONS"):
-                typer.echo("Starting ephemeral Postgres Docker container for seed-history...")
-                seed_history_container, resolved_db_url = _start_seed_history_postgres_container()
+                typer.echo(
+                    "Starting ephemeral Postgres Docker container for seed-history..."
+                )
+                seed_history_container, resolved_db_url = (
+                    _start_seed_history_postgres_container()
+                )
             temp_db_name, resolved_db_url = create_temp_seed_history_db(
                 seed_paths,
                 db_url=resolved_db_url,
@@ -1792,7 +1738,9 @@ def run_sync(
             "table_stats": table_stats,
             "noop": is_noop,
         }
-        manifest_path.write_text(json.dumps(manifest_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        manifest_path.write_text(
+            json.dumps(manifest_payload, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         typer.echo(f"Generated manifest: {manifest_path}")
         typer.echo(f"Generated {output_path}")
 
@@ -1820,7 +1768,9 @@ def run_sync(
             typer.echo("Skipping sync_seed_run ledger writes for seed-history target.")
         else:
             if ledger_seed_exists(resolved_db_url, sha256):
-                typer.echo("Seed already tracked by ledger (same SHA256), marking as skipped.")
+                typer.echo(
+                    "Seed already tracked by ledger (same SHA256), marking as skipped."
+                )
                 record_seed_generated(
                     db_url=resolved_db_url,
                     cwd=root_dir,
@@ -1867,7 +1817,9 @@ def run_sync(
             meta = parse_seed_metadata(output_path)
             file_environment_id = meta.get("environment_id")
             if not file_environment_id:
-                raise RuntimeError("Generated seed is missing strict environment metadata")
+                raise RuntimeError(
+                    "Generated seed is missing strict environment metadata"
+                )
             if file_environment_id != environment_id:
                 raise RuntimeError(
                     "Seed environment mismatch: "
@@ -1935,7 +1887,9 @@ def sync_cmd(
         Path("data/raw"), "--data-dir", "-d", help="Data directory for processed files"
     ),
     target: str = typer.Option(
-        "local", "--target", help="Destination target: local, remote, db-url, seed-history"
+        "local",
+        "--target",
+        help="Destination target: local, remote, db-url, seed-history",
     ),
     db_url: str | None = typer.Option(
         None, "--db-url", help="Destination Postgres URL (required for target=db-url)"
