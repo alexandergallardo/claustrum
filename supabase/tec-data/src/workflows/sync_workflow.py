@@ -19,25 +19,25 @@ import json
 
 import typer
 
-from src.commands.scope import normalize_scope
-from src.commands.sql import format_value
-from src.commands.sync_helpers import OFFERING_TABLES
-from src.commands.sync_helpers import SYNC_TABLES
-from src.commands.sync_helpers import collect_seed_history
-from src.commands.sync_helpers import collect_term_external_keys
-from src.commands.sync_helpers import compute_sync_fingerprint
-from src.commands.sync_helpers import infer_environment_id
-from src.commands.sync_helpers import load_json
-from src.commands.sync_helpers import next_sequential_id
-from src.commands.sync_helpers import parse_seed_metadata
-from src.commands.sync_helpers import quote_literal
-from src.commands.sync_helpers import resolve_db_url
-from src.commands.sync_helpers import seed_sha256
-from src.commands.sync_helpers import sql_int_array
-from src.commands.sync_helpers import sql_text_array
-from src.commands.sync_helpers import tables_for_scope
-from src.commands.sync_helpers import write_json
-from src.commands.sync_pipeline import run_sync_pipeline
+from src.domains.sync.helpers import OFFERING_TABLES
+from src.domains.sync.helpers import SYNC_TABLES
+from src.domains.sync.helpers import collect_seed_history
+from src.domains.sync.helpers import collect_term_external_keys
+from src.domains.sync.helpers import compute_sync_fingerprint
+from src.domains.sync.helpers import infer_environment_id
+from src.domains.sync.helpers import load_json
+from src.domains.sync.helpers import next_sequential_id
+from src.domains.sync.helpers import parse_seed_metadata
+from src.domains.sync.helpers import quote_literal
+from src.domains.sync.helpers import resolve_db_url
+from src.domains.sync.helpers import seed_sha256
+from src.domains.sync.helpers import sql_int_array
+from src.domains.sync.helpers import sql_text_array
+from src.domains.sync.helpers import tables_for_scope
+from src.domains.sync.helpers import write_json
+from src.domains.sync.sql_seed import format_value
+from src.shared.scope import normalize_scope
+from src.workflows.sync_pipeline import run_sync_pipeline
 
 LOCAL_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 SEED_HISTORY_SERVICE_DB_URL = "postgresql://postgres:postgres@127.0.0.1:5432/postgres"

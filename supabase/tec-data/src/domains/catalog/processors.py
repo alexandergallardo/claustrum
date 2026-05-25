@@ -5,9 +5,9 @@ import re
 from pathlib import Path
 from typing import Any
 
-from src.commands.process_common import get_itcr_university_id
-from src.commands.process_common import load_campus_id_map
-from src.commands.process_common import normalize_text
+from src.shared.text_and_ids import get_itcr_university_id
+from src.shared.text_and_ids import load_campus_id_map
+from src.shared.text_and_ids import normalize_text
 
 
 def ensure_reference_data(data_dir: Path) -> None:

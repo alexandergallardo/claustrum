@@ -4,11 +4,11 @@ from pathlib import Path
 
 import typer
 
-from src.commands.download import download
-from src.commands.process import run_process
-from src.commands.sql import run_sql
-from src.commands.sync import sync_cmd
-from src.commands.sync import SEED_HISTORY_SERVICE_DB_URL
+from src.domains.sync.sql_seed import run_sql
+from src.workflows.download_workflow import download
+from src.workflows.process_workflow import run_process
+from src.workflows.sync_workflow import SEED_HISTORY_SERVICE_DB_URL
+from src.workflows.sync_workflow import sync_cmd
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 

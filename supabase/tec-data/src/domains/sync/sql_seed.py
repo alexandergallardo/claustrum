@@ -7,11 +7,11 @@ from typing import Any
 
 import typer
 
-from src.commands.scope import normalize_scope
-from src.commands.sql_helpers import build_upsert_clause
-from src.commands.sql_helpers import format_value
-from src.commands.sql_helpers import resolve_output_path
-from src.commands.sql_helpers import utc_timestamp_slug
+from src.domains.sync.sql_helpers import build_upsert_clause
+from src.domains.sync.sql_helpers import format_value
+from src.domains.sync.sql_helpers import resolve_output_path
+from src.domains.sync.sql_helpers import utc_timestamp_slug
+from src.shared.scope import normalize_scope
 
 
 def generate_seed(

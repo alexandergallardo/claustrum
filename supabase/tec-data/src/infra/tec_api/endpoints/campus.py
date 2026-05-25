@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from src.api.base import APIClient
+from src.infra.tec_api.client import APIClient
 
 
 class CampusClient(APIClient):

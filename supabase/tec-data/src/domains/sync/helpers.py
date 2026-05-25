@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from src.commands.scope import normalize_scope
+from src.shared.scope import normalize_scope
 
 LOCAL_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 
