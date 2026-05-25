@@ -51,10 +51,14 @@ def run_study_plan_download_cli(
     def progress_callback(payload: dict[str, Any]) -> None:
         event = payload.get("event")
         if event == "combination":
-            state["combo_processed"] = int(payload.get("processed", state["combo_processed"]))
+            state["combo_processed"] = int(
+                payload.get("processed", state["combo_processed"])
+            )
             state["combo_total"] = int(payload.get("total", state["combo_total"]))
             state["plans_found"] = int(payload.get("plans_found", state["plans_found"]))
-            state["unique_plans"] = int(payload.get("unique_plans", state["unique_plans"]))
+            state["unique_plans"] = int(
+                payload.get("unique_plans", state["unique_plans"])
+            )
             processed = state["combo_processed"]
             total = max(state["combo_total"], 1)
             pct = (processed / total) * 100
@@ -165,7 +169,9 @@ def download(
             client.close()
 
     if run_catalog:
-        typer.echo(f"{_progress_prefix('download')} preparing study_plan dependencies...")
+        typer.echo(
+            f"{_progress_prefix('download')} preparing study_plan dependencies..."
+        )
         # Load campus data to get campus codes
         campus_path = output_dir / "campus" / "data.json"
         if campus_path.exists():
@@ -265,9 +271,9 @@ def download(
                     output_dir,
                     school_codes,
                     current_year,
-                    progress_callback=lambda idx, total, _code: _render_download_progress(
-                        idx, total
-                    ),
+                    progress_callback=lambda idx,
+                    total,
+                    _code: _render_download_progress(idx, total),
                 )
                 print()
                 typer.echo(
@@ -281,9 +287,11 @@ def download(
                 files = client.download_horarios_from_course_offer(
                     output_dir,
                     current_year,
-                    progress_callback=lambda idx, total, _sede, _carrera, _periodo: _render_download_progress(
-                        idx, total
-                    ),
+                    progress_callback=lambda idx,
+                    total,
+                    _sede,
+                    _carrera,
+                    _periodo: _render_download_progress(idx, total),
                 )
                 print()
                 typer.echo(

@@ -549,7 +549,9 @@ def generate_seed(
     output_lines.append(f"-- Mode: {mode}")
     output_lines.append(f"-- Scope: {scope}")
     if years:
-        output_lines.append(f"-- Years: {', '.join(str(year) for year in sorted(set(years)))}")
+        output_lines.append(
+            f"-- Years: {', '.join(str(year) for year in sorted(set(years)))}"
+        )
     if term_external_keys:
         output_lines.append(
             "-- Term external keys: " + ", ".join(sorted(set(term_external_keys)))
@@ -797,7 +799,9 @@ def run_sql(
 
     term_list = None
     if term_external_keys:
-        term_list = [term.strip() for term in term_external_keys.split(",") if term.strip()]
+        term_list = [
+            term.strip() for term in term_external_keys.split(",") if term.strip()
+        ]
 
     generate_seed(
         data_dir=data_dir,

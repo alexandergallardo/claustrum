@@ -134,7 +134,9 @@ def sync_cli(
         Path("data/raw"), "--data-dir", "-d", help="Data directory for processed files"
     ),
     target: str = typer.Option(
-        "local", "--target", help="Destination target: local, remote, db-url, seed-history"
+        "local",
+        "--target",
+        help="Destination target: local, remote, db-url, seed-history",
     ),
     db_url: str | None = typer.Option(
         None, "--db-url", help="Destination Postgres URL (required for target=db-url)"

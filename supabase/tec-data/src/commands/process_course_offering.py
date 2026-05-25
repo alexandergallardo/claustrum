@@ -119,7 +119,6 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
         return
 
     campuses = json.loads(campus_path.read_text())
-    dsc_sede_to_code = {c["name"]: c["code"] for c in campuses}
     campus_code_to_id = {c["code"]: c["id"] for c in campuses}
     campus_code_to_name = {c["code"]: c["name"] for c in campuses}
 
@@ -445,4 +444,6 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     print(f"  - Group-Professor: {len(group_professors)}")
     print(f"  - Meetings: {len(meetings)}")
     print(f"  - Professors in snapshot: {len(professor_list)}")
-    print(f"  - New professors discovered: {max(len(professor_list) - existing_professor_count, 0)}")
+    print(
+        f"  - New professors discovered: {max(len(professor_list) - existing_professor_count, 0)}"
+    )

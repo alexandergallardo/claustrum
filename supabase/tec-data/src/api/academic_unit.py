@@ -184,8 +184,6 @@ class AcademicUnitClient(APIClient):
         except json.JSONDecodeError:
             return None
 
-        return files
-
     def _has_course_offer_data(self, response: Any) -> bool:
         """Check if the response contains actual course offer data."""
         if not response or not isinstance(response, dict):
@@ -283,7 +281,7 @@ class AcademicUnitClient(APIClient):
                         skipped += 1
                 else:
                     skipped += 1
-            except requests.RequestException as e:
+            except requests.RequestException:
                 failed += 1
             if progress_callback is not None:
                 progress_callback(idx, total_combinaciones, sede, carrera, periodo)
@@ -320,8 +318,6 @@ class AcademicUnitClient(APIClient):
 
     def _parse_horario_html(self, html: str) -> list[dict[str, Any]]:
         """Parse HTML table into structured JSON format."""
-        import re
-
         from bs4 import BeautifulSoup
 
         if not html:
