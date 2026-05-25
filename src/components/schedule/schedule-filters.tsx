@@ -216,7 +216,6 @@ export function ScheduleFilters({
   const showSwitches = !!selectedTermId;
   const isShowAllDisabled = !!showAllDisabled;
   const termGroups = useMemo(() => groupTermsByYear(terms), [terms]);
-  const termTriggerRef = useRef<HTMLButtonElement | null>(null);
   const selectedTerm = terms.find((term) => term.id === selectedTermId) ?? null;
 
   const showAllControl = (
@@ -290,7 +289,6 @@ export function ScheduleFilters({
               itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
             >
               <ComboboxTrigger
-                ref={termTriggerRef}
                 render={
                   <Button
                     variant="outline"
@@ -304,10 +302,7 @@ export function ScheduleFilters({
                   {selectedTerm ? formatClosedTermLabel(selectedTerm) : "Período académico"}
                 </span>
               </ComboboxTrigger>
-              <ComboboxContent
-                anchor={termTriggerRef}
-                className="w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)] min-w-[var(--anchor-width)]"
-              >
+              <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
                 <ComboboxInput showTrigger={false} placeholder="Buscar período" />
                 <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
                 <ComboboxList className="max-h-56 scrollbar-none">
