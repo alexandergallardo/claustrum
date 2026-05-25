@@ -1,6 +1,6 @@
 # Claustrum
 
-Claustrum es una plataforma web de código abierto para estudiantes del Instituto Tecnológico de Costa Rica. Centraliza información académica útil para planificar la carrera: horarios, malla curricular, cursos, profesores, evaluaciones, progreso académico y configuración del perfil estudiantil.
+Plataforma web open-source para estudiantes del Instituto Tecnológico de Costa Rica. Centraliza información académica: horarios, malla curricular, cursos, profesores, evaluaciones, progreso académico y configuración del perfil estudiantil.
 
 El proyecto no está afiliado, respaldado ni representa oficialmente al Instituto Tecnológico de Costa Rica. Es una iniciativa independiente distribuida bajo licencia MIT.
 
@@ -14,8 +14,9 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 - [Variables de entorno](#variables-de-entorno)
 - [Comandos disponibles](#comandos-disponibles)
 - [Entorno de desarrollo](#entorno-de-desarrollo)
-- [Supabase](#supabase)
-- [Cloudflare Worker de evaluaciones](#cloudflare-worker-de-evaluaciones)
+- [Base de datos](#base-de-datos)
+- [Autenticación](#autenticación)
+- [API Worker](#api-worker-claustrum-api)
 - [Pipeline de datos TEC](#pipeline-de-datos-tec)
 - [Rutas principales](#rutas-principales)
 - [Convenciones de código](#convenciones-de-código)
@@ -33,17 +34,18 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 - Reseñas de profesores con moderación y protección anti-spam mediante Cloudflare Turnstile.
 - Carga, visualización y moderación de evaluaciones en PDF.
 - Almacenamiento de archivos de evaluaciones en Cloudflare R2 mediante un Worker dedicado.
-- Autenticación con Supabase Auth, incluyendo correo, magic link, recuperación de contraseña y Google OAuth.
+- Autenticación con Better Auth: correo, magic link, recuperación de contraseña, Google OAuth y 2FA.
 - Temas claro, oscuro y sistema mediante `next-themes`.
 
 ## Stack técnico
 
 - Runtime y gestor de paquetes: pnpm.
-- Frontend: React 19, TypeScript, Vite 7.
+- Frontend: React 19, TypeScript, Vite 8.
 - Enrutamiento: TanStack Router con rutas basadas en archivos.
 - Obtención de datos y caché: TanStack Query.
-- UI: Tailwind CSS v4, shadcn/ui, Radix UI, Base UI, Lucide, Tabler Icons.
-- Backend-as-a-Service: Supabase Auth, Postgres, RLS, RPCs y Edge Functions.
+- UI: Tailwind CSS v4, shadcn/ui, Radix UI, Lucide, Tabler Icons.
+- Autenticación: Better Auth con magic link, 2FA y JWT.
+- Base de datos: Supabase PostgreSQL con RLS y RPCs.
 - Infraestructura de archivos: Cloudflare Workers y Cloudflare R2.
 - Despliegue del frontend: Cloudflare Pages.
 - Protección antiabuso: Cloudflare Turnstile.
@@ -61,13 +63,12 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 │   ├── router.tsx               # Configuración del router
 │   └── styles.css               # Estilos globales con Tailwind CSS v4
 ├── supabase/
-│   ├── functions/               # Supabase Edge Functions
 │   ├── migrations/              # Migraciones SQL de esquema, RLS y RPCs
 │   ├── tec-data/                # CLI para descargar/procesar datos académicos
-│   └── config.toml              # Configuración local de Supabase Auth
+│   └── config.toml              # Configuración local de Supabase
 ├── workers/
-│   └── api/                     # API Worker unificado (evaluaciones, reseñas, etc.)
-├── .github/workflows/           # Despliegue preview y producción en Cloudflare Pages
+│   └── api/                     # API Worker unificado (evaluaciones, reseñas, auth)
+├── .github/workflows/           # CI/CD: preview, producción y seed-history
 ├── components.json              # Configuración de shadcn/ui
 ├── vite.config.ts               # Configuración de Vite y code splitting
 ├── tsconfig.json                # Configuración TypeScript estricta
@@ -77,11 +78,10 @@ El proyecto no está afiliado, respaldado ni representa oficialmente al Institut
 ## Requisitos
 
 - pnpm instalado.
-- Supabase CLI disponible mediante las dependencias del proyecto.
 - Docker si se va a levantar Supabase localmente.
 - Cuenta/proyecto de Supabase para usar datos remotos o configurar producción.
 - Cuenta de Cloudflare si se va a desplegar Pages, Worker o R2.
-- Python 3.11+ y `uv` solo si se va a trabajar con el pipeline `supabase/tec-data`.
+- Python 3.14+ y `uv` solo si se va a trabajar con el pipeline `supabase/tec-data`.
 
 ## Configuración inicial
 
@@ -131,6 +131,8 @@ El frontend usa variables públicas con prefijo `VITE_`. Las credenciales privil
 | `VITE_API_BASE_URL`             | URL base del API Worker (`claustrum-api`)      | No, requerida para subir/ver evaluaciones y enviar reseñas |
 | `SUPABASE_SECRET_KEY`           | Credencial de servidor para scripts/admin      | No en frontend, requerida para operaciones privilegiadas   |
 | `TURNSTILE_SECRET_KEY`          | Secret key de servidor de Turnstile            | Requerida en API Worker con captcha                        |
+| `BETTER_AUTH_SECRET`            | Secret key de Better Auth                      | Sí (producción)                                            |
+| `BETTER_AUTH_URL`              | URL base para enlaces de auth                  | Sí (producción)                                            |
 
 Archivos de referencia:
 
@@ -151,14 +153,9 @@ Todos los comandos del proyecto principal deben ejecutarse con pnpm.
 | `pnpm run supabase:start`   | Levanta Supabase local                                                |
 | `pnpm run supabase:stop`    | Detiene Supabase local                                                |
 | `pnpm run supabase:status`  | Muestra estado y credenciales locales de Supabase                     |
-| `pnpm run supabase:reset`   | Restablece la base local y aplica migraciones/seed según Supabase CLI |
 | `pnpm run supabase:migrate` | Aplica migraciones pendientes                                         |
 
-Existe un script `pnpm run test` en `package.json`, pero este repositorio no mantiene actualmente una suite de pruebas consolidada para el flujo habitual. La verificación mínima antes de abrir cambios es `pnpm run build`.
-
 ## Entorno de desarrollo
-
-El flujo recomendado para trabajar localmente es:
 
 ```bash
 pnpm install
@@ -173,31 +170,11 @@ Notas importantes:
 - No uses `npm`, `npx`, `bun` ni `yarn` en este repositorio.
 - No confirmes en Git archivos `.env`, `.env.local`, `.dev.vars`, `dist/`, `.wrangler/`, `node_modules/` ni datos generados.
 - El servidor de desarrollo usa Vite en el puerto `3000`.
-- El cliente de Supabase valida variables públicas con Zod en `src/lib/env/public.ts`.
 - Las importaciones internas deben usar el alias `@/`, configurado en `tsconfig.json`.
 
-## Supabase
+## Base de datos
 
-Supabase cubre autenticación, base de datos, funciones RPC, políticas RLS y funciones auxiliares.
-
-### Estructura
-
-- `supabase/migrations/`: migraciones SQL versionadas.
-- `supabase/config.toml`: configuración local de Auth y OAuth.
-- `supabase/tec-data/`: CLI para generar y sincronizar datos académicos.
-
-### Autenticación
-
-La app utiliza Supabase Auth desde `src/lib/supabase/browser-client.ts` con sesiones persistentes y detección de sesión en URL. Los flujos públicos están bajo `/auth` e incluyen:
-
-- Inicio de sesión.
-- Registro.
-- Magic link.
-- Verificación de correo.
-- Recuperación/restablecimiento de contraseña.
-- Google OAuth configurado en `supabase/config.toml`.
-
-### Base de datos
+Supabase PostgreSQL se utiliza como base de datos principal. `supabase/migrations/` contiene las migraciones SQL versionadas para esquema, políticas RLS y RPCs.
 
 La app consume tablas, vistas y RPCs para:
 
@@ -207,12 +184,28 @@ La app consume tablas, vistas y RPCs para:
 - Horarios y grupos ofertados.
 - Profesores y reseñas.
 - Evaluaciones, archivos y estado de moderación.
+- Sincronización de datos: ledger de seeds aplicados.
 
 Las consultas principales están en `src/lib/api.ts`, `src/lib/hooks/use-queries.ts`, `src/lib/evaluations/api.ts` y `src/lib/professor-reviews/api.ts`.
 
+## Autenticación
+
+La autenticación se maneja con [Better Auth](https://better-auth.com). El cliente de frontend se configura en `src/lib/auth/client.ts` e incluye:
+
+- Inicio de sesión con correo y contraseña.
+- Registro de cuenta.
+- Magic link (acceso sin contraseña).
+- Verificación de correo electrónico.
+- Recuperación y restablecimiento de contraseña.
+- Google OAuth.
+- 2FA (autenticación de dos factores) con TOTP.
+- Sesiones persistentes con JWT.
+
+El servidor Better Auth corre dentro del API Worker (`workers/api`). La configuración del servidor está en `workers/api/src/auth.ts`.
+
 ## API Worker (`claustrum-api`)
 
-El Worker ubicado en `workers/api` es el backend unificado de la aplicación. Maneja evaluaciones (PDF en R2) y reseñas de profesores.
+El Worker ubicado en `workers/api` es el backend unificado de la aplicación. Maneja autenticación (Better Auth), evaluaciones (PDF en R2) y reseñas de profesores.
 
 ### Endpoints
 
@@ -222,10 +215,11 @@ El Worker ubicado en `workers/api` es el backend unificado de la aplicación. Ma
 | `GET`  | `/evaluations/file?key=...` | Sirve/streaming de PDF si el usuario tiene permiso         |
 | `POST` | `/evaluations/moderate`     | Aprueba o rechaza evaluaciones, solo administradores       |
 | `POST` | `/professor-reviews`        | Envía una reseña de profesor (con Turnstile)               |
+| `*`    | `/auth/*`                   | Rutas de Better Auth (sesión, registro, 2FA, etc.)        |
 
 ### Seguridad
 
-- Verifica JWT de Supabase recibido por `Authorization: Bearer <token>`.
+- Verifica JWT de Better Auth recibido por `Authorization: Bearer <token>`.
 - Verifica Cloudflare Turnstile en cargas de evaluaciones y envío de reseñas.
 - Limita archivos a PDF y máximo 10 MB por archivo.
 - Valida permisos para archivos pendientes/rechazados.
@@ -254,6 +248,8 @@ Variables requeridas para el Worker:
 - `SUPABASE_URL`
 - `SUPABASE_SECRET_KEY`
 - `TURNSTILE_SECRET_KEY`
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
 
 ## Pipeline de datos TEC
 
@@ -261,7 +257,7 @@ El directorio `supabase/tec-data` contiene una CLI en Python para descargar, pro
 
 Requisitos específicos:
 
-- Python 3.11+
+- Python 3.14+
 - `uv`
 
 Instalación:
@@ -276,22 +272,22 @@ Flujo resumido:
 ```bash
 uv run tec-data download
 uv run tec-data process
-uv run tec-data download --entity study_plan
-uv run tec-data process --entity study_plan
-uv run tec-data download --entity course_offer --year 2026
-uv run tec-data download --entity schedule_guia --year 2026
-uv run tec-data process --entity course_offering --years 2026
+uv run tec-data download --scope catalog
+uv run tec-data process --scope catalog
+uv run tec-data download --scope offering --years 2026
+uv run tec-data process --scope offering --years 2026
 uv run tec-data sql
 ```
 
-Sincronización completa:
+Sincronización completa con generación de seed delta:
 
 ```bash
+uv run tec-data sync --target seed-history --seed-dir ../seeds/tec-data --scope offering --years 2026 --no-apply
 uv run tec-data sync --target local --years 2026
 uv run tec-data sync --target remote --years 2026 --env-file ../../.env.production.local
 ```
 
-Consulta `supabase/tec-data/README.md` para ver el detalle completo de dependencias entre entidades y comandos avanzados.
+Consulta `supabase/tec-data/README.md` para el detalle completo de dependencias entre entidades y comandos avanzados.
 
 ## Rutas principales
 
@@ -357,6 +353,15 @@ Flujo: `.github/workflows/production.yml`
 - Despliega el Worker `workers/api`.
 - Publica `dist/` en Cloudflare Pages con proyecto `claustrum`.
 
+### Seed-history (TEC Data)
+
+Flujo: `.github/workflows/tec-data-seed-history.yml`
+
+- Se ejecuta semanalmente (lunes 7:00 UTC) o manualmente.
+- Levanta PostgreSQL efímero como service container.
+- Replayea seeds históricos y genera delta de offering.
+- Si hay cambios, abre un PR a `development`.
+
 ### Secretos requeridos en GitHub Actions
 
 - `VITE_SUPABASE_URL`
@@ -410,7 +415,7 @@ git commit -m "feat: agregar filtro de horarios por campus"
 - Contexto o problema que resuelve.
 - Evidencia de verificación, por ejemplo `pnpm run build`.
 - Capturas si el cambio afecta UI.
-- Notas de migración si toca Supabase, Worker, variables de entorno o datos.
+- Notas de migración si toca base de datos, Worker, variables de entorno o datos.
 
 ## Buenas prácticas para PRs
 
