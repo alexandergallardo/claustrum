@@ -3,6 +3,8 @@
 -- get_evaluation_moderation_queue still declare INT in RETURNS TABLE,
 -- causing error 42804 at runtime.
 
+DROP FUNCTION IF EXISTS public.get_course_evaluations(INT);
+
 -- Fix get_course_evaluations
 CREATE OR REPLACE FUNCTION public.get_course_evaluations(p_course_id INT)
 RETURNS TABLE (
@@ -56,6 +58,8 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_course_evaluations(INT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_course_evaluations(INT) TO authenticated;
+
+DROP FUNCTION IF EXISTS public.get_evaluation_moderation_queue(public.evaluation_status, INT, INT);
 
 -- Fix get_evaluation_moderation_queue
 CREATE OR REPLACE FUNCTION public.get_evaluation_moderation_queue(
