@@ -8,6 +8,10 @@ import typer
 
 from src.commands.scope import normalize_scope
 from src.commands.process_course_offering import run_process_course_offering
+from src.commands.process_catalog import ensure_reference_data as ensure_reference_data_catalog
+from src.commands.process_catalog import process_academic_period as process_academic_period_catalog
+from src.commands.process_catalog import process_academic_unit as process_academic_unit_catalog
+from src.commands.process_catalog import process_campus as process_campus_catalog
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 
@@ -760,18 +764,18 @@ def run_process(
 
     try:
         # Ensure reference data exists (country, university)
-        ensure_reference_data(data_dir)
+        ensure_reference_data_catalog(data_dir)
 
         # Process campus if requested or all
         if run_catalog:
-            campuses = process_campus(data_dir, university_id)
+            campuses = process_campus_catalog(data_dir, university_id)
             campus_path = data_dir / "campus" / "data.json"
             campus_path.write_text(json.dumps(campuses, indent=2, ensure_ascii=False))
             typer.echo(f"Processed {len(campuses)} campuses to {campus_path}")
 
         # Process academic_unit if requested or all
         if run_catalog:
-            academic_units, unit_campus_relations = process_academic_unit(
+            academic_units, unit_campus_relations = process_academic_unit_catalog(
                 data_dir, university_id
             )
 
@@ -794,7 +798,7 @@ def run_process(
 
         # Process academic_period if requested or all
         if run_catalog:
-            modalities, terms = process_academic_period(data_dir, years)
+            modalities, terms = process_academic_period_catalog(data_dir, years)
 
             # Save academic_modality data
             modality_path = data_dir / "academic_modality" / "data.json"
