@@ -256,7 +256,7 @@ export function ProfessorDetailPage() {
                 value={metricLabel(summary?.average_quality_score ?? null)}
               />
               <SummaryMetric
-                label="La llevarían otra vez"
+                label="Lo llevarían otra vez"
                 value={
                   !summary || summary.would_take_again_percentage === null
                     ? "-"
