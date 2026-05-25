@@ -1,0 +1,103 @@
+name: TEC Data Seed History
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1"
+  pull_request:
+    paths:
+      - "supabase/tec-data/**"
+      - "supabase/migrations/**"
+      - "supabase/seeds/tec-data/**"
+      - ".github/workflows/tec-data-seed-history.yml"
+
+jobs:
+  seed-history-sync:
+    name: Seed History Sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Run seed-history smoke sync
+        working-directory: supabase/tec-data
+        run: >-
+          uv run tec-data sync
+          --target seed-history
+          --seed-dir ../seeds/tec-data
+          --scope offering
+          --years 2026
+          --no-apply
+          --keep-sql
+          --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:5432/postgres
+
+      - name: Detect non-noop seed changes
+        id: seed_check
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          seed_dir = Path("supabase/seeds/tec-data")
+          manifests = sorted(seed_dir.glob("seed_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+          if not manifests:
+              print("create_pr=false")
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+                  out.write("create_pr=false\n")
+              raise SystemExit(0)
+
+          latest = manifests[0]
+          payload = json.loads(latest.read_text(encoding="utf-8"))
+          noop = bool(payload.get("noop", False))
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"create_pr={'true' if not noop else 'false'}\n")
+              out.write(f"seed_file={payload.get('seed_file', '')}\n")
+
+          print(f"Latest manifest: {latest.name}")
+          print(f"Seed file: {payload.get('seed_file', '')}")
+          print(f"Noop: {noop}")
+          PY
+
+      - name: Create pull request with generated seeds
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.seed_check.outputs.create_pr == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore(tec-data): weekly offering seed 2026"
+          branch: "bot/tec-data-seed-2026"
+          delete-branch: true
+          title: "chore(tec-data): weekly offering seed update (2026)"
+          body: |
+            Automated weekly tec-data seed generation for scope `offering` and years `2026`.
+            - target: `seed-history`
+            - source: GitHub Actions
+          add-paths: |
+            supabase/seeds/tec-data/*.sql
+            supabase/seeds/tec-data/*.json

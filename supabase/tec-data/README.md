@@ -50,7 +50,7 @@ Este comando descarga:
 #### Paso 2: Descargar planes de estudio
 
 ```bash
-uv run tec-data download --entity study_plan
+uv run tec-data download --scope catalog
 ```
 
 **Nota**: Este comando requiere que primero se ejecute `uv run tec-data process` para generar `academic_unit_campus`.
@@ -58,14 +58,13 @@ uv run tec-data download --entity study_plan
 #### Paso 3: Descargar oferta de cursos
 
 ```bash
-uv run tec-data download --entity course_offer --year 2026
+uv run tec-data download --scope offering --years 2026
 
 # O varios años en una sola ejecución
-uv run tec-data download --entity course_offer --years 2024,2025,2026
+uv run tec-data download --scope offering --years 2024,2025,2026
 ```
 
 **Parámetros**:
-- `--year` o `-y`: Año académico (ej: 2026)
 - `--years`: Lista separada por coma para múltiples años (ej: 2024,2025,2026)
 
 **Requiere**: `academic_unit/data.json` generado durante el process.
@@ -76,10 +75,10 @@ Archivos generados:
 #### Paso 4: Descargar horarios (schedule_guia)
 
 ```bash
-uv run tec-data download --entity schedule_guia --year 2026
+uv run tec-data download --scope offering --years 2026
 
 # O varios años en una sola ejecución
-uv run tec-data download --entity schedule_guia --years 2024,2025,2026
+uv run tec-data download --scope offering --years 2024,2025,2026
 ```
 
 **Requiere**: Datos de `course_offer` del mismo año.
@@ -90,7 +89,7 @@ Archivos generados:
 #### Paso 4.1: Descargar oferta + horarios en un solo comando
 
 ```bash
-uv run tec-data download --entity offering --years 2024,2025,2026
+uv run tec-data download --scope offering --years 2024,2025,2026
 ```
 
 Este comando descarga por cada año:
@@ -114,7 +113,7 @@ Este comando procesa:
 #### Paso 2: Procesar planes de estudio
 
 ```bash
-uv run tec-data process --entity study_plan
+uv run tec-data process --scope catalog
 ```
 
 **Requiere**: `academic_unit_campus/data.json` generado en el paso 1.
@@ -130,7 +129,7 @@ Genera:
 #### Paso 3: Procesar oferta de cursos y horarios
 
 ```bash
-uv run tec-data process --entity course_offering --years 2026
+uv run tec-data process --scope offering --years 2026
 ```
 
 **Requiere**:
@@ -186,22 +185,22 @@ uv run tec-data download
 uv run tec-data process
 
 # 3. Descargar planes de estudio
-uv run tec-data download --entity study_plan
+uv run tec-data download --scope catalog
 
 # 4. Procesar planes de estudio
-uv run tec-data process --entity study_plan
+uv run tec-data process --scope catalog
 
 # 5. Descargar oferta de cursos (año específico)
-uv run tec-data download --entity course_offer --year 2026
+uv run tec-data download --scope offering --years 2026
 
 # 6. Descargar horarios (año específico)
-uv run tec-data download --entity schedule_guia --year 2026
+uv run tec-data download --scope offering --years 2026
 
 # Alternativa: descargar oferta + horarios para varios años
-uv run tec-data download --entity offering --years 2024,2025,2026
+uv run tec-data download --scope offering --years 2024,2025,2026
 
 # 7. Procesar oferta de cursos y horarios (año específico)
-uv run tec-data process --entity course_offering --years 2026
+uv run tec-data process --scope offering --years 2026
 ```
 
 ## Generación de SQL
@@ -228,7 +227,7 @@ uv run tec-data sql --tables campus,university,country
 Opciones nuevas relevantes:
 
 - `--mode delta|full`: `delta` (default) genera archivos versionados, `full` mantiene salida fija.
-- `--scope catalog|offering|mixed`: define alcance lógico de la corrida para trazabilidad.
+- `--scope catalog|offering|all`: define alcance lógico de la corrida para trazabilidad.
 - `--years 2026,2027`: metadata de años sincronizados.
 - `--terms 2026_A_1,2026_A_2`: metadata de periodos sincronizados.
 - `--history-dir ../seeds/tec-data`: carpeta de salida para deltas.
@@ -248,6 +247,12 @@ uv run tec-data sync --target remote --years 2026 --env-file ../../.env.producti
 
 # DB URL explícita
 uv run tec-data sync --target db-url --db-url "postgresql://..." --years 2026
+
+# Historial de seeds con Postgres efimero
+uv run tec-data sync --target seed-history --seed-dir ../seeds/tec-data --scope offering --years 2026 --no-apply
+
+# En CI (GitHub service container) URL explicita
+uv run tec-data sync --target seed-history --seed-history-db-url "postgresql://postgres:postgres@127.0.0.1:5432/postgres" --seed-dir ../seeds/tec-data --scope offering --years 2026 --no-apply
 ```
 
 Qué hace `sync`:
@@ -263,6 +268,10 @@ Opciones útiles:
 - `--skip-pipeline`: no vuelve a descargar/procesar; usa `data/raw` actual.
 - `--no-apply`: solo genera SQL (no aplica).
 - `--keep-sql/--no-keep-sql`: conserva o elimina el SQL generado (por defecto se conserva).
+- `--scope catalog|offering|all`: alcance lógico para diff/soft-delete.
+- `--seed-dir ../seeds/tec-data`: carpeta de historial para `--target seed-history`.
+- `--baseline-seed seed_YYYYMMDDTHHMMSSZ_*.sql`: seed inicial opcional para replay parcial.
+- `--seed-history-db-url`: URL Postgres para `--target seed-history` (por defecto `127.0.0.1:5432`).
 
 ### Ledger de seeds aplicados
 
