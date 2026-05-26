@@ -7,6 +7,7 @@ import typer
 from src.domains.sync.sql_seed import run_sql
 from src.workflows.download_workflow import download
 from src.workflows.process_workflow import run_process
+from src.workflows.sync_pipeline import run_sync_pipeline
 from src.workflows.sync_workflow import SEED_HISTORY_SERVICE_DB_URL
 from src.workflows.sync_workflow import sync_cmd
 
@@ -74,6 +75,36 @@ def process_cmd_cli(
         years_list = [int(y.strip()) for y in years.split(",")]
     run_process(
         data_dir=data_dir, scope=scope, university_id=university_id, years=years_list
+    )
+
+
+@app.command("pipeline")
+def pipeline_cmd(
+    data_dir: Path = typer.Option(
+        Path("data/raw"), "--data-dir", "-d", help="Data directory for raw files"
+    ),
+    scope: str = typer.Option(
+        "all", "--scope", "-s", help="Scope to run: catalog, offering, all"
+    ),
+    years: str = typer.Option(
+        "2026", "--years", "-y", help="Comma-separated years (e.g., 2025,2026)"
+    ),
+    skip_download: bool = typer.Option(
+        False,
+        "--skip-download",
+        help="Run process steps only, reusing previously downloaded raw files",
+    ),
+) -> None:
+    """Run download/process pipeline with dependency-aware orchestration."""
+    years_list = [int(y.strip()) for y in years.split(",") if y.strip()]
+    if not years_list:
+        raise typer.BadParameter("--years must include at least one year")
+
+    run_sync_pipeline(
+        data_dir=data_dir,
+        years=years_list,
+        scope=scope,
+        skip_download=skip_download,
     )
 
 

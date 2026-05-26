@@ -1226,6 +1226,7 @@ def remap_all_ids_to_db(
         old_plan_id = int(row["study_plan_id"])
         unit_code, external_plan_id = study_plan_old_to_key[old_plan_id]
         level_number = int(row["level_number"])
+        row["_original_study_plan_id"] = old_plan_id
         row["study_plan_id"] = study_plan_old_to_new[old_plan_id]
         new_id = study_plan_level_by_key.get(
             (unit_code, external_plan_id, level_number)
@@ -1242,7 +1243,7 @@ def remap_all_ids_to_db(
         ]
         row["course_id"] = course_old_to_new[int(row["course_id"])]
         old_plan_id_for_level = int(
-            local_study_plan_level_by_id[old_level_id]["study_plan_id"]
+            local_study_plan_level_by_id[old_level_id]["_original_study_plan_id"]
         )
         unit_code, external_plan_id = study_plan_old_to_key[old_plan_id_for_level]
         level_number = int(local_study_plan_level_by_id[old_level_id]["level_number"])
