@@ -1,4 +1,4 @@
-name: Deploy Preview (Development)
+name: Deploy preview
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy-preview:
-    name: Deploy Preview to Cloudflare Pages
+    name: Deploy preview to Cloudflare Pages
     runs-on: ubuntu-latest
     permissions:
       contents: read

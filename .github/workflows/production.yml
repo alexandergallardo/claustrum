@@ -1,4 +1,4 @@
-name: Deploy Production
+name: Deploy production
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy-production:
-    name: Deploy Production to Cloudflare Pages
+    name: Deploy production to Cloudflare Pages
     runs-on: ubuntu-latest
     permissions:
       contents: read
