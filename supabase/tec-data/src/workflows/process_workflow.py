@@ -21,6 +21,7 @@ def run_process(
     scope: str = "all",
     university_id: int | None = None,
     years: list[int] | None = None,
+    include_catalog_study_plan: bool = True,
 ) -> None:
     """Run processing for specified scope."""
     scope = normalize_scope(scope)
@@ -63,60 +64,61 @@ def run_process(
             term_path.write_text(json.dumps(terms, indent=2, ensure_ascii=False))
             typer.echo(f"Processed {len(terms)} academic_term to {term_path}")
 
-            (
-                study_plans,
-                plan_campus_relations,
-                study_plan_levels,
-                courses,
-                course_relations,
-                level_courses,
-            ) = process_study_plan_complete(data_dir)
+            if include_catalog_study_plan:
+                (
+                    study_plans,
+                    plan_campus_relations,
+                    study_plan_levels,
+                    courses,
+                    course_relations,
+                    level_courses,
+                ) = process_study_plan_complete(data_dir)
 
-            plan_path = data_dir / "study_plan" / "data.json"
-            plan_path.parent.mkdir(parents=True, exist_ok=True)
-            plan_path.write_text(json.dumps(study_plans, indent=2, ensure_ascii=False))
-            typer.echo(f"Processed {len(study_plans)} study_plans to {plan_path}")
+                plan_path = data_dir / "study_plan" / "data.json"
+                plan_path.parent.mkdir(parents=True, exist_ok=True)
+                plan_path.write_text(json.dumps(study_plans, indent=2, ensure_ascii=False))
+                typer.echo(f"Processed {len(study_plans)} study_plans to {plan_path}")
 
-            plan_campus_path = data_dir / "study_plan_campus" / "data.json"
-            plan_campus_path.parent.mkdir(parents=True, exist_ok=True)
-            plan_campus_path.write_text(
-                json.dumps(plan_campus_relations, indent=2, ensure_ascii=False)
-            )
-            typer.echo(
-                f"Processed {len(plan_campus_relations)} study_plan_campus relations"
-            )
+                plan_campus_path = data_dir / "study_plan_campus" / "data.json"
+                plan_campus_path.parent.mkdir(parents=True, exist_ok=True)
+                plan_campus_path.write_text(
+                    json.dumps(plan_campus_relations, indent=2, ensure_ascii=False)
+                )
+                typer.echo(
+                    f"Processed {len(plan_campus_relations)} study_plan_campus relations"
+                )
 
-            plan_level_path = data_dir / "study_plan_level" / "data.json"
-            plan_level_path.parent.mkdir(parents=True, exist_ok=True)
-            plan_level_path.write_text(
-                json.dumps(study_plan_levels, indent=2, ensure_ascii=False)
-            )
-            typer.echo(
-                f"Processed {len(study_plan_levels)} study_plan_levels to {plan_level_path}"
-            )
+                plan_level_path = data_dir / "study_plan_level" / "data.json"
+                plan_level_path.parent.mkdir(parents=True, exist_ok=True)
+                plan_level_path.write_text(
+                    json.dumps(study_plan_levels, indent=2, ensure_ascii=False)
+                )
+                typer.echo(
+                    f"Processed {len(study_plan_levels)} study_plan_levels to {plan_level_path}"
+                )
 
-            level_course_path = data_dir / "study_plan_level_course" / "data.json"
-            level_course_path.parent.mkdir(parents=True, exist_ok=True)
-            level_course_path.write_text(
-                json.dumps(level_courses, indent=2, ensure_ascii=False)
-            )
-            typer.echo(
-                f"Processed {len(level_courses)} study_plan_level_courses to {level_course_path}"
-            )
+                level_course_path = data_dir / "study_plan_level_course" / "data.json"
+                level_course_path.parent.mkdir(parents=True, exist_ok=True)
+                level_course_path.write_text(
+                    json.dumps(level_courses, indent=2, ensure_ascii=False)
+                )
+                typer.echo(
+                    f"Processed {len(level_courses)} study_plan_level_courses to {level_course_path}"
+                )
 
-            course_path = data_dir / "course" / "data.json"
-            course_path.parent.mkdir(parents=True, exist_ok=True)
-            course_path.write_text(json.dumps(courses, indent=2, ensure_ascii=False))
-            typer.echo(f"Processed {len(courses)} courses to {course_path}")
+                course_path = data_dir / "course" / "data.json"
+                course_path.parent.mkdir(parents=True, exist_ok=True)
+                course_path.write_text(json.dumps(courses, indent=2, ensure_ascii=False))
+                typer.echo(f"Processed {len(courses)} courses to {course_path}")
 
-            course_rel_path = data_dir / "course_relation" / "data.json"
-            course_rel_path.parent.mkdir(parents=True, exist_ok=True)
-            course_rel_path.write_text(
-                json.dumps(course_relations, indent=2, ensure_ascii=False)
-            )
-            typer.echo(
-                f"Processed {len(course_relations)} course_relations to {course_rel_path}"
-            )
+                course_rel_path = data_dir / "course_relation" / "data.json"
+                course_rel_path.parent.mkdir(parents=True, exist_ok=True)
+                course_rel_path.write_text(
+                    json.dumps(course_relations, indent=2, ensure_ascii=False)
+                )
+                typer.echo(
+                    f"Processed {len(course_relations)} course_relations to {course_rel_path}"
+                )
 
     except FileNotFoundError as exc:
         typer.echo(f"Error: {exc}")

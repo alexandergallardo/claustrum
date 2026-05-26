@@ -38,10 +38,39 @@ def run_sync_pipeline(
         available = {int(term.get("year", 0)) for term in terms}
         return set(target_years).issubset(available)
 
-    if run_catalog:
-        if not skip_download:
-            download(output_dir=data_dir, scope="catalog")
+    def download_or_raise(**kwargs: Any) -> None:
+        if not download(**kwargs):
+            raise RuntimeError("Download phase failed")
+
+    def prepare_catalog_prerequisites() -> None:
+        download_or_raise(
+            output_dir=data_dir,
+            scope="catalog",
+            include_catalog_core=True,
+            include_catalog_study_plan=False,
+        )
+        run_process(
+            data_dir=data_dir,
+            scope="catalog",
+            years=year_list,
+            include_catalog_study_plan=False,
+        )
+
+    def prepare_catalog_full() -> None:
+        prepare_catalog_prerequisites()
+        download_or_raise(
+            output_dir=data_dir,
+            scope="catalog",
+            include_catalog_core=False,
+            include_catalog_study_plan=True,
+        )
         run_process(data_dir=data_dir, scope="catalog", years=year_list)
+
+    if run_catalog:
+        if skip_download:
+            run_process(data_dir=data_dir, scope="catalog", years=year_list)
+        else:
+            prepare_catalog_full()
 
     if not run_offering:
         return
@@ -53,8 +82,7 @@ def run_sync_pipeline(
                 "for requested years in data/raw; rerun without --skip-download."
             )
         typer.echo("Preparing missing catalog prerequisites for offering scope...")
-        download(output_dir=data_dir, scope="catalog")
-        run_process(data_dir=data_dir, scope="catalog", years=year_list)
+        prepare_catalog_full()
 
     merged_offerings: dict[tuple[int, int, int, int], dict[str, Any]] = {}
     merged_groups: dict[tuple[int, str], dict[str, Any]] = {}
@@ -65,7 +93,7 @@ def run_sync_pipeline(
     for year in year_list:
         year_str = str(year)
         if not skip_download:
-            download(output_dir=data_dir, scope="offering", years=[year_str])
+            download_or_raise(output_dir=data_dir, scope="offering", years=[year_str])
         run_process(data_dir=data_dir, scope="offering", years=[year])
 
         offerings = load_json(data_dir / "course_offering" / "data.json")

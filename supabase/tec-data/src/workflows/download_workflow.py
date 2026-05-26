@@ -124,13 +124,15 @@ def download(
     verify_ssl: bool = False,
     concurrency: int = 3,
     years: list[str] | None = None,
+    include_catalog_core: bool = True,
+    include_catalog_study_plan: bool = True,
 ) -> bool:
     """Download raw data from TEC APIs by scope."""
     scope = normalize_scope(scope)
     run_catalog = scope in {"catalog", "all"}
     run_offering = scope in {"offering", "all"}
 
-    if run_catalog:
+    if run_catalog and include_catalog_core:
         typer.echo(f"{_progress_prefix('download')} fetching campus data...")
         client = CampusClient()
         try:
@@ -140,7 +142,7 @@ def download(
         finally:
             client.close()
 
-    if run_catalog:
+    if run_catalog and include_catalog_core:
         typer.echo(f"{_progress_prefix('download')} fetching academic_unit data...")
         # Load campus data to get campus codes
         campus_path = output_dir / "campus" / "data.json"
@@ -158,7 +160,7 @@ def download(
         finally:
             client.close()
 
-    if run_catalog:
+    if run_catalog and include_catalog_core:
         typer.echo(f"{_progress_prefix('download')} fetching academic_period data...")
         client = AcademicPeriodClient(verify_ssl=verify_ssl)
         try:
@@ -168,7 +170,7 @@ def download(
         finally:
             client.close()
 
-    if run_catalog:
+    if run_catalog and include_catalog_study_plan:
         typer.echo(
             f"{_progress_prefix('download')} preparing study_plan dependencies..."
         )
@@ -188,7 +190,7 @@ def download(
         finally:
             client.close()
 
-    if run_catalog:
+    if run_catalog and include_catalog_study_plan:
         typer.echo(f"{_progress_prefix('download')} fetching study_plan data...")
         # Load academic_unit_campus data to get valid combinations
         relation_path = output_dir / "academic_unit_campus" / "data.json"
