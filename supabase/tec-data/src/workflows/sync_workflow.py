@@ -547,11 +547,27 @@ def generate_minimal_delta_seed(
     scope: str = "all",
 ) -> tuple[Path, dict[str, dict[str, int]], bool]:
     target_tables = tables_for_scope(scope)
-    term_ids = {
-        int(row["id"])
-        for row in load_json(data_dir / "academic_term" / "data.json")
-        if int(row.get("year", 0)) in set(years)
-    }
+    if scope == "offering":
+        if term_external_keys:
+            terms_sql = ", ".join(
+                f"'{quote_literal(term_key)}'" for term_key in sorted(set(term_external_keys))
+            )
+            term_ids = {
+                int(value)
+                for value in query_rows(
+                    db_url,
+                    "SELECT id FROM public.academic_term "
+                    f"WHERE external_key = ANY(ARRAY[{terms_sql}]::TEXT[])",
+                )
+            }
+        else:
+            term_ids = set()
+    else:
+        term_ids = {
+            int(row["id"])
+            for row in load_json(data_dir / "academic_term" / "data.json")
+            if int(row.get("year", 0)) in set(years)
+        }
     lines: list[str] = [
         "-- ============================================================================",
         "-- TEC-DATA DELTA SEED",

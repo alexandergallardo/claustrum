@@ -80,7 +80,15 @@ jobs:
 
       - name: Extract catalog artifact
         working-directory: supabase/tec-data
-        run: tar -xzf catalog-data.tar.gz
+        run: |
+          if [ -f "catalog-data.tar.gz" ]; then
+            tar -xzf catalog-data.tar.gz
+          elif [ -f "catalog-data/catalog-data.tar.gz" ]; then
+            tar -xzf catalog-data/catalog-data.tar.gz
+          else
+            echo "catalog-data.tar.gz not found after artifact download"
+            exit 1
+          fi
 
       - name: Run seed-history smoke sync
         working-directory: supabase/tec-data
@@ -93,6 +101,13 @@ jobs:
           --no-apply
           --keep-sql
           --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:5432/postgres
+
+      - name: Cleanup catalog artifact files
+        working-directory: supabase/tec-data
+        run: |
+          rm -f catalog-data.tar.gz
+          rm -f catalog-data/catalog-data.tar.gz
+          rm -rf catalog-data
 
       - name: Capture generated seed path
         id: generated_seed
