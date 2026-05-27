@@ -143,7 +143,7 @@ class AcademicUnitClient(APIClient):
         output_dir: Path,
         school_codes: list[str],
         year: str,
-        progress_callback: Callable[[int, int, str], None] | None = None,
+        progress_callback: Callable[[int, int, str, str], None] | None = None,
     ) -> dict[str, Path]:
         """Download course offer data for all schools for a given year."""
         output_dir = output_dir / "course_offer" / year
@@ -155,6 +155,7 @@ class AcademicUnitClient(APIClient):
         for idx, code in enumerate(school_codes, 1):
             try:
                 oferta = self.get_oferta_cursos(code, year)
+                status = "empty"
                 if oferta and self._has_course_offer_data(oferta):
                     data = self._parse_oferta_cursos(oferta)
                     if data:
@@ -163,12 +164,13 @@ class AcademicUnitClient(APIClient):
                             json.dumps(data, indent=2, ensure_ascii=False)
                         )
                         files[code] = file_path
+                        status = "saved"
                 if progress_callback is not None:
-                    progress_callback(idx, total, code)
+                    progress_callback(idx, total, code, status)
             except requests.RequestException as e:
                 print(f"Error downloading course offer for {code}: {e}")
                 if progress_callback is not None:
-                    progress_callback(idx, total, code)
+                    progress_callback(idx, total, code, "error")
 
         return files
 
@@ -211,7 +213,7 @@ class AcademicUnitClient(APIClient):
         self,
         output_dir: Path,
         year: str,
-        progress_callback: Callable[[int, int, str, str, str], None] | None = None,
+        progress_callback: Callable[[int, int, str, str, str, str], None] | None = None,
     ) -> dict[str, Path]:
         """Download schedule data using already downloaded course offer files."""
         course_offer_dir = output_dir / "course_offer" / year
@@ -264,6 +266,7 @@ class AcademicUnitClient(APIClient):
         for idx, ((sede, carrera, periodo), dsc_sede) in enumerate(
             combinaciones.items(), 1
         ):
+            status = "empty"
             try:
                 html = self.get_horario_guia(sede, carrera, periodo)
                 if html:
@@ -277,14 +280,18 @@ class AcademicUnitClient(APIClient):
                         files[file_name] = file_path
                         downloaded += 1
                         total_courses += len(parsed_data)
+                        status = "saved"
                     else:
                         skipped += 1
+                        status = "empty"
                 else:
                     skipped += 1
+                    status = "empty"
             except requests.RequestException:
                 failed += 1
+                status = "error"
             if progress_callback is not None:
-                progress_callback(idx, total_combinaciones, sede, carrera, periodo)
+                progress_callback(idx, total_combinaciones, sede, carrera, periodo, status)
 
         if progress_callback is None:
             print(

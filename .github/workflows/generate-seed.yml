@@ -90,6 +90,58 @@ jobs:
             exit 1
           fi
 
+      - name: Validate catalog artifact completeness
+        working-directory: supabase/tec-data
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("data/raw")
+          required = [
+              "campus",
+              "academic_unit",
+              "academic_term",
+              "course",
+              "academic_unit_campus",
+              "study_plan",
+          ]
+          for table in required:
+              path = root / table / "data.json"
+              if not path.exists():
+                  raise SystemExit(f"Missing required artifact file: {path}")
+
+          campuses = json.loads((root / "campus" / "data.json").read_text())
+          units = json.loads((root / "academic_unit" / "data.json").read_text())
+          terms = json.loads((root / "academic_term" / "data.json").read_text())
+          courses = json.loads((root / "course" / "data.json").read_text())
+
+          term_keys_2026 = {
+              str(row.get("external_key", ""))
+              for row in terms
+              if int(row.get("year", 0)) == 2026
+          }
+
+          if len(campuses) < 20:
+              raise SystemExit(f"Catalog artifact looks incomplete: campus={len(campuses)}")
+          if len(units) < 70:
+              raise SystemExit(f"Catalog artifact looks incomplete: academic_unit={len(units)}")
+          if len(courses) < 3000:
+              raise SystemExit(f"Catalog artifact looks incomplete: course={len(courses)}")
+          if len(term_keys_2026) < 35:
+              raise SystemExit(
+                  "Catalog artifact looks incomplete: missing many 2026 academic terms"
+              )
+
+          print(
+              "Catalog artifact validated:",
+              f"campus={len(campuses)}",
+              f"academic_unit={len(units)}",
+              f"course={len(courses)}",
+              f"terms_2026={len(term_keys_2026)}",
+          )
+          PY
+
       - name: Run seed-history smoke sync
         working-directory: supabase/tec-data
         run: >-
@@ -160,6 +212,7 @@ jobs:
         with:
           commit-message: "chore(tec-data): weekly offering seed 2026"
           branch: "bot/tec-data-seed-2026"
+          branch-suffix: "timestamp"
           base: "development"
           delete-branch: true
           title: "chore(tec-data): weekly offering seed update (2026)"

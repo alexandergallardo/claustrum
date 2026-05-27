@@ -2,17 +2,6 @@ name: Catalog artifact
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 6 1 * *"
-  push:
-    branches:
-      - development
-    paths:
-      - "supabase/tec-data/src/workflows/download_workflow.py"
-      - "supabase/tec-data/src/workflows/process_workflow.py"
-      - "supabase/tec-data/src/workflows/sync_pipeline.py"
-      - "supabase/tec-data/src/workflows/sync_workflow.py"
-      - ".github/workflows/catalog-artifact.yml"
 
 jobs:
   build-catalog-artifact:

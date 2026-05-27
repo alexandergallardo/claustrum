@@ -21,9 +21,15 @@ def _progress_prefix(label: str) -> str:
     return f"[{label}]"
 
 
-def _render_download_progress(current: int, total: int) -> None:
+def _render_download_progress(
+    current: int, total: int, item: str, status: str
+) -> None:
     total = max(total, 1)
-    print(f"\r[{current:03d}/{total:03d}] Downloading ...", end="", flush=True)
+    print(
+        f"\r[{current:03d}/{total:03d}] {item:<24} {status}",
+        end="",
+        flush=True,
+    )
 
 
 def run_study_plan_download_cli(
@@ -275,7 +281,10 @@ def download(
                     current_year,
                     progress_callback=lambda idx,
                     total,
-                    _code: _render_download_progress(idx, total),
+                    code,
+                    status: _render_download_progress(
+                        idx, total, f"{code}.json", status
+                    ),
                 )
                 print()
                 typer.echo(
@@ -291,9 +300,12 @@ def download(
                     current_year,
                     progress_callback=lambda idx,
                     total,
-                    _sede,
-                    _carrera,
-                    _periodo: _render_download_progress(idx, total),
+                    sede,
+                    carrera,
+                    periodo,
+                    status: _render_download_progress(
+                        idx, total, f"{sede}_{carrera}_{periodo}.json", status
+                    ),
                 )
                 print()
                 typer.echo(
