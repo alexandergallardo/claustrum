@@ -1,50 +1,53 @@
-import { BoxIcon } from "./-icons";
-
-const OSS_CARDS = [
-  {
-    title: "Código abierto",
-    body: "Licencia MIT que permite usar, modificar y distribuir el código libremente, y si querés contribuir con una carrera nueva, un diseño mejor o un bug report, los pull requests siempre son bienvenidos.",
-  },
-  {
-    title: "Sin anuncios ni rastreo",
-    body: "No hay monetización. Los datos se manejan con el mínimo necesario y nunca se venden.",
-  },
-  {
-    title: "Independiente",
-    body: "Sin dependencias institucionales ni burocracia. Las mejoras salen cuando la comunidad las propone, no cuando un comité las aprueba.",
-  },
-];
-
 export function OpenSourceSection() {
   return (
     <section id="opensource">
       <div className="mx-auto max-w-[1100px] px-5 py-[80px] md:px-6 md:py-[120px]">
-        <div className="mb-14">
-          <div className="mb-[14px] flex items-center gap-[10px] font-mono text-[11px] tracking-[0.08em] text-[#A6841C] uppercase before:block before:h-px before:w-4 before:bg-[#C9A227]">
-            Open Source
-          </div>
-          <h2 className="mb-3 text-[clamp(24px,3.5vw,32px)] leading-[1.2] font-semibold tracking-[-0.02em]">
-            Un proyecto independiente, de código abierto
-          </h2>
-          <p className="text-muted-foreground max-w-[520px] text-[16px] leading-[1.55]">
-            Claustrum no está afiliado al ITCR. Es una iniciativa de un estudiante, mantenida con
-            recursos gratuitos y mejorada por quien quiera contribuir.
-          </p>
-        </div>
-
-        <div className="bg-border grid gap-px md:grid-cols-3">
-          {OSS_CARDS.map((card) => (
-            <div
-              key={card.title}
-              className="bg-card hover:bg-accent/50 px-8 py-9 transition-colors"
-            >
-              <h3 className="mb-[10px] flex items-center gap-2.5 text-[14px] font-semibold">
-                <BoxIcon className="size-4 text-[#A6841C]" />
-                {card.title}
-              </h3>
-              <p className="text-muted-foreground text-[13px] leading-[1.5]">{card.body}</p>
+        <div className="border-border bg-card min-w-0 border px-5 py-8 md:px-10 md:py-12">
+          <div className="grid min-w-0 gap-8 md:grid-cols-[minmax(0,1fr)_430px] md:items-start">
+            <div className="min-w-0">
+              <h2 className="mb-4 max-w-[640px] text-[clamp(24px,3.5vw,34px)] leading-[1.12] font-semibold tracking-[-0.03em]">
+                Código abierto para estudiantes que quieran mejorarlo
+              </h2>
+              <p className="text-muted-foreground max-w-[680px] text-[16px] leading-[1.6]">
+                El código está publicado en GitHub, junto con la documentación y el modelo de datos,
+                para que cualquiera pueda auditarlo, mejorarlo y corregirlo, bajo licencia MIT.
+              </p>
             </div>
-          ))}
+
+            <div className="min-w-0 space-y-4 md:w-[430px]">
+              <div className="border-border bg-background/70 w-full min-w-0 scrollbar-thin [scrollbar-color:color-mix(in_oklab,var(--foreground)_22%,transparent)_transparent] overflow-x-auto border p-4 font-mono text-[12px] leading-relaxed">
+                <div className="space-y-1">
+                  <div className="whitespace-nowrap">
+                    <span className="text-[#A6841C]">$</span> git clone{" "}
+                    https://github.com/mau671/claustrum.git
+                  </div>
+                  <div>
+                    <span className="text-[#A6841C]">$</span> pnpm install
+                  </div>
+                  <div>
+                    <span className="text-[#A6841C]">$</span> pnpm run dev
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <a
+                  href="https://github.com/mau671/claustrum"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-border hover:bg-accent inline-flex h-10 min-w-0 items-center justify-center border px-4 text-center font-mono text-[12px] no-underline transition-colors"
+                >
+                  Ver repositorio
+                </a>
+                <a
+                  href="/docs/"
+                  className="bg-foreground text-background inline-flex h-10 min-w-0 items-center justify-center px-4 text-center font-mono text-[12px] no-underline transition-opacity hover:opacity-90"
+                >
+                  Leer documentación
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         <p className="text-muted-foreground/80 mx-auto mt-12 max-w-[700px] text-center font-mono text-[12px] leading-[1.5]">

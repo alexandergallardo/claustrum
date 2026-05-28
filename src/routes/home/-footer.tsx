@@ -28,12 +28,10 @@ export function HomeFooter() {
             GitHub
           </a>
           <a
-            href="/overview"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/docs/"
             className="text-muted-foreground hover:text-foreground font-mono text-[12px] tracking-[0.02em] no-underline"
           >
-            Abrir app
+            Documentación
           </a>
           <a
             href="https://github.com/mau671/claustrum/blob/main/LICENSE"
@@ -41,7 +39,7 @@ export function HomeFooter() {
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-foreground font-mono text-[12px] tracking-[0.02em] no-underline"
           >
-            MIT License
+            Licencia MIT
           </a>
         </div>
       </div>
