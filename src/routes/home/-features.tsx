@@ -86,6 +86,7 @@ function ReviewsDemo() {
         onPageSizeChange={setPageSize}
         showPagination={false}
         frameless
+        readOnly
       />
     </div>
   );
@@ -163,9 +164,6 @@ export function FeaturesSection() {
     <section id="funciones">
       <div className="mx-auto max-w-[1100px] px-5 pt-[80px] md:px-6 md:pt-[120px]">
         <div className="mb-14">
-          <div className="mb-[14px] flex items-center gap-[10px] font-mono text-[11px] tracking-[0.08em] text-[#A6841C] uppercase before:block before:h-px before:w-4 before:bg-[#C9A227]">
-            Funciones
-          </div>
           <h2 className="mb-3 text-[clamp(24px,3.5vw,32px)] leading-[1.2] font-semibold tracking-[-0.02em]">
             Diseñado para estudiantes del TEC
           </h2>

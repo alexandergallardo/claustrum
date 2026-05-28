@@ -41,7 +41,11 @@ export function HomeNav({ starCount }: { starCount: number | null }) {
                 onClick={handleSectionClick}
                 className="text-muted-foreground hover:text-foreground relative font-mono text-[13px] font-[450] tracking-[0.02em] no-underline transition-colors after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-[#C9A227] after:transition-transform after:duration-200 hover:after:scale-x-100"
               >
-                {id === "funciones" ? "Funciones" : id === "stack" ? "Tecnología" : "Open Source"}
+                {id === "funciones"
+                  ? "Funciones"
+                  : id === "stack"
+                    ? "Tecnología"
+                    : "Código abierto"}
               </a>
             </li>
           ))}

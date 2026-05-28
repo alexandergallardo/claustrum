@@ -1,13 +1,13 @@
 ---
 title: Entidades y dependencias
-description: Catálogo completo de entidades, orden de procesamiento, claves deterministas y fuentes externas.
+description: Entidades sincronizadas desde el TEC, dependencias, llaves naturales y transformaciones de calidad.
 ---
 
-## Grafo de dependencias
+Cada entidad sincronizada produce un archivo `data/raw/{entidad}/data.json`. El
+orden de procesamiento importa porque varias entidades contienen llaves foráneas
+que se resuelven con datos ya normalizados.
 
-El procesamiento de datos respeta el orden de dependencias entre entidades, de
-modo que cada entidad necesita que sus referencias estén disponibles antes de
-poder generarse.
+## Grafo de dependencias
 
 ```mermaid
 flowchart TB
@@ -50,191 +50,162 @@ flowchart TB
   Catalogo --> Plan --> Oferta
 ```
 
-## Catálogo de entidades
+## Scopes y tablas
 
-Cada entidad representa una tabla en la base de datos de destino y el pipeline
-genera un archivo `data.json` por entidad con los registros normalizados.
+| Scope | Tablas |
+| --- | --- |
+| `catalog` | `country`, `university`, `campus`, `academic_unit`, `academic_modality`, `academic_term`, `academic_unit_campus`, `study_plan`, `study_plan_campus`, `study_plan_level`, `course`, `study_plan_level_course`, `course_relation`, `professor` |
+| `offering` | `professor`, `course_offering`, `course_offering_group`, `course_offering_group_professor`, `course_offering_meeting` |
+| `all` | Todas las tablas anteriores |
 
-### Entidades de catálogo base
+`offering` incluye `professor` porque los profesores se descubren durante el
+procesamiento de horarios. Aun así, necesita que el catálogo ya exista para poder
+resolver cursos, sedes, unidades y periodos.
 
-**country** es el país de referencia, solo Costa Rica con código ISO `CR`. No
-depende de ninguna otra entidad y su ID determinista usa el código ISO.
+## Entidades de catálogo
 
-**university** es la universidad, solo el ITCR. Depende de `country` y su ID se
-basa en una constante interna por ser un valor fijo del pipeline.
+**country** contiene el país de referencia, actualmente Costa Rica (`CR`).
 
-**campus** son las sedes del TEC. Se obtienen combinando dos fuentes (un JSON
-API `carga_sedes_json.json` y un HTML parseado `carga_sedes_tds_lib.html`),
-donde el HTML se usa como base por tener más sedes y el JSON aporta nombres más
-largos u oficiales donde faltan.
+**university** contiene la institución (`ITCR`) y depende de `country`.
 
-```json title="data/raw/campus/data.json"
-[
-  {
-    "id": 12345,
-    "code": "CA",
-    "name": "CAMPUS TECNOLOGICO CENTRAL CARTAGO",
-    "university_id": 98765,
-    "is_active": true
-  }
-]
-```
+**campus** contiene sedes. Su clave natural es `code`; la fuente combina listados
+de sedes del TEC para obtener cobertura y nombres consistentes.
 
-**academic_unit** son las unidades académicas (escuelas y carreras), cada una
-pertenece a una universidad y tiene un código único, y el procesamiento
-normaliza nombres a mayúsculas y elimina espacios redundantes.
+**academic_unit** contiene escuelas/departamentos/carreras con código único por
+universidad.
 
-**academic_unit_campus** es la relación muchos a muchos entre unidades
-académicas y sedes que indica qué sedes ofrece cada carrera, y se genera durante
-el procesamiento de `academic_unit` a partir de los datos de sedes asociadas a
-cada escuela.
+**academic_unit_campus** relaciona unidades académicas con sedes. Se genera al
+procesar unidades académicas y sirve como insumo para descargar planes por
+combinación sede-unidad.
 
-**academic_modality** son las modalidades académicas (semestral, trimestral,
-etc.) y cada modalidad define cuántos periodos tiene por año (`periods_per_year`);
-es una entidad de referencia sin dependencias de catálogo.
+**academic_modality** contiene modalidades como semestre, bimestre, trimestre,
+mensual o verano. Define `periods_per_year`.
 
-**academic_term** es el periodo académico concreto definido por año, modalidad y
-número de periodo (por ejemplo, `2025-1-1` para año 2025, modalidad semestral,
-primer periodo). Depende de `academic_modality`.
+**academic_term** representa un periodo concreto. Su clave natural es
+`external_key`, con formato real como `2026_S_1`, `2026_V_1` o `2026_M_12`.
 
-### Entidades de plan de estudios
+## Entidades de plan
 
-**study_plan** es el plan de estudios de una carrera. Depende de la unidad
-académica y la modalidad, su clave natural combina el código de la unidad y el
-`external_plan_id` que viene de la fuente, y el ID determinista se genera con
-`deterministic_id("study_plan", unit_code, external_plan_id)`.
+**study_plan** depende de `academic_unit` y `academic_modality`. Su clave natural
+es `(academic_unit_id, external_plan_id)`; `external_plan_id` proviene del sistema
+de curricula del TEC.
 
-**study_plan_campus** son las sedes donde un plan de estudios está disponible,
-como relación muchos a muchos entre `study_plan` y `campus` que se genera
-durante el procesamiento del plan.
+**study_plan_campus** indica en qué sedes está disponible un plan. Su clave es
+`(study_plan_id, campus_id)`.
 
-**study_plan_level** son los niveles o bloques dentro de un plan de estudios
-(por ejemplo, "I Nivel", "II Nivel" o "Bloque 1"). Cada nivel tiene un número de
-orden y una etiqueta textual, y pertenece a un plan específico.
+**study_plan_level** representa niveles o bloques dentro del plan. Su clave es
+`(study_plan_id, level_number)`.
 
-**course** es el catálogo de cursos con código, nombre, créditos por defecto y
-horas semanales por defecto. Los cursos se descubren durante el procesamiento de
-planes de estudio (cada plan enumera los cursos que lo componen), y el nombre
-puede mejorarse después con datos de `schedule_guia`.
+**course** es el catálogo canónico de cursos, con `code`, `name`,
+`default_credits` y `default_weekly_hours`. El nombre puede completarse luego con
+datos de horarios si el plan solo traía el código.
 
-**study_plan_level_course** es la asignación de un curso a un nivel dentro de un
-plan, con créditos y horas específicas para ese contexto (pueden diferir de los
-valores por defecto del curso) e incluye `sort_order` para mantener el orden
-esperado dentro del nivel.
+**study_plan_level_course** relaciona cursos con niveles y guarda créditos, horas
+y `sort_order` del curso dentro de ese plan.
 
-**course_relation** son las relaciones entre cursos dentro de un plan de
-estudios: prerequisitos, correquisitos y equivalencias. Cada relación tiene un
-tipo (`course_relation_type`) y pertenece a un plan específico, porque un mismo
-curso puede tener relaciones distintas en diferentes planes.
+**course_relation** contiene prerequisitos, correquisitos y equivalencias dentro
+de un plan. Sus tipos válidos son `PREREQUISITE`, `COREQUISITE` y `EQUIVALENT`.
 
-### Entidades de oferta académica
+## Entidades de oferta
 
-**professor** son los profesores descubiertos durante el procesamiento de
-horarios. La fuente incluye nombres que pueden ser placeholders, por lo que el
-pipeline filtra valores como "SIN PROFESOR ASIGNADO", y el ID determinista se
-genera con el nombre completo normalizado.
+**professor** contiene nombres de profesores descubiertos en horarios. El pipeline
+filtra placeholders como `SIN PROFESOR ASIGNADO`.
 
-**course_offering** es la oferta de un curso en un periodo, sede y unidad
-académica específicos. Incluye `credits_snapshot` y `weekly_hours_snapshot` que
-registran los valores del curso al momento de la oferta, y la clave natural
-combina `course_id`, `campus_id`, `academic_unit_id` y `academic_term_id`.
+**course_offering** es la oferta de un curso para una sede, unidad y periodo. Su
+clave natural es `(course_id, campus_id, academic_unit_id, academic_term_id)` y
+guarda snapshots de créditos, horas y tipo de materia.
 
-```json title="data/raw/course_offering/data.json"
-[
-  {
-    "id": 54321,
-    "course_id": 12345,
-    "campus_id": 67890,
-    "academic_unit_id": 11111,
-    "academic_term_id": 22222,
-    "credits_snapshot": 4,
-    "weekly_hours_snapshot": 5,
-    "is_active": true
-  }
-]
-```
+**course_offering_group** representa un grupo. Su clave natural es
+`(course_offering_id, group_code)` y contiene `group_type` y `capacity`.
 
-**course_offering_group** es el grupo específico de una oferta. Cada grupo tiene
-un código (ej. "01", "02"), un tipo normalizado (`group_type`) y una capacidad,
-donde el tipo se normaliza desde los valores de la fuente (por ejemplo, "GRUPO
-REGULAR" se convierte en `REGULAR`, "GRUPO RN" en `RN`).
+**course_offering_group_professor** asigna profesores a grupos con clave
+`(course_offering_group_id, professor_id)`.
 
-**course_offering_group_professor** es la asignación de profesores a un grupo, y
-como un grupo puede tener varios profesores el pipeline salta placeholders
-durante la asignación.
+**course_offering_meeting** contiene reuniones de grupo con `weekday`,
+`starts_at`, `ends_at` y `classroom`. Su clave natural es
+`(course_offering_group_id, weekday, starts_at, ends_at)`.
 
-**course_offering_meeting** son las reuniones de un grupo con día de la semana
-(1-7, lunes a domingo), hora de inicio, hora de fin y aula. Las aulas se
-normalizan de modo que strings vacíos y "NO DISPONIBLE" se convierten en `NULL`.
+## Llaves naturales e IDs
 
-## Fuentes externas
+Los archivos procesados pueden traer IDs locales temporales, pero `sync` no los
+aplica ciegamente. Antes de generar el delta, consulta la base destino por llaves
+naturales, reutiliza IDs existentes cuando hay match y asigna nuevos IDs
+secuenciales cuando no existe la fila. Esto mantiene estables las referencias ya
+persistidas y permite que la base haya sido reindexada sin romper el pipeline.
 
-Los datos provienen de dos servicios del ITCR. Las APIs de
-`tecdigital.tec.ac.cr` entregan el catálogo base con endpoints para sedes,
-unidades académicas, periodos, planes de estudio y detalles de cada plan
-(cursos, niveles, relaciones), y las respuestas son JSON con estructura variable
-según la entidad. Los endpoints de `tec-appsext.itcr.ac.cr/guiahorarios`
-entregan la oferta académica y horarios, donde `course_offer` está disponible
-como JSON por año y código de escuela y `schedule_guia` está disponible como
-HTML por sede, carrera, año, modalidad y periodo (se parsea a JSON durante la
-descarga).
+La migración de reindexado compacto actualizó las tablas TEC y habilitó cascadas
+necesarias para que FKs como evaluaciones y tablas dependientes conservaran
+integridad. Por eso la documentación debe tratar el ID como PK interna y la llave
+natural como contrato de sincronización.
+
+## Lifecycle de datos sincronizados
+
+Las tablas sync-managed usan lifecycle lógico:
+
+| Columna | Uso |
+| --- | --- |
+| `is_active` | Indica si la fila sigue vigente en la fuente sincronizada. |
+| `updated_at` | Marca actualizaciones y reactiva filas sincronizadas. |
+| `deactivated_at` | Guarda cuando una fila dejó de aparecer en la fuente. |
+
+El sync no elimina físicamente catálogo ni oferta. Si una fila deja de aparecer,
+se marca inactiva para no romper historial, horarios guardados, evaluaciones o
+reseñas que todavía dependan de ella.
+
+Para oferta, los soft deletes se acotan a los términos sincronizados. Una corrida
+`--scope offering --years 2026` no debe desactivar oferta de otros años.
+
+## Valores controlados
+
+`group_type` acepta actualmente estos valores:
+
+| Valor |
+| --- |
+| `REGULAR` |
+| `SEMIPRESENCIAL` |
+| `VIRTUAL` |
+| `ASISTIDA` |
+| `TUTORIA` |
+| `LABORATORIO` |
+| `RN` |
+| `ENSEÑANZA REMOTA` |
+| `TRABAJO FINAL DE GRADUACIÓN` |
+| `TALLER` |
+
+El procesador normaliza alias externos: `PRESENCIAL` pasa a `REGULAR`, `GRUPO RN`
+pasa a `RN`, variantes sin acento de enseñanza remota y TFG pasan a sus valores
+canónicos. Si aparece un tipo desconocido, el proceso falla con ejemplos para
+agregar primero el valor al enum/mapeo.
 
 ## Archivos de salida
 
-Cada entidad produce un archivo `data/raw/{entidad}/data.json` con el siguiente
-contenido:
+| Archivo | Contenido |
+| --- | --- |
+| `country/data.json` | País de referencia. |
+| `university/data.json` | Institución. |
+| `campus/data.json` | Sedes con código y nombre. |
+| `academic_unit/data.json` | Unidades académicas. |
+| `academic_unit_campus/data.json` | Relación unidad-sede. |
+| `academic_modality/data.json` | Modalidades académicas. |
+| `academic_term/data.json` | Periodos por año, modalidad y número. |
+| `study_plan/data.json` | Planes de estudio. |
+| `study_plan_campus/data.json` | Sedes donde se ofrece cada plan. |
+| `study_plan_level/data.json` | Niveles del plan. |
+| `course/data.json` | Catálogo de cursos. |
+| `study_plan_level_course/data.json` | Cursos por nivel. |
+| `course_relation/data.json` | Prerequisitos, correquisitos y equivalencias. |
+| `professor/data.json` | Profesores descubiertos en horarios. |
+| `course_offering/data.json` | Ofertas por curso/sede/unidad/periodo. |
+| `course_offering_group/data.json` | Grupos de cada oferta. |
+| `course_offering_group_professor/data.json` | Profesores por grupo. |
+| `course_offering_meeting/data.json` | Reuniones de grupo. |
 
-| Archivo                                     | Contenido                                      |
-| ------------------------------------------- | ---------------------------------------------- |
-| `campus/data.json`                          | Sedes con código, nombre y universidad         |
-| `academic_unit/data.json`                   | Unidades académicas con código y nombre        |
-| `academic_unit_campus/data.json`            | Relación unidad-sede                           |
-| `academic_modality/data.json`               | Modalidades con periodos por año               |
-| `academic_term/data.json`                   | Periodos concretos por año, modalidad y número |
-| `study_plan/data.json`                      | Planes con unidad, modalidad y ID externo      |
-| `study_plan_campus/data.json`               | Sedes donde se ofrece cada plan                |
-| `study_plan_level/data.json`                | Niveles por plan                               |
-| `course/data.json`                          | Catálogo de cursos                             |
-| `study_plan_level_course/data.json`         | Cursos asignados a niveles                     |
-| `course_relation/data.json`                 | Relaciones entre cursos por plan               |
-| `professor/data.json`                       | Profesores (generado desde horarios)           |
-| `course_offering/data.json`                 | Ofertas de cursos por periodo                  |
-| `course_offering_group/data.json`           | Grupos de cada oferta                          |
-| `course_offering_group_professor/data.json` | Profesores por grupo                           |
-| `course_offering_meeting/data.json`         | Reuniones de cada grupo                        |
+## Tablas operativas relacionadas
 
-## IDs deterministas
+`sync_seed_run` no representa una entidad académica del TEC. Es el ledger de
+sincronización: registra seeds generados/aplicados, hash, scope, años, términos,
+estado y metadata.
 
-Los IDs de todas las entidades se generan con la función `deterministic_id()` en
-lugar de secuencias autoincrementales, para que el pipeline sea idempotente de
-modo que ejecutarlo dos veces con la misma fuente produzca los mismos IDs y los
-upserts no creen duplicados. Cuando el comando `sync` se conecta a una base
-existente consulta los IDs reales almacenados y prefiere usarlos antes que
-generar nuevos, y solo cuando una entidad no existe en la base se genera un ID
-determinista nuevo, lo que asegura que las relaciones entre tablas se mantengan
-aunque el pipeline se ejecute múltiples veces contra el mismo entorno.
-
-## Transformaciones de calidad de datos
-
-El pipeline aplica varias normalizaciones para garantizar consistencia. Los
-textos se normalizan a mayúsculas y sin espacios redundantes mediante
-`normalize_text()`, y los caracteres acentuados se reemplazan por sus
-equivalentes ASCII mediante `remove_accents()` para mantener compatibilidad con
-los enums de la base de datos.
-
-Los tipos de grupo pasan por `normalize_group_type()`, que elimina el prefijo
-"GRUPO " y valida contra los valores conocidos; si aparece un tipo nuevo el
-pipeline lanza un error con los archivos afectados para que se agregue al mapa
-de normalización.
-
-Los nombres de profesor se filtran con `is_placeholder_professor_name()` para
-excluir valores como "SIN PROFESOR ASIGNADO" o "(SE IMPARTE EN IDIOMA INGLES)",
-evitando así poblar la tabla `professor` con registros que no representan
-personas reales.
-
-Las aulas se normalizan con `normalize_classroom()`, de modo que valores vacíos
-o "NO DISPONIBLE" se convierten en `NULL` y el resto se conserva tal cual.
-
-Los créditos y horas semanales de la oferta priorizan los valores de
-`course_offer` (la fuente más específica para ese dato) y, si no están
-disponibles, se usan los valores por defecto del catálogo de cursos.
+`schedule_equivalence_placeholder_course` configura placeholders de equivalencia
+para el planificador de horarios. Depende conceptualmente de códigos de curso,
+aunque no forma parte del pipeline base de descarga del TEC.

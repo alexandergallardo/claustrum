@@ -1,49 +1,134 @@
 ---
 title: Despliegue y variables de entorno
-description: Operación del proyecto en local y producción con Supabase, Cloudflare Pages y Workers.
+description: Operación del proyecto en local y producción con Supabase, Cloudflare Pages, Workers y seeds TEC.
 ---
 
-## Entornos
-
-La aplicación se despliega en tres servicios distintos. El frontend estático se
-publica en Cloudflare Pages, la API de evaluaciones y reseñas corre como
-Cloudflare Worker en `workers/api/`, y la base de datos con autenticación en
-tiempo real usa Supabase.
+La aplicación se opera con tres servicios principales: frontend en Cloudflare
+Pages, API como Cloudflare Worker en `workers/api/` y base de datos Supabase. El
+pipeline de datos TEC genera seeds versionados para mantener catálogo y oferta.
 
 ## Variables de entorno
 
-Cada servicio requiere su propio conjunto de variables. El frontend necesita
-`VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` para conectarse a Supabase
-desde el cliente, y `VITE_API_BASE_URL` para apuntar al Worker de evaluaciones.
-El Worker necesita `SUPABASE_URL` y `SUPABASE_SECRET_KEY` para operaciones
-seguras contra la base de datos, más `TURNSTILE_SECRET_KEY` para validación de
-formularios.
+El frontend necesita variables públicas para conectarse a servicios externos:
 
-El repositorio incluye archivos de ejemplo con la estructura esperada de cada
-entorno: `.env.example` para desarrollo local, `.env.production.local.example`
-para producción y `workers/api/.dev.vars.example` para el Worker en desarrollo.
+| Variable | Uso |
+| --- | --- |
+| `VITE_SUPABASE_URL` | URL pública de Supabase. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Key pública para cliente Supabase. |
+| `VITE_API_BASE_URL` | Base URL del Worker API. |
+| `VITE_TURNSTILE_SITE_KEY` | Site key pública de Turnstile. |
 
-## Flujo mínimo local
+El Worker necesita secretos de servidor:
 
-```bash title="Iniciar entorno local"
+| Variable | Uso |
+| --- | --- |
+| `SUPABASE_URL` | URL del proyecto Supabase. |
+| `SUPABASE_SECRET_KEY` | Key de servicio para operaciones seguras. |
+| `TURNSTILE_SECRET_KEY` | Validación de Turnstile. |
+| `BETTER_AUTH_SECRET` | Firma/seguridad de Better Auth. |
+| `BETTER_AUTH_URL` | URL base pública de auth. |
+
+El repositorio incluye `.env.example`, `.env.production.local.example` y
+`workers/api/.dev.vars.example` como plantillas.
+
+## Flujo local mínimo
+
+```bash title="Preparar entorno local"
 pnpm install
 cp .env.example .env.local
 pnpm run supabase:start
-pnpm run supabase:migrate
+pnpm run supabase:migrate-dev
+```
+
+El servidor de desarrollo solo debe iniciarse cuando se necesite trabajar en UI o
+API local:
+
+```bash title="Servidor de desarrollo"
 pnpm run dev
 ```
 
-Estos comandos instalan dependencias, copian la configuración base, inician
-Supabase local, aplican migraciones y arrancan el servidor de desarrollo en
-Vite. La base de datos local usa valores por defecto de Supabase
-(`postgres:postgres@localhost:54322`) y no requiere configuración adicional
-siempre que los puertos estén disponibles.
+La base local usa los defaults de Supabase (`postgres:postgres@127.0.0.1:54322`)
+cuando los puertos están disponibles.
 
-## CI/CD
+## Build y despliegue
 
-El despliegue continuo usa dos ramas principales: `development` genera previews
-automáticos y `main` publica a producción. Antes de cada publicación se ejecuta
-`pnpm run build` para validar que el proyecto compile sin errores, y el despliegue
-falla si el build no pasa. No hay pruebas automatizadas configuradas en el
-proyecto, por lo que la validación previa al merge depende de la revisión manual
-y del build.
+```bash title="Build de producción"
+pnpm run build
+```
+
+El build ejecuta `fumadocs-mdx`, compila TypeScript y genera el bundle Vite. Es la
+validación principal antes de publicar cambios de documentación, frontend o
+contratos consumidos por la UI.
+
+El despliegue continuo usa dos ramas:
+
+| Rama | Workflow | Resultado |
+| --- | --- | --- |
+| `development` | `.github/workflows/preview.yml` | Preview en Cloudflare Pages. |
+| `main` | `.github/workflows/production.yml` | Worker API + frontend de producción. |
+
+## Datos TEC en CI
+
+La generación de datos TEC está separada en dos workflows.
+
+### Catalog artifact
+
+`.github/workflows/catalog-artifact.yml` se ejecuta manualmente. Corre:
+
+```bash
+uv run tec-data pipeline --scope catalog --years 2026 --data-dir data/raw
+```
+
+Luego empaqueta los `data/raw/**/data.json` de catálogo como artifact
+`tec-data-catalog-raw`. Ese artifact evita redescargar y reprocesar todo el
+catálogo cada vez que se genera oferta semanal.
+
+### Generate seed
+
+`.github/workflows/generate-seed.yml` se ejecuta semanalmente, manualmente o en PRs
+que tocan `supabase/tec-data`, migraciones o seeds. El flujo descarga el último
+artifact de catálogo exitoso, valida que tenga datos suficientes y corre:
+
+```bash
+uv run tec-data sync \
+  --target seed-history \
+  --seed-dir ../seeds/tec-data \
+  --scope offering \
+  --years 2026 \
+  --no-apply \
+  --keep-sql \
+  --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:5432/postgres
+```
+
+El workflow inspecciona el manifest generado. Si `noop` es `false`, abre un PR a
+`development` con los nuevos `.sql` y `.json` en `supabase/seeds/tec-data`.
+
+## Aplicar datos manualmente
+
+Para generar y aplicar contra local:
+
+```bash
+cd supabase/tec-data
+uv run tec-data sync --target local --years 2026
+```
+
+Para producción, usa el archivo de entorno correspondiente:
+
+```bash
+cd supabase/tec-data
+uv run tec-data sync --target remote --years 2026 --env-file ../../.env.production.local
+```
+
+Para inspeccionar sin aplicar:
+
+```bash
+uv run tec-data sync --target remote --years 2026 --env-file ../../.env.production.local --no-apply --keep-sql
+```
+
+## Reglas operativas
+
+- Usar `pnpm` para comandos Node/TypeScript.
+- Usar `uv` solo dentro de `supabase/tec-data`.
+- No resetear la base para aplicar migraciones normales.
+- No aplicar seeds de producción sin revisar target, scope, años y manifest.
+- El ledger `sync_seed_run` evita reaplicar seeds idénticos por SHA/fingerprint.

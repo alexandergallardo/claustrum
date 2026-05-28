@@ -3,50 +3,39 @@ title: Migraciones y RLS
 description: Evolución segura del esquema SQL, políticas Row Level Security y contratos de acceso a datos.
 ---
 
-## Propósito de las migraciones
+Las migraciones son el historial operativo del esquema. Cada archivo transforma
+una base existente hasta el siguiente estado sin reconstruirla desde cero y sin
+depender de pasos manuales fuera del control de versiones.
 
-Las migraciones son el historial operativo del esquema de base de datos. Cada
-archivo describe un cambio que debe poder aplicarse de forma ordenada sobre una
-base existente, sin reconstruirla desde cero ni depender de pasos manuales fuera
-del control de versiones. En Claustrum, esto es especialmente importante porque
-la base no contiene solo catálogos sincronizables: también guarda progreso de
-usuarios, horarios, evaluaciones, reseñas y decisiones de moderación.
-
-Una migración puede crear tablas, agregar columnas, definir índices, actualizar
-funciones RPC, activar políticas RLS o corregir contratos de datos que consume el
-frontend. Lo importante es que cada cambio sea explícito y reproducible. Si una
-tabla cambia, el cambio debe quedar en una migración. Si una función cambia su
-salida, la nueva definición debe quedar en una migración. Si se agrega una ruta
-de escritura para usuarios o administradores, las políticas y permisos deben
-quedar en una migración.
+## Principios de migración
 
 Las migraciones históricas ya aplicadas no se editan. Si hay que corregir una
-tabla, función, política o índice, se agrega una migración nueva que transforma el
-estado anterior al estado esperado. Esto mantiene trazabilidad y evita que dos
-entornos terminen con esquemas distintos aunque tengan los mismos archivos.
+tabla, función, política, índice o tipo, se agrega una migración nueva que lleve
+el estado anterior al estado esperado. Esto mantiene trazabilidad entre local,
+preview y producción.
 
-## Qué se protege con RLS
+Una migración puede crear tablas, agregar columnas, actualizar RPCs, cambiar
+permisos, habilitar RLS o ajustar contratos que consume el frontend. Si cambia la
+forma de una respuesta SQL, también hay que revisar los tipos y hooks que la
+consumen.
+
+## Qué protege RLS
 
 Row Level Security define qué filas puede leer o modificar cada tipo de cliente.
-En Supabase, el frontend usa credenciales públicas y ejecuta consultas como
-usuario anónimo o autenticado. Por eso no basta con esconder botones en la UI: la
-base debe imponer las reglas de acceso aunque alguien intente llamar la API de
-Supabase directamente.
-
-El esquema distingue tres categorías de datos con reglas diferentes:
+El frontend usa credenciales públicas, y la autenticación de la app se administra
+con Better Auth en el schema `better_auth`. El perfil de la app vive en
+`public."user"` y referencia a `better_auth."user"`.
 
 ### Catálogos académicos
 
-Los catálogos académicos son datos compartidos. Tablas como `country`,
-`university`, `campus`, `academic_unit`, `study_plan`, `course`,
-`course_relation`, `professor` y las tablas de oferta pueden leerse desde el
-cliente porque alimentan navegación pública, onboarding, mallas y horarios. Eso
-no significa que el cliente pueda modificarlas. La escritura de catálogos queda
-reservada para procesos de sincronización, seeds o tareas administrativas que
-usan credenciales elevadas y no dependen de permisos del usuario final.
+Tablas como `campus`, `academic_unit`, `study_plan`, `course`, `professor` y las
+tablas de oferta pueden leerse desde el cliente porque alimentan onboarding,
+mallas, búsqueda y horarios. Esa lectura no implica escritura: los cambios del
+catálogo se hacen por migraciones, seeds o procesos `tec-data` con credenciales
+elevadas.
 
-```sql title="Política de lectura pública para catálogos"
-CREATE POLICY "Lectura pública de cursos"
+```sql title="Lectura pública filtrada"
+CREATE POLICY "Lectura pública de cursos activos"
 ON public.course
 FOR SELECT
 TO anon, authenticated
@@ -55,13 +44,12 @@ USING (is_active = true);
 
 ### Datos del usuario
 
-Los datos del usuario son privados por definición. `user_profile`,
-`user_study_plan`, `student_course_record`, `saved_schedule` y
-`saved_schedule_item` se consultan y modifican bajo la identidad de
-`auth.uid()`. Un usuario puede ver y modificar sus propios registros, pero no los
-de otro usuario.
+`public."user"`, `user_study_plan`, `student_course_record`, `saved_schedule` y
+`saved_schedule_item` contienen datos privados. Las políticas deben validar que la
+fila pertenece al usuario actual o que la operación se ejecuta con un rol
+administrativo autorizado.
 
-```sql title="Política de datos propios"
+```sql title="Datos propios"
 CREATE POLICY "Usuario ve sus registros"
 ON public.student_course_record
 FOR SELECT
@@ -69,122 +57,51 @@ TO authenticated
 USING (user_id = (select auth.uid()));
 ```
 
-En tablas hijas, como `saved_schedule_item`, la política no depende solo de la
-fila hija: valida que el horario padre pertenezca al usuario.
+En tablas hijas se valida la propiedad a través de la tabla padre:
 
-```sql title="Política con herencia de propiedad"
-CREATE POLICY "Solo el dueño del horario ve sus ítems"
+```sql title="Propiedad heredada"
+CREATE POLICY "Usuario ve items de sus horarios"
 ON public.saved_schedule_item
 FOR SELECT
 TO authenticated
 USING (
   EXISTS (
     SELECT 1
-    FROM saved_schedule
-    WHERE saved_schedule.id = saved_schedule_id
-      AND saved_schedule.user_id = (select auth.uid())
+    FROM public.saved_schedule s
+    WHERE s.id = saved_schedule_id
+      AND s.user_id = (select auth.uid())
   )
 );
 ```
 
 ### Contenido comunitario
 
-El contenido comunitario tiene reglas mixtas. Las reseñas y evaluaciones pueden
-tener una versión pública cuando están aprobadas, una versión privada para el
-usuario que las envió y una vista administrativa para moderación. Por eso tablas
-como `professor_review`, `course_evaluations` y `user_role` combinan políticas de
-lectura pública, acceso propio y permisos de administración.
+Las reseñas y evaluaciones tienen una vista pública cuando están aprobadas, una
+vista propia para quien las envía cuando aplica, y una vista administrativa para
+moderación. `professor_review`, `professor_review_reaction`,
+`professor_review_report`, `course_evaluations` y `user_role` combinan políticas
+públicas, privadas y administrativas.
 
-```sql title="Política multinivel para contenido comunitario"
-CREATE POLICY "Lectura pública de reseñas aprobadas"
-ON public.professor_review
-FOR SELECT
-TO anon
-USING (status = 'approved'::professor_review_status);
-
-CREATE POLICY "Usuario ve sus propias reseñas"
-ON public.professor_review
-FOR SELECT
-TO authenticated
-USING (user_id = (select auth.uid()));
-
-CREATE POLICY "Administradores ven todo"
-ON public.professor_review
+```sql title="Moderación con rol interno"
+CREATE POLICY "Administradores ven reportes"
+ON public.professor_review_report
 FOR SELECT
 TO authenticated
 USING (public.is_admin());
 ```
 
-## Estrategia de políticas
-
-Las políticas del proyecto siguen una regla base:
-
-### Leer no implica escribir
-
-Una tabla puede ser públicamente consultable y aun así no tener políticas de
-`INSERT`, `UPDATE` o `DELETE` para clientes normales. Esto permite que el
-frontend use datos académicos sin autenticación, mientras la integridad del
-catálogo queda protegida.
-
-### Datos privados con auth.uid()
-
-Para datos privados, las políticas comparan la fila con `(select auth.uid())`.
-Ese patrón hace explícito que la autorización depende de la sesión actual. En
-tablas con columna `user_id`, la regla usual es que `user_id` debe coincidir con
-el usuario autenticado. En tablas donde la propiedad se hereda de una entidad
-padre, la política usa una subconsulta para verificar la relación con una fila
-que sí contiene `user_id`.
-
-### Administración y roles
-
-Para administración, el esquema usa roles internos y la función `public.is_admin()`.
-Las políticas de tablas como `user_role`, `professor_review` y
-`course_evaluations` permiten que administradores revisen o modifiquen datos que
-un usuario normal no debería tocar. La función de rol centraliza la decisión para
-evitar repetir consultas y condiciones diferentes en cada política.
-
-### Ciclo de vida del contenido moderado
-
-Las políticas también reflejan el ciclo de vida del contenido moderado. Una
-reseña aprobada puede ser pública; una pendiente puede aparecer en colas de
-moderación; una rechazada no debe mostrarse como contenido público. Una
-evaluación aprobada se puede listar para un curso; una pendiente debe seguir
-visible para quien la subió o para administradores; una acción de moderación debe
-quedar restringida a usuarios con permisos.
-
-## RPCs como contratos de lectura y escritura
+## RPCs como contratos
 
 Muchas pantallas no consumen tablas directamente. Usan RPCs que encapsulan joins,
-filtros, agregaciones o validaciones de negocio. Esto reduce duplicación en el
-frontend y permite que la base entregue respuestas con la forma que necesita la
-UI.
+filtros, agregaciones y reglas de negocio. Una RPC puede ser el contrato real del
+frontend aunque la tabla subyacente tenga muchas más columnas.
 
-### RPCs de lectura pública
+Las funciones `SECURITY DEFINER` deben validar identidad o rol dentro del cuerpo y
+definir `SET search_path` con el schema mínimo necesario. Esto evita que el
+resultado dependa del contexto de quien invoca la función y reduce riesgos de
+resolución ambigua de nombres.
 
-Las RPCs de lectura pública se usan para catálogos y vistas compuestas. Por
-ejemplo, el onboarding consulta sedes, unidades académicas y planes mediante
-funciones que ya aplican filtros de disponibilidad. La malla curricular consume
-funciones que devuelven cursos por nivel, créditos, horas y orden. Las pantallas
-de curso consultan profesores recientes, periodos activos, grupos más recientes
-o documentos aprobados.
-
-### RPCs de usuario
-
-Las RPCs de usuario encapsulan operaciones que dependen de identidad. Registrar
-intentos de cursos, calcular estados efectivos, guardar horarios o recuperar
-lookups seguros de grupos requiere validar que la operación corresponda al
-usuario autenticado. En esos casos, la función debe tratar `auth.uid()` como la
-fuente de verdad y no confiar ciegamente en parámetros enviados desde el cliente.
-
-### RPCs SECURITY DEFINER
-
-Las RPCs `SECURITY DEFINER` requieren cuidado adicional. Se usan cuando una
-función necesita ejecutar una operación con permisos del dueño de la función, por
-ejemplo consultar tablas protegidas para construir una cola de moderación o
-realizar una actualización controlada. Ese poder debe estar compensado por
-validaciones internas.
-
-```sql title="Función SECURITY DEFINER con validación"
+```sql title="SECURITY DEFINER seguro"
 CREATE OR REPLACE FUNCTION public.get_moderation_queue()
 RETURNS SETOF professor_review
 LANGUAGE plpgsql
@@ -193,174 +110,52 @@ SET search_path = public
 AS $$
 BEGIN
   IF NOT public.is_admin() THEN
-    RAISE EXCEPTION 'No autorizado';
+    RAISE EXCEPTION 'forbidden' USING ERRCODE = '42501';
   END IF;
 
   RETURN QUERY
   SELECT *
-  FROM professor_review
-  WHERE status = 'pending'::professor_review_status
-  ORDER BY created_at;
+  FROM public.professor_review
+  WHERE status = 'pending'::professor_review_status;
 END;
 $$;
 ```
 
-Si una función `SECURITY DEFINER` permite moderar, debe verificar
-`public.is_admin()`. Si permite modificar datos del usuario, debe comparar contra
-`auth.uid()`. Si acepta IDs como parámetros, debe comprobar que esos IDs
-pertenecen al contexto autorizado.
+## Cambios que afectan al frontend
 
-Toda función `SECURITY DEFINER` debe definir `SET search_path = public` o el
-schema mínimo que necesite. Esto evita que el resultado dependa del `search_path`
-de quien invoca la función y reduce riesgos asociados a resolución ambigua de
-nombres. Cuando una función usa extensiones fuera de `public`, debe referenciarlas
-con su schema, como ocurre con funciones de búsqueda basadas en `extensions`.
+Si una migración agrega, elimina o cambia columnas que consume la UI, hay que
+revisar los clientes TypeScript. En este proyecto los puntos de entrada más
+importantes son `src/lib/api.ts`, `src/lib/hooks/use-queries.ts`,
+`src/lib/evaluations/api.ts` y `src/lib/professor-reviews/api.ts`.
 
-## Cambios que afectan contratos del frontend
+Cambios en enums requieren revisar labels, filtros y ramas de UI. Cambios en RLS
+requieren revisar si la pantalla corre como anónimo, autenticado o admin. Cambios
+en RPCs requieren revisar firma, permisos, `search_path`, tipos de retorno y
+consumidores.
 
-Una migración no solo cambia la base; también puede cambiar el contrato que
-consume el frontend. Si una RPC agrega una columna, cambia un nombre, modifica un
-tipo o altera el orden esperado, hay que revisar los tipos y hooks que la llaman.
-En este proyecto, muchas consultas se concentran en `src/lib/api.ts`,
-`src/lib/hooks/use-queries.ts`, `src/lib/evaluations/api.ts` y
-`src/lib/professor-reviews/api.ts`.
+## Flujo para aplicar migraciones
 
-Los cambios de contrato deben ser compatibles con la forma en que TanStack Query
-cachea datos. Si cambia una consulta, puede hacer falta revisar su `queryKey`,
-los tipos TypeScript asociados y las invalidaciones después de mutaciones. Por
-ejemplo, un cambio en el estado efectivo de cursos no afecta solo la función SQL:
-también puede impactar dashboard, malla, detalle de curso, progreso y selección
-de horarios.
-
-Cuando una migración modifica estados o enums, hay que revisar las ramas del
-frontend que comparan esos valores. Agregar un nuevo estado puede requerir nuevos
-labels, filtros, badges o reglas de visibilidad. Cambiar un enum existente puede
-romper formularios, validaciones o filtros si el frontend todavía espera el valor
-anterior.
-
-Cuando una migración cambia reglas de visibilidad, también hay que revisar si la
-consulta se hace como usuario anónimo, autenticado o administrador. Un cambio de
-RLS puede hacer que una pantalla pública deje de recibir datos, que una cola de
-moderación quede vacía o que una operación de usuario falle aunque el SQL parezca
-correcto.
-
-## Cómo agregar una migración segura
-
-Antes de escribir SQL, conviene clasificar el cambio. No es lo mismo agregar una
-columna nullable a una tabla de catálogo que cambiar una función usada por el
-dashboard o introducir una tabla con datos privados. La clasificación determina
-qué revisar: constraints, índices, políticas RLS, permisos, RPCs, tipos del
-frontend y datos existentes.
-
-### Tabla nueva
-
-Si se agrega una tabla nueva, la migración debe definir su llave primaria,
-relaciones, constraints e índices mínimos. También debe decidir desde el inicio si
-la tabla es pública, privada, administrativa o mixta. Esa decisión debe quedar
-reflejada en RLS. Una tabla con RLS activado pero sin políticas puede ser
-inaccesible para el cliente; una tabla sin RLS puede exponer más de lo esperado.
-
-### Columna nueva
-
-Si se agrega una columna a una tabla con datos existentes, hay que pensar en su
-valor inicial. Una columna `NOT NULL` necesita default o backfill antes de aplicar
-la restricción. Una columna que participa en filtros frecuentes puede necesitar
-índice. Una columna que afecta sincronización puede necesitar integrarse con
-procesos idempotentes y soft delete.
-
-```sql title="Migración con backfill"
-ALTER TABLE public.course
-ADD COLUMN syllabus_url TEXT;
-
-UPDATE public.course
-SET syllabus_url = ''
-WHERE syllabus_url IS NULL;
-
-ALTER TABLE public.course
-ALTER COLUMN syllabus_url SET NOT NULL;
-
-ALTER TABLE public.course
-ALTER COLUMN syllabus_url SET DEFAULT '';
-
-CREATE INDEX idx_course_syllabus
-ON public.course (syllabus_url)
-WHERE is_active = true;
+```bash title="Aplicar migraciones locales"
+pnpm run supabase:migrate-dev
 ```
 
-### RPC modificada
-
-Si se cambia una RPC, la migración debe usar `CREATE OR REPLACE FUNCTION` cuando
-la firma lo permita. Si cambia la firma de forma incompatible, puede requerir
-`DROP FUNCTION` con tipos explícitos y luego crear la nueva versión. En ambos
-casos hay que revisar permisos, `SECURITY DEFINER`, `search_path`, tipos de
-retorno y consumidores del frontend.
-
-### Política RLS cambiada
-
-Si se cambia una política RLS, hay que describir qué acceso se gana o se pierde.
-Una política demasiado abierta puede filtrar datos de usuarios; una demasiado
-restrictiva puede romper pantallas legítimas. Para datos de usuario, la revisión
-mínima es confirmar que toda operación dependa de `auth.uid()`. Para datos de
-administración, hay que confirmar que use `public.is_admin()` o una validación
-equivalente.
-
-```sql title="Reemplazo de política existente"
-DROP POLICY IF EXISTS "Lectura pública de reseñas" ON public.professor_review;
-
-CREATE POLICY "Lectura pública de reseñas aprobadas"
-ON public.professor_review
-FOR SELECT
-TO anon
-USING (status = 'approved'::professor_review_status);
+```bash title="Aplicar migraciones al proyecto vinculado"
+pnpm run supabase:migrate-prod
 ```
 
-## Flujo recomendado para aplicar cambios
+Estos comandos aplican migraciones pendientes sin borrar datos. No se debe usar
+reset para aplicar cambios normales: un reset elimina información local o remota y
+puede ocultar una migración mal definida.
 
-El flujo normal para aplicar migraciones pendientes es:
+## Checklist
 
-```bash title="Aplicar migraciones"
-pnpm run supabase:migrate
-```
-
-Ese comando debe ser suficiente para llevar un entorno al último estado del
-esquema sin borrar datos. No se debe resetear la base para aplicar cambios
-normales, porque un reset elimina información local o remota y oculta problemas
-reales de migración. Si un cambio solo funciona después de reconstruir la base,
-probablemente la migración no está describiendo correctamente cómo transformar un
-estado existente.
-
-Después de aplicar una migración, hay que validar el impacto según el tipo de
-cambio. Para cambios de esquema o RPCs, el build de TypeScript ayuda a detectar
-contratos rotos en el frontend. Para cambios de RLS, es necesario pensar en los
-roles que ejecutan cada flujo: anónimo, usuario autenticado, dueño del recurso y
-administrador. Para cambios de datos sincronizados, hay que confirmar que una
-ejecución repetida no cree duplicados ni reactive datos incorrectos.
-
-El build del frontend no prueba políticas RLS por sí solo, pero sí detecta muchos
-cambios de contrato: columnas renombradas en tipos, respuestas que ya no encajan
-con el código o imports afectados por una reorganización. Por eso debe ejecutarse
-después de cambios que alteren tablas, funciones o respuestas consumidas por la
-UI.
-
-## Checklist antes de cerrar un cambio
-
-- La migración nueva transforma un esquema existente sin requerir reset.
+- La migración transforma una base existente sin requerir reset.
 - Las migraciones históricas permanecen intactas.
-- Las tablas nuevas tienen RLS habilitado cuando son accesibles desde Supabase.
-- Las políticas distinguen correctamente entre lectura pública, datos propios y
-  administración.
-- Las funciones `SECURITY DEFINER` validan identidad o rol dentro del cuerpo.
-- Las funciones `SECURITY DEFINER` definen `SET search_path`.
-- Los cambios de RPC mantienen o documentan el contrato que consume el frontend.
-- Los enums o estados nuevos tienen representación en la UI si son visibles.
-- Las columnas nuevas consideran backfill, defaults, nullability e índices.
-- Las consultas críticas del frontend se revisan cuando cambia una tabla, vista o
-  función que consumen.
-
-## Relación con la documentación del esquema
-
-La página de esquema general explica el modelo conceptual: entidades, relaciones
-y decisiones de diseño. Esta página explica cómo ese modelo evoluciona de forma
-segura y cómo se protege en tiempo de ejecución. Ambas páginas se complementan:
-una describe qué existe y por qué está modelado así; la otra describe cómo
-cambiarlo sin romper datos, seguridad ni contratos del frontend.
+- Tablas nuevas tienen PK, FKs, constraints e índices mínimos.
+- RLS distingue lectura pública, datos propios y administración.
+- Funciones `SECURITY DEFINER` validan identidad o rol y definen `search_path`.
+- Cambios de RPC mantienen o documentan el contrato del frontend.
+- Enums visibles tienen representación en la UI.
+- Columnas nuevas consideran backfill, defaults, nullability e índices.
+- Cambios en datos sync-managed consideran `is_active`, `updated_at` y
+  `deactivated_at`.

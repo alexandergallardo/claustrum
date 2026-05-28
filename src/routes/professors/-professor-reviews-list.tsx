@@ -91,17 +91,20 @@ function ReviewActions({
   review,
   mobile = false,
   isPending,
+  readOnly = false,
   onReaction,
   onReport,
 }: {
   review: ProfessorReviewPublicRow;
   mobile?: boolean;
   isPending: boolean;
+  readOnly?: boolean;
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void;
   onReport: (review: ProfessorReviewPublicRow) => void;
 }) {
   const isLiked = review.my_reaction === "like";
   const isDisliked = review.my_reaction === "dislike";
+  const isDisabled = isPending || readOnly;
 
   return (
     <div
@@ -115,7 +118,7 @@ function ReviewActions({
         type="button"
         aria-label={isLiked ? "Quitar me gusta" : "Me gusta"}
         aria-pressed={isLiked}
-        disabled={isPending}
+        disabled={isDisabled}
         onClick={() => onReaction(review, "like")}
         className={[
           "inline-flex items-center gap-1 rounded-md px-2 py-1 text-green-600 transition-colors hover:bg-green-100 disabled:pointer-events-none disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-950",
@@ -129,7 +132,7 @@ function ReviewActions({
         type="button"
         aria-label={isDisliked ? "Quitar no me gusta" : "No me gusta"}
         aria-pressed={isDisliked}
-        disabled={isPending}
+        disabled={isDisabled}
         onClick={() => onReaction(review, "dislike")}
         className={[
           "inline-flex items-center gap-1 rounded-md px-2 py-1 text-red-600 transition-colors hover:bg-red-100 disabled:pointer-events-none disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950",
@@ -142,8 +145,9 @@ function ReviewActions({
       <div className="bg-border mx-1 h-4 w-px" />
       <button
         type="button"
+        disabled={readOnly}
         onClick={() => onReport(review)}
-        className="text-muted-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors"
+        className="text-muted-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors disabled:pointer-events-none disabled:opacity-50"
       >
         <Flag className="size-3.5" />
         Reportar
@@ -158,6 +162,7 @@ function getColumns(
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void,
   onReport: (review: ProfessorReviewPublicRow) => void,
   isReactionPending: boolean,
+  readOnly: boolean,
 ) {
   return [
     columnHelper.display({
@@ -269,6 +274,7 @@ function getColumns(
           <ReviewActions
             review={row.original}
             isPending={isReactionPending}
+            readOnly={readOnly}
             onReaction={onReaction}
             onReport={onReport}
           />
@@ -293,6 +299,7 @@ type ProfessorReviewsListProps = {
   onPageSizeChange: Dispatch<SetStateAction<number>>;
   showPagination?: boolean;
   frameless?: boolean;
+  readOnly?: boolean;
 };
 
 export function ProfessorReviewsList({
@@ -310,6 +317,7 @@ export function ProfessorReviewsList({
   onPageSizeChange,
   showPagination = true,
   frameless = false,
+  readOnly = false,
 }: ProfessorReviewsListProps) {
   const reactionMutation = useSetProfessorReviewReaction();
   const reportMutation = useSubmitProfessorReviewReport();
@@ -320,6 +328,8 @@ export function ProfessorReviewsList({
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   function handleReaction(review: ProfessorReviewPublicRow, reaction: ReactionValue) {
+    if (readOnly) return;
+
     reactionMutation.mutate(
       {
         reviewId: review.review_id,
@@ -334,6 +344,8 @@ export function ProfessorReviewsList({
   }
 
   function openReportDialog(review: ProfessorReviewPublicRow) {
+    if (readOnly) return;
+
     setReviewToReport(review);
     setReportReason("spam");
     setReportDescription("");
@@ -370,7 +382,7 @@ export function ProfessorReviewsList({
 
   const table = useReactTable({
     data: reviewRows,
-    columns: getColumns(handleReaction, openReportDialog, reactionMutation.isPending),
+    columns: getColumns(handleReaction, openReportDialog, reactionMutation.isPending, readOnly),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: totalPages,
@@ -496,6 +508,7 @@ export function ProfessorReviewsList({
                       review={review}
                       mobile
                       isPending={reactionMutation.isPending}
+                      readOnly={readOnly}
                       onReaction={handleReaction}
                       onReport={openReportDialog}
                     />
