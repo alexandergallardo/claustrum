@@ -190,18 +190,72 @@ jobs:
           import json
           import os
           from pathlib import Path
+          from datetime import datetime
 
           manifest_path = Path(os.environ["SEED_MANIFEST_PATH"])
           payload = json.loads(manifest_path.read_text(encoding="utf-8"))
           noop = bool(payload.get("noop", False))
 
+          scope = payload.get("scope", "offering")
+          years_raw = payload.get("years", [2026])
+          years = ", ".join(str(y) for y in sorted(years_raw))
+          generated_utc = payload.get("generated_at_utc", "")
+          fp = payload.get("data_fingerprint", "")
+          term_keys = payload.get("term_external_keys", [])
+          table_stats = payload.get("table_stats", {})
+
+          # Parse and format datetime
+          try:
+              dt = datetime.fromisoformat(generated_utc)
+              formatted_dt = dt.strftime("%d/%m/%Y %H:%M")
+          except (ValueError, TypeError):
+              formatted_dt = generated_utc
+
+          # Build markdown table of stats
+          md_lines = ["| Table | Inserted | Updated | Soft-deleted |",
+                       "|-------|----------|---------|--------------|"]
+          line_parts = []
+          for table in sorted(table_stats.keys()):
+              stats = table_stats[table]
+              ins = stats.get("inserted", 0)
+              upd = stats.get("updated", 0)
+              sdel = stats.get("soft_deleted", 0)
+              md_lines.append(f"| {table} | {ins} | {upd} | {sdel} |")
+              parts = []
+              if ins:
+                  parts.append(f"{ins} inserted")
+              if upd:
+                  parts.append(f"{upd} updated")
+              if sdel:
+                  parts.append(f"{sdel} soft_deleted")
+              if parts:
+                  line_parts.append(f"{table}: {' | '.join(parts)}")
+
+          table_stats_md = "\n".join(md_lines)
+          table_stats_line = " | ".join(line_parts) if line_parts else "no changes"
+
+          term_count = str(len(term_keys))
+          fp_prefix = fp[:8] if fp else ""
+
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
               out.write(f"create_pr={'true' if not noop else 'false'}\n")
               out.write(f"seed_file={payload.get('seed_file', '')}\n")
+              out.write(f"formatted_datetime={formatted_dt}\n")
+              out.write(f"scope={scope}\n")
+              out.write(f"years={years}\n")
+              out.write(f"term_count={term_count}\n")
+              out.write(f"fp_prefix={fp_prefix}\n")
+              out.write(f"table_stats_md<<EOF_MD\n{table_stats_md}\nEOF_MD\n")
+              out.write(f"table_stats_line={table_stats_line}\n")
 
           print(f"Manifest: {manifest_path.name}")
           print(f"Seed file: {payload.get('seed_file', '')}")
           print(f"Noop: {noop}")
+          print(f"Scope: {scope}")
+          print(f"Years: {years}")
+          print(f"Generated: {formatted_dt}")
+          print(f"Terms: {term_count}")
+          print(f"Tables:\n{table_stats_md}")
           PY
         env:
           SEED_MANIFEST_PATH: ${{ steps.generated_seed.outputs.seed_manifest }}
@@ -210,16 +264,26 @@ jobs:
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.seed_check.outputs.create_pr == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "chore(tec-data): weekly offering seed 2026"
-          branch: "bot/tec-data-seed-2026"
+          commit-message: "chore(tec-data): offering as of ${{ steps.seed_check.outputs.formatted_datetime }} with filter of: ${{ steps.seed_check.outputs.years }}"
+          branch: "bot/tec-data-offering"
           branch-suffix: "timestamp"
           base: "development"
           delete-branch: true
-          title: "chore(tec-data): weekly offering seed update (2026)"
+          title: "chore(tec-data): offering as of ${{ steps.seed_check.outputs.formatted_datetime }} with filter of: ${{ steps.seed_check.outputs.years }}"
           body: |
-            Automated weekly tec-data seed generation for scope `offering` and years `2026`.
-            - target: `seed-history`
-            - source: GitHub Actions
+            ## Automated tec-data seed generation
+
+            **Scope:** `${{ steps.seed_check.outputs.scope }}`
+            **Years:** ${{ steps.seed_check.outputs.years }}
+            **Terms:** ${{ steps.seed_check.outputs.term_count }}
+            **Generated at:** ${{ steps.seed_check.outputs.formatted_datetime }} UTC
+
+            ### Table changes
+
+            ${{ steps.seed_check.outputs.table_stats_md }}
+
+            ---
+            _Target: seed-history | Source: GitHub Actions_
           add-paths: |
             supabase/seeds/tec-data/*.sql
             supabase/seeds/tec-data/*.json
