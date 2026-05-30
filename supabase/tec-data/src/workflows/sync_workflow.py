@@ -769,10 +769,9 @@ def generate_minimal_delta_seed(
                             f"AND academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]);"
                         )
                 elif table == "course_offering_group":
-                    # Identify which stale groups belong to preserved offerings so
-                    # we can (a) exclude them from soft-delete and (b) propagate the
-                    # set to child tables without needing a multi-table JOIN there.
-                    # course_offering_id is a direct field on course_offering_group.
+                    # Identify which stale groups belong to preserved offerings
+                    # and exclude them from soft-delete. Only the net stale groups
+                    # go into the SQL array — no WHERE exclusion clause needed.
                     preserved_group_ids = {
                         gid
                         for gid in stale_ids_set
@@ -781,56 +780,61 @@ def generate_minimal_delta_seed(
                         )
                         in preserved_offering_ids
                     }
-                    preserved_group_clause = (
-                        f"AND g.course_offering_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
-                        if preserved_offering_ids
-                        else ""
-                    )
-                    soft_delete_statements.append(
-                        "UPDATE public.course_offering_group g "
-                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
-                        f"WHERE g.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
-                        f"{preserved_group_clause}"
-                        "AND EXISTS (SELECT 1 FROM public.course_offering co "
-                        "WHERE co.id = g.course_offering_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
-                    )
+                    actual_ids = sorted(stale_ids_set - preserved_group_ids)
+                    if actual_ids:
+                        actual_ids_literal = ", ".join(str(id) for id in actual_ids)
+                        soft_delete_statements.append(
+                            "UPDATE public.course_offering_group g "
+                            "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                            f"WHERE g.id = ANY(ARRAY[{actual_ids_literal}]::BIGINT[]) "
+                            "AND EXISTS (SELECT 1 FROM public.course_offering co "
+                            "WHERE co.id = g.course_offering_id "
+                            f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                        )
                 elif table == "course_offering_group_professor":
-                    # course_offering_group_id is a direct field — filter by
-                    # preserved_group_ids in WHERE, no multi-table JOIN needed.
-                    preserved_gp_clause = (
-                        f"AND gp.course_offering_group_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_group_ids))}]::BIGINT[]) "
-                        if preserved_group_ids
-                        else ""
+                    # Exclude rows whose parent group is preserved — only net
+                    # stale IDs go into the SQL array.
+                    actual_ids = sorted(
+                        gp_id
+                        for gp_id in stale_ids_set
+                        if int(
+                            existing_rows.get(gp_id, {}).get("course_offering_group_id") or 0
+                        )
+                        not in preserved_group_ids
                     )
-                    soft_delete_statements.append(
-                        "UPDATE public.course_offering_group_professor gp "
-                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
-                        f"WHERE gp.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
-                        f"{preserved_gp_clause}"
-                        "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
-                        "JOIN public.course_offering co ON co.id = g.course_offering_id "
-                        "WHERE g.id = gp.course_offering_group_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
-                    )
+                    if actual_ids:
+                        actual_ids_literal = ", ".join(str(id) for id in actual_ids)
+                        soft_delete_statements.append(
+                            "UPDATE public.course_offering_group_professor gp "
+                            "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                            f"WHERE gp.id = ANY(ARRAY[{actual_ids_literal}]::BIGINT[]) "
+                            "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
+                            "JOIN public.course_offering co ON co.id = g.course_offering_id "
+                            "WHERE g.id = gp.course_offering_group_id "
+                            f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                        )
                 elif table == "course_offering_meeting":
-                    # course_offering_group_id is a direct field — filter by
-                    # preserved_group_ids in WHERE, no multi-table JOIN needed.
-                    preserved_m_clause = (
-                        f"AND m.course_offering_group_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_group_ids))}]::BIGINT[]) "
-                        if preserved_group_ids
-                        else ""
+                    # Exclude rows whose parent group is preserved — only net
+                    # stale IDs go into the SQL array.
+                    actual_ids = sorted(
+                        m_id
+                        for m_id in stale_ids_set
+                        if int(
+                            existing_rows.get(m_id, {}).get("course_offering_group_id") or 0
+                        )
+                        not in preserved_group_ids
                     )
-                    soft_delete_statements.append(
-                        "UPDATE public.course_offering_meeting m "
-                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
-                        f"WHERE m.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
-                        f"{preserved_m_clause}"
-                        "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
-                        "JOIN public.course_offering co ON co.id = g.course_offering_id "
-                        "WHERE g.id = m.course_offering_group_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
-                    )
+                    if actual_ids:
+                        actual_ids_literal = ", ".join(str(id) for id in actual_ids)
+                        soft_delete_statements.append(
+                            "UPDATE public.course_offering_meeting m "
+                            "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                            f"WHERE m.id = ANY(ARRAY[{actual_ids_literal}]::BIGINT[]) "
+                            "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
+                            "JOIN public.course_offering co ON co.id = g.course_offering_id "
+                            "WHERE g.id = m.course_offering_group_id "
+                            f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                        )
             elif scope != "offering":
                 soft_delete_statements.append(
                     f"UPDATE public.{table} "
