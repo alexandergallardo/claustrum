@@ -650,6 +650,9 @@ def generate_minimal_delta_seed(
     # their (campus, subject, term) combination has no sync data. Used by child tables
     # (group, professor, meeting) to avoid orphaning records of protected offerings.
     preserved_offering_ids: set[int] = set()
+    # Groups of preserved offerings — propagated to group_professor and meeting
+    # so they can filter directly by group_id without a multi-table JOIN.
+    preserved_group_ids: set[int] = set()
 
     for table in target_tables:
         db_columns, db_column_types, db_column_set = get_table_schema(db_url, table)
@@ -761,8 +764,18 @@ def generate_minimal_delta_seed(
                             f"AND academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]);"
                         )
                 elif table == "course_offering_group":
-                    # Exclude groups whose parent offering is preserved (temporarily empty).
+                    # Identify which stale groups belong to preserved offerings so
+                    # we can (a) exclude them from soft-delete and (b) propagate the
+                    # set to child tables without needing a multi-table JOIN there.
                     # course_offering_id is a direct field on course_offering_group.
+                    preserved_group_ids = {
+                        gid
+                        for gid in stale_ids_set
+                        if int(
+                            existing_rows.get(gid, {}).get("course_offering_id") or 0
+                        )
+                        in preserved_offering_ids
+                    }
                     preserved_group_clause = (
                         f"AND g.course_offering_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
                         if preserved_offering_ids
@@ -778,40 +791,40 @@ def generate_minimal_delta_seed(
                         f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
                     )
                 elif table == "course_offering_group_professor":
-                    # Exclude records whose ancestor offering is preserved.
-                    # Filter via co.id inside the EXISTS to reach the offering.
+                    # course_offering_group_id is a direct field — filter by
+                    # preserved_group_ids in WHERE, no multi-table JOIN needed.
                     preserved_gp_clause = (
-                        f"AND co.id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
-                        if preserved_offering_ids
+                        f"AND gp.course_offering_group_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_group_ids))}]::BIGINT[]) "
+                        if preserved_group_ids
                         else ""
                     )
                     soft_delete_statements.append(
                         "UPDATE public.course_offering_group_professor gp "
                         "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
                         f"WHERE gp.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        f"{preserved_gp_clause}"
                         "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
                         "JOIN public.course_offering co ON co.id = g.course_offering_id "
                         "WHERE g.id = gp.course_offering_group_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]) "
-                        f"{preserved_gp_clause});"
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
                     )
                 elif table == "course_offering_meeting":
-                    # Exclude records whose ancestor offering is preserved.
-                    # Filter via co.id inside the EXISTS to reach the offering.
+                    # course_offering_group_id is a direct field — filter by
+                    # preserved_group_ids in WHERE, no multi-table JOIN needed.
                     preserved_m_clause = (
-                        f"AND co.id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
-                        if preserved_offering_ids
+                        f"AND m.course_offering_group_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_group_ids))}]::BIGINT[]) "
+                        if preserved_group_ids
                         else ""
                     )
                     soft_delete_statements.append(
                         "UPDATE public.course_offering_meeting m "
                         "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
                         f"WHERE m.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        f"{preserved_m_clause}"
                         "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
                         "JOIN public.course_offering co ON co.id = g.course_offering_id "
                         "WHERE g.id = m.course_offering_group_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]) "
-                        f"{preserved_m_clause});"
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
                     )
             elif scope != "offering":
                 soft_delete_statements.append(
@@ -820,11 +833,27 @@ def generate_minimal_delta_seed(
                     f"WHERE id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]);"
                 )
 
-        # For course_offering, report the filtered count to reflect that
-        # some stale offerings are intentionally preserved (campus has no data)
-        actual_soft_deleted = len(stale_ids) if soft_delete_statements else 0
-        if table == "course_offering" and filtered_stale_ids:
+        # Report accurate soft_deleted counts, excluding records that are stale
+        # but intentionally preserved because their (campus, subject, term) or
+        # parent group has no sync data.
+        if table == "course_offering":
             actual_soft_deleted = len(filtered_stale_ids)
+        elif table == "course_offering_group" and soft_delete_statements:
+            actual_soft_deleted = len(stale_ids) - len(preserved_group_ids)
+        elif (
+            table in {"course_offering_group_professor", "course_offering_meeting"}
+            and soft_delete_statements
+        ):
+            group_id_field = "course_offering_group_id"
+            preserved_child_count = sum(
+                1
+                for row_id in stale_ids_set
+                if int(existing_rows.get(row_id, {}).get(group_id_field) or 0)
+                in preserved_group_ids
+            )
+            actual_soft_deleted = len(stale_ids) - preserved_child_count
+        else:
+            actual_soft_deleted = len(stale_ids) if soft_delete_statements else 0
 
         table_stats[table] = {
             "inserted": len(insert_rows),
