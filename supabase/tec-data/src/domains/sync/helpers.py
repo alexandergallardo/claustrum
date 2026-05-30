@@ -47,7 +47,11 @@ def tables_for_scope(scope: str) -> list[str]:
         return list(SYNC_TABLES)
     if normalized == "catalog":
         return [table for table in SYNC_TABLES if table not in OFFERING_TABLES]
-    offering_with_dependencies = {"professor", *OFFERING_TABLES}
+    # Include "course" so that names updated by the offering processor
+    # (when a course has name == code) are propagated to the DB.
+    # Soft-deletes for course are blocked by the scope != "offering" guard
+    # in generate_minimal_delta_seed, so only INSERTs/UPDATEs apply.
+    offering_with_dependencies = {"professor", "course", *OFFERING_TABLES}
     return [table for table in SYNC_TABLES if table in offering_with_dependencies]
 
 
@@ -159,7 +163,9 @@ def parse_seed_timestamp(path: Path) -> str:
     return match.group(1)
 
 
-def collect_seed_history(seed_dir: Path, baseline_seed: str | None = None) -> list[Path]:
+def collect_seed_history(
+    seed_dir: Path, baseline_seed: str | None = None
+) -> list[Path]:
     candidates = [p for p in seed_dir.glob("seed_*.sql") if p.is_file()]
     if not candidates:
         raise ValueError(f"No seed_*.sql files found in {seed_dir}")
