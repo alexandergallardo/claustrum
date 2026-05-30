@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import socket
@@ -15,26 +16,26 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-import json
-
 import typer
 
-from src.domains.sync.helpers import OFFERING_TABLES
-from src.domains.sync.helpers import SYNC_TABLES
-from src.domains.sync.helpers import collect_seed_history
-from src.domains.sync.helpers import collect_term_external_keys
-from src.domains.sync.helpers import compute_sync_fingerprint
-from src.domains.sync.helpers import infer_environment_id
-from src.domains.sync.helpers import load_json
-from src.domains.sync.helpers import next_sequential_id
-from src.domains.sync.helpers import parse_seed_metadata
-from src.domains.sync.helpers import quote_literal
-from src.domains.sync.helpers import resolve_db_url
-from src.domains.sync.helpers import seed_sha256
-from src.domains.sync.helpers import sql_int_array
-from src.domains.sync.helpers import sql_text_array
-from src.domains.sync.helpers import tables_for_scope
-from src.domains.sync.helpers import write_json
+from src.domains.sync.helpers import (
+    OFFERING_TABLES,
+    SYNC_TABLES,
+    collect_seed_history,
+    collect_term_external_keys,
+    compute_sync_fingerprint,
+    infer_environment_id,
+    load_json,
+    next_sequential_id,
+    parse_seed_metadata,
+    quote_literal,
+    resolve_db_url,
+    seed_sha256,
+    sql_int_array,
+    sql_text_array,
+    tables_for_scope,
+    write_json,
+)
 from src.domains.sync.sql_seed import format_value
 from src.shared.scope import normalize_scope
 from src.workflows.sync_pipeline import run_sync_pipeline
@@ -86,8 +87,6 @@ def query_rows(db_url: str, sql: str) -> list[str]:
         text=True,
     )
     return [line for line in output.splitlines() if line.strip()]
-
-
 
 
 def _find_free_host_port() -> int:
@@ -536,6 +535,62 @@ def payload_row_normalized(
     }
 
 
+def load_offering_campus_subject_by_term(
+    data_dir: Path,
+    term_ids: set[int],
+) -> dict[int, dict[int, set[int]]]:
+    """
+    Load which (campus, academic_unit/subject) combinations have course offerings
+    for each term. This provides 3-dimensional granularity for soft-delete decisions.
+
+    Returns:
+        {
+            term_id: {
+                campus_id: {academic_unit_id, academic_unit_id, ...},
+                campus_id: {...},
+            },
+            ...
+        }
+
+    Example:
+        {
+            2026_S_1_id: {
+                cartago_id: {matematica_id},  # Cartago has Matemática offerings in 2026_S_1
+            },
+            2026_S_2_id: {
+                cartago_id: {matematica_id},  # Cartago has Matemática offerings in 2026_S_2
+            },
+        }
+    """
+    campus_subject_by_term: dict[int, dict[int, set[int]]] = {}
+    course_offering_path = data_dir / "course_offering" / "data.json"
+    if not course_offering_path.exists():
+        return campus_subject_by_term
+
+    offerings = load_json(course_offering_path)
+    for offering in offerings:
+        term_id = int(offering.get("academic_term_id", 0))
+        if term_id not in term_ids:
+            continue
+        campus_id = int(offering.get("campus_id", 0))
+        subject_id = int(offering.get("academic_unit_id", 0))
+
+        # Skip if any dimension is missing
+        if not all([term_id, campus_id, subject_id]):
+            continue
+
+        # Initialize nested dicts if needed
+        if term_id not in campus_subject_by_term:
+            campus_subject_by_term[term_id] = {}
+        if campus_id not in campus_subject_by_term[term_id]:
+            campus_subject_by_term[term_id][campus_id] = set()
+
+        # Add subject to the set
+        campus_subject_by_term[term_id][campus_id].add(subject_id)
+
+    return campus_subject_by_term
+
+
 def generate_minimal_delta_seed(
     db_url: str,
     data_dir: Path,
@@ -550,7 +605,8 @@ def generate_minimal_delta_seed(
     if scope == "offering":
         if term_external_keys:
             terms_sql = ", ".join(
-                f"'{quote_literal(term_key)}'" for term_key in sorted(set(term_external_keys))
+                f"'{quote_literal(term_key)}'"
+                for term_key in sorted(set(term_external_keys))
             )
             term_ids = {
                 int(value)
@@ -584,6 +640,16 @@ def generate_minimal_delta_seed(
     ]
 
     table_stats: dict[str, dict[str, int]] = {}
+
+    # Load which (campus, subject) combinations have offerings for each term.
+    # This provides 3-dimensional granularity: only soft-delete offerings when
+    # a campus-subject combination has data in the sync for that term.
+    campus_subject_by_term = load_offering_campus_subject_by_term(data_dir, term_ids)
+
+    # Tracks which course_offering IDs are stale but intentionally preserved because
+    # their (campus, subject, term) combination has no sync data. Used by child tables
+    # (group, professor, meeting) to avoid orphaning records of protected offerings.
+    preserved_offering_ids: set[int] = set()
 
     for table in target_tables:
         db_columns, db_column_types, db_column_set = get_table_schema(db_url, table)
@@ -646,28 +712,79 @@ def generate_minimal_delta_seed(
                     )
                 )
 
-        stale_ids = sorted(set(existing_rows.keys()) - set(normalized_payload.keys()))
+        stale_ids_set = set(existing_rows.keys()) - set(normalized_payload.keys())
+        stale_ids = sorted(stale_ids_set)
         soft_delete_statements: list[str] = []
+        filtered_stale_ids: list[int] = []
+
         if stale_ids:
             stale_ids_literal = ", ".join(str(value) for value in stale_ids)
             if table in OFFERING_TABLES:
                 if table == "course_offering":
-                    soft_delete_statements.append(
-                        "UPDATE public.course_offering "
-                        "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
-                        f"WHERE id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
-                        f"AND academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]);"
-                    )
+                    # 3-dimensional filter: only soft-delete offerings when the
+                    # (term, campus, academic_unit) combination has data in this sync.
+                    # If the combination is absent (temporarily empty), preserve the
+                    # offering and protect its child records via preserved_offering_ids.
+                    # Example: Cartago + Matemática + 2026_S_1 empty → preserve
+                    #          Cartago + Matemática + 2026_S_2 has data → soft-delete stale
+                    for offering_id, offering_row in existing_rows.items():
+                        if offering_id not in stale_ids_set:
+                            continue
+
+                        term_id = int(offering_row.get("academic_term_id", 0))
+                        campus_id = int(offering_row.get("campus_id", 0))
+                        # academic_unit_id is a direct field on course_offering
+                        subject_id = int(offering_row.get("academic_unit_id", 0))
+
+                        # Only soft-delete if this (term, campus, subject) combination
+                        # has data in the sync. This prevents soft-deleting when a
+                        # campus-subject is temporarily empty.
+                        if (
+                            term_id in campus_subject_by_term
+                            and campus_id in campus_subject_by_term[term_id]
+                            and subject_id in campus_subject_by_term[term_id][campus_id]
+                        ):
+                            filtered_stale_ids.append(offering_id)
+
+                    # Offerings that are stale but not soft-deleted: their child records
+                    # (groups, professors, meetings) must also be preserved.
+                    preserved_offering_ids = stale_ids_set - set(filtered_stale_ids)
+
+                    if filtered_stale_ids:
+                        filtered_stale_ids_literal = ", ".join(
+                            str(id) for id in filtered_stale_ids
+                        )
+                        soft_delete_statements.append(
+                            "UPDATE public.course_offering "
+                            "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
+                            f"WHERE id = ANY(ARRAY[{filtered_stale_ids_literal}]::BIGINT[]) "
+                            f"AND academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]);"
+                        )
                 elif table == "course_offering_group":
+                    # Exclude groups whose parent offering is preserved (temporarily empty).
+                    # course_offering_id is a direct field on course_offering_group.
+                    preserved_group_clause = (
+                        f"AND g.course_offering_id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
+                        if preserved_offering_ids
+                        else ""
+                    )
                     soft_delete_statements.append(
                         "UPDATE public.course_offering_group g "
                         "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
                         f"WHERE g.id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]) "
+                        f"{preserved_group_clause}"
                         "AND EXISTS (SELECT 1 FROM public.course_offering co "
                         "WHERE co.id = g.course_offering_id "
                         f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
                     )
                 elif table == "course_offering_group_professor":
+                    # Exclude records whose ancestor offering is preserved.
+                    # Filter via co.id inside the EXISTS to reach the offering.
+                    preserved_gp_clause = (
+                        f"AND co.id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
+                        if preserved_offering_ids
+                        else ""
+                    )
                     soft_delete_statements.append(
                         "UPDATE public.course_offering_group_professor gp "
                         "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
@@ -675,9 +792,17 @@ def generate_minimal_delta_seed(
                         "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
                         "JOIN public.course_offering co ON co.id = g.course_offering_id "
                         "WHERE g.id = gp.course_offering_group_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]) "
+                        f"{preserved_gp_clause});"
                     )
                 elif table == "course_offering_meeting":
+                    # Exclude records whose ancestor offering is preserved.
+                    # Filter via co.id inside the EXISTS to reach the offering.
+                    preserved_m_clause = (
+                        f"AND co.id != ALL(ARRAY[{', '.join(str(i) for i in sorted(preserved_offering_ids))}]::BIGINT[]) "
+                        if preserved_offering_ids
+                        else ""
+                    )
                     soft_delete_statements.append(
                         "UPDATE public.course_offering_meeting m "
                         "SET is_active = FALSE, deactivated_at = NOW(), updated_at = NOW() "
@@ -685,7 +810,8 @@ def generate_minimal_delta_seed(
                         "AND EXISTS (SELECT 1 FROM public.course_offering_group g "
                         "JOIN public.course_offering co ON co.id = g.course_offering_id "
                         "WHERE g.id = m.course_offering_group_id "
-                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]));"
+                        f"AND co.academic_term_id = ANY(ARRAY[{', '.join(str(t) for t in sorted(term_ids))}]::BIGINT[]) "
+                        f"{preserved_m_clause});"
                     )
             elif scope != "offering":
                 soft_delete_statements.append(
@@ -694,10 +820,16 @@ def generate_minimal_delta_seed(
                     f"WHERE id = ANY(ARRAY[{stale_ids_literal}]::BIGINT[]);"
                 )
 
+        # For course_offering, report the filtered count to reflect that
+        # some stale offerings are intentionally preserved (campus has no data)
+        actual_soft_deleted = len(stale_ids) if soft_delete_statements else 0
+        if table == "course_offering" and filtered_stale_ids:
+            actual_soft_deleted = len(filtered_stale_ids)
+
         table_stats[table] = {
             "inserted": len(insert_rows),
             "updated": len(update_rows),
-            "soft_deleted": len(stale_ids) if soft_delete_statements else 0,
+            "soft_deleted": actual_soft_deleted,
         }
 
         if insert_rows or update_rows or soft_delete_statements:
