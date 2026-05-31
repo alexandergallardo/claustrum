@@ -58,7 +58,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
@@ -912,20 +912,44 @@ export function SchedulePage() {
     return (
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="px-4 lg:px-6">
-              <Skeleton className="h-12 w-full" />
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="min-w-0 flex-1">
+                  <ScheduleFilters
+                    universities={universities ?? []}
+                    campuses={mainCampuses}
+                    careers={careers}
+                    plans={plans}
+                    terms={terms}
+                    selectedUniversityId={selectedUniversityId}
+                    selectedCampusId={selectedCampusId}
+                    selectedCareerId={selectedCareerId}
+                    selectedPlanId={selectedPlanId}
+                    selectedTermId={selectedTermId}
+                    onUniversityChange={handleUniversityChange}
+                    onCampusChange={handleCampusChange}
+                    onCareerChange={handleCareerChange}
+                    onPlanChange={handlePlanChange}
+                    onTermChange={handleTermChange}
+                    isLoadingUniversities={isLoadingUniversities}
+                    isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
+                    isLoadingCareers={careersQuery.isFetching && careersQuery.data?.length === 0}
+                    isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                    isLoadingTerms={termsQuery.isFetching && termsQuery.data?.length === 0}
+                    showAll={effectiveShowAllCourses}
+                    onShowAllChange={handleShowAllChange}
+                    showAllDisabled={!isAuthenticated}
+                    showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
+                    showOtherCampuses={showOtherCampuses}
+                    onShowOtherCampusesChange={handleOtherCampusesChange}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="px-4 lg:px-6">
-              <div className="flex h-[calc(100vh-16rem)] gap-4">
-                <div className="w-96 space-y-4">
-                  <Skeleton className="h-32" />
-                  <Skeleton className="h-32" />
-                  <Skeleton className="h-32" />
-                </div>
-                <div className="flex-1">
-                  <Skeleton className="h-full" />
-                </div>
+            <div className="flex flex-1 px-4 lg:px-6">
+              <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 md:min-h-96">
+                <Spinner className="text-muted-foreground size-6" />
               </div>
             </div>
           </div>
@@ -1021,6 +1045,14 @@ export function SchedulePage() {
                 title="Selecciona los filtros del horario"
                 description="Selecciona una sede y un periodo para visualizar los cursos disponibles."
               />
+            )}
+
+            {hasRequiredScheduleFilters && coursesQuery.isLoading && (
+              <div className="flex flex-1 px-4 lg:px-6">
+                <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 md:min-h-96">
+                  <Spinner className="text-muted-foreground size-6" />
+                </div>
+              </div>
             )}
 
             {hasRequiredScheduleFilters && !orderedCourses.length && !coursesQuery.isLoading && (

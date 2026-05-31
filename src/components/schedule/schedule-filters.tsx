@@ -24,7 +24,6 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -62,18 +61,31 @@ interface ScheduleFiltersProps {
   onShowOtherCampusesChange?: (checked: boolean) => void;
 }
 
-const normalizeText = (text: string) => text.toUpperCase();
+const normalizeText = (text: string) =>
+  text
+    .toUpperCase()
+    .replace(/\s*\.\.\.$/, "")
+    .trim();
+const removePlanPrefixFromName = (name: string, externalPlanId: number | string) => {
+  const normalizedName = normalizeText(name).trim();
+  const normalizedPlanId = String(externalPlanId).trim();
+  const prefixPattern = new RegExp(`^${normalizedPlanId}\\s*-\\s*`);
+  return normalizedName.replace(prefixPattern, "");
+};
+type FilterItem = {
+  id: number;
+  name: string;
+  code?: string;
+  external_plan_id?: number | string;
+};
 
 const FILTERS_PANEL_STORAGE_KEY = "schedule-filters-panel-open";
+const FILTER_REVEAL_ANIMATION_MS = 220;
 
 function getInitialFiltersPanelOpen(): boolean {
   if (typeof window === "undefined") return true;
   const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY);
   return stored !== "false";
-}
-
-function FilterSkeleton() {
-  return <Skeleton className="h-8 w-full sm:w-[160px]" />;
 }
 
 function FilterCombobox({
@@ -82,84 +94,69 @@ function FilterCombobox({
   placeholder,
   items,
   onChange,
-  isLoading,
   isVisible,
   showCode = false,
+  itemLabel,
 }: {
   label: string;
   value: string;
   placeholder: string;
-  items: { id: number; code?: string; name: string }[];
+  items: FilterItem[];
   onChange: (val: string) => void;
-  isLoading: boolean;
   isVisible: boolean;
   showCode?: boolean;
+  itemLabel?: (item: FilterItem) => string;
 }) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   if (!isVisible) return null;
 
-  const hasData = items.length > 0;
-  const showSkeleton = isLoading && !hasData;
   const selectedItem = items.find((item) => item.id.toString() === value) ?? null;
-  const selectedText = selectedItem
-    ? showCode && selectedItem.code
-      ? `${normalizeText(selectedItem.code)} - ${normalizeText(selectedItem.name)}`
-      : normalizeText(selectedItem.name)
-    : null;
+  const getItemLabel = (item: FilterItem) => {
+    if (itemLabel) return itemLabel(item);
+    if (showCode && item.code) return `${normalizeText(item.code)} - ${normalizeText(item.name)}`;
+    return normalizeText(item.name);
+  };
+  const selectedText = selectedItem ? getItemLabel(selectedItem) : null;
 
   return (
-    <div
-      className={`min-w-0 ${showSkeleton ? "animate-in fade-in-0 slide-in-from-bottom-2 duration-200" : ""}`}
-    >
-      {showSkeleton ? (
-        <FilterSkeleton />
-      ) : (
-        <Combobox
-          items={items}
-          value={selectedItem}
-          onValueChange={(item) => onChange(item ? String(item.id) : "")}
-          itemToStringValue={(item) =>
-            showCode && item.code
-              ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
-              : normalizeText(item.name)
+    <div className="animate-in fade-in-0 slide-in-from-left-2 min-w-0 duration-300">
+      <Combobox
+        items={items}
+        value={selectedItem}
+        onValueChange={(item) => onChange(item ? String(item.id) : "")}
+        itemToStringValue={(item) => getItemLabel(item)}
+      >
+        <ComboboxTrigger
+          ref={triggerRef}
+          render={
+            <Button
+              variant="outline"
+              className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
+            />
           }
         >
-          <ComboboxTrigger
-            ref={triggerRef}
-            render={
-              <Button
-                variant="outline"
-                className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
-              />
-            }
+          <span
+            className={`block min-w-0 flex-1 truncate text-left ${!selectedText ? "text-muted-foreground" : ""}`}
           >
-            <span
-              className={`block min-w-0 flex-1 truncate text-left ${!selectedText ? "text-muted-foreground" : ""}`}
-            >
-              {selectedText ?? placeholder}
-            </span>
-          </ComboboxTrigger>
-          <ComboboxContent
-            anchor={triggerRef}
-            className="w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)] min-w-[var(--anchor-width)]"
-          >
-            <ComboboxInput showTrigger={false} placeholder={`Buscar ${label.toLowerCase()}`} />
-            <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-            <ComboboxList className="max-h-56 scrollbar-none">
-              {(item) => (
-                <ComboboxItem key={item.id} value={item}>
-                  <span className="block w-full min-w-0 truncate">
-                    {showCode && item.code
-                      ? `${normalizeText(item.code)} - ${normalizeText(item.name)}`
-                      : normalizeText(item.name)}
-                  </span>
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-      )}
+            {selectedText ?? placeholder}
+          </span>
+        </ComboboxTrigger>
+        <ComboboxContent
+          anchor={triggerRef}
+          className="w-[var(--anchor-width)] max-w-[calc(var(--available-width)-1rem)] min-w-[var(--anchor-width)]"
+        >
+          <ComboboxInput showTrigger={false} placeholder={`Buscar ${label.toLowerCase()}`} />
+          <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+          <ComboboxList className="max-h-56 scrollbar-none">
+            {(item) => (
+              <ComboboxItem key={item.id} value={item}>
+                <span className="block w-full min-w-0 truncate">{getItemLabel(item)}</span>
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
     </div>
   );
 }
@@ -193,30 +190,69 @@ export function ScheduleFilters({
   onShowOtherCampusesChange,
 }: ScheduleFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
+  const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
+  const hasSelectedCampus =
+    !selectedCampusId || campuses.some((campus) => campus.id === selectedCampusId);
+  const hasSelectedCareer =
+    !selectedCareerId || careers.some((career) => career.id === selectedCareerId);
+  const hasSelectedPlan = !selectedPlanId || plans.some((plan) => plan.id === selectedPlanId);
+  const hasSelectedTerm = !selectedTermId || terms.some((term) => term.id === selectedTermId);
 
   useEffect(() => {
     localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString());
   }, [isFiltersVisible]);
 
-  if (!hasUniversities && isLoadingUniversities) {
-    return (
-      <div className="bg-muted/30 flex flex-wrap items-center gap-2.5 rounded-lg px-3 py-2">
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-        <FilterSkeleton />
-      </div>
-    );
-  }
-
   const showSwitches = !!selectedTermId;
   const isShowAllDisabled = !!showAllDisabled;
   const termGroups = useMemo(() => groupTermsByYear(terms), [terms]);
   const selectedTerm = terms.find((term) => term.id === selectedTermId) ?? null;
+  const isUniversityFilterReady = shouldShowUniversityFilter && !isLoadingUniversities;
+  const isCampusFilterReady = canSelectCampus && !isLoadingCampuses && hasSelectedCampus;
+  const isCareerFilterReady = !!selectedCampusId && !isLoadingCareers && hasSelectedCareer;
+  const isPlanFilterReady = !!selectedCareerId && !isLoadingPlans && hasSelectedPlan;
+  const isTermFilterReady = !!selectedCampusId && !isLoadingTerms && hasSelectedTerm;
+
+  const readyFilterKeys = [
+    isUniversityFilterReady ? "university" : null,
+    isCampusFilterReady ? "campus" : null,
+    isCareerFilterReady ? "career" : null,
+    isPlanFilterReady ? "plan" : null,
+    isTermFilterReady ? "term" : null,
+  ].filter((key): key is string => key !== null);
+  const readyFilterSignature = readyFilterKeys.join("|");
+
+  const universityOrder = readyFilterKeys.indexOf("university");
+  const campusOrder = readyFilterKeys.indexOf("campus");
+  const careerOrder = readyFilterKeys.indexOf("career");
+  const planOrder = readyFilterKeys.indexOf("plan");
+  const termOrder = readyFilterKeys.indexOf("term");
+
+  const showUniversityFilter = universityOrder >= 0 && revealedFiltersCount > universityOrder;
+  const showCampusFilter = campusOrder >= 0 && revealedFiltersCount > campusOrder;
+  const showCareerFilter = careerOrder >= 0 && revealedFiltersCount > careerOrder;
+  const showPlanFilter = planOrder >= 0 && revealedFiltersCount > planOrder;
+  const showTermFilter = termOrder >= 0 && revealedFiltersCount > termOrder;
+  const areAllReadyFiltersRevealed =
+    readyFilterKeys.length > 0 && revealedFiltersCount >= readyFilterKeys.length;
+
+  useEffect(() => {
+    setRevealedFiltersCount(0);
+
+    if (readyFilterKeys.length === 0) return;
+
+    const timers = readyFilterKeys.map((_, index) =>
+      window.setTimeout(() => {
+        setRevealedFiltersCount(index + 1);
+      }, index * FILTER_REVEAL_ANIMATION_MS),
+    );
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [readyFilterSignature]);
 
   const showAllControl = (
     <div className="flex items-center gap-2">
@@ -240,8 +276,7 @@ export function ScheduleFilters({
         placeholder="Universidad"
         items={universities}
         onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
-        isLoading={!hasUniversities && isLoadingUniversities}
-        isVisible={shouldShowUniversityFilter}
+        isVisible={showUniversityFilter}
       />
 
       <FilterCombobox
@@ -250,8 +285,7 @@ export function ScheduleFilters({
         placeholder="Sede"
         items={campuses}
         onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
-        isLoading={!campuses.length && isLoadingCampuses}
-        isVisible={canSelectCampus}
+        isVisible={showCampusFilter}
       />
 
       <FilterCombobox
@@ -260,9 +294,12 @@ export function ScheduleFilters({
         placeholder="Carrera"
         items={careers}
         onChange={(val) => onCareerChange(val ? parseInt(val) : null)}
-        isLoading={!careers.length && isLoadingCareers}
-        isVisible={!!selectedCampusId}
-        showCode={true}
+        isVisible={showCareerFilter}
+        itemLabel={(item) =>
+          item.code
+            ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
+            : normalizeText(item.name)
+        }
       />
 
       <FilterCombobox
@@ -271,66 +308,65 @@ export function ScheduleFilters({
         placeholder="Plan de estudios"
         items={plans}
         onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
-        isLoading={!plans.length && isLoadingPlans}
-        isVisible={!!selectedCareerId}
+        isVisible={showPlanFilter}
+        itemLabel={(item) =>
+          item.external_plan_id !== undefined
+            ? `${item.external_plan_id}: ${removePlanPrefixFromName(item.name, item.external_plan_id)}`
+            : normalizeText(item.name)
+        }
       />
 
-      {!!selectedCampusId && (
-        <div
-          className={`min-w-0 ${isLoadingTerms && terms.length === 0 ? "animate-in fade-in-0 slide-in-from-bottom-2 duration-200" : ""}`}
-        >
-          {isLoadingTerms && terms.length === 0 ? (
-            <FilterSkeleton />
-          ) : (
-            <Combobox
-              items={termGroups}
-              value={selectedTerm}
-              onValueChange={(term) => onTermChange(term ? term.id : null)}
-              itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
+      {showTermFilter && (
+        <div className="animate-in fade-in-0 slide-in-from-left-2 min-w-0 duration-300">
+          <Combobox
+            items={termGroups}
+            value={selectedTerm}
+            onValueChange={(term) => onTermChange(term ? term.id : null)}
+            itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
+          >
+            <ComboboxTrigger
+              render={
+                <Button
+                  variant="outline"
+                  className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
+                />
+              }
             >
-              <ComboboxTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
-                  />
-                }
+              <span
+                className={`block min-w-0 flex-1 truncate text-left ${!selectedTerm ? "text-muted-foreground" : ""}`}
               >
-                <span
-                  className={`block min-w-0 flex-1 truncate text-left ${!selectedTerm ? "text-muted-foreground" : ""}`}
-                >
-                  {selectedTerm ? formatClosedTermLabel(selectedTerm) : "Período académico"}
-                </span>
-              </ComboboxTrigger>
-              <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
-                <ComboboxInput showTrigger={false} placeholder="Buscar período" />
-                <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
-                <ComboboxList className="max-h-56 scrollbar-none">
-                  {(group, index) => (
-                    <ComboboxGroup key={group.value} items={group.items}>
-                      <ComboboxLabel>{group.value}</ComboboxLabel>
-                      <ComboboxCollection>
-                        {(term) => (
-                          <ComboboxItem key={term.id} value={term}>
-                            <span className="block w-full min-w-0 truncate">
-                              {formatTermNameWithoutYear(term.display_name)}
-                            </span>
-                          </ComboboxItem>
-                        )}
-                      </ComboboxCollection>
-                      {index < termGroups.length - 1 && <ComboboxSeparator />}
-                    </ComboboxGroup>
-                  )}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          )}
+                {selectedTerm ? formatClosedTermLabel(selectedTerm) : "Período académico"}
+              </span>
+            </ComboboxTrigger>
+            <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
+              <ComboboxInput showTrigger={false} placeholder="Buscar período" />
+              <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
+              <ComboboxList className="max-h-56 scrollbar-none">
+                {(group, index) => (
+                  <ComboboxGroup key={group.value} items={group.items}>
+                    <ComboboxLabel>{group.value}</ComboboxLabel>
+                    <ComboboxCollection>
+                      {(term) => (
+                        <ComboboxItem key={term.id} value={term}>
+                          <span className="block w-full min-w-0 truncate">
+                            {formatTermNameWithoutYear(term.display_name)}
+                          </span>
+                        </ComboboxItem>
+                      )}
+                    </ComboboxCollection>
+                    {index < termGroups.length - 1 && <ComboboxSeparator />}
+                  </ComboboxGroup>
+                )}
+              </ComboboxList>
+            </ComboboxContent>
+          </Combobox>
         </div>
       )}
 
       {showSwitches &&
+        areAllReadyFiltersRevealed &&
         (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined) && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="animate-in fade-in-0 slide-in-from-left-2 flex flex-wrap items-center gap-x-4 gap-y-2 duration-300">
             {onShowAllChange !== undefined &&
               (isShowAllDisabled && showAllDisabledTooltip ? (
                 <TooltipProvider>
