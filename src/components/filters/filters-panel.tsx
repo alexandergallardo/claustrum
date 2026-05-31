@@ -22,7 +22,7 @@ export function FiltersPanel({
   return (
     <div className={cn("relative", className)}>
       {/* Desktop: always visible as horizontal bar */}
-      <div className="bg-muted/30 hidden flex-wrap items-center gap-2.5 rounded-lg px-3 py-2 md:flex">
+      <div className="bg-muted/30 hidden min-h-12 flex-wrap items-center gap-2.5 rounded-lg px-3 py-2 md:flex">
         {children}
       </div>
 

@@ -24,7 +24,7 @@ const ZOOM_MAX = 1.0;
 const ZOOM_STEP = 0.05;
 const CURRICULUM_ZOOM_STORAGE_KEY = "curriculum-board-zoom";
 const LEGACY_ZOOM_STORAGE_KEY = "plan-board-zoom";
-const ZOOM_DEFAULT = 0.85;
+const ZOOM_DEFAULT = 0.75;
 const CURRICULUM_PANEL_OPEN_STORAGE_KEY = "curriculum-board-panel-open";
 const LEGACY_PANEL_OPEN_STORAGE_KEY = "plan-board-panel-open";
 

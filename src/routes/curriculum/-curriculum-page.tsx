@@ -9,7 +9,7 @@ import { CurriculumFilters } from "@/components/curriculum/curriculum-filters";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import {
   useAuthUser,
   useUniversities,
@@ -278,16 +278,10 @@ export function CurriculumPage() {
           )}
 
           {selectedPlanId && planDetailQuery.isLoading && (
-            <div className="space-y-4 px-4 lg:px-6">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-6 w-48" />
-              </div>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton key={i} className="h-32 w-full" />
-                ))}
-              </div>
+            <div className="flex flex-1 px-4 lg:px-6">
+              <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 md:min-h-96">
+                <Spinner className="text-muted-foreground size-6" />
+              </Card>
             </div>
           )}
 
