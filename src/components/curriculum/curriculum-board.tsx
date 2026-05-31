@@ -23,16 +23,13 @@ const ZOOM_MIN = 0.7;
 const ZOOM_MAX = 1.0;
 const ZOOM_STEP = 0.05;
 const CURRICULUM_ZOOM_STORAGE_KEY = "curriculum-board-zoom";
-const LEGACY_ZOOM_STORAGE_KEY = "plan-board-zoom";
 const ZOOM_DEFAULT = 0.75;
 const CURRICULUM_PANEL_OPEN_STORAGE_KEY = "curriculum-board-panel-open";
 const LEGACY_PANEL_OPEN_STORAGE_KEY = "plan-board-panel-open";
 
 function getInitialZoom(): number {
   if (typeof window === "undefined") return ZOOM_DEFAULT;
-  const stored =
-    localStorage.getItem(CURRICULUM_ZOOM_STORAGE_KEY) ??
-    localStorage.getItem(LEGACY_ZOOM_STORAGE_KEY);
+  const stored = localStorage.getItem(CURRICULUM_ZOOM_STORAGE_KEY);
   if (stored) {
     const zoom = parseFloat(stored);
     if (!isNaN(zoom) && zoom >= ZOOM_MIN && zoom <= ZOOM_MAX) {
