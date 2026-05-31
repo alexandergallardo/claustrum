@@ -7,6 +7,7 @@ import { flushSync } from "react-dom";
 
 import type { StudyPlanDetail } from "@/lib/types";
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useStudentCourseStatuses } from "@/lib/hooks/use-queries";
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
 
@@ -94,7 +95,32 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
             {semesters.map((semester) => (
               <div key={semester.levelNumber} className="w-48 flex-shrink-0">
                 <div className="border-border mb-4 border-b pb-2">
-                  <h2 className="text-foreground text-lg font-semibold">{semester.levelLabel}</h2>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <h2 className="text-foreground decoration-foreground/70 inline-block cursor-pointer text-lg font-semibold underline-offset-4 transition hover:underline">
+                          {semester.levelLabel}
+                        </h2>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="start">
+                        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                          <span className="font-semibold">Cursos</span>
+                          <span className="text-right">{semester.courses.length}</span>
+                          <span className="font-semibold">Creditos</span>
+                          <span className="text-right">
+                            {semester.courses.reduce(
+                              (acc, course) => acc + (course.credits ?? 0),
+                              0,
+                            )}
+                          </span>
+                          <span className="font-semibold">Horas</span>
+                          <span className="text-right">
+                            {semester.courses.reduce((acc, course) => acc + (course.hours ?? 0), 0)}
+                          </span>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="space-y-4">
                   {semester.courses.map((course) => (
