@@ -1,6 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { AlertTriangle, User } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { CatalogCampus, CatalogStudyPlan } from "@/lib/types";
 
@@ -33,6 +33,7 @@ export function CurriculumPage() {
   const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
     () => !search.university && !search.campus && !search.career && !search.plan,
   );
+  const shouldAutoSelectPlanRef = useRef(false);
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();
   const campusesQuery = useCampuses(selectedUniversityId);
@@ -55,6 +56,13 @@ export function CurriculumPage() {
   const mainCampuses = campuses.filter(
     (c: CatalogCampus) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId,
   );
+  const isAutoSelectingLatestPlan =
+    shouldAutoSelectPlanRef.current &&
+    !!selectedAcademicUnitId &&
+    !selectedPlanId &&
+    plans.length > 0;
+  const isLoadingPlansForFilters =
+    (plansQuery.isFetching && plansQuery.data?.length === 0) || isAutoSelectingLatestPlan;
 
   useEffect(() => {
     if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
@@ -92,7 +100,11 @@ export function CurriculumPage() {
 
     // Case 2: some params exist, university matches profile, but missing campus/career/plan
     // → fill in the missing ones from profile
-    if (hasAnySearch && selectedUniversityId === userStudyPlan.universityId) {
+    if (
+      hasAnySearch &&
+      isUsingProfileDefaults &&
+      selectedUniversityId === userStudyPlan.universityId
+    ) {
       const missingCampus = !selectedCampusId && userStudyPlan.campusId;
       const missingCareer = !selectedAcademicUnitId && userStudyPlan.academicUnitId;
       const missingPlan = !selectedPlanId && userStudyPlan.studyPlanId;
@@ -112,6 +124,7 @@ export function CurriculumPage() {
     }
   }, [
     userStudyPlan,
+    isUsingProfileDefaults,
     selectedUniversityId,
     selectedCampusId,
     selectedAcademicUnitId,
@@ -143,6 +156,7 @@ export function CurriculumPage() {
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
       void navigate({
         search: {
@@ -158,6 +172,7 @@ export function CurriculumPage() {
 
   const handleCampusChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
       void navigate({
         search: {
@@ -173,6 +188,7 @@ export function CurriculumPage() {
 
   const handleAcademicUnitChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = id !== null;
       setIsUsingProfileDefaults(false);
       void navigate({
         search: {
@@ -187,6 +203,7 @@ export function CurriculumPage() {
 
   const handlePlanChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
       void navigate({
         search: {
@@ -200,6 +217,7 @@ export function CurriculumPage() {
 
   const handleUseProfileDefaults = useCallback(() => {
     if (!userStudyPlan) return;
+    shouldAutoSelectPlanRef.current = false;
     setIsUsingProfileDefaults(true);
     void navigate({
       to: "/curriculum",
@@ -212,6 +230,28 @@ export function CurriculumPage() {
       },
     });
   }, [navigate, search, userStudyPlan]);
+
+  useEffect(() => {
+    if (!shouldAutoSelectPlanRef.current) return;
+    if (!selectedAcademicUnitId) return;
+    if (selectedPlanId) {
+      shouldAutoSelectPlanRef.current = false;
+      return;
+    }
+    if (plansQuery.isFetching) return;
+    if (!plans.length) {
+      shouldAutoSelectPlanRef.current = false;
+      return;
+    }
+
+    shouldAutoSelectPlanRef.current = false;
+    void navigate({
+      search: {
+        ...search,
+        plan: plans[0].id,
+      },
+    });
+  }, [navigate, plans, plansQuery.isFetching, search, selectedAcademicUnitId, selectedPlanId]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -247,7 +287,7 @@ export function CurriculumPage() {
                   isLoadingCareerPrograms={
                     academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0
                   }
-                  isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                  isLoadingPlans={isLoadingPlansForFilters}
                 />
               </div>
               {!!authUser && !!userStudyPlan && (

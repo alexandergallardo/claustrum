@@ -234,6 +234,7 @@ export function CurriculumFilters({
 }: CurriculumFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
   const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
+  const [hasCompletedInitialReveal, setHasCompletedInitialReveal] = useState(false);
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
@@ -242,12 +243,11 @@ export function CurriculumFilters({
   const hasSelectedCareer =
     !selectedCareerProgramId ||
     careerPrograms.some((careerProgram) => careerProgram.id === selectedCareerProgramId);
-  const hasSelectedPlan = !selectedPlanId || plans.some((plan) => plan.id === selectedPlanId);
 
   const isUniversityFilterReady = shouldShowUniversityFilter && !isLoadingUniversities;
   const isCampusFilterReady = canSelectCampus && !isLoadingCampuses && hasSelectedCampus;
   const isCareerFilterReady = !!selectedCampusId && !isLoadingCareerPrograms && hasSelectedCareer;
-  const isPlanFilterReady = !!selectedCareerProgramId && !isLoadingPlans && hasSelectedPlan;
+  const isPlanFilterReady = !!selectedCareerProgramId && !isLoadingPlans;
 
   const readyFilterKeys = [
     isUniversityFilterReady ? "university" : null,
@@ -262,17 +262,26 @@ export function CurriculumFilters({
   const careerAnimationOrder = readyFilterKeys.indexOf("career");
   const planAnimationOrder = readyFilterKeys.indexOf("plan");
 
-  const showUniversityFilter =
-    universityAnimationOrder >= 0 && revealedFiltersCount > universityAnimationOrder;
-  const showCampusFilter = campusAnimationOrder >= 0 && revealedFiltersCount > campusAnimationOrder;
-  const showCareerFilter = careerAnimationOrder >= 0 && revealedFiltersCount > careerAnimationOrder;
-  const showPlanFilter = planAnimationOrder >= 0 && revealedFiltersCount > planAnimationOrder;
+  const showUniversityFilter = hasCompletedInitialReveal
+    ? isUniversityFilterReady
+    : universityAnimationOrder >= 0 && revealedFiltersCount > universityAnimationOrder;
+  const showCampusFilter = hasCompletedInitialReveal
+    ? isCampusFilterReady
+    : campusAnimationOrder >= 0 && revealedFiltersCount > campusAnimationOrder;
+  const showCareerFilter = hasCompletedInitialReveal
+    ? isCareerFilterReady
+    : careerAnimationOrder >= 0 && revealedFiltersCount > careerAnimationOrder;
+  const showPlanFilter = hasCompletedInitialReveal
+    ? isPlanFilterReady
+    : planAnimationOrder >= 0 && revealedFiltersCount > planAnimationOrder;
 
   useEffect(() => {
     localStorage.setItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString());
   }, [isFiltersVisible]);
 
   useEffect(() => {
+    if (hasCompletedInitialReveal) return;
+
     setRevealedFiltersCount(0);
 
     if (readyFilterKeys.length === 0) return;
@@ -280,13 +289,16 @@ export function CurriculumFilters({
     const timers = readyFilterKeys.map((_, index) =>
       window.setTimeout(() => {
         setRevealedFiltersCount(index + 1);
+        if (index === readyFilterKeys.length - 1) {
+          setHasCompletedInitialReveal(true);
+        }
       }, index * FILTER_REVEAL_ANIMATION_MS),
     );
 
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [readyFilterSignature]);
+  }, [hasCompletedInitialReveal, readyFilterSignature]);
 
   return (
     <FiltersPanel isExpanded={isFiltersVisible} onExpandedChange={setIsFiltersVisible}>
