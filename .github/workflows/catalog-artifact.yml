@@ -2,6 +2,11 @@ name: Catalog artifact
 
 on:
   workflow_dispatch:
+    inputs:
+      years:
+        description: "Comma-separated academic years to include in catalog terms"
+        required: false
+        default: "2020,2021,2022,2023,2024,2025,2026"
 
 jobs:
   build-catalog-artifact:
@@ -9,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      CATALOG_YEARS: ${{ inputs.years || '2020,2021,2022,2023,2024,2025,2026' }}
 
     steps:
       - name: Checkout
@@ -29,7 +36,7 @@ jobs:
         run: >-
           uv run tec-data pipeline
           --scope catalog
-          --years 2026
+          --years "$CATALOG_YEARS"
           --data-dir data/raw
 
       - name: Build compressed catalog archive
