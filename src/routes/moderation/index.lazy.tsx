@@ -42,6 +42,44 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatScore(value: number | null): string {
+  return value === null ? "-" : value.toFixed(1);
+}
+
+function formatReviewCourses(review: ProfessorReviewModerationRow): string {
+  return review.courses.map((course) => `${course.code} - ${course.name}`).join("; ");
+}
+
+function ReviewCourses({ review }: { review: ProfessorReviewModerationRow }) {
+  return (
+    <div className="space-y-1">
+      {review.courses.map((course) => (
+        <p key={`${review.review_id}-${course.id}`} className="font-medium break-words">
+          {course.code} - {course.name}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function ReviewScoreSummary({ review }: { review: ProfessorReviewModerationRow }) {
+  return (
+    <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <span>Facilidad: {formatScore(review.ease_score)}</span>
+      <span>Calidad: {formatScore(review.quality_score)}</span>
+      {review.clarity_score !== null && <span>Claridad: {formatScore(review.clarity_score)}</span>}
+      {review.fairness_score !== null && (
+        <span>Justicia: {formatScore(review.fairness_score)}</span>
+      )}
+      {review.attendance_required !== null && (
+        <span>Asistencia: {review.attendance_required ? "Obligatoria" : "No obligatoria"}</span>
+      )}
+      {review.grade_received !== null && <span>Nota recibida: {review.grade_received}</span>}
+      {review.engagement_level !== null && <span>Interés: {review.engagement_level}</span>}
+    </div>
+  );
+}
+
 function AdminModerationPage() {
   const navigate = useNavigate();
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
@@ -559,7 +597,7 @@ function ReviewSection({
                 >
                   <span className="truncate font-medium">{review.professor_name}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {review.course_code} - {review.course_name}
+                    {formatReviewCourses(review)}
                   </span>
                   <span className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
                     {review.comment}
@@ -615,21 +653,16 @@ function ReviewSection({
           <div className="space-y-3 rounded-lg border p-4">
             <div>
               <p className="font-medium">{selectedReview.professor_name}</p>
-              <p className="text-muted-foreground text-sm">
-                {selectedReview.course_code} - {selectedReview.course_name}
-              </p>
+              <div className="mt-2">
+                <ReviewCourses review={selectedReview} />
+              </div>
             </div>
 
             <Separator />
 
             <p className="text-sm">{selectedReview.comment}</p>
 
-            <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              <span>Facilidad: {selectedReview.ease_score.toFixed(1)}</span>
-              <span>Calidad: {selectedReview.quality_score.toFixed(1)}</span>
-              <span>Claridad: {selectedReview.clarity_score.toFixed(1)}</span>
-              <span>Justicia: {selectedReview.fairness_score.toFixed(1)}</span>
-            </div>
+            <ReviewScoreSummary review={selectedReview} />
 
             <div className="space-y-1.5">
               <Label htmlFor={`note-review-${selectedReview.review_id}`}>Nota de moderación</Label>

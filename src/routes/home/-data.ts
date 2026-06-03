@@ -214,9 +214,13 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
   {
     review_id: 1,
     professor_id: "1178",
-    course_id: 1037,
-    course_code: "IC1400",
-    course_name: "FUNDAMENTOS DE ORGANIZACIÓN DE COMPUTADORAS",
+    courses: [
+      {
+        id: 1037,
+        code: "IC1400",
+        name: "FUNDAMENTOS DE ORGANIZACIÓN DE COMPUTADORAS",
+      },
+    ],
     comment:
       "El profesor explica muy bien los fundamentos de bases de datos relacionales. Los laboratorios son prácticos y ayudan a entender SQL. Eso sí, los exámenes son largos y hay que estudiar bastante.",
     ease_score: 6.5,
@@ -237,9 +241,13 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
   {
     review_id: 2,
     professor_id: "1192",
-    course_id: 1038,
-    course_code: "IC3101",
-    course_name: "ARQUITECTURA DE COMPUTADORES",
+    courses: [
+      {
+        id: 1038,
+        code: "IC3101",
+        name: "ARQUITECTURA DE COMPUTADORES",
+      },
+    ],
     comment:
       "Muy buen profesor, siempre dispuesto a ayudar. Las clases son interactivas y el proyecto final integra todo lo visto durante el semestre. Recomiendo llevar el curso con él.",
     ease_score: 7.0,
@@ -260,9 +268,13 @@ export const demoReviewRows: ProfessorReviewPublicRow[] = [
   {
     review_id: 3,
     professor_id: "1171",
-    course_id: 1039,
-    course_code: "IC4700",
-    course_name: "LENGUAJES DE PROGRAMACIÓN",
+    courses: [
+      {
+        id: 1039,
+        code: "IC4700",
+        name: "LENGUAJES DE PROGRAMACIÓN",
+      },
+    ],
     comment:
       "Las clases son claras y bien estructuradas. El material de apoyo en el TEC Digital es completo. Los quizzes semanales ayudan a llevar el curso al día. Muy recomendada.",
     ease_score: 8.0,

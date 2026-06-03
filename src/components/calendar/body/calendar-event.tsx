@@ -43,7 +43,8 @@ const CalendarEvent = memo(function CalendarEvent({
 
   const classroomLabel = event.classroom?.trim();
   const showClassroom = classroomLabel && !classroomLabel.toLowerCase().includes("no disponible");
-  const professorLabel = event.professors?.filter(Boolean).join(", ") || "Sin asignar";
+  const professorLabels = event.professors?.filter(Boolean);
+  const professorLines = professorLabels?.length ? professorLabels : ["Sin asignar"];
   const modalityLabel = event.groupType ?? "Sin modalidad";
   const campusLabel = event.campusName;
   const heightValue = month ? null : position?.height ? parseFloat(position.height) : null;
@@ -109,21 +110,23 @@ const CalendarEvent = memo(function CalendarEvent({
             )}
             <div
               className={cn(
-                "flex items-start gap-2 text-[10px] opacity-85 sm:text-xs",
+                "flex items-center gap-2 text-[10px] opacity-85 sm:text-xs",
                 isCompact && "hidden",
               )}
             >
               <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
                 <User className="size-3 sm:size-4" />
               </span>
-              <span
-                className={cn(
-                  "leading-tight",
-                  !isCompact ? "line-clamp-2 break-words whitespace-normal" : "truncate",
-                )}
-              >
-                {professorLabel}
-              </span>
+              <div className="flex flex-col justify-center gap-0.5">
+                {professorLines.map((professor) => (
+                  <span
+                    key={professor}
+                    className="line-clamp-1 leading-tight break-words whitespace-normal"
+                  >
+                    {professor}
+                  </span>
+                ))}
+              </div>
             </div>
             {isCompact && (
               <p className="text-[9px] opacity-80 sm:text-[10px]">
@@ -175,12 +178,21 @@ const CalendarEvent = memo(function CalendarEvent({
             </span>
             <span>{modalityLabel}</span>
           </p>
-          <p className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm">
             <span className="flex size-4 shrink-0 items-center justify-center">
               <User className="size-4" />
             </span>
-            <span className="min-w-0 flex-1 truncate">{professorLabel}</span>
-          </p>
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+              {professorLines.map((professor) => (
+                <span
+                  key={professor}
+                  className="min-w-0 leading-tight break-words whitespace-normal"
+                >
+                  {professor}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
       </TooltipContent>
     </Tooltip>

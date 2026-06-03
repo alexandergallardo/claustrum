@@ -19,6 +19,27 @@ import { authClient } from "@/lib/auth/client";
 import { getApiBaseUrl } from "@/lib/env/public";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
+function normalizeReviewCourses<T extends { courses: unknown }>(row: T) {
+  const courses = Array.isArray(row.courses)
+    ? row.courses.filter(
+        (course): course is { id: number; code: string; name: string } =>
+          typeof course === "object" &&
+          course !== null &&
+          "id" in course &&
+          "code" in course &&
+          "name" in course &&
+          typeof course.id === "number" &&
+          typeof course.code === "string" &&
+          typeof course.name === "string",
+      )
+    : [];
+
+  return {
+    ...row,
+    courses,
+  };
+}
+
 function escapeIlikeQuery(value: string) {
   return value.replace(/[,%]/g, " ").trim();
 }
@@ -55,7 +76,7 @@ export async function getProfessorReviewsPublic(
 
   if (error) throw error;
   return ((data ?? []) as ProfessorReviewPublicRow[]).map((row) => ({
-    ...row,
+    ...normalizeReviewCourses(row),
     like_count: row.like_count ?? 0,
     dislike_count: row.dislike_count ?? 0,
     my_reaction: row.my_reaction ?? null,
@@ -255,7 +276,7 @@ export async function getProfessorReviewsForModeration(
   });
 
   if (error) throw error;
-  return (data ?? []) as ProfessorReviewModerationRow[];
+  return ((data ?? []) as ProfessorReviewModerationRow[]).map(normalizeReviewCourses);
 }
 
 export async function moderateProfessorReview(
