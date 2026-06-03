@@ -56,8 +56,9 @@ interface GroupView {
   group: ScheduleGroup;
   groupId: string;
   campusLabel: string | null;
-  meetingLabels: Array<{ id: string; label: string }>;
-  professorLabel: string;
+  meetingViews: Array<{ id: string; label: string; classroom: string | null }>;
+  sharedClassroom: string | null;
+  professorLabels: string[];
 }
 
 interface CourseViewData {
@@ -79,18 +80,29 @@ function createGroupView(
       : null
     : null;
 
-  const meetingLabels = (group.meetings ?? []).map((session, idx) => {
+  const meetings = group.meetings ?? [];
+  const professorLabels = group.professors?.filter(Boolean);
+  const meetingViews = meetings.map((session, idx) => {
     const classroom = formatClassroom(session.classroom);
-    const label = `${formatWeekday(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}${classroom ? ` • Aula ${classroom}` : ""}`;
-    return { id: `${groupId}-${idx}`, label };
+    const label = `${formatWeekday(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}`;
+    return { id: `${groupId}-${idx}`, label, classroom };
   });
+
+  const classrooms = meetingViews.map((meeting) => meeting.classroom);
+  const sharedClassroom =
+    meetings.length > 1 &&
+    classrooms.every((classroom): classroom is string => classroom !== null) &&
+    classrooms.every((classroom) => classroom === classrooms[0])
+      ? classrooms[0]
+      : null;
 
   return {
     group,
     groupId,
     campusLabel,
-    meetingLabels,
-    professorLabel: group.professors?.join(", ") || "Sin asignar",
+    meetingViews,
+    sharedClassroom,
+    professorLabels: professorLabels?.length ? professorLabels : ["Sin asignar"],
   };
 }
 
@@ -434,40 +446,77 @@ const CourseCard = memo(function CourseCard({
                       <Separator className="mb-2" />
 
                       <div className="space-y-1.5">
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-center gap-2">
                           <User
                             className={cn(
-                              "mt-0.5 h-3.5 w-3.5 shrink-0",
+                              "h-3.5 w-3.5 shrink-0 self-center",
                               isSelected ? "opacity-70" : "text-muted-foreground",
                             )}
                           />
-                          <span
-                            className={cn("text-foreground text-xs", isSelected && "opacity-80")}
-                          >
-                            {groupView.professorLabel}
-                          </span>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <Clock
-                            className={cn(
-                              "mt-0.5 h-3.5 w-3.5 shrink-0",
-                              isSelected ? "opacity-70" : "text-muted-foreground",
-                            )}
-                          />
-                          <div className="flex flex-col gap-1">
-                            {groupView.meetingLabels.map((meeting) => (
+                          <div className="flex flex-col justify-center gap-1">
+                            {groupView.professorLabels.map((professor) => (
                               <span
-                                key={meeting.id}
+                                key={professor}
                                 className={cn(
                                   "text-foreground text-xs",
                                   isSelected && "opacity-80",
                                 )}
                               >
-                                {meeting.label}
+                                {professor}
                               </span>
                             ))}
                           </div>
+                        </div>
+
+                        <div className={cn("relative", groupView.sharedClassroom && "pr-16")}>
+                          <div className="flex items-start gap-2">
+                            <Clock
+                              className={cn(
+                                "h-3.5 w-3.5 shrink-0 self-center",
+                                isSelected ? "opacity-70" : "text-muted-foreground",
+                              )}
+                            />
+                            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+                              {groupView.meetingViews.map((meeting) => (
+                                <div
+                                  key={meeting.id}
+                                  className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2"
+                                >
+                                  <span
+                                    className={cn(
+                                      "min-w-0 text-xs leading-tight",
+                                      isSelected ? "text-foreground opacity-80" : "text-foreground",
+                                    )}
+                                  >
+                                    {meeting.label}
+                                  </span>
+                                  {!groupView.sharedClassroom && meeting.classroom && (
+                                    <span
+                                      className={cn(
+                                        "text-muted-foreground flex items-center gap-1 justify-self-end text-xs whitespace-nowrap",
+                                        isSelected && "opacity-80",
+                                      )}
+                                    >
+                                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                      <span>{meeting.classroom}</span>
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {groupView.sharedClassroom && (
+                            <div
+                              className={cn(
+                                "text-muted-foreground absolute top-1/2 right-0 flex -translate-y-1/2 items-center gap-1 text-xs whitespace-nowrap",
+                                isSelected && "opacity-80",
+                              )}
+                            >
+                              <MapPin className="h-3.5 w-3.5 shrink-0" />
+                              <span>{groupView.sharedClassroom}</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-start gap-2">

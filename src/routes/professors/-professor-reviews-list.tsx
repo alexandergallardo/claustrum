@@ -74,7 +74,6 @@ function scoreLabel(score: number | null): string {
 }
 
 function attendanceLabel(attendance: boolean | null): string {
-  if (attendance === null) return "En revisión";
   return attendance ? "Obligatoria" : "No obligatoria";
 }
 
@@ -86,6 +85,74 @@ function scoreColor(score: number | null): string {
 }
 
 type ReactionValue = "like" | "dislike";
+
+function ReviewCourses({ review }: { review: ProfessorReviewPublicRow }) {
+  return (
+    <div className="space-y-1">
+      {review.courses.map((course) => (
+        <p key={`${review.review_id}-${course.id}`} className="font-semibold break-words">
+          {course.code}: {course.name}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function OptionalReviewDetails({ review }: { review: ProfessorReviewPublicRow }) {
+  return (
+    <div className="space-y-1 text-sm">
+      {review.attendance_required !== null && (
+        <p>
+          <span className="font-semibold">Asistencia:</span>{" "}
+          <span className="text-muted-foreground">
+            {attendanceLabel(review.attendance_required)}
+          </span>
+        </p>
+      )}
+      {review.grade_received !== null && (
+        <p>
+          <span className="font-semibold">Calificación recibida:</span>{" "}
+          <span className="text-muted-foreground">{review.grade_received}</span>
+        </p>
+      )}
+      {review.engagement_level !== null && (
+        <p>
+          <span className="font-semibold">Interés en la clase:</span>{" "}
+          <span className="text-muted-foreground">{review.engagement_level}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ReviewScores({ review }: { review: ProfessorReviewPublicRow }) {
+  return (
+    <div className="space-y-2 px-4 pt-3">
+      <ScoreRow label="Facilidad" score={review.ease_score} />
+      <ScoreRow label="Calidad" score={review.quality_score} />
+      {review.clarity_score !== null && <ScoreRow label="Claridad" score={review.clarity_score} />}
+      {review.fairness_score !== null && (
+        <ScoreRow label="Justicia" score={review.fairness_score} />
+      )}
+    </div>
+  );
+}
+
+function ScoreRow({ label, score }: { label: string; score: number | null }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={
+          "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
+          scoreColor(score)
+        }
+      >
+        {scoreLabel(score)}
+      </span>
+      <span className="text-muted-foreground text-sm">{label}</span>
+    </div>
+  );
+}
 
 function ReviewActions({
   review,
@@ -174,52 +241,7 @@ function getColumns(
             <p className="text-muted-foreground text-sm">{formatDate(row.original.created_at)}</p>
           </div>
           <Separator className="w-full" />
-          <div className="space-y-2 px-4 pt-3">
-            <div className="flex items-center gap-2">
-              <span
-                className={
-                  "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                  scoreColor(row.original.ease_score)
-                }
-              >
-                {scoreLabel(row.original.ease_score)}
-              </span>
-              <span className="text-muted-foreground text-sm">Facilidad</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={
-                  "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                  scoreColor(row.original.quality_score)
-                }
-              >
-                {scoreLabel(row.original.quality_score)}
-              </span>
-              <span className="text-muted-foreground text-sm">Calidad</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={
-                  "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                  scoreColor(row.original.clarity_score)
-                }
-              >
-                {scoreLabel(row.original.clarity_score)}
-              </span>
-              <span className="text-muted-foreground text-sm">Claridad</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={
-                  "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                  scoreColor(row.original.fairness_score)
-                }
-              >
-                {scoreLabel(row.original.fairness_score)}
-              </span>
-              <span className="text-muted-foreground text-sm">Justicia</span>
-            </div>
-          </div>
+          <ReviewScores review={row.original} />
         </div>
       ),
     }),
@@ -228,29 +250,9 @@ function getColumns(
       header: "Curso",
       cell: ({ row }) => (
         <div className="px-4">
-          <p className="font-semibold break-words">
-            {row.original.course_code}: {row.original.course_name}
-          </p>
+          <ReviewCourses review={row.original} />
           <div className="h-3" />
-          <p className="text-sm">
-            <span className="font-semibold">Asistencia:</span>{" "}
-            <span className="text-muted-foreground">
-              {attendanceLabel(row.original.attendance_required)}
-            </span>
-          </p>
-          <div className="h-3" />
-          <p className="text-sm">
-            <span className="font-semibold">Calificación recibida:</span>{" "}
-            <span className="text-muted-foreground">
-              {row.original.grade_received ?? "En revisión"}
-            </span>
-          </p>
-          <p className="text-sm">
-            <span className="font-semibold">Interés en la clase:</span>{" "}
-            <span className="text-muted-foreground">
-              {row.original.engagement_level ?? "En revisión"}
-            </span>
-          </p>
+          <OptionalReviewDetails review={row.original} />
         </div>
       ),
     }),
@@ -413,80 +415,17 @@ export function ProfessorReviewsList({
                       </p>
                     </div>
                     <div className="border-border border-t" />
-                    <div className="space-y-2 px-4 pt-3 pb-4">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={
-                            "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                            scoreColor(review.ease_score)
-                          }
-                        >
-                          {scoreLabel(review.ease_score)}
-                        </span>
-                        <span className="text-muted-foreground text-sm">Facilidad</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={
-                            "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                            scoreColor(review.quality_score)
-                          }
-                        >
-                          {scoreLabel(review.quality_score)}
-                        </span>
-                        <span className="text-muted-foreground text-sm">Calidad</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={
-                            "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                            scoreColor(review.clarity_score)
-                          }
-                        >
-                          {scoreLabel(review.clarity_score)}
-                        </span>
-                        <span className="text-muted-foreground text-sm">Claridad</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={
-                            "bg-muted inline-flex size-8 items-center justify-center rounded-md text-sm font-medium tabular-nums " +
-                            scoreColor(review.fairness_score)
-                          }
-                        >
-                          {scoreLabel(review.fairness_score)}
-                        </span>
-                        <span className="text-muted-foreground text-sm">Justicia</span>
-                      </div>
+                    <div className="pb-4">
+                      <ReviewScores review={review} />
                     </div>
                   </section>
 
                   <div className="border-border border-t" />
 
                   <section className="p-4">
-                    <p className="font-semibold break-words">
-                      {review.course_code}: {review.course_name}
-                    </p>
+                    <ReviewCourses review={review} />
                     <div className="h-3" />
-                    <p className="text-sm">
-                      <span className="font-semibold">Asistencia:</span>{" "}
-                      <span className="text-muted-foreground">
-                        {attendanceLabel(review.attendance_required)}
-                      </span>
-                    </p>
-                    <div className="h-3" />
-                    <p className="text-sm">
-                      <span className="font-semibold">Calificación recibida:</span>{" "}
-                      <span className="text-muted-foreground">
-                        {review.grade_received ?? "En revisión"}
-                      </span>
-                    </p>
-                    <p className="text-sm">
-                      <span className="font-semibold">Interés en la clase:</span>{" "}
-                      <span className="text-muted-foreground">
-                        {review.engagement_level ?? "En revisión"}
-                      </span>
-                    </p>
+                    <OptionalReviewDetails review={review} />
                   </section>
 
                   <div className="border-border border-t" />

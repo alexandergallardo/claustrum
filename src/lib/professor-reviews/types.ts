@@ -1,10 +1,27 @@
 export const REVIEW_TAG_OPTIONS = [
-  "Da buena retroalimentación",
   "Tomaría su clase nuevamente",
   "Brinda apoyo",
+  "Da buena retroalimentación",
   "Explica con claridad",
+  "Clases excelentes",
+  "Califica con rigor",
+  "Muchas tareas",
+  "Deja trabajos largos",
   "Exámenes retadores",
+  "Muchos exámenes",
+  "Pocos exámenes",
+  "Asistencia obligatoria",
+  "La participación importa",
+  "Clases largas",
+  "Requiere mucha lectura",
+  "Aspectos de calificación claros",
+  "Respetado por los estudiantes",
+  "Inspirador",
+  "Muy cómico",
+  "Da crédito extra",
+  "Muchos proyectos grupales",
   "Proyecto útil",
+  "Clase fácil",
 ] as const;
 
 export type ReviewTag = (typeof REVIEW_TAG_OPTIONS)[number];
@@ -26,6 +43,12 @@ export type ProfessorReviewReportReason = (typeof PROFESSOR_REVIEW_REPORT_REASON
 
 export type ProfessorReviewReaction = "like" | "dislike";
 
+export type ProfessorReviewCourse = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export type ProfessorReviewStatsRow = {
   professor_id: string;
   professor_name: string;
@@ -43,9 +66,7 @@ export type ProfessorReviewStatsRow = {
 export type ProfessorReviewPublicRow = {
   review_id: number;
   professor_id: string;
-  course_id: number;
-  course_code: string;
-  course_name: string;
+  courses: ProfessorReviewCourse[];
   comment: string;
   ease_score: number | null;
   quality_score: number | null;
@@ -67,17 +88,15 @@ export type ProfessorReviewModerationRow = {
   review_id: number;
   professor_id: number;
   professor_name: string;
-  course_id: number;
-  course_code: string;
-  course_name: string;
+  courses: ProfessorReviewCourse[];
   comment: string;
   ease_score: number;
   quality_score: number;
-  clarity_score: number;
-  fairness_score: number;
-  attendance_required: boolean;
+  clarity_score: number | null;
+  fairness_score: number | null;
+  attendance_required: boolean | null;
   grade_received: string | null;
-  engagement_level: number;
+  engagement_level: number | null;
   tags: string[];
   status: ProfessorReviewStatus;
   created_at: string;
