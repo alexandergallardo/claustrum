@@ -196,6 +196,7 @@ export function SchedulePage() {
   const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
     () => !search.university && !search.campus && !search.career && !search.plan && !search.term,
   );
+  const shouldAutoSelectPlanRef = useRef(false);
   const [storedShowAll, setStoredShowAll] = useState(() => {
     if (typeof window === "undefined") return true;
     const stored = localStorage.getItem(SHOW_ALL_STORAGE_KEY);
@@ -275,6 +276,10 @@ export function SchedulePage() {
   const careers = careersQuery.data ?? [];
   const plans = plansQuery.data ?? [];
   const terms = useMemo(() => termsQuery.data ?? [], [termsQuery.data]);
+  const isAutoSelectingLatestPlan =
+    shouldAutoSelectPlanRef.current && !!selectedCareerId && !selectedPlanId && plans.length > 0;
+  const isLoadingPlansForFilters =
+    (plansQuery.isFetching && plansQuery.data?.length === 0) || isAutoSelectingLatestPlan;
   const selectedTerm = useMemo(
     () => terms.find((term) => term.id === selectedTermId) ?? null,
     [selectedTermId, terms],
@@ -390,10 +395,35 @@ export function SchedulePage() {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!shouldAutoSelectPlanRef.current) return;
+    if (!selectedCareerId) return;
+    if (selectedPlanId) {
+      shouldAutoSelectPlanRef.current = false;
+      return;
+    }
+    if (plansQuery.isFetching) return;
+    if (!plans.length) {
+      shouldAutoSelectPlanRef.current = false;
+      return;
+    }
+
+    shouldAutoSelectPlanRef.current = false;
+    void navigate({
+      to: "/schedule",
+      search: {
+        ...search,
+        plan: plans[0].id,
+        term: undefined,
+      },
+    });
+  }, [navigate, plans, plansQuery.isFetching, search, selectedCareerId, selectedPlanId]);
+
+  useEffect(() => {
     if (
-      selectedCampusId &&
+      selectedPlanId &&
       terms.length > 0 &&
       !selectedTermId &&
+      !termsQuery.isFetching &&
       suggestedTermQuery.isSuccess &&
       suggestedTermQuery.data
     ) {
@@ -405,9 +435,10 @@ export function SchedulePage() {
         },
       });
     } else if (
-      selectedCampusId &&
+      selectedPlanId &&
       terms.length > 0 &&
       !selectedTermId &&
+      !termsQuery.isFetching &&
       suggestedTermQuery.isSuccess &&
       !suggestedTermQuery.data
     ) {
@@ -420,8 +451,9 @@ export function SchedulePage() {
       });
     }
   }, [
-    selectedCampusId,
+    selectedPlanId,
     terms,
+    termsQuery.isFetching,
     selectedTermId,
     search,
     navigate,
@@ -548,6 +580,7 @@ export function SchedulePage() {
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
       void navigate({
         to: "/schedule",
@@ -566,6 +599,7 @@ export function SchedulePage() {
 
   const handleCampusChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
       void navigate({
         to: "/schedule",
@@ -583,6 +617,7 @@ export function SchedulePage() {
 
   const handleCareerChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = id !== null;
       setIsUsingProfileDefaults(false);
       void navigate({
         to: "/schedule",
@@ -599,6 +634,7 @@ export function SchedulePage() {
 
   const handlePlanChange = useCallback(
     (id: number | null) => {
+      shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
       void navigate({
         to: "/schedule",
@@ -935,7 +971,7 @@ export function SchedulePage() {
                     isLoadingUniversities={isLoadingUniversities}
                     isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
                     isLoadingCareers={careersQuery.isFetching && careersQuery.data?.length === 0}
-                    isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                    isLoadingPlans={isLoadingPlansForFilters}
                     isLoadingTerms={termsQuery.isFetching && termsQuery.data?.length === 0}
                     showAll={effectiveShowAllCourses}
                     onShowAllChange={handleShowAllChange}
@@ -1014,7 +1050,7 @@ export function SchedulePage() {
                     isLoadingUniversities={isLoadingUniversities}
                     isLoadingCampuses={campusesQuery.isFetching && campusesQuery.data?.length === 0}
                     isLoadingCareers={careersQuery.isFetching && careersQuery.data?.length === 0}
-                    isLoadingPlans={plansQuery.isFetching && plansQuery.data?.length === 0}
+                    isLoadingPlans={isLoadingPlansForFilters}
                     isLoadingTerms={termsQuery.isFetching && termsQuery.data?.length === 0}
                     showAll={effectiveShowAllCourses}
                     onShowAllChange={handleShowAllChange}
