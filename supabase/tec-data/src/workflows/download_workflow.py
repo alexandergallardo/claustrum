@@ -272,11 +272,12 @@ def download(
         client = AcademicUnitClient(verify_ssl=verify_ssl)
         try:
             course_offer_school_codes_by_year: dict[str, set[str]] = {}
+            empty_course_offer_school_codes_by_year: dict[str, set[str]] = {}
             for current_year in years_list:
                 typer.echo(
                     f"{_progress_prefix('download')} fetching course_offer for year={current_year}..."
                 )
-                files = client.download_oferta_cursos(
+                files, empty_school_codes, error_school_codes = client.download_oferta_cursos(
                     output_dir,
                     school_codes,
                     current_year,
@@ -288,18 +289,19 @@ def download(
                     ),
                 )
                 course_offer_school_codes_by_year[current_year] = set(files)
+                empty_course_offer_school_codes_by_year[current_year] = empty_school_codes
                 print()
                 typer.echo(
-                    f"{_progress_prefix('download')} course_offer complete: {len(files)} files"
+                    f"{_progress_prefix('download')} course_offer complete: {len(files)} files, {len(empty_school_codes)} empty, {len(error_school_codes)} errors"
                 )
 
             for current_year in years_list:
                 course_offer_school_codes = course_offer_school_codes_by_year.get(
                     current_year, set()
                 )
-                fallback_school_codes = [
-                    code for code in school_codes if code not in course_offer_school_codes
-                ]
+                fallback_school_codes = sorted(
+                    empty_course_offer_school_codes_by_year.get(current_year, set())
+                )
                 typer.echo(
                     f"{_progress_prefix('download')} fetching schedule_guia for year={current_year}..."
                 )

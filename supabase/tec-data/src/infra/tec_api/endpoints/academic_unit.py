@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,10 @@ from src.infra.tec_api.client import APIClient
 
 class AcademicUnitClient(APIClient):
     """Client for academic unit/career endpoints."""
+
+    course_offer_request_delay_seconds = 0.75
+    course_offer_retry_delays_seconds = (1.0, 3.0)
+    schedule_request_delay_seconds = 0.25
 
     def __init__(self, verify_ssl: bool = True) -> None:
         super().__init__()
@@ -105,38 +110,71 @@ class AcademicUnitClient(APIClient):
 
     def get_oferta_cursos(self, school_code: str, year: str) -> Any:
         """POST getdatosEscuelaAno - returns course offer data for a school and year."""
-        alteonp, altesp = self._get_cookies()
-
         endpoint = "https://tec-appsext.itcr.ac.cr/guiahorarios/escuela.aspx/getdatosEscuelaAno"
         payload = {"escuela": school_code, "ano": year}
-        headers = {
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-            "Accept-Language": "en-US,en;q=0.8",
-            "Connection": "keep-alive",
-            "Content-Type": "application/json; charset=utf-8",
-            "Cookie": f"AlteonP={alteonp}; AltesP={altesp}",
-            "Origin": "https://tec-appsext.itcr.ac.cr",
-            "Referer": "https://tec-appsext.itcr.ac.cr/guiahorarios/escuela.aspx",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-GPC": "1",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-            "X-Requested-With": "XMLHttpRequest",
-        }
 
-        try:
-            response = self.session.post(
-                endpoint,
-                headers=headers,
-                json=payload,
-                verify=False,
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            print(f"Error fetching oferta cursos for {school_code} year {year}: {e}")
-            return None
+        for attempt_idx, delay_seconds in enumerate(
+            (*self.course_offer_retry_delays_seconds, 0.0), 1
+        ):
+            alteonp, altesp = self._get_cookies()
+            headers = {
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "Accept-Language": "en-US,en;q=0.8",
+                "Connection": "keep-alive",
+                "Content-Type": "application/json; charset=utf-8",
+                "Cookie": f"AlteonP={alteonp}; AltesP={altesp}",
+                "Origin": "https://tec-appsext.itcr.ac.cr",
+                "Referer": "https://tec-appsext.itcr.ac.cr/guiahorarios/escuela.aspx",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-GPC": "1",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
+                "X-Requested-With": "XMLHttpRequest",
+            }
+
+            try:
+                response = self.session.post(
+                    endpoint,
+                    headers=headers,
+                    json=payload,
+                    verify=False,
+                    timeout=30,
+                )
+                response.raise_for_status()
+                return response.json()
+            except requests.HTTPError as e:
+                status_code = e.response.status_code if e.response is not None else 0
+                should_retry = status_code >= 500 and delay_seconds > 0
+                if not should_retry:
+                    print(
+                        f"Error fetching oferta cursos for {school_code} year {year}: {e}"
+                    )
+                    return None
+                self._reset_guiahorarios_cookies()
+                print(
+                    f"Retrying oferta cursos for {school_code} year {year} after HTTP {status_code} "
+                    f"(attempt {attempt_idx})"
+                )
+                time.sleep(delay_seconds)
+            except requests.RequestException as e:
+                if delay_seconds <= 0:
+                    print(
+                        f"Error fetching oferta cursos for {school_code} year {year}: {e}"
+                    )
+                    return None
+                self._reset_guiahorarios_cookies()
+                print(
+                    f"Retrying oferta cursos for {school_code} year {year} after request error "
+                    f"(attempt {attempt_idx})"
+                )
+                time.sleep(delay_seconds)
+
+        return None
+
+    def _reset_guiahorarios_cookies(self) -> None:
+        self._alteonp_cookie = ""
+        self._altesp_cookie = ""
 
     def download_oferta_cursos(
         self,
@@ -144,35 +182,40 @@ class AcademicUnitClient(APIClient):
         school_codes: list[str],
         year: str,
         progress_callback: Callable[[int, int, str, str], None] | None = None,
-    ) -> dict[str, Path]:
+    ) -> tuple[dict[str, Path], set[str], set[str]]:
         """Download course offer data for all schools for a given year."""
         output_dir = output_dir / "course_offer" / year
         output_dir.mkdir(parents=True, exist_ok=True)
 
         files: dict[str, Path] = {}
+        empty_school_codes: set[str] = set()
+        error_school_codes: set[str] = set()
 
         total = len(school_codes)
         for idx, code in enumerate(school_codes, 1):
-            try:
-                oferta = self.get_oferta_cursos(code, year)
-                status = "empty"
-                if oferta and self._has_course_offer_data(oferta):
-                    data = self._parse_oferta_cursos(oferta)
-                    if data:
-                        file_path = output_dir / f"{code}.json"
-                        file_path.write_text(
-                            json.dumps(data, indent=2, ensure_ascii=False)
-                        )
-                        files[code] = file_path
-                        status = "saved"
-                if progress_callback is not None:
-                    progress_callback(idx, total, code, status)
-            except requests.RequestException as e:
-                print(f"Error downloading course offer for {code}: {e}")
-                if progress_callback is not None:
-                    progress_callback(idx, total, code, "error")
+            oferta = self.get_oferta_cursos(code, year)
+            status = "empty"
+            if oferta is None:
+                status = "error"
+                error_school_codes.add(code)
+            elif oferta and self._has_course_offer_data(oferta):
+                data = self._parse_oferta_cursos(oferta)
+                if data:
+                    file_path = output_dir / f"{code}.json"
+                    file_path.write_text(
+                        json.dumps(data, indent=2, ensure_ascii=False)
+                    )
+                    files[code] = file_path
+                    status = "saved"
+                else:
+                    empty_school_codes.add(code)
+            else:
+                empty_school_codes.add(code)
+            if progress_callback is not None:
+                progress_callback(idx, total, code, status)
+            time.sleep(self.course_offer_request_delay_seconds)
 
-        return files
+        return files, empty_school_codes, error_school_codes
 
     def _parse_oferta_cursos(self, response: Any) -> Any:
         """Parse the course offer response, extracting and parsing the 'd' field."""
@@ -290,6 +333,7 @@ class AcademicUnitClient(APIClient):
             processed += 1
             status = "empty"
             try:
+                time.sleep(self.schedule_request_delay_seconds)
                 html = self.get_horario_guia(sede, carrera, periodo)
                 if html:
                     parsed_data = self._parse_horario_html(html)
@@ -339,6 +383,7 @@ class AcademicUnitClient(APIClient):
                 processed += 1
                 status = "empty"
                 try:
+                    time.sleep(self.schedule_request_delay_seconds)
                     html = self.get_horario_guia(sede, carrera, periodo)
                     if html:
                         parsed_data = self._parse_horario_html(html)
