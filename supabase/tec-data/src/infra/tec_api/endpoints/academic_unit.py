@@ -213,13 +213,12 @@ class AcademicUnitClient(APIClient):
         self,
         output_dir: Path,
         year: str,
+        fallback_school_codes: list[str] | None = None,
+        course_offer_school_codes: list[str] | None = None,
         progress_callback: Callable[[int, int, str, str, str, str], None] | None = None,
     ) -> dict[str, Path]:
         """Download schedule data using already downloaded course offer files."""
         course_offer_dir = output_dir / "course_offer" / year
-        if not course_offer_dir.exists():
-            print(f"Course offer data not found at {course_offer_dir}")
-            return {}
 
         output_dir = output_dir / "schedule_guia" / year
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -235,37 +234,60 @@ class AcademicUnitClient(APIClient):
         files: dict[str, Path] = {}
 
         combinaciones: dict[tuple[str, str, str], str] = {}
+        allowed_course_offer_schools = (
+            set(course_offer_school_codes) if course_offer_school_codes is not None else None
+        )
 
-        for course_file in course_offer_dir.glob("*.json"):
-            school_code = course_file.stem
-            data = json.loads(course_file.read_text())
-            if not data:
-                continue
-
-            for row in data:
-                dsc_sede = row.get("DSC_SEDE", "")
-                sede_code = dsc_sede_to_code.get(dsc_sede)
-                if not sede_code:
+        if course_offer_dir.exists():
+            for course_file in course_offer_dir.glob("*.json"):
+                school_code = course_file.stem
+                if (
+                    allowed_course_offer_schools is not None
+                    and school_code not in allowed_course_offer_schools
+                ):
+                    continue
+                data = json.loads(course_file.read_text())
+                if not data:
                     continue
 
-                num_ano = str(row.get("NUM_ANO", ""))
-                ide_modalidad = row.get("IDE_MODALIDAD", "")
-                ide_per_mod = str(row.get("IDE_PER_MOD", ""))
-                periodo = f"{num_ano}_{ide_modalidad}_{ide_per_mod}"
+                for row in data:
+                    dsc_sede = row.get("DSC_SEDE", "")
+                    sede_code = dsc_sede_to_code.get(dsc_sede)
+                    if not sede_code:
+                        continue
 
-                key = (sede_code, school_code, periodo)
-                if key not in combinaciones:
-                    combinaciones[key] = dsc_sede
+                    num_ano = str(row.get("NUM_ANO", ""))
+                    ide_modalidad = row.get("IDE_MODALIDAD", "")
+                    ide_per_mod = str(row.get("IDE_PER_MOD", ""))
+                    periodo = f"{num_ano}_{ide_modalidad}_{ide_per_mod}"
 
-        total_combinaciones = len(combinaciones)
+                    key = (sede_code, school_code, periodo)
+                    if key not in combinaciones:
+                        combinaciones[key] = dsc_sede
+
+        fallback_combinaciones = self._build_schedule_fallback_combinations(
+            output_dir.parent.parent,
+            year,
+            sorted(set(fallback_school_codes or [])),
+        )
+
+        total_combinaciones = len(combinaciones) + sum(
+            len(periodos)
+            for _sede, _carrera, _modality_code, periodos in fallback_combinaciones
+        )
         downloaded = 0
         failed = 0
         skipped = 0
         total_courses = 0
+        processed = 0
 
-        for idx, ((sede, carrera, periodo), dsc_sede) in enumerate(
-            combinaciones.items(), 1
-        ):
+        def remove_stale_schedule_file(sede: str, carrera: str, periodo: str) -> None:
+            file_path = output_dir / f"{sede}_{carrera}_{periodo}.json"
+            if file_path.exists():
+                file_path.unlink()
+
+        for (sede, carrera, periodo), _dsc_sede in combinaciones.items():
+            processed += 1
             status = "empty"
             try:
                 html = self.get_horario_guia(sede, carrera, periodo)
@@ -284,14 +306,74 @@ class AcademicUnitClient(APIClient):
                     else:
                         skipped += 1
                         status = "empty"
+                        remove_stale_schedule_file(sede, carrera, periodo)
                 else:
                     skipped += 1
                     status = "empty"
+                    remove_stale_schedule_file(sede, carrera, periodo)
             except requests.RequestException:
                 failed += 1
                 status = "error"
             if progress_callback is not None:
-                progress_callback(idx, total_combinaciones, sede, carrera, periodo, status)
+                progress_callback(
+                    processed, total_combinaciones, sede, carrera, periodo, status
+                )
+
+        for sede, carrera, _modality_code, periodos in fallback_combinaciones:
+            skip_remaining_periods = False
+            for period_idx, periodo in enumerate(periodos):
+                if skip_remaining_periods:
+                    processed += 1
+                    skipped += 1
+                    remove_stale_schedule_file(sede, carrera, periodo)
+                    if progress_callback is not None:
+                        progress_callback(
+                            processed,
+                            total_combinaciones,
+                            sede,
+                            carrera,
+                            periodo,
+                            "fallback-skipped",
+                        )
+                    continue
+                processed += 1
+                status = "empty"
+                try:
+                    html = self.get_horario_guia(sede, carrera, periodo)
+                    if html:
+                        parsed_data = self._parse_horario_html(html)
+                        if parsed_data:
+                            file_name = f"{sede}_{carrera}_{periodo}.json"
+                            file_path = output_dir / file_name
+                            file_path.write_text(
+                                json.dumps(parsed_data, indent=2, ensure_ascii=False)
+                            )
+                            files[file_name] = file_path
+                            downloaded += 1
+                            total_courses += len(parsed_data)
+                            status = "saved"
+                        else:
+                            skipped += 1
+                            remove_stale_schedule_file(sede, carrera, periodo)
+                    else:
+                        skipped += 1
+                        remove_stale_schedule_file(sede, carrera, periodo)
+                except requests.RequestException:
+                    failed += 1
+                    status = "error"
+
+                if period_idx == 0 and status == "empty":
+                    skip_remaining_periods = True
+
+                if progress_callback is not None:
+                    progress_callback(
+                        processed,
+                        total_combinaciones,
+                        sede,
+                        carrera,
+                        periodo,
+                        f"fallback-{status}" if status != "error" else "fallback-error",
+                    )
 
         if progress_callback is None:
             print(
@@ -299,6 +381,76 @@ class AcademicUnitClient(APIClient):
             )
 
         return files
+
+    def _build_schedule_fallback_combinations(
+        self,
+        data_dir: Path,
+        year: str,
+        school_codes: list[str],
+    ) -> list[tuple[str, str, str, list[str]]]:
+        if not school_codes:
+            return []
+
+        unit_path = data_dir / "academic_unit" / "data.json"
+        relation_path = data_dir / "academic_unit_campus" / "data.json"
+        campus_path = data_dir / "campus" / "data.json"
+        term_path = data_dir / "academic_term" / "data.json"
+        modality_path = data_dir / "academic_modality" / "data.json"
+        required_paths = [
+            unit_path,
+            relation_path,
+            campus_path,
+            term_path,
+            modality_path,
+        ]
+        if not all(path.exists() for path in required_paths):
+            return []
+
+        units = json.loads(unit_path.read_text())
+        relations = json.loads(relation_path.read_text())
+        campuses = json.loads(campus_path.read_text())
+        terms = json.loads(term_path.read_text())
+        modalities = json.loads(modality_path.read_text())
+
+        unit_id_by_code = {u["code"]: int(u["id"]) for u in units}
+        campus_code_by_id = {int(c["id"]): c["code"] for c in campuses}
+        modality_code_by_id = {int(m["id"]): m["code"] for m in modalities}
+        campuses_by_unit_id: dict[int, set[str]] = {}
+        for relation in relations:
+            unit_id = int(relation.get("academic_unit_id") or 0)
+            campus_code = campus_code_by_id.get(int(relation.get("campus_id") or 0))
+            if not campus_code:
+                continue
+            campuses_by_unit_id.setdefault(unit_id, set()).add(campus_code)
+
+        periods_by_modality: dict[str, list[str]] = {}
+        for term in terms:
+            if str(term.get("year")) != str(year):
+                continue
+            modality_code = modality_code_by_id.get(
+                int(term.get("academic_modality_id") or 0)
+            )
+            external_key = str(term.get("external_key") or "")
+            if not modality_code or not external_key:
+                continue
+            periods_by_modality.setdefault(modality_code, []).append(external_key)
+
+        for periodos in periods_by_modality.values():
+            periodos.sort(key=lambda value: int(value.rsplit("_", 1)[-1]))
+
+        fallback_combinations: list[tuple[str, str, str, list[str]]] = []
+        for school_code in school_codes:
+            unit_id = unit_id_by_code.get(school_code)
+            if unit_id is None:
+                continue
+            for campus_code in sorted(campuses_by_unit_id.get(unit_id, set())):
+                for modality_code, periodos in sorted(periods_by_modality.items()):
+                    if periodos:
+                        fallback_combinations.append(
+                            (campus_code, school_code, modality_code, periodos)
+                        )
+
+        return fallback_combinations
 
     def download_raw(
         self, output_dir: Path, campus_codes: list[str]

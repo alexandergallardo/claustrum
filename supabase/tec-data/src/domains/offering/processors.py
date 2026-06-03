@@ -80,15 +80,11 @@ def render_progress(current: int, total: int) -> None:
 def run_process_course_offering(data_dir: Path, year: str) -> None:
     """Process course offering data for a given year.
 
-    Requires both course_offer and schedule_guia data to be downloaded first.
+    Requires schedule_guia data; course_offer is optional metadata for weekly hours.
     """
     year_str = str(year)
     course_offer_dir = data_dir / "course_offer" / year_str
     schedule_guia_dir = data_dir / "schedule_guia" / year_str
-
-    if not course_offer_dir.exists():
-        print(f"Error: course_offer data not found at {course_offer_dir}")
-        return
 
     if not schedule_guia_dir.exists():
         print(f"Error: schedule_guia data not found at {schedule_guia_dir}")
@@ -176,7 +172,9 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
     unknown_group_types: dict[str, int] = {}
     unknown_group_type_examples: list[str] = []
 
-    course_offer_files = sorted(course_offer_dir.glob("*.json"))
+    course_offer_files = (
+        sorted(course_offer_dir.glob("*.json")) if course_offer_dir.exists() else []
+    )
     print(f"Loading {len(course_offer_files)} course_offer files for mixing...")
 
     course_offer_data: dict[str, list[dict[str, Any]]] = {}
@@ -278,9 +276,7 @@ def run_process_course_offering(data_dir: Path, year: str) -> None:
                 credits = entry.get(
                     "CAN_CREDITOS", course_data.get("default_credits", 0)
                 )
-                weekly_hours = course_hours or course_data.get(
-                    "default_weekly_hours", 0
-                )
+                weekly_hours = course_hours
                 course_type = entry.get("TIPO_MATERIA", "")
 
                 course_offerings[offering_key] = {
