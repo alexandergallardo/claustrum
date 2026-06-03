@@ -80,7 +80,12 @@ type FilterItem = {
 };
 
 const FILTERS_PANEL_STORAGE_KEY = "schedule-filters-panel-open";
+const INITIAL_FILTER_REVEAL_DELAY_MS = 80;
 const FILTER_REVEAL_ANIMATION_MS = 220;
+
+function areStringArraysEqual(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
 
 function getInitialFiltersPanelOpen(): boolean {
   if (typeof window === "undefined") return true;
@@ -190,7 +195,7 @@ export function ScheduleFilters({
   onShowOtherCampusesChange,
 }: ScheduleFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
-  const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
+  const [revealedFilterKeys, setRevealedFilterKeys] = useState<string[]>([]);
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
@@ -213,46 +218,61 @@ export function ScheduleFilters({
   const isCampusFilterReady = canSelectCampus && !isLoadingCampuses && hasSelectedCampus;
   const isCareerFilterReady = !!selectedCampusId && !isLoadingCareers && hasSelectedCareer;
   const isPlanFilterReady = !!selectedCareerId && !isLoadingPlans && hasSelectedPlan;
-  const isTermFilterReady = !!selectedCampusId && !isLoadingTerms && hasSelectedTerm;
+  const isTermFilterReady = !!selectedPlanId && !isLoadingTerms && hasSelectedTerm;
 
-  const readyFilterKeys = [
-    isUniversityFilterReady ? "university" : null,
-    isCampusFilterReady ? "campus" : null,
-    isCareerFilterReady ? "career" : null,
-    isPlanFilterReady ? "plan" : null,
-    isTermFilterReady ? "term" : null,
-  ].filter((key): key is string => key !== null);
+  const readyFilterKeys = useMemo(
+    () =>
+      [
+        isUniversityFilterReady ? "university" : null,
+        isCampusFilterReady ? "campus" : null,
+        isCareerFilterReady ? "career" : null,
+        isPlanFilterReady ? "plan" : null,
+        isTermFilterReady ? "term" : null,
+      ].filter((key): key is string => key !== null),
+    [
+      isCampusFilterReady,
+      isCareerFilterReady,
+      isPlanFilterReady,
+      isTermFilterReady,
+      isUniversityFilterReady,
+    ],
+  );
   const readyFilterSignature = readyFilterKeys.join("|");
+  const revealedFilterSignature = revealedFilterKeys.join("|");
 
-  const universityOrder = readyFilterKeys.indexOf("university");
-  const campusOrder = readyFilterKeys.indexOf("campus");
-  const careerOrder = readyFilterKeys.indexOf("career");
-  const planOrder = readyFilterKeys.indexOf("plan");
-  const termOrder = readyFilterKeys.indexOf("term");
-
-  const showUniversityFilter = universityOrder >= 0 && revealedFiltersCount > universityOrder;
-  const showCampusFilter = campusOrder >= 0 && revealedFiltersCount > campusOrder;
-  const showCareerFilter = careerOrder >= 0 && revealedFiltersCount > careerOrder;
-  const showPlanFilter = planOrder >= 0 && revealedFiltersCount > planOrder;
-  const showTermFilter = termOrder >= 0 && revealedFiltersCount > termOrder;
+  const showUniversityFilter = revealedFilterKeys.includes("university");
+  const showCampusFilter = revealedFilterKeys.includes("campus");
+  const showCareerFilter = revealedFilterKeys.includes("career");
+  const showPlanFilter = revealedFilterKeys.includes("plan");
+  const showTermFilter = revealedFilterKeys.includes("term");
   const areAllReadyFiltersRevealed =
-    readyFilterKeys.length > 0 && revealedFiltersCount >= readyFilterKeys.length;
+    readyFilterKeys.length > 0 && readyFilterKeys.every((key) => revealedFilterKeys.includes(key));
 
   useEffect(() => {
-    setRevealedFiltersCount(0);
+    const visibleKeys = revealedFilterKeys.filter((key) => readyFilterKeys.includes(key));
+    if (!areStringArraysEqual(visibleKeys, revealedFilterKeys)) {
+      setRevealedFilterKeys(visibleKeys);
+      return;
+    }
 
     if (readyFilterKeys.length === 0) return;
 
-    const timers = readyFilterKeys.map((_, index) =>
-      window.setTimeout(() => {
-        setRevealedFiltersCount(index + 1);
-      }, index * FILTER_REVEAL_ANIMATION_MS),
-    );
+    const nextKey = readyFilterKeys.find((key) => !visibleKeys.includes(key));
+    if (!nextKey) return;
+
+    const delay =
+      visibleKeys.length === 0 ? INITIAL_FILTER_REVEAL_DELAY_MS : FILTER_REVEAL_ANIMATION_MS;
+    const timer = window.setTimeout(() => {
+      setRevealedFilterKeys((current) => {
+        if (current.includes(nextKey) || !readyFilterKeys.includes(nextKey)) return current;
+        return [...current, nextKey];
+      });
+    }, delay);
 
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
+      window.clearTimeout(timer);
     };
-  }, [readyFilterSignature]);
+  }, [readyFilterKeys, readyFilterSignature, revealedFilterKeys, revealedFilterSignature]);
 
   const showAllControl = (
     <div className="flex items-center gap-2">
