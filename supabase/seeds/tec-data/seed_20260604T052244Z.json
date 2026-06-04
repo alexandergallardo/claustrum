@@ -1,0 +1,84 @@
+{
+  "seed_file": "seed_20260604T052244Z.sql",
+  "generated_at_utc": "2026-06-04T05:22:44.901092+00:00",
+  "scope": "offering",
+  "years": [
+    2023
+  ],
+  "term_external_keys": [
+    "2023_A_1",
+    "2023_B_1",
+    "2023_B_2",
+    "2023_B_3",
+    "2023_B_4",
+    "2023_B_5",
+    "2023_B_6",
+    "2023_B_7",
+    "2023_C_1",
+    "2023_C_2",
+    "2023_C_3",
+    "2023_H_1",
+    "2023_H_2",
+    "2023_H_3",
+    "2023_H_4",
+    "2023_H_5",
+    "2023_H_6",
+    "2023_I_1",
+    "2023_I_2",
+    "2023_M_1",
+    "2023_M_10",
+    "2023_M_11",
+    "2023_M_12",
+    "2023_M_2",
+    "2023_M_3",
+    "2023_M_4",
+    "2023_M_5",
+    "2023_M_6",
+    "2023_M_7",
+    "2023_M_8",
+    "2023_M_9",
+    "2023_N_1",
+    "2023_S_1",
+    "2023_S_2",
+    "2023_T_1",
+    "2023_T_2",
+    "2023_T_3",
+    "2023_T_4",
+    "2023_V_1"
+  ],
+  "environment_id": "127.0.0.1|postgres",
+  "data_fingerprint": "1439613f577db0aedb7d144076ae837c22a29afad3b81ad1a076065534e6aed2",
+  "table_stats": {
+    "course": {
+      "inserted": 0,
+      "updated": 32,
+      "soft_deleted": 0
+    },
+    "professor": {
+      "inserted": 92,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "course_offering": {
+      "inserted": 2783,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "course_offering_group": {
+      "inserted": 4494,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "course_offering_group_professor": {
+      "inserted": 4657,
+      "updated": 0,
+      "soft_deleted": 0
+    },
+    "course_offering_meeting": {
+      "inserted": 6217,
+      "updated": 0,
+      "soft_deleted": 0
+    }
+  },
+  "noop": false
+}
