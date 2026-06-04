@@ -41,7 +41,9 @@ def run_process(
                 data_dir, university_id
             )
             unit_path = data_dir / "academic_unit" / "data.json"
-            unit_path.write_text(json.dumps(academic_units, indent=2, ensure_ascii=False))
+            unit_path.write_text(
+                json.dumps(academic_units, indent=2, ensure_ascii=False)
+            )
             typer.echo(f"Processed {len(academic_units)} academic_units to {unit_path}")
 
             rel_path = data_dir / "academic_unit_campus" / "data.json"
@@ -56,8 +58,12 @@ def run_process(
             modalities, terms = process_academic_period(data_dir, years)
             modality_path = data_dir / "academic_modality" / "data.json"
             modality_path.parent.mkdir(parents=True, exist_ok=True)
-            modality_path.write_text(json.dumps(modalities, indent=2, ensure_ascii=False))
-            typer.echo(f"Processed {len(modalities)} academic_modality to {modality_path}")
+            modality_path.write_text(
+                json.dumps(modalities, indent=2, ensure_ascii=False)
+            )
+            typer.echo(
+                f"Processed {len(modalities)} academic_modality to {modality_path}"
+            )
 
             term_path = data_dir / "academic_term" / "data.json"
             term_path.parent.mkdir(parents=True, exist_ok=True)
@@ -76,7 +82,9 @@ def run_process(
 
                 plan_path = data_dir / "study_plan" / "data.json"
                 plan_path.parent.mkdir(parents=True, exist_ok=True)
-                plan_path.write_text(json.dumps(study_plans, indent=2, ensure_ascii=False))
+                plan_path.write_text(
+                    json.dumps(study_plans, indent=2, ensure_ascii=False)
+                )
                 typer.echo(f"Processed {len(study_plans)} study_plans to {plan_path}")
 
                 plan_campus_path = data_dir / "study_plan_campus" / "data.json"
@@ -108,7 +116,9 @@ def run_process(
 
                 course_path = data_dir / "course" / "data.json"
                 course_path.parent.mkdir(parents=True, exist_ok=True)
-                course_path.write_text(json.dumps(courses, indent=2, ensure_ascii=False))
+                course_path.write_text(
+                    json.dumps(courses, indent=2, ensure_ascii=False)
+                )
                 typer.echo(f"Processed {len(courses)} courses to {course_path}")
 
                 course_rel_path = data_dir / "course_relation" / "data.json"

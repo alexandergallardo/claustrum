@@ -30,7 +30,9 @@ def ensure_reference_data(data_dir: Path) -> None:
                 "short_name": "ITCR",
             }
         ]
-        university_path.write_text(json.dumps(universities, indent=2, ensure_ascii=False))
+        university_path.write_text(
+            json.dumps(universities, indent=2, ensure_ascii=False)
+        )
         print(f"Created {university_path}")
 
 
@@ -98,13 +100,17 @@ def process_academic_unit(
     if existing_units_path.exists():
         existing_data = json.loads(existing_units_path.read_text())
         all_units.update({u["code"]: u for u in existing_data})
-        unit_id_counter = (max(u["id"] for u in existing_data) + 1) if existing_data else 1
+        unit_id_counter = (
+            (max(u["id"] for u in existing_data) + 1) if existing_data else 1
+        )
         relations_path = data_dir / "academic_unit_campus" / "data.json"
         if relations_path.exists():
             existing_relations_data = json.loads(relations_path.read_text())
             unit_campus_relations.extend(existing_relations_data)
             for rel in existing_relations_data:
-                existing_relations.add((rel.get("academic_unit_id"), rel.get("campus_id")))
+                existing_relations.add(
+                    (rel.get("academic_unit_id"), rel.get("campus_id"))
+                )
             if existing_relations_data:
                 relation_id_counter = max(r["id"] for r in existing_relations_data) + 1
     else:
@@ -158,7 +164,9 @@ def process_academic_period(
     raw_data = json.loads(
         (data_dir / "academic_period" / "carga_modalidad_periodos.json").read_text()
     )
-    modalidades_raw = raw_data if isinstance(raw_data, list) else raw_data.get("modalidad", [])
+    modalidades_raw = (
+        raw_data if isinstance(raw_data, list) else raw_data.get("modalidad", [])
+    )
 
     all_modalities: dict[str, dict[str, Any]] = {}
     modality_id_counter = 1

@@ -137,11 +137,18 @@ def run_sync_pipeline(
         )
         merged_professors.update({str(r["full_name"]): r for r in professors})
 
-    write_json(data_dir / "course_offering" / "data.json", list(merged_offerings.values()))
-    write_json(data_dir / "course_offering_group" / "data.json", list(merged_groups.values()))
+    write_json(
+        data_dir / "course_offering" / "data.json", list(merged_offerings.values())
+    )
+    write_json(
+        data_dir / "course_offering_group" / "data.json", list(merged_groups.values())
+    )
     write_json(
         data_dir / "course_offering_group_professor" / "data.json",
         list(merged_group_professors.values()),
     )
-    write_json(data_dir / "course_offering_meeting" / "data.json", list(merged_meetings.values()))
+    write_json(
+        data_dir / "course_offering_meeting" / "data.json",
+        list(merged_meetings.values()),
+    )
     write_json(data_dir / "professor" / "data.json", list(merged_professors.values()))

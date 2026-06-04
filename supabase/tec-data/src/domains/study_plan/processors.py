@@ -179,7 +179,9 @@ def process_study_plan_complete(
         course_id_counter += 1
         return int(new_course["id"])
 
-    def add_relation(study_plan_id: int, from_code: Any, to_code: Any, relation_type: str) -> None:
+    def add_relation(
+        study_plan_id: int, from_code: Any, to_code: Any, relation_type: str
+    ) -> None:
         from_id = ensure_course(from_code)
         to_id = ensure_course(to_code)
         if not from_id or not to_id:
@@ -225,7 +227,9 @@ def process_study_plan_complete(
             academic_degree = normalize_text(plan.get("academic_degree", ""))
             modality_raw = plan.get("modalidad", "")
             modality_norm = normalize_text(str(modality_raw)) if modality_raw else ""
-            modality_id = modality_code_to_id.get(modality_norm) or modality_name_to_id.get(modality_norm)
+            modality_id = modality_code_to_id.get(
+                modality_norm
+            ) or modality_name_to_id.get(modality_norm)
 
             plan_key = (unit_id, external_plan_id)
             if plan_key not in study_plan_map:
@@ -270,7 +274,11 @@ def process_study_plan_complete(
                 continue
             processed_plan_ids.add(plan_id)
 
-            levels = complete_plan_data.get("levels") or complete_plan_data.get("niveles") or []
+            levels = (
+                complete_plan_data.get("levels")
+                or complete_plan_data.get("niveles")
+                or []
+            )
             for idx, level_info in enumerate(levels, start=1):
                 level_label_raw = level_info.get("id") or f"NIVEL {idx}"
                 level_label = normalize_text(level_label_raw)
@@ -304,12 +312,20 @@ def process_study_plan_complete(
                     course_name = course_data.get("name", "")
                     try:
                         credits_raw = course_data.get("credits", 0)
-                        credits = int(credits_raw) if credits_raw and str(credits_raw).lstrip("-").isdigit() else 0
+                        credits = (
+                            int(credits_raw)
+                            if credits_raw and str(credits_raw).lstrip("-").isdigit()
+                            else 0
+                        )
                     except (ValueError, TypeError):
                         credits = 0
                     try:
                         hours_raw = course_data.get("hours", 0)
-                        hours = int(hours_raw) if hours_raw and str(hours_raw).lstrip("-").isdigit() else 0
+                        hours = (
+                            int(hours_raw)
+                            if hours_raw and str(hours_raw).lstrip("-").isdigit()
+                            else 0
+                        )
                     except (ValueError, TypeError):
                         hours = 0
 

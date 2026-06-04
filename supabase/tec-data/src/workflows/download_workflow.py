@@ -21,9 +21,7 @@ def _progress_prefix(label: str) -> str:
     return f"[{label}]"
 
 
-def _render_download_progress(
-    current: int, total: int, item: str, status: str
-) -> None:
+def _render_download_progress(current: int, total: int, item: str, status: str) -> None:
     total = max(total, 1)
     print(
         f"\r[{current:03d}/{total:03d}] {item:<24} {status}",
@@ -277,19 +275,23 @@ def download(
                 typer.echo(
                     f"{_progress_prefix('download')} fetching course_offer for year={current_year}..."
                 )
-                files, empty_school_codes, error_school_codes = client.download_oferta_cursos(
-                    output_dir,
-                    school_codes,
-                    current_year,
-                    progress_callback=lambda idx,
-                    total,
-                    code,
-                    status: _render_download_progress(
-                        idx, total, f"{code}.json", status
-                    ),
+                files, empty_school_codes, error_school_codes = (
+                    client.download_oferta_cursos(
+                        output_dir,
+                        school_codes,
+                        current_year,
+                        progress_callback=lambda idx,
+                        total,
+                        code,
+                        status: _render_download_progress(
+                            idx, total, f"{code}.json", status
+                        ),
+                    )
                 )
                 course_offer_school_codes_by_year[current_year] = set(files)
-                empty_course_offer_school_codes_by_year[current_year] = empty_school_codes
+                empty_course_offer_school_codes_by_year[current_year] = (
+                    empty_school_codes
+                )
                 print()
                 typer.echo(
                     f"{_progress_prefix('download')} course_offer complete: {len(files)} files, {len(empty_school_codes)} empty, {len(error_school_codes)} errors"

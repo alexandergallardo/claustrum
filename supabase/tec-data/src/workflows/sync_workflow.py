@@ -798,7 +798,8 @@ def generate_minimal_delta_seed(
                         gp_id
                         for gp_id in stale_ids_set
                         if int(
-                            existing_rows.get(gp_id, {}).get("course_offering_group_id") or 0
+                            existing_rows.get(gp_id, {}).get("course_offering_group_id")
+                            or 0
                         )
                         not in preserved_group_ids
                     )
@@ -820,7 +821,8 @@ def generate_minimal_delta_seed(
                         m_id
                         for m_id in stale_ids_set
                         if int(
-                            existing_rows.get(m_id, {}).get("course_offering_group_id") or 0
+                            existing_rows.get(m_id, {}).get("course_offering_group_id")
+                            or 0
                         )
                         not in preserved_group_ids
                     )

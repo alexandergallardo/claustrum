@@ -15,9 +15,9 @@ from src.infra.tec_api.client import APIClient
 class AcademicUnitClient(APIClient):
     """Client for academic unit/career endpoints."""
 
-    course_offer_request_delay_seconds = 0.75
-    course_offer_retry_delays_seconds = (1.0, 3.0)
-    schedule_request_delay_seconds = 0.25
+    course_offer_request_delay_seconds = 1.5
+    course_offer_retry_delays_seconds = (5.0, 15.0)
+    schedule_request_delay_seconds = 0.5
 
     def __init__(self, verify_ssl: bool = True) -> None:
         super().__init__()
@@ -27,13 +27,14 @@ class AcademicUnitClient(APIClient):
 
     def _get_cookies(self) -> tuple[str, str]:
         """Get AlteonP and AltesP cookies from page."""
-        if self._alteonp_cookie and self._altesp_cookie:
+        if self._alteonp_cookie:
             return self._alteonp_cookie, self._altesp_cookie
 
         try:
             self.session.get(
                 "https://tec-appsext.itcr.ac.cr/guiahorarios/escuela.aspx",
                 verify=False,  # SSL issues only on this endpoint
+                timeout=30,
             )
             # Extract cookies
             for cookie in self.session.cookies:
@@ -116,13 +117,12 @@ class AcademicUnitClient(APIClient):
         for attempt_idx, delay_seconds in enumerate(
             (*self.course_offer_retry_delays_seconds, 0.0), 1
         ):
-            alteonp, altesp = self._get_cookies()
+            self._get_cookies()
             headers = {
                 "Accept": "application/json, text/javascript, */*; q=0.01",
                 "Accept-Language": "en-US,en;q=0.8",
                 "Connection": "keep-alive",
                 "Content-Type": "application/json; charset=utf-8",
-                "Cookie": f"AlteonP={alteonp}; AltesP={altesp}",
                 "Origin": "https://tec-appsext.itcr.ac.cr",
                 "Referer": "https://tec-appsext.itcr.ac.cr/guiahorarios/escuela.aspx",
                 "Sec-Fetch-Dest": "empty",
@@ -148,25 +148,29 @@ class AcademicUnitClient(APIClient):
                 should_retry = status_code >= 500 and delay_seconds > 0
                 if not should_retry:
                     print(
-                        f"Error fetching oferta cursos for {school_code} year {year}: {e}"
+                        f"Error fetching oferta cursos for {school_code} year {year}: {e}",
+                        flush=True,
                     )
                     return None
                 self._reset_guiahorarios_cookies()
                 print(
                     f"Retrying oferta cursos for {school_code} year {year} after HTTP {status_code} "
-                    f"(attempt {attempt_idx})"
+                    f"(attempt {attempt_idx})",
+                    flush=True,
                 )
                 time.sleep(delay_seconds)
             except requests.RequestException as e:
                 if delay_seconds <= 0:
                     print(
-                        f"Error fetching oferta cursos for {school_code} year {year}: {e}"
+                        f"Error fetching oferta cursos for {school_code} year {year}: {e}",
+                        flush=True,
                     )
                     return None
                 self._reset_guiahorarios_cookies()
                 print(
                     f"Retrying oferta cursos for {school_code} year {year} after request error "
-                    f"(attempt {attempt_idx})"
+                    f"(attempt {attempt_idx})",
+                    flush=True,
                 )
                 time.sleep(delay_seconds)
 
@@ -175,6 +179,7 @@ class AcademicUnitClient(APIClient):
     def _reset_guiahorarios_cookies(self) -> None:
         self._alteonp_cookie = ""
         self._altesp_cookie = ""
+        self.session.cookies.clear()
 
     def download_oferta_cursos(
         self,
@@ -202,9 +207,7 @@ class AcademicUnitClient(APIClient):
                 data = self._parse_oferta_cursos(oferta)
                 if data:
                     file_path = output_dir / f"{code}.json"
-                    file_path.write_text(
-                        json.dumps(data, indent=2, ensure_ascii=False)
-                    )
+                    file_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
                     files[code] = file_path
                     status = "saved"
                 else:
@@ -278,7 +281,9 @@ class AcademicUnitClient(APIClient):
 
         combinaciones: dict[tuple[str, str, str], str] = {}
         allowed_course_offer_schools = (
-            set(course_offer_school_codes) if course_offer_school_codes is not None else None
+            set(course_offer_school_codes)
+            if course_offer_school_codes is not None
+            else None
         )
 
         if course_offer_dir.exists():
