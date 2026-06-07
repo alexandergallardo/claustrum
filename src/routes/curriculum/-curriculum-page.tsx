@@ -20,19 +20,24 @@ import {
   useUserStudyPlan,
 } from "@/lib/hooks/use-queries";
 
+import {
+  CURRICULUM_DEFAULT_UNIVERSITY_ID,
+  isMeaningfulCurriculumSearch,
+  normalizeCurriculumUniversityId,
+} from "./-curriculum-search";
+
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 
 export function CurriculumPage() {
   const search = useSearch({ from: "/curriculum/" });
   const navigate = useNavigate({ from: "/curriculum/" });
 
-  const selectedUniversityId = search.university ?? null;
+  const selectedUniversityId = search.university ?? CURRICULUM_DEFAULT_UNIVERSITY_ID;
   const selectedCampusId = search.campus ?? null;
   const selectedAcademicUnitId = search.career ?? null;
   const selectedPlanId = search.plan ?? null;
-  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
-    () => !search.university && !search.campus && !search.career && !search.plan,
-  );
+  const hasMeaningfulSearch = isMeaningfulCurriculumSearch(search);
+  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(() => !hasMeaningfulSearch);
   const shouldAutoSelectPlanRef = useRef(false);
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();
@@ -48,6 +53,9 @@ export function CurriculumPage() {
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,
   );
+  const userStudyPlanUniversityId =
+    normalizeCurriculumUniversityId(userStudyPlan?.universityId) ??
+    CURRICULUM_DEFAULT_UNIVERSITY_ID;
 
   const campuses = campusesQuery.data ?? [];
   const academicUnits = academicUnitsQuery.data ?? [];
@@ -65,23 +73,11 @@ export function CurriculumPage() {
     (plansQuery.isFetching && plansQuery.data?.length === 0) || isAutoSelectingLatestPlan;
 
   useEffect(() => {
-    if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
-      void navigate({
-        search: {
-          ...search,
-          university: universities[0].id,
-        },
-      });
-    }
-  }, [isLoadingUniversities, universities, selectedUniversityId, navigate, search]);
-
-  useEffect(() => {
     if (!userStudyPlan) return;
 
     const hasAnySearch =
-      !!selectedUniversityId || !!selectedCampusId || !!selectedAcademicUnitId || !!selectedPlanId;
-    const isEmptySearch =
-      !selectedUniversityId && !selectedCampusId && !selectedAcademicUnitId && !selectedPlanId;
+      hasMeaningfulSearch || !!selectedCampusId || !!selectedAcademicUnitId || !!selectedPlanId;
+    const isEmptySearch = !hasMeaningfulSearch;
 
     // Case 1: no params at all → load full profile
     if (isEmptySearch) {
@@ -89,7 +85,7 @@ export function CurriculumPage() {
       void navigate({
         to: "/curriculum",
         search: {
-          university: userStudyPlan.universityId ?? undefined,
+          university: normalizeCurriculumUniversityId(userStudyPlan.universityId),
           campus: userStudyPlan.campusId ?? undefined,
           career: userStudyPlan.academicUnitId ?? undefined,
           plan: userStudyPlan.studyPlanId ?? undefined,
@@ -103,7 +99,7 @@ export function CurriculumPage() {
     if (
       hasAnySearch &&
       isUsingProfileDefaults &&
-      selectedUniversityId === userStudyPlan.universityId
+      selectedUniversityId === userStudyPlanUniversityId
     ) {
       const missingCampus = !selectedCampusId && userStudyPlan.campusId;
       const missingCareer = !selectedAcademicUnitId && userStudyPlan.academicUnitId;
@@ -131,6 +127,8 @@ export function CurriculumPage() {
     selectedPlanId,
     navigate,
     search,
+    hasMeaningfulSearch,
+    userStudyPlanUniversityId,
   ]);
 
   useEffect(() => {
@@ -139,20 +137,27 @@ export function CurriculumPage() {
       return;
     }
     if (!userStudyPlan) return;
-    const hasSearch = !!search.university || !!search.campus || !!search.career || !!search.plan;
+    const hasSearch = hasMeaningfulSearch;
     if (!hasSearch) {
       setIsUsingProfileDefaults(true);
       return;
     }
 
     const matchesProfile =
-      search.university === userStudyPlan.universityId &&
+      selectedUniversityId === userStudyPlanUniversityId &&
       search.campus === userStudyPlan.campusId &&
       search.career === userStudyPlan.academicUnitId &&
       search.plan === userStudyPlan.studyPlanId;
 
     setIsUsingProfileDefaults(matchesProfile);
-  }, [authUser, search, userStudyPlan]);
+  }, [
+    authUser,
+    search,
+    userStudyPlan,
+    selectedUniversityId,
+    userStudyPlanUniversityId,
+    hasMeaningfulSearch,
+  ]);
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
@@ -160,7 +165,7 @@ export function CurriculumPage() {
       setIsUsingProfileDefaults(false);
       void navigate({
         search: {
-          university: id ?? undefined,
+          university: normalizeCurriculumUniversityId(id),
           campus: undefined,
           career: undefined,
           plan: undefined,
@@ -223,7 +228,7 @@ export function CurriculumPage() {
       to: "/curriculum",
       search: {
         ...search,
-        university: userStudyPlan.universityId ?? undefined,
+        university: normalizeCurriculumUniversityId(userStudyPlan.universityId),
         campus: userStudyPlan.campusId ?? undefined,
         career: userStudyPlan.academicUnitId ?? undefined,
         plan: userStudyPlan.studyPlanId ?? undefined,

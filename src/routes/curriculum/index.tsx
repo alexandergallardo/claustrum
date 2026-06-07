@@ -1,13 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-const curriculumSearchSchema = z.object({
-  university: z.coerce.number().optional(),
-  campus: z.coerce.number().optional(),
-  career: z.coerce.number().optional(),
-  plan: z.coerce.number().optional(),
-});
+import {
+  CURRICULUM_DEFAULT_UNIVERSITY_ID,
+  hasLegacyCurriculumSearchParams,
+  parseCurriculumSearch,
+  toCurriculumUrlSearch,
+} from "./-curriculum-search";
 
 export const Route = createFileRoute("/curriculum/")({
-  validateSearch: curriculumSearchSchema,
+  validateSearch: parseCurriculumSearch,
+  search: {
+    middlewares: [
+      ({ search, next }) => toCurriculumUrlSearch(next(search)) as unknown as typeof search,
+    ],
+  },
+  beforeLoad: ({ search, location }) => {
+    if (
+      hasLegacyCurriculumSearchParams(location.searchStr) ||
+      (search.university !== undefined && search.university !== CURRICULUM_DEFAULT_UNIVERSITY_ID)
+    ) {
+      throw redirect({
+        to: "/curriculum",
+        search: toCurriculumUrlSearch({
+          ...search,
+          university: undefined,
+        }) as unknown as typeof search,
+        replace: true,
+      });
+    }
+  },
 });
