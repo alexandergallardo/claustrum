@@ -709,6 +709,13 @@ def generate_minimal_delta_seed(
                 payload_code = str(normalized_row.get("code") or "").strip().upper()
                 if payload_name == payload_code:
                     changed_columns = [c for c in changed_columns if c != "name"]
+            if (
+                scope == "offering"
+                and table == "course_offering"
+                and changed_columns == ["weekly_hours_snapshot"]
+                and normalized_row.get("weekly_hours_snapshot") is None
+            ):
+                continue
             if changed_columns:
                 update_rows.append(
                     build_update_statement(
