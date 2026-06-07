@@ -45,11 +45,14 @@ const CalendarEvent = memo(function CalendarEvent({
   const showClassroom = classroomLabel && !classroomLabel.toLowerCase().includes("no disponible");
   const professorLabels = event.professors?.filter(Boolean);
   const professorLines = professorLabels?.length ? professorLabels : ["Sin asignar"];
+  const professorLabel = professorLines.join(" • ");
   const modalityLabel = event.groupType ?? "Sin modalidad";
   const campusLabel = event.campusName;
   const heightValue = month ? null : position?.height ? parseFloat(position.height) : null;
   const eventHeight = heightValue;
   const isCompact = eventHeight !== null && eventHeight < 72;
+  const professorLineCount =
+    eventHeight === null || eventHeight < 84 ? 1 : eventHeight < 108 ? 2 : 3;
 
   return (
     <Tooltip>
@@ -114,19 +117,19 @@ const CalendarEvent = memo(function CalendarEvent({
                 isCompact && "hidden",
               )}
             >
-              <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
+              <span className="flex size-3 shrink-0 items-center justify-center self-center sm:size-4">
                 <User className="size-3 sm:size-4" />
               </span>
-              <div className="flex flex-col justify-center gap-0.5">
-                {professorLines.map((professor) => (
-                  <span
-                    key={professor}
-                    className="line-clamp-1 leading-tight break-words whitespace-normal"
-                  >
-                    {professor}
-                  </span>
-                ))}
-              </div>
+              <span
+                className={cn(
+                  "min-w-0 leading-tight",
+                  professorLineCount === 1 && "truncate whitespace-nowrap",
+                  professorLineCount === 2 && "line-clamp-2 break-words whitespace-normal",
+                  professorLineCount === 3 && "line-clamp-3 break-words whitespace-normal",
+                )}
+              >
+                {professorLabel}
+              </span>
             </div>
             {isCompact && (
               <p className="text-[9px] opacity-80 sm:text-[10px]">

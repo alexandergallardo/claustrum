@@ -15,8 +15,10 @@ import { cn } from "@/lib/utils";
 type SelectedGroups = Set<string>;
 
 const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const WEEKDAYS_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 const formatWeekday = (weekday: number): string => WEEKDAYS[weekday] || "";
+const formatWeekdayShort = (weekday: number): string => WEEKDAYS_SHORT[weekday] || "";
 
 const formatTime = (time: string): string => {
   const [hours, minutes] = time.split(":");
@@ -56,7 +58,7 @@ interface GroupView {
   group: ScheduleGroup;
   groupId: string;
   campusLabel: string | null;
-  meetingViews: Array<{ id: string; label: string; classroom: string | null }>;
+  meetingViews: Array<{ id: string; label: string; shortLabel: string; classroom: string | null }>;
   sharedClassroom: string | null;
   professorLabels: string[];
 }
@@ -85,7 +87,12 @@ function createGroupView(
   const meetingViews = meetings.map((session, idx) => {
     const classroom = formatClassroom(session.classroom);
     const label = `${formatWeekday(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}`;
-    return { id: `${groupId}-${idx}`, label, classroom };
+    return {
+      id: `${groupId}-${idx}`,
+      label,
+      shortLabel: `${formatWeekdayShort(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}`,
+      classroom,
+    };
   });
 
   const classrooms = meetingViews.map((meeting) => meeting.classroom);
@@ -355,19 +362,28 @@ const CourseCard = memo(function CourseCard({
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
 
   return (
-    <Card className="w-full" style={{ contentVisibility: "auto", containIntrinsicSize: "0 280px" }}>
-      <CardHeader>
-        <CardTitle className="text-lg">{course.course_name}</CardTitle>
-        <CardDescription>
-          {course.course_code} • {course.credits} créditos
+    <Card
+      className="w-full gap-2"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "0 280px" }}
+    >
+      <CardHeader className="gap-1 px-4">
+        <CardTitle className="text-base leading-tight">
+          {course.course_code}: {course.course_name}
+        </CardTitle>
+        <CardDescription className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
+            {course.credits} créditos
+          </span>
           {course.level_number !== null &&
             course.level_number !== undefined &&
             course.level_number < 999 && (
-              <> • {course.level_label ?? `Nivel ${course.level_number}`}</>
+              <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
+                {course.level_label ?? `Nivel ${course.level_number}`}
+              </span>
             )}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4">
         <ScrollArea className="w-full">
           <div className="flex snap-x snap-mandatory gap-3 pt-1 pb-2">
             {groupViews.map((groupView) => {
@@ -385,7 +401,7 @@ const CourseCard = memo(function CourseCard({
                       type="button"
                       disabled={disabled}
                       className={cn(
-                        "relative flex min-w-[240px] cursor-pointer snap-start flex-col rounded-lg border-2 p-3 text-left transition-all duration-200",
+                        "relative flex min-w-[256px] cursor-pointer snap-start flex-col rounded-lg border-2 p-3 text-left transition-all duration-200",
                         "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm",
                         disabled &&
                           "cursor-not-allowed opacity-50 hover:translate-y-0 hover:shadow-none",
@@ -487,8 +503,9 @@ const CourseCard = memo(function CourseCard({
                                       "min-w-0 text-xs leading-tight",
                                       isSelected ? "text-foreground opacity-80" : "text-foreground",
                                     )}
+                                    title={meeting.label}
                                   >
-                                    {meeting.label}
+                                    {meeting.shortLabel}
                                   </span>
                                   {!groupView.sharedClassroom && meeting.classroom && (
                                     <span
