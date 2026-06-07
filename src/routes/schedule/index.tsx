@@ -1,19 +1,33 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-const scheduleSearchSchema = z.object({
-  view: z.enum(["week", "month", "day"]).optional(),
-  university: z.coerce.number().optional(),
-  campus: z.coerce.number().optional(),
-  career: z.coerce.number().optional(),
-  plan: z.coerce.number().optional(),
-  term: z.coerce.number().optional(),
-  otherCampuses: z.boolean().optional(),
-  showAll: z.boolean().optional(),
-  groups: z.string().optional(),
-  loadSchedule: z.coerce.number().optional(),
-});
+import {
+  hasLegacyScheduleSearchParams,
+  parseScheduleSearch,
+  SCHEDULE_DEFAULT_UNIVERSITY_ID,
+  toScheduleUrlSearch,
+} from "./-schedule-search";
 
 export const Route = createFileRoute("/schedule/")({
-  validateSearch: scheduleSearchSchema,
+  validateSearch: parseScheduleSearch,
+  search: {
+    middlewares: [
+      ({ search, next }) => toScheduleUrlSearch(next(search)) as unknown as typeof search,
+    ],
+  },
+  beforeLoad: ({ search, location }) => {
+    const hasLegacyParams = hasLegacyScheduleSearchParams(location.searchStr);
+    if (
+      hasLegacyParams ||
+      (search.university !== undefined && search.university !== SCHEDULE_DEFAULT_UNIVERSITY_ID)
+    ) {
+      throw redirect({
+        to: "/schedule",
+        search: toScheduleUrlSearch({
+          ...search,
+          university: undefined,
+        }) as unknown as typeof search,
+        replace: true,
+      });
+    }
+  },
 });

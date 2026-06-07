@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CalendarDays,
   ChevronDown,
+  Link2,
   User,
   Save,
   Bookmark,
@@ -81,6 +82,13 @@ import {
 } from "@/lib/hooks/use-saved-schedules";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
+
+import {
+  buildScheduleShortUrl,
+  isMeaningfulScheduleSearch,
+  normalizeScheduleUniversityId,
+  SCHEDULE_DEFAULT_UNIVERSITY_ID,
+} from "./-schedule-search";
 
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
@@ -188,14 +196,13 @@ export function SchedulePage() {
   const search = useSearch({ from: "/schedule/" });
   const navigate = useNavigate({ from: "/schedule/" });
 
-  const selectedUniversityId = search.university ?? null;
+  const selectedUniversityId = search.university ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
   const selectedCampusId = search.campus ?? null;
   const selectedCareerId = search.career ?? null;
   const selectedPlanId = search.plan ?? null;
   const selectedTermId = search.term ?? null;
-  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(
-    () => !search.university && !search.campus && !search.career && !search.plan && !search.term,
-  );
+  const hasMeaningfulSearch = isMeaningfulScheduleSearch(search);
+  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(() => !hasMeaningfulSearch);
   const shouldAutoSelectPlanRef = useRef(false);
   const [storedShowAll, setStoredShowAll] = useState(() => {
     if (typeof window === "undefined") return true;
@@ -263,6 +270,8 @@ export function SchedulePage() {
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,
   );
+  const userStudyPlanUniversityId =
+    normalizeScheduleUniversityId(userStudyPlan?.universityId) ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
   const suggestedTermQuery = useSuggestedAcademicTerm(
     selectedPlanId,
     !!selectedPlanId && !selectedTermId,
@@ -332,22 +341,10 @@ export function SchedulePage() {
   );
 
   useEffect(() => {
-    if (!isLoadingUniversities && universities?.length === 1 && !selectedUniversityId) {
-      void navigate({
-        to: "/schedule",
-        search: {
-          ...search,
-          university: universities[0].id,
-        },
-      });
-    }
-  }, [isLoadingUniversities, universities, selectedUniversityId, navigate, search]);
-
-  useEffect(() => {
     if (!isAuthenticated) return;
     if (!userStudyPlan || !isUsingProfileDefaults) return;
     if (
-      search.university === userStudyPlan.universityId &&
+      selectedUniversityId === userStudyPlanUniversityId &&
       search.campus === userStudyPlan.campusId &&
       search.career === userStudyPlan.academicUnitId &&
       search.plan === userStudyPlan.studyPlanId
@@ -363,26 +360,33 @@ export function SchedulePage() {
       void navigate({
         to: "/schedule",
         search: {
-          university: userStudyPlan.universityId ?? undefined,
+          university: normalizeScheduleUniversityId(userStudyPlan.universityId),
           campus: userStudyPlan.campusId ?? undefined,
           career: userStudyPlan.academicUnitId ?? undefined,
           plan: userStudyPlan.studyPlanId ?? undefined,
         },
       });
     }
-  }, [isAuthenticated, isUsingProfileDefaults, navigate, search, userStudyPlan]);
+  }, [
+    isAuthenticated,
+    isUsingProfileDefaults,
+    navigate,
+    selectedUniversityId,
+    search,
+    userStudyPlan,
+    userStudyPlanUniversityId,
+  ]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
     if (!userStudyPlan) return;
-    const hasSearch =
-      !!search.university || !!search.campus || !!search.career || !!search.plan || !!search.term;
+    const hasSearch = hasMeaningfulSearch;
     if (!hasSearch) {
       setIsUsingProfileDefaults(true);
       return;
     }
     const matchesProfile =
-      search.university === userStudyPlan.universityId &&
+      selectedUniversityId === userStudyPlanUniversityId &&
       search.campus === userStudyPlan.campusId &&
       search.career === userStudyPlan.academicUnitId &&
       search.plan === userStudyPlan.studyPlanId;
@@ -586,7 +590,7 @@ export function SchedulePage() {
         to: "/schedule",
         search: {
           ...search,
-          university: id ?? undefined,
+          university: normalizeScheduleUniversityId(id),
           campus: undefined,
           career: undefined,
           plan: undefined,
@@ -696,7 +700,7 @@ export function SchedulePage() {
       to: "/schedule",
       search: {
         ...search,
-        university: userStudyPlan.universityId ?? undefined,
+        university: normalizeScheduleUniversityId(userStudyPlan.universityId),
         campus: userStudyPlan.campusId ?? undefined,
         career: userStudyPlan.academicUnitId ?? undefined,
         plan: userStudyPlan.studyPlanId ?? undefined,
@@ -704,6 +708,22 @@ export function SchedulePage() {
       },
     });
   }, [navigate, search, userStudyPlan]);
+
+  const handleCopyShortLink = useCallback(async () => {
+    try {
+      const shortUrl = buildScheduleShortUrl(
+        {
+          ...search,
+          university: selectedUniversityId,
+        },
+        window.location.origin,
+      );
+      await navigator.clipboard.writeText(shortUrl);
+      toast.success("Enlace copiado");
+    } catch {
+      toast.error("No se pudo copiar el enlace");
+    }
+  }, [search, selectedUniversityId]);
 
   const courseColors = useMemo(() => {
     const map = new Map<string, string>();
@@ -1159,6 +1179,15 @@ export function SchedulePage() {
                             setHourHeight={setHourHeight}
                             isFloating={false}
                           />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            title="Copiar enlace corto"
+                            onClick={handleCopyShortLink}
+                          >
+                            <Link2 className="size-4" />
+                          </Button>
                           {isAuthenticated && (
                             <>
                               <DropdownMenu>
@@ -1313,6 +1342,15 @@ export function SchedulePage() {
                               setHourHeight={setHourHeight}
                               isFloating={false}
                             />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              title="Copiar enlace corto"
+                              onClick={handleCopyShortLink}
+                            >
+                              <Link2 className="size-4" />
+                            </Button>
                             {isAuthenticated && (
                               <>
                                 <DropdownMenu>
