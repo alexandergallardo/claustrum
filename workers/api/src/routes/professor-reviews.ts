@@ -33,15 +33,15 @@ const REVIEW_TAGS = [
   "Clase fácil",
 ] as const;
 
+const courseCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{2,4}\d{3,4}$/);
+
 const professorReviewSchema = z.object({
   professorId: z.string().regex(/^\d+$/),
-  courseCode: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .min(3)
-    .max(16)
-    .regex(/^[A-Z]{2,4}\d{3,4}$/),
+  courseCodes: z.array(courseCodeSchema).min(1).max(6),
   academicTermId: z.number().int().positive().nullable().optional(),
   comment: z.string().trim().min(5).max(1000),
   easeScore: z.number().min(0).max(10),
@@ -117,18 +117,17 @@ professorReviewsRoutes.post("/", async (c) => {
 
   const supabase = getSupabase(c.env);
 
-  const { data: course, error: courseError } = await supabase
+  const { data: courses, error: coursesError } = await supabase
     .from("course")
     .select("id,code")
-    .eq("code", parsed.data.courseCode)
-    .maybeSingle();
+    .in("code", parsed.data.courseCodes);
 
-  if (courseError) {
-    return fail(400, courseError.message, request, c.env);
+  if (coursesError) {
+    return fail(400, coursesError.message, request, c.env);
   }
 
-  if (!course) {
-    return fail(400, "Course code does not exist", request, c.env);
+  if (!courses || courses.length !== parsed.data.courseCodes.length) {
+    return fail(400, "One or more course codes do not exist", request, c.env);
   }
 
   const { data: professorExists, error: professorError } = await supabase
@@ -171,10 +170,7 @@ professorReviewsRoutes.post("/", async (c) => {
     .from("professor_review")
     .insert({
       professor_id: parsed.data.professorId,
-      course_id: course.id,
       academic_term_id: parsed.data.academicTermId ?? null,
-      course_code_snapshot: course.code,
-      course_name_snapshot: "",
       comment: parsed.data.comment,
       ease_score: parsed.data.easeScore,
       quality_score: parsed.data.qualityScore,
@@ -191,6 +187,18 @@ professorReviewsRoutes.post("/", async (c) => {
 
   if (insertError) {
     return fail(400, insertError.message, request, c.env);
+  }
+
+  const { error: linkError } = await supabase.from("professor_review_course").insert(
+    courses.map((course) => ({
+      review_id: inserted.id,
+      course_id: course.id,
+    })),
+  );
+
+  if (linkError) {
+    await supabase.from("professor_review").delete().eq("id", inserted.id);
+    return fail(400, linkError.message, request, c.env);
   }
 
   return ok({ success: true, review: inserted }, request, c.env);

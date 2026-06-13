@@ -166,7 +166,7 @@ export type SearchProfessorReviewStatsParams = {
 
 export type SubmitProfessorReviewPayload = {
   professorId: string;
-  courseCode: string;
+  courseCodes: string[];
   academicTermId?: number | null;
   comment: string;
   easeScore: number;

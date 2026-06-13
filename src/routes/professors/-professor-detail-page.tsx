@@ -5,6 +5,8 @@ import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import type { ProfessorReviewCourseOption } from "@/lib/professor-reviews/types";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,12 +30,14 @@ const ProfessorReviewsList = lazy(() =>
   import("./-professor-reviews-list").then((module) => ({ default: module.ProfessorReviewsList })),
 );
 
+const courseCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{2,4}\d{3,4}$/);
+
 const reviewFormSchema = z.object({
-  courseCode: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .regex(/^[A-Z]{2,4}\d{3,4}$/),
+  courseCodes: z.array(courseCodeSchema).min(1).max(6),
   academicTermId: z.number().int().positive().nullable().optional(),
   comment: z.string().trim().min(5).max(1000),
   easeScore: z.number().min(0).max(10),
@@ -65,7 +69,7 @@ export function ProfessorDetailPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
 
-  const [courseCode, setCourseCode] = useState("");
+  const [selectedCourses, setSelectedCourses] = useState<ProfessorReviewCourseOption[]>([]);
   const [academicTermId, setAcademicTermId] = useState("");
   const [comment, setComment] = useState("");
   const [easeScore, setEaseScore] = useState("8.0");
@@ -114,7 +118,7 @@ export function ProfessorDetailPage() {
   };
 
   const resetComposer = () => {
-    setCourseCode("");
+    setSelectedCourses([]);
     setAcademicTermId("");
     setComment("");
     setEaseScore("8.0");
@@ -128,18 +132,11 @@ export function ProfessorDetailPage() {
     setTurnstileToken(null);
   };
 
-  const handleTagToggle = (tag: ReviewTag, checked: boolean) => {
-    setTags((previous) => {
-      if (checked) return Array.from(new Set([...previous, tag]));
-      return previous.filter((value) => value !== tag);
-    });
-  };
-
   const handleSubmit = async () => {
     if (parsedProfessorId === null || professorIdText === null) return;
 
     const parsed = reviewFormSchema.safeParse({
-      courseCode,
+      courseCodes: selectedCourses.map((c) => c.code),
       academicTermId: academicTermId ? Number(academicTermId) : null,
       comment,
       easeScore: Number(easeScore),
@@ -319,8 +316,8 @@ export function ProfessorDetailPage() {
             submitMutationPending={submitMutation.isPending}
             turnstileSiteKey={turnstileSiteKey}
             professorId={professorIdText}
-            courseCode={courseCode}
-            setCourseCode={setCourseCode}
+            selectedCourses={selectedCourses}
+            setSelectedCourses={setSelectedCourses}
             academicTermId={academicTermId}
             setAcademicTermId={setAcademicTermId}
             gradeReceived={gradeReceived}
@@ -340,11 +337,11 @@ export function ProfessorDetailPage() {
             attendanceRequired={attendanceRequired}
             setAttendanceRequired={setAttendanceRequired}
             tags={tags}
+            setTags={setTags}
             turnstileToken={turnstileToken}
             setTurnstileToken={setTurnstileToken}
             onSubmit={() => void handleSubmit()}
             onCloseReset={resetComposer}
-            handleTagToggle={handleTagToggle}
           />
         </Suspense>
       ) : null}

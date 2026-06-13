@@ -2,10 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { Minus, Plus } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
+import type { ProfessorReviewCourseOption } from "@/lib/professor-reviews/types";
+import type { ReviewTag } from "@/lib/professor-reviews/types";
+
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
   ComboboxCollection,
   ComboboxContent,
   ComboboxEmpty,
@@ -16,6 +21,7 @@ import {
   ComboboxList,
   ComboboxSeparator,
   ComboboxTrigger,
+  useComboboxAnchor,
 } from "@/components/ui/combobox";
 import {
   Dialog,
@@ -37,6 +43,7 @@ import {
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatClosedTermLabel,
   formatTermNameWithoutYear,
@@ -46,8 +53,52 @@ import {
   useProfessorOfferingTerms,
   useProfessorReviewCourses,
 } from "@/lib/hooks/use-professor-reviews";
-import { REVIEW_TAG_OPTIONS, type ReviewTag } from "@/lib/professor-reviews/types";
 import { cn } from "@/lib/utils";
+
+const TAG_GROUPS = [
+  {
+    label: "Sugeridas",
+    tags: [
+      "Tomaría su clase nuevamente",
+      "Explica con claridad",
+      "Brinda apoyo",
+      "Da buena retroalimentación",
+    ],
+  },
+  {
+    label: "Enseñanza",
+    tags: ["Inspirador", "Respetado por los estudiantes", "Clases excelentes", "Muy cómico"],
+  },
+  {
+    label: "Evaluación",
+    tags: [
+      "Califica con rigor",
+      "Exámenes retadores",
+      "Aspectos de calificación claros",
+      "Proyecto útil",
+    ],
+  },
+  {
+    label: "Carga de trabajo",
+    tags: [
+      "Muchas tareas",
+      "Deja trabajos largos",
+      "Muchos exámenes",
+      "Pocos exámenes",
+      "Requiere mucha lectura",
+      "Clases largas",
+      "Muchos proyectos grupales",
+    ],
+  },
+  {
+    label: "Asistencia y participación",
+    tags: ["Asistencia obligatoria", "La participación importa"],
+  },
+  {
+    label: "Otros",
+    tags: ["Da crédito extra", "Clase fácil"],
+  },
+] as const;
 
 const Turnstile = lazy(() =>
   import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
@@ -60,8 +111,8 @@ type ReviewComposerProps = {
   submitMutationPending: boolean;
   turnstileSiteKey: string | null;
   professorId: string | null;
-  courseCode: string;
-  setCourseCode: (value: string) => void;
+  selectedCourses: ProfessorReviewCourseOption[];
+  setSelectedCourses: (value: ProfessorReviewCourseOption[]) => void;
   academicTermId: string;
   setAcademicTermId: (value: string) => void;
   gradeReceived: string;
@@ -81,11 +132,11 @@ type ReviewComposerProps = {
   attendanceRequired: boolean;
   setAttendanceRequired: (value: boolean) => void;
   tags: ReviewTag[];
+  setTags: React.Dispatch<React.SetStateAction<ReviewTag[]>>;
   turnstileToken: string | null;
   setTurnstileToken: (value: string | null) => void;
   onSubmit: () => void;
   onCloseReset: () => void;
-  handleTagToggle: (tag: ReviewTag, checked: boolean) => void;
 };
 
 export function ReviewComposer({
@@ -95,8 +146,8 @@ export function ReviewComposer({
   submitMutationPending,
   turnstileSiteKey,
   professorId,
-  courseCode,
-  setCourseCode,
+  selectedCourses,
+  setSelectedCourses,
   academicTermId,
   setAcademicTermId,
   gradeReceived,
@@ -116,16 +167,17 @@ export function ReviewComposer({
   attendanceRequired,
   setAttendanceRequired,
   tags,
+  setTags,
   turnstileToken,
   setTurnstileToken,
   onSubmit,
   onCloseReset,
-  handleTagToggle,
 }: ReviewComposerProps) {
   const [showReviewExample, setShowReviewExample] = useState(false);
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
   const termTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const courseTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const courseAnchorRef = useComboboxAnchor();
+  const tagAnchorRef = useComboboxAnchor();
   const parsedEngagementLevel = Number(engagementLevel);
   const clampedEngagementLevel = Number.isFinite(parsedEngagementLevel)
     ? Math.min(5, Math.max(1, Math.round(parsedEngagementLevel)))
@@ -136,9 +188,15 @@ export function ReviewComposer({
   const courseOptions = useMemo(() => coursesQuery.data ?? [], [coursesQuery.data]);
   const termOptions = useMemo(() => termsQuery.data ?? [], [termsQuery.data]);
   const termGroups = useMemo(() => groupTermsByYear(termOptions), [termOptions]);
+  const tagGroupItems = useMemo(
+    () =>
+      TAG_GROUPS.map((group) => ({
+        value: group.label,
+        items: group.tags,
+      })),
+    [],
+  );
 
-  const selectedCourse =
-    courseOptions.find((course) => course.code.toUpperCase() === courseCode.toUpperCase()) ?? null;
   const selectedTerm = termOptions.find((term) => String(term.id) === academicTermId) ?? null;
 
   useEffect(() => {
@@ -148,54 +206,56 @@ export function ReviewComposer({
   }, [academicTermId, setAcademicTermId, termOptions]);
 
   useEffect(() => {
-    if (
-      courseCode &&
-      !courseOptions.some((course) => course.code.toUpperCase() === courseCode.toUpperCase())
-    ) {
-      setCourseCode("");
+    if (courseOptions.length === 0 || selectedCourses.length === 0) return;
+    const validCodes = new Set(courseOptions.map((c) => c.code.toUpperCase()));
+    const filtered = selectedCourses.filter((c) => validCodes.has(c.code.toUpperCase()));
+    if (filtered.length !== selectedCourses.length) {
+      setSelectedCourses(filtered);
     }
-  }, [courseCode, courseOptions, setCourseCode]);
+  }, [courseOptions]);
 
   const form = (
     <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-1 pb-2"}`}>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Curso</Label>
+          <Label>Cursos</Label>
           <Combobox
+            multiple
+            autoHighlight
             items={courseOptions}
-            value={selectedCourse}
-            onValueChange={(course) => setCourseCode(course?.code ?? "")}
+            value={selectedCourses}
+            onValueChange={(courses) => {
+              if (Array.isArray(courses)) setSelectedCourses(courses);
+            }}
             itemToStringValue={(course) => `${course.code}: ${course.name}`}
+            disabled={coursesQuery.isLoading || courseOptions.length === 0}
           >
-            <ComboboxTrigger
-              ref={courseTriggerRef}
-              render={
-                <Button
-                  variant="outline"
-                  className="w-full min-w-0 justify-between overflow-hidden font-normal"
-                  disabled={coursesQuery.isLoading || courseOptions.length === 0}
-                />
-              }
-            >
-              <span
-                className={cn(
-                  "block min-w-0 flex-1 truncate text-left",
-                  !selectedCourse && "text-muted-foreground",
-                )}
-              >
-                {selectedCourse
-                  ? `${selectedCourse.code}: ${selectedCourse.name}`
-                  : coursesQuery.isLoading
-                    ? "Cargando cursos..."
-                    : "Seleccionar curso"}
-              </span>
-            </ComboboxTrigger>
+            <ComboboxChips ref={courseAnchorRef} className="w-full content-start items-start">
+              {selectedCourses.map((course) => (
+                <Tooltip key={course.id}>
+                  <TooltipTrigger asChild>
+                    <ComboboxChip>{course.code}</ComboboxChip>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={4}>
+                    {course.code}: {course.name}
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+              <ComboboxChipsInput
+                className="min-w-0"
+                placeholder={selectedCourses.length === 0 ? "Seleccionar cursos" : undefined}
+              />
+            </ComboboxChips>
             <ComboboxContent
-              anchor={courseTriggerRef}
+              anchor={courseAnchorRef}
               container={comboboxPortalContainerRef}
               className="w-80"
             >
-              <ComboboxInput showTrigger={false} placeholder="Buscar curso..." />
+              <ComboboxInput
+                showTrigger={false}
+                showClear={selectedCourses.length > 0}
+                placeholder="Buscar curso..."
+              />
               <ComboboxEmpty>No se encontraron cursos para este profesor.</ComboboxEmpty>
               <ComboboxList className="max-h-56 scrollbar-none">
                 {(course) => (
@@ -386,20 +446,52 @@ export function ReviewComposer({
 
       <div className="space-y-2">
         <Label>Etiquetas</Label>
-        <div className="grid gap-2 md:grid-cols-2">
-          {REVIEW_TAG_OPTIONS.map((tag) => {
-            const checked = tags.includes(tag);
-            return (
-              <label key={tag} className="inline-flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={(value) => handleTagToggle(tag, Boolean(value))}
-                />
-                {tag}
-              </label>
-            );
-          })}
-        </div>
+        <Combobox
+          multiple
+          autoHighlight
+          items={tagGroupItems}
+          value={tags}
+          onValueChange={(value) => {
+            if (Array.isArray(value)) setTags(value as ReviewTag[]);
+          }}
+          disabled={false}
+        >
+          <ComboboxChips
+            ref={tagAnchorRef}
+            className="min-h-[5rem] w-full content-start items-start"
+          >
+            {tags.map((tag) => (
+              <ComboboxChip key={tag}>{tag}</ComboboxChip>
+            ))}
+            <ComboboxChipsInput
+              className="min-w-0"
+              placeholder={tags.length === 0 ? "Seleccionar etiquetas..." : undefined}
+            />
+          </ComboboxChips>
+          <ComboboxContent
+            anchor={tagAnchorRef}
+            container={comboboxPortalContainerRef}
+            className="w-80"
+          >
+            <ComboboxInput showTrigger={false} placeholder="Buscar etiqueta..." />
+            <ComboboxEmpty>No se encontraron etiquetas.</ComboboxEmpty>
+            <ComboboxList className="max-h-56 scrollbar-none">
+              {(group, index) => (
+                <ComboboxGroup key={group.value} items={group.items}>
+                  <ComboboxLabel>{group.value}</ComboboxLabel>
+                  <ComboboxCollection>
+                    {(tag) => (
+                      <ComboboxItem key={tag} value={tag}>
+                        <span className="block min-w-0 flex-1 truncate">{tag}</span>
+                      </ComboboxItem>
+                    )}
+                  </ComboboxCollection>
+                  {index < tagGroupItems.length - 1 && <ComboboxSeparator />}
+                </ComboboxGroup>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </div>
 
       <div className="space-y-2">
