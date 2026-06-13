@@ -8,12 +8,29 @@ import { verifyAuth, verifyTurnstileToken } from "../lib/security";
 import { getSupabase } from "../lib/supabase";
 
 const REVIEW_TAGS = [
-  "Da buena retroalimentación",
   "Tomaría su clase nuevamente",
   "Brinda apoyo",
+  "Da buena retroalimentación",
   "Explica con claridad",
+  "Clases excelentes",
+  "Califica con rigor",
+  "Muchas tareas",
+  "Deja trabajos largos",
   "Exámenes retadores",
+  "Muchos exámenes",
+  "Pocos exámenes",
+  "Asistencia obligatoria",
+  "La participación importa",
+  "Clases largas",
+  "Requiere mucha lectura",
+  "Aspectos de calificación claros",
+  "Respetado por los estudiantes",
+  "Inspirador",
+  "Muy cómico",
+  "Da crédito extra",
+  "Muchos proyectos grupales",
   "Proyecto útil",
+  "Clase fácil",
 ] as const;
 
 const professorReviewSchema = z.object({
