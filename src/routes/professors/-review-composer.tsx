@@ -101,7 +101,9 @@ const TAG_GROUPS = [
 ] as const;
 
 const Turnstile = lazy(() =>
-  import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
+  import("@marsidev/react-turnstile").then((module) => ({
+    default: module.Turnstile,
+  })),
 );
 
 type ReviewComposerProps = {
@@ -458,7 +460,7 @@ export function ReviewComposer({
         >
           <ComboboxChips
             ref={tagAnchorRef}
-            className="min-h-[5rem] w-full content-start items-start"
+            className="min-h-[64px] w-full content-start items-start"
           >
             {tags.map((tag) => (
               <ComboboxChip key={tag}>{tag}</ComboboxChip>
