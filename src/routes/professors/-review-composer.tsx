@@ -232,7 +232,10 @@ export function ReviewComposer({
             itemToStringValue={(course) => `${course.code}: ${course.name}`}
             disabled={coursesQuery.isLoading || courseOptions.length === 0}
           >
-            <ComboboxChips ref={courseAnchorRef} className="w-full content-start items-start">
+            <ComboboxChips
+              ref={courseAnchorRef}
+              className="w-full content-start items-start px-1.5"
+            >
               {selectedCourses.map((course) => (
                 <Tooltip key={course.id}>
                   <TooltipTrigger asChild>
@@ -460,7 +463,7 @@ export function ReviewComposer({
         >
           <ComboboxChips
             ref={tagAnchorRef}
-            className="min-h-[64px] w-full content-start items-start"
+            className="min-h-[64px] w-full content-start items-start px-1.5"
           >
             {tags.map((tag) => (
               <ComboboxChip key={tag}>{tag}</ComboboxChip>
