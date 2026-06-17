@@ -430,7 +430,7 @@ const CourseCard = memo(function CourseCard({
                         <Badge
                           variant="secondary"
                           className={cn(
-                            "text-xs",
+                            "text-xs whitespace-nowrap",
                             isSelected && "border",
                             isSelected && "bg-background/50",
                           )}
@@ -438,7 +438,12 @@ const CourseCard = memo(function CourseCard({
                         >
                           Grupo {groupView.group.group_code}
                         </Badge>
-                        <span className={cn("text-foreground text-xs", isSelected && "opacity-80")}>
+                        <span
+                          className={cn(
+                            "text-foreground text-xs whitespace-nowrap",
+                            isSelected && "opacity-80",
+                          )}
+                        >
                           {groupView.group.group_type}
                         </span>
                       </div>
@@ -452,7 +457,10 @@ const CourseCard = memo(function CourseCard({
                             )}
                           />
                           <span
-                            className={cn("text-foreground text-xs", isSelected && "opacity-80")}
+                            className={cn(
+                              "text-foreground text-xs whitespace-nowrap",
+                              isSelected && "opacity-80",
+                            )}
                           >
                             {groupView.campusLabel}
                           </span>
@@ -474,7 +482,7 @@ const CourseCard = memo(function CourseCard({
                               <span
                                 key={professor}
                                 className={cn(
-                                  "text-foreground text-xs",
+                                  "text-foreground text-xs whitespace-nowrap",
                                   isSelected && "opacity-80",
                                 )}
                               >
@@ -500,7 +508,7 @@ const CourseCard = memo(function CourseCard({
                                 >
                                   <span
                                     className={cn(
-                                      "min-w-0 text-xs leading-tight",
+                                      "min-w-0 text-xs leading-tight whitespace-nowrap",
                                       isSelected ? "text-foreground opacity-80" : "text-foreground",
                                     )}
                                     title={meeting.label}
@@ -544,7 +552,10 @@ const CourseCard = memo(function CourseCard({
                             )}
                           />
                           <span
-                            className={cn("text-foreground text-xs", isSelected && "opacity-70")}
+                            className={cn(
+                              "text-foreground text-xs whitespace-nowrap",
+                              isSelected && "opacity-70",
+                            )}
                           >
                             {groupView.group.capacity} cupos
                           </span>
