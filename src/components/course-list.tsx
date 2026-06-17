@@ -385,7 +385,7 @@ const CourseCard = memo(function CourseCard({
       </CardHeader>
       <CardContent className="px-4">
         <ScrollArea className="w-full">
-          <div className="flex snap-x snap-mandatory gap-3 pt-1 pb-2">
+          <div className="flex snap-x snap-mandatory items-start gap-3 pt-1 pb-2">
             {groupViews.map((groupView) => {
               const isSelected = selectedGroupIds.has(groupView.groupId);
               const disabled = disabledGroupIdSet.has(groupView.groupId);
