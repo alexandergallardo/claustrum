@@ -86,10 +86,14 @@ export function CurriculumPage() {
         to: "/curriculum",
         search: {
           university: normalizeCurriculumUniversityId(userStudyPlan.universityId),
+          u: normalizeCurriculumUniversityId(userStudyPlan.universityId),
           campus: userStudyPlan.campusId ?? undefined,
+          c: userStudyPlan.campusId ?? undefined,
           career: userStudyPlan.academicUnitId ?? undefined,
+          r: userStudyPlan.academicUnitId ?? undefined,
           plan: userStudyPlan.studyPlanId ?? undefined,
-        },
+          p: userStudyPlan.studyPlanId ?? undefined,
+        } as never,
       });
       return;
     }
@@ -112,9 +116,12 @@ export function CurriculumPage() {
           search: {
             ...search,
             campus: selectedCampusId ?? userStudyPlan.campusId ?? undefined,
+            c: selectedCampusId ?? userStudyPlan.campusId ?? undefined,
             career: selectedAcademicUnitId ?? userStudyPlan.academicUnitId ?? undefined,
+            r: selectedAcademicUnitId ?? userStudyPlan.academicUnitId ?? undefined,
             plan: selectedPlanId ?? userStudyPlan.studyPlanId ?? undefined,
-          },
+            p: selectedPlanId ?? userStudyPlan.studyPlanId ?? undefined,
+          } as never,
         });
       }
     }
@@ -163,29 +170,31 @@ export function CurriculumPage() {
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        university: normalizeCurriculumUniversityId(id),
+        u: normalizeCurriculumUniversityId(id),
+      };
       void navigate({
-        search: {
-          university: normalizeCurriculumUniversityId(id),
-          campus: undefined,
-          career: undefined,
-          plan: undefined,
-        },
+        to: "/curriculum",
+        search: newSearch as never,
       });
     },
-    [navigate],
+    [navigate, search],
   );
 
   const handleCampusChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        c: id ?? undefined,
+        campus: id ?? undefined,
+      };
       void navigate({
-        search: {
-          ...search,
-          campus: id ?? undefined,
-          career: undefined,
-          plan: undefined,
-        },
+        to: "/curriculum",
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -195,12 +204,16 @@ export function CurriculumPage() {
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = id !== null;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        r: id ?? undefined,
+        career: id ?? undefined,
+        p: undefined,
+        plan: undefined,
+      };
       void navigate({
-        search: {
-          ...search,
-          career: id ?? undefined,
-          plan: undefined,
-        },
+        to: "/curriculum",
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -210,11 +223,14 @@ export function CurriculumPage() {
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        p: id ?? undefined,
+        plan: id ?? undefined,
+      };
       void navigate({
-        search: {
-          ...search,
-          plan: id ?? undefined,
-        },
+        to: "/curriculum",
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -224,17 +240,81 @@ export function CurriculumPage() {
     if (!userStudyPlan) return;
     shouldAutoSelectPlanRef.current = false;
     setIsUsingProfileDefaults(true);
+
+    const newSearch: Record<string, unknown> = {
+      ...search,
+      university: normalizeCurriculumUniversityId(userStudyPlan.universityId),
+      u: normalizeCurriculumUniversityId(userStudyPlan.universityId),
+      campus: userStudyPlan.campusId ?? undefined,
+      c: userStudyPlan.campusId ?? undefined,
+      career: userStudyPlan.academicUnitId ?? undefined,
+      r: userStudyPlan.academicUnitId ?? undefined,
+      plan: userStudyPlan.studyPlanId ?? undefined,
+      p: userStudyPlan.studyPlanId ?? undefined,
+    };
+
     void navigate({
       to: "/curriculum",
-      search: {
-        ...search,
-        university: normalizeCurriculumUniversityId(userStudyPlan.universityId),
-        campus: userStudyPlan.campusId ?? undefined,
-        career: userStudyPlan.academicUnitId ?? undefined,
-        plan: userStudyPlan.studyPlanId ?? undefined,
-      },
+      search: newSearch as never,
     });
   }, [navigate, search, userStudyPlan]);
+
+  useEffect(() => {
+    if (!selectedCampusId) return;
+    if (campusesQuery.isFetching) return;
+    if (mainCampuses.some((c) => c.id === selectedCampusId)) return;
+
+    shouldAutoSelectPlanRef.current = false;
+    const validateCampusSearch: Record<string, unknown> = {
+      ...search,
+      c: undefined,
+      campus: undefined,
+      r: undefined,
+      career: undefined,
+      p: undefined,
+      plan: undefined,
+    };
+    void navigate({
+      to: "/curriculum",
+      search: validateCampusSearch as never,
+    });
+  }, [selectedCampusId, mainCampuses, campusesQuery.isFetching, navigate, search]);
+
+  useEffect(() => {
+    if (!selectedAcademicUnitId) return;
+    if (academicUnitsQuery.isFetching) return;
+    if (academicUnits.some((c) => c.id === selectedAcademicUnitId)) return;
+
+    shouldAutoSelectPlanRef.current = false;
+    const validateCareerSearch: Record<string, unknown> = {
+      ...search,
+      r: undefined,
+      career: undefined,
+      p: undefined,
+      plan: undefined,
+    };
+    void navigate({
+      to: "/curriculum",
+      search: validateCareerSearch as never,
+    });
+  }, [selectedAcademicUnitId, academicUnits, academicUnitsQuery.isFetching, navigate, search]);
+
+  useEffect(() => {
+    if (!selectedPlanId) return;
+    if (plansQuery.isFetching) return;
+    if (plans.some((p) => p.id === selectedPlanId)) return;
+
+    shouldAutoSelectPlanRef.current = true;
+    const validatePlanSearch: Record<string, unknown> = {
+      ...search,
+      p: undefined,
+      plan: undefined,
+    };
+    void navigate({
+      to: "/curriculum",
+      search: validatePlanSearch as never,
+    });
+  }, [selectedPlanId, plans, plansQuery.isFetching, navigate, search]);
 
   useEffect(() => {
     if (!shouldAutoSelectPlanRef.current) return;
@@ -250,11 +330,14 @@ export function CurriculumPage() {
     }
 
     shouldAutoSelectPlanRef.current = false;
+    const autoPlanSearch: Record<string, unknown> = {
+      ...search,
+      p: plans[0].id,
+      plan: plans[0].id,
+    };
     void navigate({
-      search: {
-        ...search,
-        plan: plans[0].id,
-      },
+      to: "/curriculum",
+      search: autoPlanSearch as never,
     });
   }, [navigate, plans, plansQuery.isFetching, search, selectedAcademicUnitId, selectedPlanId]);
 

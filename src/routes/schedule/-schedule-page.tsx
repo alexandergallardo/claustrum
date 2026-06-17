@@ -357,14 +357,20 @@ export function SchedulePage() {
       userStudyPlan.academicUnitId ||
       userStudyPlan.studyPlanId
     ) {
+      const profileSearch: Record<string, unknown> = {
+        ...search,
+        u: normalizeScheduleUniversityId(userStudyPlan.universityId),
+        university: normalizeScheduleUniversityId(userStudyPlan.universityId),
+        c: userStudyPlan.campusId ?? undefined,
+        campus: userStudyPlan.campusId ?? undefined,
+        r: userStudyPlan.academicUnitId ?? undefined,
+        career: userStudyPlan.academicUnitId ?? undefined,
+        p: userStudyPlan.studyPlanId ?? undefined,
+        plan: userStudyPlan.studyPlanId ?? undefined,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          university: normalizeScheduleUniversityId(userStudyPlan.universityId),
-          campus: userStudyPlan.campusId ?? undefined,
-          career: userStudyPlan.academicUnitId ?? undefined,
-          plan: userStudyPlan.studyPlanId ?? undefined,
-        },
+        search: profileSearch as never,
       });
     }
   }, [
@@ -412,13 +418,16 @@ export function SchedulePage() {
     }
 
     shouldAutoSelectPlanRef.current = false;
+    const autoPlanSearch: Record<string, unknown> = {
+      ...search,
+      p: plans[0].id,
+      plan: plans[0].id,
+      t: undefined,
+      term: undefined,
+    };
     void navigate({
       to: "/schedule",
-      search: {
-        ...search,
-        plan: plans[0].id,
-        term: undefined,
-      },
+      search: autoPlanSearch as never,
     });
   }, [navigate, plans, plansQuery.isFetching, search, selectedCareerId, selectedPlanId]);
 
@@ -431,12 +440,14 @@ export function SchedulePage() {
       suggestedTermQuery.isSuccess &&
       suggestedTermQuery.data
     ) {
+      const autoTerm1: Record<string, unknown> = {
+        ...search,
+        t: suggestedTermQuery.data,
+        term: suggestedTermQuery.data,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          ...search,
-          term: suggestedTermQuery.data,
-        },
+        search: autoTerm1 as never,
       });
     } else if (
       selectedPlanId &&
@@ -446,12 +457,14 @@ export function SchedulePage() {
       suggestedTermQuery.isSuccess &&
       !suggestedTermQuery.data
     ) {
+      const autoTerm2: Record<string, unknown> = {
+        ...search,
+        t: terms[0].id,
+        term: terms[0].id,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          ...search,
-          term: terms[0].id,
-        },
+        search: autoTerm2 as never,
       });
     }
   }, [
@@ -464,6 +477,85 @@ export function SchedulePage() {
     suggestedTermQuery.data,
     suggestedTermQuery.isSuccess,
   ]);
+
+  useEffect(() => {
+    if (!selectedCampusId) return;
+    if (campusesQuery.isFetching) return;
+    if (campuses.some((c) => c.id === selectedCampusId)) return;
+
+    shouldAutoSelectPlanRef.current = false;
+    const validateCampusSearch: Record<string, unknown> = {
+      ...search,
+      c: undefined,
+      campus: undefined,
+      r: undefined,
+      career: undefined,
+      p: undefined,
+      plan: undefined,
+      t: undefined,
+      term: undefined,
+    };
+    void navigate({
+      to: "/schedule",
+      search: validateCampusSearch as never,
+    });
+  }, [selectedCampusId, campuses, campusesQuery.isFetching, navigate, search]);
+
+  useEffect(() => {
+    if (!selectedCareerId) return;
+    if (careersQuery.isFetching) return;
+    if (careers.some((c) => c.id === selectedCareerId)) return;
+
+    shouldAutoSelectPlanRef.current = false;
+    const validateCareerSearch: Record<string, unknown> = {
+      ...search,
+      r: undefined,
+      career: undefined,
+      p: undefined,
+      plan: undefined,
+      t: undefined,
+      term: undefined,
+    };
+    void navigate({
+      to: "/schedule",
+      search: validateCareerSearch as never,
+    });
+  }, [selectedCareerId, careers, careersQuery.isFetching, navigate, search]);
+
+  useEffect(() => {
+    if (!selectedPlanId) return;
+    if (plansQuery.isFetching) return;
+    if (plans.some((p) => p.id === selectedPlanId)) return;
+
+    shouldAutoSelectPlanRef.current = true;
+    const validatePlanSearch: Record<string, unknown> = {
+      ...search,
+      p: undefined,
+      plan: undefined,
+      t: undefined,
+      term: undefined,
+    };
+    void navigate({
+      to: "/schedule",
+      search: validatePlanSearch as never,
+    });
+  }, [selectedPlanId, plans, plansQuery.isFetching, navigate, search]);
+
+  useEffect(() => {
+    if (!selectedTermId) return;
+    if (termsQuery.isFetching) return;
+    if (terms.some((t) => t.id === selectedTermId)) return;
+
+    const validateTermSearch: Record<string, unknown> = {
+      ...search,
+      t: undefined,
+      term: undefined,
+    };
+    void navigate({
+      to: "/schedule",
+      search: validateTermSearch as never,
+    });
+  }, [selectedTermId, terms, termsQuery.isFetching, navigate, search]);
 
   useEffect(() => {
     const stored = localStorage.getItem("schedule-hour-height");
@@ -591,11 +683,8 @@ export function SchedulePage() {
         search: {
           ...search,
           university: normalizeScheduleUniversityId(id),
-          campus: undefined,
-          career: undefined,
-          plan: undefined,
-          term: undefined,
-        },
+          u: normalizeScheduleUniversityId(id),
+        } as never,
       });
     },
     [navigate, search],
@@ -605,15 +694,14 @@ export function SchedulePage() {
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        c: id ?? undefined,
+        campus: id ?? undefined,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          ...search,
-          campus: id ?? undefined,
-          career: undefined,
-          plan: undefined,
-          term: undefined,
-        },
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -623,14 +711,18 @@ export function SchedulePage() {
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = id !== null;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        r: id ?? undefined,
+        career: id ?? undefined,
+        p: undefined,
+        plan: undefined,
+        t: undefined,
+        term: undefined,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          ...search,
-          career: id ?? undefined,
-          plan: undefined,
-          term: undefined,
-        },
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -640,13 +732,14 @@ export function SchedulePage() {
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        p: id ?? undefined,
+        plan: id ?? undefined,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          ...search,
-          plan: id ?? undefined,
-          term: undefined,
-        },
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -655,12 +748,14 @@ export function SchedulePage() {
   const handleTermChange = useCallback(
     (id: number | null) => {
       setIsUsingProfileDefaults(false);
+      const newSearch: Record<string, unknown> = {
+        ...search,
+        t: id ?? undefined,
+        term: id ?? undefined,
+      };
       void navigate({
         to: "/schedule",
-        search: {
-          ...search,
-          term: id ?? undefined,
-        },
+        search: newSearch as never,
       });
     },
     [navigate, search],
@@ -696,16 +791,24 @@ export function SchedulePage() {
   const handleUseProfileDefaults = useCallback(() => {
     if (!userStudyPlan) return;
     setIsUsingProfileDefaults(true);
+
+    const newSearch: Record<string, unknown> = {
+      ...search,
+      university: normalizeScheduleUniversityId(userStudyPlan.universityId),
+      u: normalizeScheduleUniversityId(userStudyPlan.universityId),
+      campus: userStudyPlan.campusId ?? undefined,
+      c: userStudyPlan.campusId ?? undefined,
+      career: userStudyPlan.academicUnitId ?? undefined,
+      r: userStudyPlan.academicUnitId ?? undefined,
+      plan: userStudyPlan.studyPlanId ?? undefined,
+      p: userStudyPlan.studyPlanId ?? undefined,
+      term: search.term ?? undefined,
+      t: search.term ?? undefined,
+    };
+
     void navigate({
       to: "/schedule",
-      search: {
-        ...search,
-        university: normalizeScheduleUniversityId(userStudyPlan.universityId),
-        campus: userStudyPlan.campusId ?? undefined,
-        career: userStudyPlan.academicUnitId ?? undefined,
-        plan: userStudyPlan.studyPlanId ?? undefined,
-        term: search.term ?? undefined,
-      },
+      search: newSearch as never,
     });
   }, [navigate, search, userStudyPlan]);
 
