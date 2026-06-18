@@ -13,6 +13,8 @@ import {
   Minus,
   Pencil,
   Plus,
+  Trash2,
+  MoreVertical,
   User,
   Users,
 } from "lucide-react";
@@ -29,6 +31,16 @@ import type {
 
 import { CourseRelationFlow } from "@/components/course-relation-flow";
 import { EvaluationUploadDialog } from "@/components/evaluations/evaluation-upload-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +64,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -74,6 +92,7 @@ import { formatEvaluationFileName, type EvaluationType } from "@/lib/evaluations
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
 import {
   useCourseAttempts,
+  useDeleteCourseAttempt,
   useCourseDetailRelatedCourses,
   useCourseLatestTermGroups,
   useCourseOfferingTerms,
@@ -98,6 +117,7 @@ interface CourseDetailsProps {
       status: Exclude<CourseStatus, "not_taken">;
       grade: number | null;
       academicTermId: number;
+      equivalentCourseId?: number | null;
     },
   ) => Promise<"success" | "local">;
 }
@@ -200,10 +220,12 @@ function TimelineItem({
   attempt,
   termLabel,
   onEdit,
+  onDelete,
 }: {
   attempt: CourseAttempt;
   termLabel: string;
   onEdit: (attempt: CourseAttempt) => void;
+  onDelete: (attempt: CourseAttempt) => void;
 }) {
   const cfg = statusConfig[attempt.status];
   const date = new Date(attempt.recordedAt);
@@ -223,39 +245,60 @@ function TimelineItem({
 
       {/* content */}
       <div className="min-w-0 flex-1 pb-6">
-        <div className="mb-1 flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-foreground text-sm font-semibold">
               {statusLabels[attempt.status]}
             </span>
             <span className="text-muted-foreground text-xs">{date.toLocaleDateString()}</span>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-7 shrink-0"
-            onClick={() => onEdit(attempt)}
-            aria-label="Editar intento"
-          >
-            <Pencil className="size-3.5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="-my-1 size-7 shrink-0"
+                aria-label="Opciones de intento"
+              >
+                <MoreVertical className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(attempt)}>
+                <Pencil className="text-muted-foreground mr-2 size-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                onClick={() => onDelete(attempt)}
+              >
+                <Trash2 className="mr-2 size-4" />
+                Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          {attempt.courseCode ? <span>Curso {attempt.courseCode}</span> : null}
+        <div className="text-muted-foreground flex flex-col gap-0.5 text-sm">
           {gradeText ? (
-            <span className="inline-flex items-center gap-1">
-              <GraduationCap className="size-3.5" />
-              Nota {gradeText}
+            <span className="inline-flex items-center gap-1.5">
+              <GraduationCap className="size-3.5 shrink-0" />
+              Nota: {gradeText}
             </span>
           ) : null}
           {termLabel ? (
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3.5" />
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="size-3.5 shrink-0" />
               {termLabel}
             </span>
           ) : null}
         </div>
+        {attempt.equivalentCourseId ? (
+          <p className="text-muted-foreground mt-2 text-xs italic">
+            Nota: Tomado como {attempt.equivalentCourseCode}
+            {attempt.equivalentCourseName ? `: ${attempt.equivalentCourseName}` : ""}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -518,14 +561,19 @@ export function CourseDetails({
   const [editingAttempt, setEditingAttempt] = useState<CourseAttempt | null>(null);
   const [editAcademicTermId, setEditAcademicTermId] = useState<string>("");
   const [editGradeInput, setEditGradeInput] = useState("");
+  const [editStatus, setEditStatus] = useState<Exclude<CourseStatus, "not_taken">>("approved");
+  const [editAttemptCourseId, setEditAttemptCourseId] = useState(course.id);
+  const [deletingAttempt, setDeletingAttempt] = useState<CourseAttempt | null>(null);
   const [offeringTermId, setOfferingTermId] = useState<string>("");
   const [attemptCourseId, setAttemptCourseId] = useState(course.id);
   const comboboxPortalContainerRef = useRef<HTMLDivElement | null>(null);
   const attemptCourseTriggerRef = useRef<HTMLButtonElement | null>(null);
   const progressTermTriggerRef = useRef<HTMLButtonElement | null>(null);
   const editTermTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const editAttemptCourseTriggerRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
   const updateCourseAttempt = useUpdateCourseAttempt();
+  const deleteCourseAttempt = useDeleteCourseAttempt();
 
   const EQUIVALENTS_PER_PAGE = 10;
 
@@ -614,10 +662,11 @@ export function CourseDetails({
   );
   const attemptCourseOptions = useMemo(() => {
     if (!isPlaceholderCourse) return [baseCourseOption];
-    return (allRelatedCoursesQuery.data?.data ?? [])
+    const equivalents = (allRelatedCoursesQuery.data?.data ?? [])
       .filter((option) => option.relationKind === "equivalent")
       .filter((option) => option.hasOfferings)
       .sort((a, b) => a.code.localeCompare(b.code));
+    return equivalents;
   }, [allRelatedCoursesQuery.data?.data, baseCourseOption, isPlaceholderCourse]);
   const selectedAttemptCourse =
     attemptCourseOptions.find((option) => String(option.id) === attemptCourseId) ?? null;
@@ -680,7 +729,7 @@ export function CourseDetails({
 
   const attempts: CourseAttempt[] = attemptsQuery.data ?? [];
   const termLabelById = new Map<number, string>(
-    academicTerms.map((term: AcademicTerm) => [term.id, term.display_name]),
+    academicTerms.map((term: AcademicTerm) => [term.id, formatClosedTermLabel(term)]),
   );
   const selectedQuickTerm =
     academicTerms.find((term) => String(term.id) === academicTermId) ?? null;
@@ -688,6 +737,20 @@ export function CourseDetails({
     academicTerms.find((term) => String(term.id) === editAcademicTermId) ?? null;
 
   /* --- handlers (preserved) --- */
+
+  const handleOpenProgressSheet = () => {
+    const inProgressAttempts = attempts.filter((a) => a.status === "in_progress");
+    if (inProgressAttempts.length > 0) {
+      const latest = [...inProgressAttempts].sort((a, b) => b.attemptNumber - a.attemptNumber)[0];
+      if (latest.academicTermId) {
+        setAcademicTermId(String(latest.academicTermId));
+      }
+      if (isPlaceholderCourse && latest.equivalentCourseId) {
+        setAttemptCourseId(String(latest.equivalentCourseId));
+      }
+    }
+    setIsProgressSheetOpen(true);
+  };
 
   const parseSelectedTermId = () => {
     const parsed = Number(academicTermId);
@@ -718,10 +781,11 @@ export function CourseDetails({
 
     setIsSaving(true);
     try {
-      const result = await onCreateAttempt(attemptCourseId, {
+      const result = await onCreateAttempt(course.id, {
         status: progressStatus,
         grade: requiresGrade ? parsedGrade : null,
         academicTermId: parsedAcademicTermId,
+        equivalentCourseId: isPlaceholderCourse ? parseInt(attemptCourseId) : null,
       });
 
       if (result === "local") {
@@ -790,6 +854,10 @@ export function CourseDetails({
     setEditingAttempt(attempt);
     setEditAcademicTermId(attempt.academicTermId ? String(attempt.academicTermId) : "");
     setEditGradeInput(attempt.grade === null ? "" : String(attempt.grade));
+    setEditStatus(attempt.status);
+    setEditAttemptCourseId(
+      attempt.equivalentCourseId ? String(attempt.equivalentCourseId) : String(course.id),
+    );
   };
 
   const handleSaveAttemptEdit = async () => {
@@ -805,8 +873,7 @@ export function CourseDetails({
       return;
     }
 
-    const requiresGrade =
-      editingAttempt.status === "approved" || editingAttempt.status === "failed";
+    const requiresGrade = editStatus === "approved" || editStatus === "failed";
     const parsedGrade = editGradeInput.trim() === "" ? null : Number(editGradeInput);
 
     if (requiresGrade) {
@@ -828,12 +895,36 @@ export function CourseDetails({
         attemptId: editingAttempt.id,
         academicTermId: parsedAcademicTermId,
         grade: requiresGrade ? parsedGrade : null,
+        status: editStatus,
+        equivalentCourseId: isPlaceholderCourse ? Number(editAttemptCourseId) : null,
       });
-      toast.success("Intento actualizado");
+
+      toast.success("Intento actualizado correctamente");
       setEditingAttempt(null);
       void attemptsQuery.refetch();
     } catch {
-      toast.error("No se pudo actualizar el intento");
+      toast.error("Error al actualizar el intento");
+    }
+  };
+
+  const handleDeleteAttempt = async () => {
+    if (!deletingAttempt) return;
+    if (!userId || !studyPlanId) {
+      toast.error("Debes iniciar sesión para eliminar intentos");
+      return;
+    }
+
+    try {
+      await deleteCourseAttempt.mutateAsync({
+        userId,
+        studyPlanId,
+        attemptId: deletingAttempt.id,
+      });
+      toast.success("Intento eliminado correctamente");
+      setDeletingAttempt(null);
+      void attemptsQuery.refetch();
+    } catch {
+      toast.error("Error al eliminar el intento");
     }
   };
 
@@ -859,6 +950,8 @@ export function CourseDetails({
   const isStatusFromAnotherSource =
     (currentStatus === "approved" || currentStatus === "in_progress") &&
     (course.statusOriginType === "same_course_global" || course.statusOriginType === "equivalent");
+  const hasOriginInHistory = attempts.some((a) => a.id === Number(course.statusOriginAttemptId));
+  const showOriginItem = isStatusFromAnotherSource && !hasOriginInHistory;
 
   useEffect(() => {
     if (!requiresProgressGrade) setGradeInput("");
@@ -1094,12 +1187,7 @@ export function CourseDetails({
             title="Historial de intentos"
             action={
               !attemptsQuery.isLoading && (attempts.length > 0 || isStatusFromAnotherSource) ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsProgressSheetOpen(true)}
-                >
+                <Button type="button" size="sm" variant="outline" onClick={handleOpenProgressSheet}>
                   Registrar progreso
                 </Button>
               ) : null
@@ -1129,19 +1217,20 @@ export function CourseDetails({
                 variant="outline"
                 size="sm"
                 className="mt-4"
-                onClick={() => setIsProgressSheetOpen(true)}
+                onClick={handleOpenProgressSheet}
               >
                 Registrar progreso
               </Button>
             </div>
           ) : (
             <div className="pl-1">
-              {isStatusFromAnotherSource ? <TimelineOriginItem course={course} /> : null}
+              {showOriginItem ? <TimelineOriginItem course={course} /> : null}
               {attempts.map((attempt: CourseAttempt) => (
                 <TimelineItem
                   key={attempt.id}
                   attempt={attempt}
                   onEdit={openEditAttempt}
+                  onDelete={setDeletingAttempt}
                   termLabel={
                     attempt.academicTermId
                       ? (termLabelById.get(attempt.academicTermId) ?? `#${attempt.academicTermId}`)
@@ -1430,12 +1519,100 @@ export function CourseDetails({
           <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <DialogHeader>
             <DialogTitle>Editar intento</DialogTitle>
-            <DialogDescription>
-              Actualiza el periodo y la nota del intento seleccionado.
-            </DialogDescription>
+            <DialogDescription>Actualiza los detalles del intento seleccionado.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Estado</Label>
+              <RadioGroup
+                value={editStatus}
+                onValueChange={(value) =>
+                  setEditStatus(value as Exclude<CourseStatus, "not_taken">)
+                }
+                className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"
+              >
+                {[
+                  { value: "approved", label: "Aprobado" },
+                  { value: "failed", label: "Reprobado" },
+                  { value: "in_progress", label: "En curso" },
+                  { value: "withdrawn", label: "Retirado" },
+                ].map((option) => (
+                  <div key={option.value}>
+                    <RadioGroupItem
+                      value={option.value}
+                      id={`edit-status-${option.value}`}
+                      className="peer sr-only"
+                    />
+                    <Label
+                      htmlFor={`edit-status-${option.value}`}
+                      className="border-border hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 peer-data-[state=checked]:text-primary flex cursor-pointer items-center justify-center rounded-md border px-3 py-2 text-center text-xs font-medium transition-all"
+                    >
+                      {option.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {isPlaceholderCourse && (
+              <div>
+                <Label htmlFor="edit-attempt-course" className="text-sm">
+                  Curso a registrar
+                </Label>
+                <Combobox
+                  items={attemptCourseOptions}
+                  value={
+                    attemptCourseOptions.find(
+                      (option) => String(option.id) === editAttemptCourseId,
+                    ) ?? null
+                  }
+                  onValueChange={(course) =>
+                    setEditAttemptCourseId(course ? String(course.id) : "")
+                  }
+                  itemToStringValue={(course) => course.code}
+                >
+                  <ComboboxTrigger
+                    ref={editAttemptCourseTriggerRef}
+                    render={
+                      <Button
+                        id="edit-attempt-course"
+                        variant="outline"
+                        className="mt-2 w-full justify-between font-normal"
+                      />
+                    }
+                  >
+                    <span
+                      className={`block min-w-0 flex-1 truncate text-left ${!editAttemptCourseId ? "text-muted-foreground" : ""}`}
+                    >
+                      {attemptCourseOptions.find(
+                        (option) => String(option.id) === editAttemptCourseId,
+                      )?.name ?? "Selecciona el curso equivalente"}
+                    </span>
+                  </ComboboxTrigger>
+                  <ComboboxContent
+                    anchor={editAttemptCourseTriggerRef}
+                    container={comboboxPortalContainerRef}
+                    className="w-72"
+                  >
+                    <ComboboxInput placeholder="Buscar curso..." />
+                    <ComboboxEmpty>No se encontraron cursos.</ComboboxEmpty>
+                    <ComboboxList className="max-h-56 scrollbar-none">
+                      <ComboboxCollection>
+                        {(course) => (
+                          <ComboboxItem key={course.id} value={course}>
+                            <span className="block min-w-0 flex-1 truncate">
+                              {course.code} - {course.name}
+                            </span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxCollection>
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+              </div>
+            )}
+
             <div>
               <Label htmlFor="edit-attempt-term" className="text-sm">
                 Periodo
@@ -1494,43 +1671,45 @@ export function CourseDetails({
               </Combobox>
             </div>
 
-            <div>
-              <Label htmlFor="edit-attempt-grade" className="text-sm">
-                Nota
-              </Label>
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleEditGradeStep(-1)}
-                  aria-label="Disminuir nota"
-                  disabled={updateCourseAttempt.isPending}
-                >
-                  <Minus className="size-4" />
-                </Button>
-                <Input
-                  id="edit-attempt-grade"
-                  className="text-center"
-                  type="text"
-                  inputMode="decimal"
-                  value={editGradeInput}
-                  onChange={(event) => handleEditGradeInputChange(event.target.value)}
-                  placeholder="0-100"
-                  disabled={updateCourseAttempt.isPending}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleEditGradeStep(1)}
-                  aria-label="Aumentar nota"
-                  disabled={updateCourseAttempt.isPending}
-                >
-                  <Plus className="size-4" />
-                </Button>
+            {(editStatus === "approved" || editStatus === "failed") && (
+              <div>
+                <Label htmlFor="edit-attempt-grade" className="text-sm">
+                  Nota
+                </Label>
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditGradeStep(-1)}
+                    aria-label="Disminuir nota"
+                    disabled={updateCourseAttempt.isPending}
+                  >
+                    <Minus className="size-4" />
+                  </Button>
+                  <Input
+                    id="edit-attempt-grade"
+                    className="text-center"
+                    type="text"
+                    inputMode="decimal"
+                    value={editGradeInput}
+                    onChange={(event) => handleEditGradeInputChange(event.target.value)}
+                    placeholder="0-100"
+                    disabled={updateCourseAttempt.isPending}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleEditGradeStep(1)}
+                    aria-label="Aumentar nota"
+                    disabled={updateCourseAttempt.isPending}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -1544,6 +1723,36 @@ export function CourseDetails({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!deletingAttempt}
+        onOpenChange={(open) => {
+          if (!open) setDeletingAttempt(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar intento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará el intento del historial
+              permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteCourseAttempt.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteAttempt();
+              }}
+              disabled={deleteCourseAttempt.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCourseAttempt.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
