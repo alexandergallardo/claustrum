@@ -57,6 +57,7 @@ export function CourseDetailPage() {
         status: Exclude<CourseStatus, "not_taken">;
         grade: number | null;
         academicTermId: number;
+        equivalentCourseId?: number | null;
       },
     ) => {
       if (!authUser?.id || !selectedPlanId) {
@@ -73,6 +74,7 @@ export function CourseDetailPage() {
         status: attempt.status,
         grade: attempt.grade,
         academicTermId: attempt.academicTermId,
+        equivalentCourseId: attempt.equivalentCourseId,
       });
 
       return "success" as const;
