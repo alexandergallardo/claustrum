@@ -33,3 +33,4 @@ lighthouse-*.json
 supabase-es256-signing-key.json
 supabase/signing_keys.json
 error.log
+.opencode/
