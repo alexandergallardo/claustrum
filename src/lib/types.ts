@@ -167,6 +167,9 @@ export interface CourseAttempt {
   grade: number | null;
   academicTermId: number | null;
   recordedAt: string;
+  equivalentCourseId?: number | null;
+  equivalentCourseCode?: string | null;
+  equivalentCourseName?: string | null;
 }
 
 export interface CourseRecentProfessor {

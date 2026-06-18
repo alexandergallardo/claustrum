@@ -628,6 +628,7 @@ export function useCreateCourseAttempt() {
       status: "approved" | "failed" | "withdrawn" | "in_progress";
       grade: number | null;
       academicTermId?: number | null;
+      equivalentCourseId?: number | null;
     }) => {
       const sb = getSupabaseBrowserClient();
 
@@ -638,6 +639,7 @@ export function useCreateCourseAttempt() {
         p_status: params.status.toUpperCase(),
         p_grade: params.grade,
         p_academic_term_id: params.academicTermId ?? null,
+        p_equivalent_course_id: params.equivalentCourseId ?? null,
       });
 
       if (error) throw error;
@@ -668,6 +670,8 @@ export function useUpdateCourseAttempt() {
       attemptId: number;
       grade: number | null;
       academicTermId: number;
+      status?: string;
+      equivalentCourseId?: number | null;
     }) => {
       const sb = getSupabaseBrowserClient();
 
@@ -675,6 +679,8 @@ export function useUpdateCourseAttempt() {
         p_attempt_id: params.attemptId,
         p_academic_term_id: params.academicTermId,
         p_grade: params.grade,
+        p_status: params.status ?? null,
+        p_equivalent_course_id: params.equivalentCourseId ?? null,
       });
 
       if (error) throw error;
@@ -724,6 +730,9 @@ export function useCourseAttempts(
           grade: number | null;
           academic_term_id: number | null;
           recorded_at: string;
+          equivalent_course_id?: number | null;
+          equivalent_course_code?: string | null;
+          equivalent_course_name?: string | null;
         }) =>
           ({
             id: attempt.id,
@@ -735,6 +744,9 @@ export function useCourseAttempts(
             grade: attempt.grade,
             academicTermId: attempt.academic_term_id,
             recordedAt: attempt.recorded_at,
+            equivalentCourseId: attempt.equivalent_course_id ?? null,
+            equivalentCourseCode: attempt.equivalent_course_code ?? null,
+            equivalentCourseName: attempt.equivalent_course_name ?? null,
           }) satisfies CourseAttempt,
       );
     },
@@ -970,5 +982,33 @@ export function useDashboardStats(userId: string | null, studyPlanId: number | n
     },
     enabled: !!userId && !!studyPlanId,
     staleTime: 30 * 1000,
+  });
+}
+
+export function useDeleteCourseAttempt() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { userId: string; studyPlanId: number; attemptId: number }) => {
+      const sb = getSupabaseBrowserClient();
+
+      const { error } = await sb.rpc("delete_student_course_attempt", {
+        p_attempt_id: params.attemptId,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["studentCourseStatuses", variables.userId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["scheduleCourses"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["dashboardStats", variables.userId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["courseAttempts", variables.userId, variables.studyPlanId],
+      });
+    },
   });
 }
