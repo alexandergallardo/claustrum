@@ -763,10 +763,7 @@ export function useCoursesByIds(courseIds: number[] | null) {
 
       const sb = getSupabaseBrowserClient();
 
-      const { data, error } = await sb
-        .from("course")
-        .select("id, code, name, status")
-        .in("id", courseIds);
+      const { data, error } = await sb.from("course").select("id, code, name").in("id", courseIds);
 
       if (error) throw error;
       return data ?? [];
