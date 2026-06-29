@@ -1,4 +1,4 @@
-import { User, Clock, MapPin, Users } from "lucide-react";
+import { User, Clock, MapPin, Users, ChevronDown } from "lucide-react";
 import { useMemo, useCallback, memo, useEffect, useRef, useState } from "react";
 
 import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
@@ -6,8 +6,17 @@ import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
 import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { getGroupId } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
@@ -16,6 +25,39 @@ type SelectedGroups = Set<string>;
 
 const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const WEEKDAYS_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+const TruncatableText = ({ text }: { text: string }) => {
+  const textRef = useRef<HTMLDivElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+
+    const checkTruncation = () => {
+      setIsTruncated(el.scrollWidth > el.clientWidth);
+    };
+
+    checkTruncation();
+    const observer = new ResizeObserver(checkTruncation);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text]);
+
+  return (
+    <Tooltip open={isOpen && isTruncated} onOpenChange={setIsOpen}>
+      <TooltipTrigger asChild>
+        <div ref={textRef} className={cn("w-full truncate", isTruncated && "cursor-help")}>
+          {text}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="start">
+        {text}
+      </TooltipContent>
+    </Tooltip>
+  );
+};
 
 const formatWeekday = (weekday: number): string => WEEKDAYS[weekday] || "";
 const formatWeekdayShort = (weekday: number): string => WEEKDAYS_SHORT[weekday] || "";
@@ -50,14 +92,16 @@ interface CourseListProps {
   courses: ScheduleCourse[];
   selectedGroups: SelectedGroups;
   onSelectionChange: (selectedGroups: SelectedGroups) => void;
-  campusById?: Map<number, string>;
+  campusById?: Map<number, { code: string; name: string }>;
   showCampus?: boolean;
+  viewMode?: "card" | "table";
 }
 
 interface GroupView {
   group: ScheduleGroup;
   groupId: string;
-  campusLabel: string | null;
+  campusCode: string | null;
+  campusName: string | null;
   meetingViews: Array<{ id: string; label: string; shortLabel: string; classroom: string | null }>;
   sharedClassroom: string | null;
   professorLabels: string[];
@@ -72,15 +116,17 @@ function createGroupView(
   course: ScheduleCourse,
   group: ScheduleGroup,
   showCampus: boolean,
-  campusById?: Map<number, string>,
+  campusById?: Map<number, { code: string; name: string }>,
 ): GroupView {
   const campusId = group.campus_id ?? course.campus_id ?? null;
   const groupId = getGroupId(course.course_code, group.group_code);
-  const campusLabel = showCampus
-    ? campusId
-      ? (campusById?.get(campusId) ?? `Sede ${campusId}`)
-      : null
-    : null;
+  const campusData = showCampus && campusId ? campusById?.get(campusId) : null;
+  const campusCode = campusData
+    ? campusData.code
+    : showCampus && campusId
+      ? `Sede ${campusId}`
+      : null;
+  const campusName = campusData ? campusData.name : null;
 
   const meetings = group.meetings ?? [];
   const professorLabels = group.professors?.filter(Boolean);
@@ -106,7 +152,8 @@ function createGroupView(
   return {
     group,
     groupId,
-    campusLabel,
+    campusCode,
+    campusName,
     meetingViews,
     sharedClassroom,
     professorLabels: professorLabels?.length ? professorLabels : ["Sin asignar"],
@@ -116,7 +163,7 @@ function createGroupView(
 function createCourseViewData(
   course: ScheduleCourse,
   showCampus: boolean,
-  campusBy?: Map<number, string>,
+  campusBy?: Map<number, { code: string; name: string }>,
 ): CourseViewData {
   const uniqueGroups = new Map<string, ScheduleGroup>();
   for (const group of course.groups ?? []) {
@@ -180,7 +227,7 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
 function createGroupLabelMap(
   courses: ScheduleCourse[],
   showCampus: boolean,
-  campusById?: Map<number, string>,
+  campusById?: Map<number, { code: string; name: string }>,
 ): Map<string, string> {
   const map = new Map<string, string>();
 
@@ -188,11 +235,12 @@ function createGroupLabelMap(
     course.groups?.forEach((group) => {
       const groupId = getGroupId(course.course_code, group.group_code);
       const campusId = group.campus_id ?? course.campus_id ?? null;
-      const campusLabel = showCampus
-        ? campusId
-          ? (campusById?.get(campusId) ?? `Sede ${campusId}`)
-          : null
-        : null;
+      const campusData = showCampus && campusId ? campusById?.get(campusId) : null;
+      const campusLabel = campusData
+        ? campusData.name
+        : showCampus && campusId
+          ? `Sede ${campusId}`
+          : null;
       const campusSuffix = campusLabel ? ` • ${campusLabel}` : "";
 
       map.set(
@@ -210,7 +258,7 @@ function createConflictReasons(
   conflictMap: Map<string, Set<string>>,
   courses: ScheduleCourse[],
   showCampus: boolean,
-  campusById?: Map<number, string>,
+  campusById?: Map<number, { code: string; name: string }>,
 ): { conflictReasons: Map<string, string[]>; disabledSet: Set<string> } {
   const conflictReasons = new Map<string, string[]>();
   const disabledSet = new Set<string>();
@@ -241,6 +289,7 @@ export default function CourseList({
   onSelectionChange,
   campusById,
   showCampus = false,
+  viewMode = "card",
 }: CourseListProps) {
   const scrollAreaRootRef = useRef<HTMLDivElement | null>(null);
 
@@ -316,13 +365,25 @@ export default function CourseList({
     <TooltipProvider>
       <div ref={scrollAreaRootRef} className="h-full">
         <ScrollArea className="h-full w-full">
-          <div className="w-full space-y-4 p-4">
+          <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
             {viewData.map((courseData) => {
               const course = courseData.course;
               const colorStyles =
                 courseColorStyles.get(course.course_code) ?? getColorStyles("blue");
 
-              return (
+              return viewMode === "table" ? (
+                <CourseTableItem
+                  key={course.offering_id}
+                  course={courseData.course}
+                  groupViews={courseData.groupViews}
+                  colorStyles={colorStyles}
+                  selectedGroupIds={selectedGroups}
+                  disabledGroupIdSet={disabledSet}
+                  conflictReasonsByGroupId={conflictReasons}
+                  onGroupToggle={handleGroupToggle}
+                  showCampus={showCampus}
+                />
+              ) : (
                 <CourseCard
                   key={course.offering_id}
                   course={courseData.course}
@@ -448,7 +509,7 @@ const CourseCard = memo(function CourseCard({
                         </span>
                       </div>
 
-                      {groupView.campusLabel && (
+                      {groupView.campusCode && (
                         <div className="mb-2 flex items-center gap-2">
                           <MapPin
                             className={cn(
@@ -462,7 +523,7 @@ const CourseCard = memo(function CourseCard({
                               isSelected && "opacity-80",
                             )}
                           >
-                            {groupView.campusLabel}
+                            {groupView.campusName || groupView.campusCode}
                           </span>
                         </div>
                       )}
@@ -585,5 +646,184 @@ const CourseCard = memo(function CourseCard({
         </ScrollArea>
       </CardContent>
     </Card>
+  );
+});
+
+const CourseTableItem = memo(function CourseTableItem({
+  course,
+  groupViews,
+  colorStyles,
+  selectedGroupIds,
+  disabledGroupIdSet,
+  conflictReasonsByGroupId,
+  onGroupToggle,
+  showCampus,
+}: {
+  course: ScheduleCourse;
+  groupViews: GroupView[];
+  colorStyles: { bg: string; border: string; text: string };
+  selectedGroupIds: SelectedGroups;
+  disabledGroupIdSet: Set<string>;
+  conflictReasonsByGroupId: Map<string, string[]>;
+  onGroupToggle: (courseCode: string, groupCode: string) => void;
+  showCampus: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="bg-card border-border w-full border-b last:border-b-0"
+    >
+      <CollapsibleTrigger asChild>
+        <div className="hover:bg-muted/30 flex cursor-pointer items-center justify-between p-4 transition-colors">
+          <div className="flex flex-col gap-1">
+            <span className="text-base leading-tight font-semibold">
+              {course.course_code}: {course.course_name}
+            </span>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
+                {course.credits} créditos
+              </span>
+              {course.level_number !== null &&
+                course.level_number !== undefined &&
+                course.level_number < 999 && (
+                  <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
+                    {course.level_label ?? `Nivel ${course.level_number}`}
+                  </span>
+                )}
+            </div>
+          </div>
+          <ChevronDown
+            className={cn(
+              "text-muted-foreground size-5 transition-transform duration-200",
+              isOpen && "rotate-180",
+            )}
+          />
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="bg-muted/10 border-t">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow>
+                <TableHead className="w-[1%] pl-4 text-center whitespace-nowrap">Grupo</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap">Tipo</TableHead>
+                {showCampus && (
+                  <TableHead className="w-[1%] text-center whitespace-nowrap">Sede</TableHead>
+                )}
+                <TableHead className="w-auto min-w-[120px]">Profesor</TableHead>
+                <TableHead className="w-[1%] whitespace-nowrap">Horario</TableHead>
+                <TableHead className="w-[1%] text-center whitespace-nowrap">Aula</TableHead>
+                <TableHead className="w-[1%] pr-4 text-center whitespace-nowrap">Cupos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {groupViews.map((groupView) => {
+                const isSelected = selectedGroupIds.has(groupView.groupId);
+                const disabled = disabledGroupIdSet.has(groupView.groupId);
+                const reasons = conflictReasonsByGroupId.get(groupView.groupId) ?? [];
+
+                return (
+                  <Tooltip key={groupView.groupId} open={disabled ? undefined : false}>
+                    <TooltipTrigger asChild>
+                      <TableRow
+                        onClick={() =>
+                          !disabled && onGroupToggle(course.course_code, groupView.group.group_code)
+                        }
+                        className={cn(
+                          "cursor-pointer transition-colors",
+                          isSelected && "bg-muted/80 hover:bg-muted/90",
+                          disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
+                        )}
+                        style={
+                          isSelected && !disabled ? { backgroundColor: colorStyles.bg } : undefined
+                        }
+                      >
+                        <TableCell className="pl-4 text-center">
+                          <Badge
+                            variant="secondary"
+                            className={cn(isSelected && "bg-background/50 text-foreground")}
+                            style={
+                              isSelected
+                                ? { borderColor: colorStyles.border, borderWidth: "1px" }
+                                : undefined
+                            }
+                          >
+                            {groupView.group.group_code}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {groupView.group.group_type}
+                        </TableCell>
+                        {showCampus && (
+                          <TableCell className="text-muted-foreground text-center text-xs">
+                            {groupView.campusName ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="border-muted-foreground/50 cursor-help border-b border-dotted">
+                                    {groupView.campusCode}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>{groupView.campusName}</TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              groupView.campusCode
+                            )}
+                          </TableCell>
+                        )}
+                        <TableCell className="w-full max-w-[0] min-w-[120px]">
+                          <div className="flex w-full flex-col gap-1 text-xs">
+                            {groupView.professorLabels.map((prof, i) => (
+                              <TruncatableText key={i} text={prof} />
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 text-xs whitespace-nowrap">
+                            {groupView.meetingViews.map((meeting) => (
+                              <span key={meeting.id} title={meeting.label}>
+                                {meeting.shortLabel}
+                              </span>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="text-muted-foreground flex flex-col items-center gap-1 text-xs whitespace-nowrap">
+                            {groupView.sharedClassroom ? (
+                              <span>{groupView.sharedClassroom}</span>
+                            ) : (
+                              groupView.meetingViews.map((meeting) => (
+                                <span key={meeting.id}>{meeting.classroom || "-"}</span>
+                              ))
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="pr-4 text-center text-xs">
+                          <span className="text-muted-foreground">{groupView.group.capacity}</span>
+                        </TableCell>
+                      </TableRow>
+                    </TooltipTrigger>
+                    {disabled && reasons.length > 0 && (
+                      <TooltipContent className="bg-destructive max-w-xs text-white">
+                        <div className="space-y-1.5">
+                          <p className="text-sm font-semibold">Este grupo choca con:</p>
+                          <ul className="space-y-1 text-xs">
+                            {reasons.map((r) => (
+                              <li key={r}>{r}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 });

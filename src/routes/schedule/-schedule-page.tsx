@@ -10,6 +10,8 @@ import {
   Bookmark,
   Trash2,
   Loader2,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import {
   Suspense,
@@ -93,6 +95,7 @@ import {
 const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
 const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
+const VIEW_MODE_STORAGE_KEY = "schedule-list-view";
 const Calendar = lazy(() => import("@/components/calendar/calendar"));
 
 function ScheduleEmptyState({
@@ -219,6 +222,37 @@ export function SchedulePage() {
   const showAllCourses = search.showAll ?? storedShowAll;
   const showOtherCampuses = search.otherCampuses ?? storedShowOtherCampuses;
 
+  const [storedViewMode, setStoredViewMode] = useState<"card" | "table">(() => {
+    if (typeof window === "undefined") return "card";
+    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (stored === "card" || stored === "table") return stored;
+    return "card";
+  });
+  const viewMode = search.view ?? storedViewMode;
+
+  const handleViewModeChange = useCallback(
+    (value: string) => {
+      if (value === "card" || value === "table") {
+        void navigate({
+          to: "/schedule",
+          search: {
+            ...search,
+            view: value,
+          },
+          resetScroll: false,
+        });
+      }
+    },
+    [navigate, search],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (search.view === undefined) return;
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, search.view);
+    setStoredViewMode(search.view);
+  }, [search.view]);
+
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const mode: Mode = "week";
   const [date] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -279,7 +313,7 @@ export function SchedulePage() {
 
   const campuses = useMemo(() => campusesQuery.data ?? [], [campusesQuery.data]);
   const campusById = useMemo(
-    () => new Map(campuses.map((campus) => [campus.id, campus.name])),
+    () => new Map(campuses.map((campus) => [campus.id, campus])),
     [campuses],
   );
   const careers = careersQuery.data ?? [];
@@ -666,7 +700,8 @@ export function SchedulePage() {
           search: {
             ...search,
             groups: nextGroupsValue,
-          },
+            g: nextGroupsValue,
+          } as never,
           resetScroll: false,
         });
       });
@@ -850,7 +885,9 @@ export function SchedulePage() {
       const group = groupData.group;
       const courseCode = course.course_code;
       const color = courseColors.get(courseCode) || "blue";
-      const campusName = groupData.campusId ? (campusById.get(groupData.campusId) ?? null) : null;
+      const campusName = groupData.campusId
+        ? (campusById.get(groupData.campusId)?.name ?? null)
+        : null;
 
       const sessions = group.meetings;
       if (!sessions) return;
@@ -1234,31 +1271,48 @@ export function SchedulePage() {
                   {isMobile ? (
                     <div className="flex flex-col">
                       <div className="flex flex-col border-b">
-                        <div className="bg-muted/30 flex h-10 shrink-0 items-center px-3">
+                        <div className="bg-muted/30 border-border flex h-10 shrink-0 items-center border-b px-3">
                           <div className="flex w-full items-center justify-between gap-2">
                             <h2 className="text-base leading-none font-semibold">
                               {orderedCourses.length} curso
                               {orderedCourses.length !== 1 ? "s" : ""} disponible
                               {orderedCourses.length !== 1 ? "s" : ""}
                             </h2>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label={
-                                isCourseListOpen
-                                  ? "Contraer cursos disponibles"
-                                  : "Mostrar cursos disponibles"
-                              }
-                              onClick={() => setIsCourseListOpen((open) => !open)}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  "size-4 transition-transform",
-                                  isCourseListOpen ? "rotate-0" : "-rotate-90",
+                            <div className="flex items-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-10 w-10 rounded-none"
+                                onClick={() =>
+                                  handleViewModeChange(viewMode === "card" ? "table" : "card")
+                                }
+                                aria-label="Cambiar vista"
+                              >
+                                {viewMode === "card" ? (
+                                  <List className="size-4" />
+                                ) : (
+                                  <LayoutGrid className="size-4" />
                                 )}
-                              />
-                            </Button>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="-mr-3 h-10 w-10 rounded-none"
+                                aria-label={
+                                  isCourseListOpen
+                                    ? "Contraer cursos disponibles"
+                                    : "Mostrar cursos disponibles"
+                                }
+                                onClick={() => setIsCourseListOpen((open) => !open)}
+                              >
+                                <ChevronDown
+                                  className={cn(
+                                    "size-4 transition-transform",
+                                    isCourseListOpen ? "rotate-0" : "-rotate-90",
+                                  )}
+                                />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                         <div
@@ -1271,6 +1325,7 @@ export function SchedulePage() {
                             onSelectionChange={updateSelectedGroups}
                             campusById={campusById}
                             showCampus={showOtherCampuses}
+                            viewMode={viewMode}
                           />
                         </div>
                       </div>
@@ -1414,13 +1469,28 @@ export function SchedulePage() {
                         className="min-w-0 overflow-hidden"
                       >
                         <div className="flex flex-col lg:h-full">
-                          <div className="bg-muted/30 flex h-[33px] shrink-0 items-center border-b px-4">
-                            <div className="flex items-center gap-2">
+                          <div className="bg-muted/30 border-border flex h-[33px] shrink-0 items-center border-b px-4">
+                            <div className="flex w-full items-center justify-between gap-2">
                               <h2 className="text-base leading-none font-semibold">
                                 {orderedCourses.length} curso
                                 {orderedCourses.length !== 1 ? "s" : ""} disponible
                                 {orderedCourses.length !== 1 ? "s" : ""}
                               </h2>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="-mr-4 h-[33px] w-[33px] rounded-none"
+                                onClick={() =>
+                                  handleViewModeChange(viewMode === "card" ? "table" : "card")
+                                }
+                                aria-label="Cambiar vista"
+                              >
+                                {viewMode === "card" ? (
+                                  <List className="size-4" />
+                                ) : (
+                                  <LayoutGrid className="size-4" />
+                                )}
+                              </Button>
                             </div>
                           </div>
                           <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
@@ -1430,6 +1500,7 @@ export function SchedulePage() {
                               onSelectionChange={updateSelectedGroups}
                               campusById={campusById}
                               showCampus={showOtherCampuses}
+                              viewMode={viewMode}
                             />
                           </div>
                         </div>

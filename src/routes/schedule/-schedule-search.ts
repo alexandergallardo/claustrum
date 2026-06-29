@@ -3,7 +3,7 @@ export const SCHEDULE_DEFAULT_UNIVERSITY_ID = 1;
 type SearchInput = Record<string, unknown>;
 
 export interface ScheduleSearch {
-  view?: "week" | "month" | "day";
+  view?: "card" | "table";
   university?: number;
   campus?: number;
   career?: number;
@@ -71,7 +71,7 @@ const parseString = (value: unknown): string | undefined => {
 
 const parseView = (value: unknown): ScheduleSearch["view"] => {
   const parsed = parseString(value);
-  if (parsed === "week" || parsed === "month" || parsed === "day") return parsed;
+  if (parsed === "card" || parsed === "table") return parsed;
   return undefined;
 };
 
