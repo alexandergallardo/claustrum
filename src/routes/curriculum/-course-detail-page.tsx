@@ -1,13 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useCallback } from "react";
 
 import type { CatalogStudyPlan, CourseStatus } from "@/lib/types";
 
 import { CourseDetails } from "@/components/course-details";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   useAuthUser,
@@ -86,13 +85,6 @@ export function CourseDetailPage() {
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <div className="px-4 lg:px-6">
-            <Button variant="ghost" onClick={handleBack} className="-ml-2">
-              <ArrowLeft className="mr-2 size-4" />
-              Volver al plan
-            </Button>
-          </div>
-
           {planDetailQuery.isError ? (
             <div className="px-4 lg:px-6">
               <Alert variant="destructive">
@@ -140,6 +132,7 @@ export function CourseDetailPage() {
                 modalityName={planDetailQuery.data?.plan?.modality_name}
                 transitionName={`course-name-${selectedCourse.id}`}
                 onCreateAttempt={handleCreateAttempt}
+                onBack={handleBack}
               />
             </div>
           ) : null}

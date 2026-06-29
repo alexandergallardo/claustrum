@@ -34,7 +34,12 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useModerationCounts } from "@/lib/hooks/use-moderation";
 import { useIsAdmin, useProfessorById } from "@/lib/hooks/use-professor-reviews";
-import { useAuthUser, useStudyPlanDetail, useStudyPlans } from "@/lib/hooks/use-queries";
+import {
+  useAuthUser,
+  useStudyPlanDetail,
+  useStudyPlans,
+  useCoursesByIds,
+} from "@/lib/hooks/use-queries";
 
 type BreadcrumbItem = {
   label: string;
@@ -108,6 +113,9 @@ export function SiteHeader() {
 
   const courseId = getNumericPathSegment(pathname, "/curriculum/");
   const isCourseDetail = courseId !== null;
+  const courseIdArr = useMemo(() => (courseId !== null ? [courseId] : null), [courseId]);
+  const coursesQuery = useCoursesByIds(courseIdArr);
+
   const selectedCareerId = isCourseDetail ? getSearchNumber(searchStr, "career") : null;
   const selectedPlanId = isCourseDetail ? getSearchNumber(searchStr, "plan") : null;
   const plansQuery = useStudyPlans(selectedCareerId);
@@ -118,13 +126,19 @@ export function SiteHeader() {
   const courseLabel = useMemo(() => {
     if (!courseId) return null;
 
+    // 1. Try to find it in the queried course
+    if (coursesQuery.data?.[0]) {
+      return `${coursesQuery.data[0].code}: ${coursesQuery.data[0].name}`;
+    }
+
+    // 2. Fallback to plan details
     for (const period of planDetailQuery.data?.periods ?? []) {
       const course = period.courses.find((item) => item.courseId === courseId);
       if (course) return `${course.courseCode}: ${course.courseName}`;
     }
 
     return null;
-  }, [courseId, planDetailQuery.data]);
+  }, [courseId, coursesQuery.data, planDetailQuery.data]);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -150,9 +164,10 @@ export function SiteHeader() {
 
   const breadcrumbItems = useMemo<BreadcrumbItem[]>(() => {
     if (isCourseDetail) {
+      const isLoading = !courseLabel && (planDetailQuery.isLoading || coursesQuery.isLoading);
       return [
         { label: "Plan de estudios", to: "/curriculum" },
-        { label: courseLabel ?? "", isLoading: !courseLabel && planDetailQuery.isLoading },
+        { label: courseLabel ?? "", isLoading },
       ];
     }
 
@@ -177,6 +192,7 @@ export function SiteHeader() {
     isProfessorDetail,
     pathname,
     planDetailQuery.isLoading,
+    coursesQuery.isLoading,
     professorName,
     professorQuery.isLoading,
   ]);

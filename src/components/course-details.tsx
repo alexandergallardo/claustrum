@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowLeft,
   BookOpen,
   ChevronLeft,
   ChevronRight,
@@ -120,6 +121,7 @@ interface CourseDetailsProps {
       equivalentCourseId?: number | null;
     },
   ) => Promise<"success" | "local">;
+  onBack?: () => void;
 }
 
 const statusLabels: Record<CourseStatus, string> = {
@@ -547,6 +549,7 @@ export function CourseDetails({
   modalityName,
   transitionName,
   onCreateAttempt,
+  onBack,
 }: CourseDetailsProps) {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
@@ -1131,17 +1134,30 @@ export function CourseDetails({
       <div className="space-y-4">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <h1
-              className="text-3xl font-semibold tracking-tight"
-              style={transitionName ? { viewTransitionName: transitionName } : undefined}
-            >
-              {course.name}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="font-mono text-xs">
-                {course.code}
-              </Badge>
-              <StatusBadge status={currentStatus} />
+            <div className="flex items-center gap-3">
+              {onBack && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 shrink-0 rounded-full"
+                  onClick={onBack}
+                  aria-label="Volver"
+                >
+                  <ArrowLeft className="size-4" />
+                </Button>
+              )}
+              <h1
+                className="text-2xl font-semibold tracking-tight md:text-3xl"
+                style={transitionName ? { viewTransitionName: transitionName } : undefined}
+              >
+                <span className="text-muted-foreground mr-2 text-xl md:text-2xl">
+                  {course.code}:
+                </span>
+                <span className="mr-2">{course.name}</span>
+                <span className="inline-flex pb-1 align-middle">
+                  <StatusBadge status={currentStatus} />
+                </span>
+              </h1>
             </div>
           </div>
         </div>
