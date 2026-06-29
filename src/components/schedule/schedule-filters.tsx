@@ -214,6 +214,11 @@ export function ScheduleFilters({
         items={campuses}
         onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
         isVisible={showCampusFilter}
+        itemLabel={(item) =>
+          item.code
+            ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
+            : normalizeText(item.name)
+        }
       />
 
       <FilterCombobox

@@ -225,7 +225,9 @@ export function InsetOnboardingPage() {
                       setStudyPlanId("");
                       setShowStepError(false);
                     }}
-                    itemToStringValue={(item) => item.name}
+                    itemToStringValue={(item) =>
+                      item.code ? `${item.code}: ${item.name}` : item.name
+                    }
                   >
                     <ComboboxTrigger
                       ref={campusTriggerRef}
@@ -242,8 +244,11 @@ export function InsetOnboardingPage() {
                       <span
                         className={`block min-w-0 flex-1 truncate text-left ${!campusId ? "text-muted-foreground" : ""}`}
                       >
-                        {(campuses.data ?? []).find((item) => String(item.id) === campusId)?.name ??
-                          "Selecciona una sede"}
+                        {(() => {
+                          const item = (campuses.data ?? []).find((c) => String(c.id) === campusId);
+                          if (!item) return "Selecciona una sede";
+                          return item.code ? `${item.code}: ${item.name}` : item.name;
+                        })()}
                       </span>
                     </ComboboxTrigger>
                     <ComboboxContent
@@ -255,7 +260,9 @@ export function InsetOnboardingPage() {
                       <ComboboxList className="max-h-56 scrollbar-none">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
-                            <span className="block w-full min-w-0 truncate">{item.name}</span>
+                            <span className="block w-full min-w-0 truncate">
+                              {item.code ? `${item.code}: ${item.name}` : item.name}
+                            </span>
                           </ComboboxItem>
                         )}
                       </ComboboxList>
@@ -281,7 +288,9 @@ export function InsetOnboardingPage() {
                       setStudyPlanId("");
                       setShowStepError(false);
                     }}
-                    itemToStringValue={(item) => `${item.code} - ${item.name}`}
+                    itemToStringValue={(item) =>
+                      item.code ? `${item.code}: ${item.name}` : item.name
+                    }
                   >
                     <ComboboxTrigger
                       ref={academicUnitTriggerRef}
@@ -298,11 +307,13 @@ export function InsetOnboardingPage() {
                       <span
                         className={`block min-w-0 flex-1 truncate text-left ${!academicUnitId ? "text-muted-foreground" : ""}`}
                       >
-                        {(academicUnits.data ?? []).find(
-                          (item) => String(item.id) === academicUnitId,
-                        )
-                          ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)!.code} - ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitId)!.name}`
-                          : "Selecciona una carrera"}
+                        {(() => {
+                          const item = (academicUnits.data ?? []).find(
+                            (c) => String(c.id) === academicUnitId,
+                          );
+                          if (!item) return "Selecciona una carrera";
+                          return item.code ? `${item.code}: ${item.name}` : item.name;
+                        })()}
                       </span>
                     </ComboboxTrigger>
                     <ComboboxContent
@@ -315,7 +326,7 @@ export function InsetOnboardingPage() {
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
                             <span className="block w-full min-w-0 truncate">
-                              {item.code} - {item.name}
+                              {item.code ? `${item.code}: ${item.name}` : item.name}
                             </span>
                           </ComboboxItem>
                         )}
@@ -339,7 +350,11 @@ export function InsetOnboardingPage() {
                       setStudyPlanId(item ? String(item.id) : "");
                       setShowStepError(false);
                     }}
-                    itemToStringValue={(item) => item.name}
+                    itemToStringValue={(item) =>
+                      item.external_plan_id
+                        ? `${item.external_plan_id}: ${item.name.replace(new RegExp(`^${item.external_plan_id}\\s*-\\s*`), "")}`
+                        : item.name
+                    }
                   >
                     <ComboboxTrigger
                       ref={studyPlanTriggerRef}
@@ -356,8 +371,15 @@ export function InsetOnboardingPage() {
                       <span
                         className={`block min-w-0 flex-1 truncate text-left ${!studyPlanId ? "text-muted-foreground" : ""}`}
                       >
-                        {(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanId)
-                          ?.name ?? "Selecciona un plan de estudios"}
+                        {(() => {
+                          const item = (studyPlans.data ?? []).find(
+                            (p) => String(p.id) === studyPlanId,
+                          );
+                          if (!item) return "Selecciona un plan de estudios";
+                          return item.external_plan_id
+                            ? `${item.external_plan_id}: ${item.name.replace(new RegExp(`^${item.external_plan_id}\\s*-\\s*`), "")}`
+                            : item.name;
+                        })()}
                       </span>
                     </ComboboxTrigger>
                     <ComboboxContent
@@ -369,7 +391,11 @@ export function InsetOnboardingPage() {
                       <ComboboxList className="max-h-56 scrollbar-none">
                         {(item) => (
                           <ComboboxItem key={item.id} value={item}>
-                            <span className="block w-full min-w-0 truncate">{item.name}</span>
+                            <span className="block w-full min-w-0 truncate">
+                              {item.external_plan_id
+                                ? `${item.external_plan_id}: ${item.name.replace(new RegExp(`^${item.external_plan_id}\\s*-\\s*`), "")}`
+                                : item.name}
+                            </span>
                           </ComboboxItem>
                         )}
                       </ComboboxList>
