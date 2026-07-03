@@ -555,7 +555,11 @@ export function ReviewComposer({
           if (!nextOpen) onCloseReset();
         }}
       >
-        <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
+        <SheetContent
+          side="bottom"
+          className="h-[90vh] overflow-hidden p-0"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <SheetHeader>
             <SheetTitle>Enviar reseña</SheetTitle>

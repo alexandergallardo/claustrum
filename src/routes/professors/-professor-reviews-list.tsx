@@ -592,13 +592,13 @@ export function ProfessorReviewsList({
             }
           }}
         >
-          <SheetContent side="bottom" className="p-4 sm:p-6">
-            <SheetHeader className="mb-4 text-left">
+          <SheetContent side="bottom" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+            <SheetHeader className="text-left">
               <SheetTitle>Reportar reseña</SheetTitle>
               <SheetDescription>Reporte anónimo para revisión de moderación.</SheetDescription>
             </SheetHeader>
 
-            <div className="space-y-4">
+            <div className="space-y-4 px-4 pb-4">
               <div className="space-y-2">
                 <p className="text-sm font-medium">Motivo</p>
                 <Select
@@ -654,20 +654,20 @@ export function ProfessorReviewsList({
                   reportes.
                 </p>
               )}
-            </div>
 
-            <div className="mt-6 flex justify-end">
-              <Button
-                className="w-full sm:w-auto"
-                onClick={() => void submitReport()}
-                disabled={
-                  !turnstileSiteKey ||
-                  reportMutation.isPending ||
-                  (reportReason === "otro" && reportDescription.trim().length === 0)
-                }
-              >
-                Enviar reporte
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  className="w-full sm:w-auto"
+                  onClick={() => void submitReport()}
+                  disabled={
+                    !turnstileSiteKey ||
+                    reportMutation.isPending ||
+                    (reportReason === "otro" && reportDescription.trim().length === 0)
+                  }
+                >
+                  Enviar reporte
+                </Button>
+              </div>
             </div>
           </SheetContent>
         </Sheet>
@@ -681,7 +681,7 @@ export function ProfessorReviewsList({
             }
           }}
         >
-          <DialogContent>
+          <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Reportar reseña</DialogTitle>
               <DialogDescription>Reporte anónimo para revisión de moderación.</DialogDescription>
