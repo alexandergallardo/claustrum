@@ -167,18 +167,20 @@ function ReviewActions({
   review,
   mobile = false,
   readOnly = false,
+  disableReactions = false,
   onReaction,
   onReport,
 }: {
   review: ProfessorReviewPublicRow;
   mobile?: boolean;
   readOnly?: boolean;
+  disableReactions?: boolean;
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void;
   onReport: (review: ProfessorReviewPublicRow) => void;
 }) {
   const isLiked = review.my_reaction === "like";
   const isDisliked = review.my_reaction === "dislike";
-  const isDisabled = readOnly;
+  const isReactionDisabled = readOnly || disableReactions;
 
   return (
     <div
@@ -192,7 +194,7 @@ function ReviewActions({
         type="button"
         aria-label={isLiked ? "Quitar me gusta" : "Me gusta"}
         aria-pressed={isLiked}
-        disabled={isDisabled}
+        disabled={isReactionDisabled}
         onClick={() => onReaction(review, "like")}
         className={[
           "inline-flex items-center gap-1 rounded-md px-2 py-1 text-green-600 transition-colors hover:bg-green-100 disabled:pointer-events-none disabled:opacity-50 dark:text-green-400 dark:hover:bg-green-950",
@@ -206,7 +208,7 @@ function ReviewActions({
         type="button"
         aria-label={isDisliked ? "Quitar no me gusta" : "No me gusta"}
         aria-pressed={isDisliked}
-        disabled={isDisabled}
+        disabled={isReactionDisabled}
         onClick={() => onReaction(review, "dislike")}
         className={[
           "inline-flex items-center gap-1 rounded-md px-2 py-1 text-red-600 transition-colors hover:bg-red-100 disabled:pointer-events-none disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950",
@@ -236,6 +238,7 @@ function getColumns(
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void,
   onReport: (review: ProfessorReviewPublicRow) => void,
   readOnly: boolean,
+  disableReactions: boolean,
 ) {
   return [
     columnHelper.display({
@@ -282,6 +285,7 @@ function getColumns(
           <ReviewActions
             review={row.original}
             readOnly={readOnly}
+            disableReactions={disableReactions}
             onReaction={onReaction}
             onReport={onReport}
           />
@@ -336,10 +340,10 @@ export function ProfessorReviewsList({
   const [reportDescription, setReportDescription] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
-  const effectiveReadOnly = readOnly || !session?.session;
+  const disableReactions = readOnly || !session?.session;
 
   function handleReaction(review: ProfessorReviewPublicRow, reaction: ReactionValue) {
-    if (effectiveReadOnly) return;
+    if (disableReactions) return;
 
     reactionMutation.mutate(
       {
@@ -355,7 +359,7 @@ export function ProfessorReviewsList({
   }
 
   function openReportDialog(review: ProfessorReviewPublicRow) {
-    if (effectiveReadOnly) return;
+    if (readOnly) return;
 
     setReviewToReport(review);
     setReportReason("spam");
@@ -393,7 +397,7 @@ export function ProfessorReviewsList({
 
   const table = useReactTable({
     data: reviewRows,
-    columns: getColumns(handleReaction, openReportDialog, effectiveReadOnly),
+    columns: getColumns(handleReaction, openReportDialog, readOnly, disableReactions),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: totalPages,
@@ -455,7 +459,8 @@ export function ProfessorReviewsList({
                     <ReviewActions
                       review={review}
                       mobile
-                      readOnly={effectiveReadOnly}
+                      readOnly={readOnly}
+                      disableReactions={disableReactions}
                       onReaction={handleReaction}
                       onReport={openReportDialog}
                     />
