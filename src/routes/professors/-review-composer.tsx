@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ProfessorReviewCourseOption } from "@/lib/professor-reviews/types";
@@ -232,10 +232,7 @@ export function ReviewComposer({
             itemToStringValue={(course) => `${course.code}: ${course.name}`}
             disabled={coursesQuery.isLoading || courseOptions.length === 0}
           >
-            <ComboboxChips
-              ref={courseAnchorRef}
-              className="w-full content-start items-start px-1.5"
-            >
+            <ComboboxChips ref={courseAnchorRef} className="w-full content-start items-start">
               {selectedCourses.map((course) => (
                 <Tooltip key={course.id}>
                   <TooltipTrigger asChild>
@@ -256,11 +253,6 @@ export function ReviewComposer({
               container={comboboxPortalContainerRef}
               className="w-80"
             >
-              <ComboboxInput
-                showTrigger={false}
-                showClear={selectedCourses.length > 0}
-                placeholder="Buscar curso..."
-              />
               <ComboboxEmpty>No se encontraron cursos para este profesor.</ComboboxEmpty>
               <ComboboxList className="max-h-56 scrollbar-none">
                 {(course) => (
@@ -288,7 +280,7 @@ export function ReviewComposer({
               render={
                 <Button
                   variant="outline"
-                  className="w-full min-w-0 justify-between overflow-hidden font-normal"
+                  className="w-full min-w-0 justify-between overflow-hidden px-3 font-normal"
                   disabled={termsQuery.isLoading || termOptions.length === 0}
                 />
               }
@@ -303,8 +295,30 @@ export function ReviewComposer({
                   ? formatClosedTermLabel(selectedTerm)
                   : termsQuery.isLoading
                     ? "Cargando periodos..."
-                    : "Sin periodo"}
+                    : "Seleccionar periodo"}
               </span>
+              {selectedTerm && (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted z-10 -mr-1.5 flex h-full items-center justify-center rounded-sm p-0.5 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setAcademicTermId("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setAcademicTermId("");
+                    }
+                  }}
+                >
+                  <X className="size-4" />
+                  <span className="sr-only">Limpiar periodo seleccionado</span>
+                </div>
+              )}
             </ComboboxTrigger>
             <ComboboxContent
               anchor={termTriggerRef}
@@ -334,14 +348,42 @@ export function ReviewComposer({
           </Combobox>
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="composer-grade-received">Calificación obtenida (opcional)</Label>
-          <Input
-            id="composer-grade-received"
-            placeholder="85, A, Aprobado"
+        <div className="space-y-2">
+          <ScoreInput
+            label="Calificación obtenida (opcional)"
             value={gradeReceived}
-            onChange={(event) => setGradeReceived(event.target.value)}
+            onChange={setGradeReceived}
+            max={100}
+            step={1}
+            regex={/^\d{0,3}(\.\d?)?$/}
+            placeholder="0 a 100"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="block">Asistencia obligatoria</Label>
+          <div className="flex h-9 items-center">
+            <RadioGroup
+              value={attendanceRequired ? "yes" : "no"}
+              onValueChange={(value) => setAttendanceRequired(value === "yes")}
+              className="flex items-center gap-4"
+            >
+              <label
+                htmlFor="composer-attendance-yes"
+                className="inline-flex items-center gap-2 text-sm"
+              >
+                <RadioGroupItem value="yes" id="composer-attendance-yes" />
+                Sí
+              </label>
+              <label
+                htmlFor="composer-attendance-no"
+                className="inline-flex items-center gap-2 text-sm"
+              >
+                <RadioGroupItem value="no" id="composer-attendance-no" />
+                No
+              </label>
+            </RadioGroup>
+          </div>
         </div>
       </div>
 
@@ -395,57 +437,25 @@ export function ReviewComposer({
         <ScoreInput label="Justicia" value={fairnessScore} onChange={setFairnessScore} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="composer-engagement-level">Interés en la clase</Label>
-            <span
-              className={`text-sm font-medium ${clampedEngagementLevel >= 4 ? "text-green-600" : clampedEngagementLevel <= 2 ? "text-red-600" : "text-amber-600"}`}
-            >
-              {clampedEngagementLevel <= 2
-                ? "Bajo"
-                : clampedEngagementLevel >= 4
-                  ? "Alto"
-                  : "Medio"}
-            </span>
-          </div>
-          <div className="flex h-9 items-center">
-            <Slider
-              className="w-full -translate-y-px [&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-track]]:bg-gradient-to-r [&_[data-slot=slider-track]]:from-red-500 [&_[data-slot=slider-track]]:to-green-500"
-              id="composer-engagement-level"
-              min={1}
-              max={5}
-              step={1}
-              value={[clampedEngagementLevel]}
-              onValueChange={(value) => setEngagementLevel(String(value[0] ?? 4))}
-            />
-          </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="composer-engagement-level">Interés en la clase</Label>
+          <span
+            className={`text-sm font-medium ${clampedEngagementLevel >= 4 ? "text-green-600" : clampedEngagementLevel <= 2 ? "text-red-600" : "text-amber-600"}`}
+          >
+            {clampedEngagementLevel <= 2 ? "Bajo" : clampedEngagementLevel >= 4 ? "Alto" : "Medio"}
+          </span>
         </div>
-
-        <div className="grid gap-2">
-          <Label className="block">Asistencia obligatoria</Label>
-          <div className="flex h-9 items-center">
-            <RadioGroup
-              value={attendanceRequired ? "yes" : "no"}
-              onValueChange={(value) => setAttendanceRequired(value === "yes")}
-              className="flex items-center gap-4"
-            >
-              <label
-                htmlFor="composer-attendance-yes"
-                className="inline-flex items-center gap-2 text-sm"
-              >
-                <RadioGroupItem value="yes" id="composer-attendance-yes" />
-                Sí
-              </label>
-              <label
-                htmlFor="composer-attendance-no"
-                className="inline-flex items-center gap-2 text-sm"
-              >
-                <RadioGroupItem value="no" id="composer-attendance-no" />
-                No
-              </label>
-            </RadioGroup>
-          </div>
+        <div className="flex h-9 items-center">
+          <Slider
+            className="w-full -translate-y-px [&_[data-slot=slider-range]]:bg-transparent [&_[data-slot=slider-track]]:bg-gradient-to-r [&_[data-slot=slider-track]]:from-red-500 [&_[data-slot=slider-track]]:to-green-500"
+            id="composer-engagement-level"
+            min={1}
+            max={5}
+            step={1}
+            value={[clampedEngagementLevel]}
+            onValueChange={(value) => setEngagementLevel(String(value[0] ?? 4))}
+          />
         </div>
       </div>
 
@@ -463,7 +473,7 @@ export function ReviewComposer({
         >
           <ComboboxChips
             ref={tagAnchorRef}
-            className="min-h-[64px] w-full content-start items-start px-1.5"
+            className="min-h-[64px] w-full content-start items-start"
           >
             {tags.map((tag) => (
               <ComboboxChip key={tag}>{tag}</ComboboxChip>
@@ -478,7 +488,6 @@ export function ReviewComposer({
             container={comboboxPortalContainerRef}
             className="w-80"
           >
-            <ComboboxInput showTrigger={false} placeholder="Buscar etiqueta..." />
             <ComboboxEmpty>No se encontraron etiquetas.</ComboboxEmpty>
             <ComboboxList className="max-h-56 scrollbar-none">
               {(group, index) => (
@@ -612,10 +621,18 @@ function ScoreInput({
   label,
   value,
   onChange,
+  max = 10,
+  step = 0.1,
+  regex = /^\d{0,2}(\.\d?)?$/,
+  placeholder = "0-10",
 }: {
   label: string;
   value: string;
   onChange: (nextValue: string) => void;
+  max?: number;
+  step?: number;
+  regex?: RegExp;
+  placeholder?: string;
 }) {
   const handleValueChange = (nextValue: string) => {
     if (nextValue === "") {
@@ -623,14 +640,14 @@ function ScoreInput({
       return;
     }
 
-    if (!/^\d{0,2}(\.\d?)?$/.test(nextValue)) {
+    if (!regex.test(nextValue)) {
       return;
     }
 
     const parsed = Number(nextValue);
     if (Number.isNaN(parsed)) return;
 
-    onChange(String(Math.min(10, Math.max(0, parsed))));
+    onChange(String(Math.min(max, Math.max(0, parsed))));
   };
 
   const handleStep = (delta: number) => {
@@ -640,14 +657,14 @@ function ScoreInput({
       return;
     }
 
-    const nextValue = Math.min(10, Math.max(0, Math.round((currentValue + delta) * 10) / 10));
+    const nextValue = Math.min(max, Math.max(0, Math.round((currentValue + delta) * 10) / 10));
     onChange(String(nextValue));
   };
 
   const parsedValue = Number(value);
-  const currentValue = Number.isNaN(parsedValue) ? 0 : Math.min(10, Math.max(0, parsedValue));
+  const currentValue = Number.isNaN(parsedValue) ? 0 : Math.min(max, Math.max(0, parsedValue));
   const isAtMin = currentValue <= 0;
-  const isAtMax = currentValue >= 10;
+  const isAtMax = currentValue >= max;
 
   return (
     <div className="space-y-2">
@@ -659,13 +676,13 @@ function ScoreInput({
           inputMode="decimal"
           value={value}
           onChange={(event) => handleValueChange(event.target.value)}
-          placeholder="0-10"
+          placeholder={placeholder}
         />
         <Button
           type="button"
           variant="ghost"
           className="border-input text-muted-foreground hover:text-foreground h-full w-8 cursor-pointer rounded-none border-l p-0"
-          onClick={() => handleStep(-0.1)}
+          onClick={() => handleStep(-step)}
           disabled={isAtMin}
           aria-label={`Disminuir ${label.toLowerCase()}`}
         >
@@ -675,7 +692,7 @@ function ScoreInput({
           type="button"
           variant="ghost"
           className="border-input text-muted-foreground hover:text-foreground h-full w-8 cursor-pointer rounded-none border-l p-0"
-          onClick={() => handleStep(0.1)}
+          onClick={() => handleStep(step)}
           disabled={isAtMax}
           aria-label={`Aumentar ${label.toLowerCase()}`}
         >
