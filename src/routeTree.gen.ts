@@ -16,6 +16,7 @@ import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
+import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
 import { Route as OverviewIndexRouteImport } from './routes/overview/index'
 import { Route as ModerationIndexRouteImport } from './routes/moderation/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
@@ -24,7 +25,6 @@ import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
-const ProfessorsIndexLazyRouteImport = createFileRoute('/professors/')()
 const PoliciesIndexLazyRouteImport = createFileRoute('/policies/')()
 const OnboardingIndexLazyRouteImport = createFileRoute('/onboarding/')()
 const SettingsSecurityLazyRouteImport = createFileRoute('/settings/security')()
@@ -60,13 +60,6 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfessorsIndexLazyRoute = ProfessorsIndexLazyRouteImport.update({
-  id: '/professors/',
-  path: '/professors/',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import('./routes/professors/index.lazy').then((d) => d.Route),
-)
 const PoliciesIndexLazyRoute = PoliciesIndexLazyRouteImport.update({
   id: '/policies/',
   path: '/policies/',
@@ -94,6 +87,13 @@ const ScheduleIndexRoute = ScheduleIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import('./routes/schedule/index.lazy').then((d) => d.Route),
+)
+const ProfessorsIndexRoute = ProfessorsIndexRouteImport.update({
+  id: '/professors/',
+  path: '/professors/',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/professors/index.lazy').then((d) => d.Route),
 )
 const OverviewIndexRoute = OverviewIndexRouteImport.update({
   id: '/overview/',
@@ -231,11 +231,11 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof DocsIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/overview/': typeof OverviewIndexRoute
+  '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/onboarding/': typeof OnboardingIndexLazyRoute
   '/policies/': typeof PoliciesIndexLazyRoute
-  '/professors/': typeof ProfessorsIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa/': typeof Auth2faIndexLazyRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
@@ -257,11 +257,11 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/moderation': typeof ModerationIndexRoute
   '/overview': typeof OverviewIndexRoute
+  '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/onboarding': typeof OnboardingIndexLazyRoute
   '/policies': typeof PoliciesIndexLazyRoute
-  '/professors': typeof ProfessorsIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa': typeof Auth2faIndexLazyRoute
   '/auth/magic-link': typeof AuthMagicLinkIndexLazyRoute
@@ -285,11 +285,11 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/overview/': typeof OverviewIndexRoute
+  '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/onboarding/': typeof OnboardingIndexLazyRoute
   '/policies/': typeof PoliciesIndexLazyRoute
-  '/professors/': typeof ProfessorsIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa/': typeof Auth2faIndexLazyRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
@@ -314,11 +314,11 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/moderation/'
     | '/overview/'
+    | '/professors/'
     | '/schedule/'
     | '/settings/'
     | '/onboarding/'
     | '/policies/'
-    | '/professors/'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -340,11 +340,11 @@ export interface FileRouteTypes {
     | '/docs'
     | '/moderation'
     | '/overview'
+    | '/professors'
     | '/schedule'
     | '/settings'
     | '/onboarding'
     | '/policies'
-    | '/professors'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa'
     | '/auth/magic-link'
@@ -367,11 +367,11 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/moderation/'
     | '/overview/'
+    | '/professors/'
     | '/schedule/'
     | '/settings/'
     | '/onboarding/'
     | '/policies/'
-    | '/professors/'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -392,10 +392,10 @@ export interface RootRouteChildren {
   DocsIndexRoute: typeof DocsIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
   OverviewIndexRoute: typeof OverviewIndexRoute
+  ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
   OnboardingIndexLazyRoute: typeof OnboardingIndexLazyRoute
   PoliciesIndexLazyRoute: typeof PoliciesIndexLazyRoute
-  ProfessorsIndexLazyRoute: typeof ProfessorsIndexLazyRoute
   EvaluationsViewEvaluationSlugRoute: typeof EvaluationsViewEvaluationSlugRoute
 }
 
@@ -420,13 +420,6 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/professors/': {
-      id: '/professors/'
-      path: '/professors'
-      fullPath: '/professors/'
-      preLoaderRoute: typeof ProfessorsIndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policies/': {
@@ -455,6 +448,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule/'
       preLoaderRoute: typeof ScheduleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/professors/': {
+      id: '/professors/'
+      path: '/professors'
+      fullPath: '/professors/'
+      preLoaderRoute: typeof ProfessorsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/overview/': {
@@ -630,10 +630,10 @@ const rootRouteChildren: RootRouteChildren = {
   DocsIndexRoute: DocsIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
+  ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
   OnboardingIndexLazyRoute: OnboardingIndexLazyRoute,
   PoliciesIndexLazyRoute: PoliciesIndexLazyRoute,
-  ProfessorsIndexLazyRoute: ProfessorsIndexLazyRoute,
   EvaluationsViewEvaluationSlugRoute: EvaluationsViewEvaluationSlugRoute,
 }
 export const routeTree = rootRouteImport

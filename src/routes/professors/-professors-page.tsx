@@ -1,6 +1,6 @@
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, getRouteApi } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -50,9 +50,14 @@ function formatScore(score: number | null): string {
   return score.toFixed(2);
 }
 
+const routeApi = getRouteApi("/professors/");
+
 export function ProfessorsReviewsPage() {
   const queryClient = useQueryClient();
-  const [searchInput, setSearchInput] = useState("");
+  const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+
+  const searchInput = search.q ?? "";
   const [debouncedSearch] = useDebouncedValue(searchInput, { wait: 300 });
   const [minAverageScoreInput, setMinAverageScoreInput] = useState("");
   const [minReviewCountInput, setMinReviewCountInput] = useState("0");
@@ -180,7 +185,11 @@ export function ProfessorsReviewsPage() {
               value={searchInput}
               onChange={(event) => {
                 setPage(0);
-                setSearchInput(event.target.value);
+                const newSearch = event.target.value;
+                void navigate({
+                  search: (prev) => ({ ...prev, q: newSearch || undefined }),
+                  replace: true,
+                });
               }}
             />
           </div>
@@ -260,11 +269,6 @@ export function ProfessorsReviewsPage() {
             </div>
           ) : (
             <div className="relative min-h-[420px]">
-              {query.isFetching ? (
-                <div className="bg-background/95 text-muted-foreground absolute top-2 right-2 z-10 rounded-md border px-2 py-1 text-xs">
-                  Actualizando…
-                </div>
-              ) : null}
               <Table className="table-fixed">
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -316,6 +320,9 @@ export function ProfessorsReviewsPage() {
                 ? "Sin resultados"
                 : `Mostrando ${firstRow}-${lastRow} de ${totalCount}`}{" "}
               · Página {page + 1} de {totalPages}
+              {query.isFetching ? (
+                <span className="ml-1 animate-pulse">(Actualizando…)</span>
+              ) : null}
             </span>
             <div className="flex items-center gap-3">
               <Pagination className="w-auto">

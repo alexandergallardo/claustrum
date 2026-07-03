@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "@tanstack/react-router";
+import { useNavigate, useParams, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, PenLine } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -61,6 +61,7 @@ function metricLabel(value: number | null, suffix = "") {
 export function ProfessorDetailPage() {
   const navigate = useNavigate({ from: "/professors/$professorId" });
   const params = useParams({ from: "/professors/$professorId" });
+  const router = useRouter();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const professorId = Number(params.professorId);
@@ -111,7 +112,7 @@ export function ProfessorDetailPage() {
 
   const handleBack = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
-      window.history.back();
+      router.history.back();
       return;
     }
     void navigate({ to: "/professors" });
