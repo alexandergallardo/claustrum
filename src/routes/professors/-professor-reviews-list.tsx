@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useSession } from "@/lib/auth/client";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
   useSetProfessorReviewReaction,
@@ -320,13 +321,16 @@ export function ProfessorReviewsList({
   const reactionMutation = useSetProfessorReviewReaction();
   const reportMutation = useSubmitProfessorReviewReport();
   const turnstileSiteKey = getTurnstileSiteKey();
+  const { data: session } = useSession();
   const [reviewToReport, setReviewToReport] = useState<ProfessorReviewPublicRow | null>(null);
   const [reportReason, setReportReason] = useState<ProfessorReviewReportReason>("spam");
   const [reportDescription, setReportDescription] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
+  const effectiveReadOnly = readOnly || !session?.session;
+
   function handleReaction(review: ProfessorReviewPublicRow, reaction: ReactionValue) {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
 
     reactionMutation.mutate(
       {
@@ -342,7 +346,7 @@ export function ProfessorReviewsList({
   }
 
   function openReportDialog(review: ProfessorReviewPublicRow) {
-    if (readOnly) return;
+    if (effectiveReadOnly) return;
 
     setReviewToReport(review);
     setReportReason("spam");
@@ -380,7 +384,7 @@ export function ProfessorReviewsList({
 
   const table = useReactTable({
     data: reviewRows,
-    columns: getColumns(handleReaction, openReportDialog, readOnly),
+    columns: getColumns(handleReaction, openReportDialog, effectiveReadOnly),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: totalPages,
@@ -442,7 +446,7 @@ export function ProfessorReviewsList({
                     <ReviewActions
                       review={review}
                       mobile
-                      readOnly={readOnly}
+                      readOnly={effectiveReadOnly}
                       onReaction={handleReaction}
                       onReport={openReportDialog}
                     />
