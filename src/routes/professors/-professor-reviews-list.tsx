@@ -157,21 +157,19 @@ function ScoreRow({ label, score }: { label: string; score: number | null }) {
 function ReviewActions({
   review,
   mobile = false,
-  isPending,
   readOnly = false,
   onReaction,
   onReport,
 }: {
   review: ProfessorReviewPublicRow;
   mobile?: boolean;
-  isPending: boolean;
   readOnly?: boolean;
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void;
   onReport: (review: ProfessorReviewPublicRow) => void;
 }) {
   const isLiked = review.my_reaction === "like";
   const isDisliked = review.my_reaction === "dislike";
-  const isDisabled = isPending || readOnly;
+  const isDisabled = readOnly;
 
   return (
     <div
@@ -228,7 +226,6 @@ const columnHelper = createColumnHelper<ProfessorReviewPublicRow>();
 function getColumns(
   onReaction: (review: ProfessorReviewPublicRow, reaction: ReactionValue) => void,
   onReport: (review: ProfessorReviewPublicRow) => void,
-  pendingReactionId: number | null,
   readOnly: boolean,
 ) {
   return [
@@ -275,7 +272,6 @@ function getColumns(
           </div>
           <ReviewActions
             review={row.original}
-            isPending={pendingReactionId === row.original.review_id}
             readOnly={readOnly}
             onReaction={onReaction}
             onReport={onReport}
@@ -324,7 +320,6 @@ export function ProfessorReviewsList({
   const reactionMutation = useSetProfessorReviewReaction();
   const reportMutation = useSubmitProfessorReviewReport();
   const turnstileSiteKey = getTurnstileSiteKey();
-  const [pendingReactionId, setPendingReactionId] = useState<number | null>(null);
   const [reviewToReport, setReviewToReport] = useState<ProfessorReviewPublicRow | null>(null);
   const [reportReason, setReportReason] = useState<ProfessorReviewReportReason>("spam");
   const [reportDescription, setReportDescription] = useState("");
@@ -333,7 +328,6 @@ export function ProfessorReviewsList({
   function handleReaction(review: ProfessorReviewPublicRow, reaction: ReactionValue) {
     if (readOnly) return;
 
-    setPendingReactionId(review.review_id);
     reactionMutation.mutate(
       {
         reviewId: review.review_id,
@@ -342,9 +336,6 @@ export function ProfessorReviewsList({
       {
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "No se pudo guardar tu reacción");
-        },
-        onSettled: () => {
-          setPendingReactionId(null);
         },
       },
     );
@@ -389,7 +380,7 @@ export function ProfessorReviewsList({
 
   const table = useReactTable({
     data: reviewRows,
-    columns: getColumns(handleReaction, openReportDialog, pendingReactionId, readOnly),
+    columns: getColumns(handleReaction, openReportDialog, readOnly),
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: totalPages,
@@ -451,7 +442,6 @@ export function ProfessorReviewsList({
                     <ReviewActions
                       review={review}
                       mobile
-                      isPending={pendingReactionId === review.review_id}
                       readOnly={readOnly}
                       onReaction={handleReaction}
                       onReport={openReportDialog}
