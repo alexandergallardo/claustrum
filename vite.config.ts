@@ -12,6 +12,11 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["html-to-image"],
   },
+  server: {
+    watch: {
+      ignored: ["**/.codebase-memory/**", "**/.opencode/**"],
+    },
+  },
   build: {
     rolldownOptions: {
       output: {
