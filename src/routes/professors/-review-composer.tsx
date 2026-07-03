@@ -590,7 +590,10 @@ export function ReviewComposer({
         if (!nextOpen) onCloseReset();
       }}
     >
-      <DialogContent className="max-h-[90vh] max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+      <DialogContent
+        className="max-h-[90vh] max-w-3xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
         <DialogHeader>
           <DialogTitle>Enviar reseña</DialogTitle>
