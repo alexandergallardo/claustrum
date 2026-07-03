@@ -3,3 +3,4 @@ supabase/seed.sql linguist-detectable=false
 src/routeTree.gen.ts linguist-generated=true
 supabase/seeds/tec-data/*.sql linguist-generated=true
 supabase/seeds/tec-data/*.json linguist-generated=true
+data/reviews/data/processed/sql/*.sql linguist-generated=true

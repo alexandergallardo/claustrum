@@ -1,0 +1,29 @@
+[project]
+name = "reviews"
+version = "0.1.0"
+description = "MisProfesores professor matching and review import pipeline"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "rapidfuzz>=3.14.5",
+    "requests>=2.34.2",
+    "python-dateutil>=2.9.0.post0",
+    "unidecode>=1.4.0",
+    "rich>=15.0.0",
+]
+
+[project.scripts]
+reviews = "reviews.cli:reviews_command"
+reviews-audit = "reviews.professors.audit:main"
+reviews-download = "reviews.reviews.downloader:main"
+reviews-import = "reviews.cli:import_professor_command"
+reviews-import-professor = "reviews.cli:import_professor_command"
+reviews-match = "reviews.professors.matching:main"
+reviews-process = "reviews.processing.pipeline:main"
+reviews-refresh-matches = "reviews.cli:refresh_matches_command"
+reviews-sync = "reviews.cli:sync_command"
+
+[build-system]
+requires = ["uv_build>=0.11.19,<0.12"]
+build-backend = "uv_build"

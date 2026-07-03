@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.mypy_cache/
+*.pyc
+*.txt
+.env
+
+# Ignore all data folder
+data/*
+!data/processed/
+data/processed/*
+!data/processed/sql/
+data/processed/sql/*
+!data/processed/sql/*.sql
