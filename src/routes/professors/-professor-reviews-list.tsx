@@ -40,7 +40,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useSession } from "@/lib/auth/client";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import {
@@ -318,6 +326,7 @@ export function ProfessorReviewsList({
   frameless = false,
   readOnly = false,
 }: ProfessorReviewsListProps) {
+  const isMobile = useIsMobile();
   const reactionMutation = useSetProfessorReviewReaction();
   const reportMutation = useSubmitProfessorReviewReport();
   const turnstileSiteKey = getTurnstileSiteKey();
@@ -568,91 +577,184 @@ export function ProfessorReviewsList({
         </div>
       )}
 
-      <Dialog
-        open={reviewToReport !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setReviewToReport(null);
-            setTurnstileToken(null);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reportar reseña</DialogTitle>
-            <DialogDescription>Reporte anónimo para revisión de moderación.</DialogDescription>
-          </DialogHeader>
+      {isMobile ? (
+        <Sheet
+          open={reviewToReport !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReviewToReport(null);
+              setTurnstileToken(null);
+            }
+          }}
+        >
+          <SheetContent side="bottom" className="p-4 sm:p-6">
+            <SheetHeader className="mb-4 text-left">
+              <SheetTitle>Reportar reseña</SheetTitle>
+              <SheetDescription>Reporte anónimo para revisión de moderación.</SheetDescription>
+            </SheetHeader>
 
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <p className="text-sm font-medium">Motivo</p>
-              <Select
-                value={reportReason}
-                onValueChange={(value) => setReportReason(value as ProfessorReviewReportReason)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un motivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REPORT_REASONS.map((reason) => (
-                    <SelectItem key={reason.value} value={reason.value}>
-                      {reason.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Motivo</p>
+                <Select
+                  value={reportReason}
+                  onValueChange={(value) => setReportReason(value as ProfessorReviewReportReason)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un motivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORT_REASONS.map((reason) => (
+                      <SelectItem key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1">
-              <p className="text-sm font-medium">
-                {reportReason === "otro" ? "Descripción" : "Descripción (opcional)"}
-              </p>
-              <Textarea
-                value={reportDescription}
-                onChange={(event) => setReportDescription(event.target.value)}
-                placeholder={
-                  reportReason === "otro"
-                    ? "Describe el motivo del reporte"
-                    : "Contexto adicional para moderación"
-                }
-              />
-            </div>
-
-            {turnstileSiteKey ? (
-              <Suspense
-                fallback={
-                  <div className="text-muted-foreground text-xs">Cargando verificación…</div>
-                }
-              >
-                <Turnstile
-                  siteKey={turnstileSiteKey}
-                  onSuccess={(token) => setTurnstileToken(token)}
-                  onError={() => setTurnstileToken(null)}
-                  onExpire={() => setTurnstileToken(null)}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  {reportReason === "otro" ? "Descripción" : "Descripción (opcional)"}
+                </p>
+                <Textarea
+                  value={reportDescription}
+                  onChange={(event) => setReportDescription(event.target.value)}
+                  placeholder={
+                    reportReason === "otro"
+                      ? "Describe el motivo del reporte"
+                      : "Contexto adicional para moderación"
+                  }
                 />
-              </Suspense>
-            ) : (
-              <p className="text-muted-foreground text-xs">
-                Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
-                reportes.
-              </p>
-            )}
-          </div>
+              </div>
 
-          <DialogFooter>
-            <Button
-              onClick={() => void submitReport()}
-              disabled={
-                !turnstileSiteKey ||
-                reportMutation.isPending ||
-                (reportReason === "otro" && reportDescription.trim().length === 0)
-              }
-            >
-              Enviar reporte
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {turnstileSiteKey ? (
+                <div className="min-h-[70px]">
+                  <Suspense
+                    fallback={
+                      <div className="text-muted-foreground text-xs">Cargando verificación…</div>
+                    }
+                  >
+                    <Turnstile
+                      siteKey={turnstileSiteKey}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                      onError={() => setTurnstileToken(null)}
+                      onExpire={() => setTurnstileToken(null)}
+                    />
+                  </Suspense>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
+                  reportes.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => void submitReport()}
+                disabled={
+                  !turnstileSiteKey ||
+                  reportMutation.isPending ||
+                  (reportReason === "otro" && reportDescription.trim().length === 0)
+                }
+              >
+                Enviar reporte
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog
+          open={reviewToReport !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setReviewToReport(null);
+              setTurnstileToken(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reportar reseña</DialogTitle>
+              <DialogDescription>Reporte anónimo para revisión de moderación.</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Motivo</p>
+                <Select
+                  value={reportReason}
+                  onValueChange={(value) => setReportReason(value as ProfessorReviewReportReason)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un motivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORT_REASONS.map((reason) => (
+                      <SelectItem key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm font-medium">
+                  {reportReason === "otro" ? "Descripción" : "Descripción (opcional)"}
+                </p>
+                <Textarea
+                  value={reportDescription}
+                  onChange={(event) => setReportDescription(event.target.value)}
+                  placeholder={
+                    reportReason === "otro"
+                      ? "Describe el motivo del reporte"
+                      : "Contexto adicional para moderación"
+                  }
+                />
+              </div>
+
+              <div className="min-h-[70px]">
+                {turnstileSiteKey ? (
+                  <Suspense
+                    fallback={
+                      <div className="text-muted-foreground text-xs">Cargando verificación…</div>
+                    }
+                  >
+                    <Turnstile
+                      siteKey={turnstileSiteKey}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                      onError={() => setTurnstileToken(null)}
+                      onExpire={() => setTurnstileToken(null)}
+                    />
+                  </Suspense>
+                ) : (
+                  <p className="text-muted-foreground text-xs">
+                    Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
+                    reportes.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                onClick={() => void submitReport()}
+                disabled={
+                  !turnstileSiteKey ||
+                  reportMutation.isPending ||
+                  (reportReason === "otro" && reportDescription.trim().length === 0)
+                }
+              >
+                Enviar reporte
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
