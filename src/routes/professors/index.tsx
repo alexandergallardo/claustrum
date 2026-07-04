@@ -7,6 +7,7 @@ export interface ProfessorsSearch {
   ms?: string;
   mc?: string;
   cc?: string;
+  page?: number;
 }
 
 export const Route = createFileRoute("/professors/")({
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/professors/")({
       ms: typeof search.ms === "string" ? search.ms : undefined,
       mc: typeof search.mc === "string" ? search.mc : undefined,
       cc: typeof search.cc === "string" ? search.cc : undefined,
+      page: search.page !== undefined ? Number(search.page) : undefined,
     };
   },
 });

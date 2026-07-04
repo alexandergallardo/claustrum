@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useRouter } from "@tanstack/react-router";
+import { useNavigate, useParams, useRouter, getRouteApi } from "@tanstack/react-router";
+const routeApi = getRouteApi("/professors/$professorId");
 import { ArrowLeft, PenLine } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -66,7 +67,18 @@ export function ProfessorDetailPage() {
   const isMobile = useIsMobile();
   const professorId = Number(params.professorId);
 
-  const [page, setPage] = useState(0);
+  const search = routeApi.useSearch();
+  const page = search.page ? search.page - 1 : 0;
+  const setPage = (updater: number | ((prev: number) => number)) => {
+    const newPage = typeof updater === "function" ? updater(page) : updater;
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        page: newPage === 0 ? undefined : newPage + 1,
+      }),
+      replace: true,
+    });
+  };
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [isComposerOpen, setIsComposerOpen] = useState(false);
 

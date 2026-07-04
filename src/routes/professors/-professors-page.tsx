@@ -64,8 +64,17 @@ export function ProfessorsReviewsPage() {
   const [courseCodeInput, setCourseCodeInput] = useState("");
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [page, setPage] = useState(0);
-
+  const page = search.page ? search.page - 1 : 0;
+  const setPage = (updater: number | ((prev: number) => number)) => {
+    const newPage = typeof updater === "function" ? updater(page) : updater;
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        page: newPage === 0 ? undefined : newPage + 1,
+      }),
+      replace: true,
+    });
+  };
   const minAverageScore = minAverageScoreInput.trim() === "" ? null : Number(minAverageScoreInput);
   const minReviewCount = Number.isFinite(Number(minReviewCountInput))
     ? Number(minReviewCountInput)
