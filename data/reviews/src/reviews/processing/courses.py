@@ -616,6 +616,9 @@ def course_contextual_score(
     if match_scope == "professor_history":
         score += 8
         reasons.append("professor history")
+    if course.get("has_offerings"):
+        score += 10
+        reasons.append("has active offerings")
     if normalized_name in GENERIC_GLOBAL_COURSE_NAMES and match_scope == "global_catalog":
         score -= 25
         reasons.append("generic global name penalty")
@@ -1494,6 +1497,17 @@ def get_course_match(*, professor_id: int, review: dict[str, Any], courses_by_pr
             variation_course_ids=variation_course_ids,
             course_prefix_affinity=course_prefix_affinity,
         ),
+        contextual_course_match(
+            review.get("class_name"),
+            professor_courses,
+            match_scope="professor_history",
+            requires_offering_backfill=False,
+            dominant_prefix_set=dominant_prefix_set,
+            variation_course_ids=variation_course_ids,
+            course_prefix_affinity=course_prefix_affinity,
+            minimum_score=82,
+            minimum_gap=3,
+        ),
     ):
         if candidate is None:
             continue
@@ -1548,17 +1562,6 @@ def get_course_match(*, professor_id: int, review: dict[str, Any], courses_by_pr
                     return family_decision
 
     for candidate in (
-        contextual_course_match(
-            review.get("class_name"),
-            professor_courses,
-            match_scope="professor_history",
-            requires_offering_backfill=False,
-            dominant_prefix_set=dominant_prefix_set,
-            variation_course_ids=variation_course_ids,
-            course_prefix_affinity=course_prefix_affinity,
-            minimum_score=82,
-            minimum_gap=3,
-        ),
         contextual_course_match(
             review.get("class_name"),
             all_courses,

@@ -92,9 +92,16 @@ def get_existing_import_keys(professor_id: int) -> set[str]:
 
 
 def load_all_courses() -> list[dict[str, Any]]:
-    rows = query_database("SELECT id AS course_id, code, name FROM public.course ORDER BY code, name")
+    rows = query_database(
+        "SELECT id AS course_id, code, name, EXISTS(SELECT 1 FROM public.course_offering co WHERE co.course_id = c.id) AS has_offerings FROM public.course c ORDER BY code, name"
+    )
     return [
-        {"course_id": int(row["course_id"]), "code": str(row["code"]), "name": str(row["name"])}
+        {
+            "course_id": int(row["course_id"]),
+            "code": str(row["code"]),
+            "name": str(row["name"]),
+            "has_offerings": bool(row.get("has_offerings")),
+        }
         for row in rows
     ]
 

@@ -71,9 +71,7 @@ def write_professor_sql(professor_id: int, page_data: list[dict[str, Any]], outp
         
     statements: list[str] = [
         "BEGIN;",
-        "SET LOCAL search_path = public;",
-        "ALTER TABLE public.professor_review ENABLE ROW LEVEL SECURITY;",
-        "ALTER TABLE public.professor_review_course ENABLE ROW LEVEL SECURITY;"
+        "SET LOCAL search_path = public;"
     ]
     
     # Process reviews in batches of 1000 to avoid overly massive queries

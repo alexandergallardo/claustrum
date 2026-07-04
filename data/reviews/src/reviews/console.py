@@ -20,7 +20,7 @@ def title(text: str) -> None:
 
 def step(index: int, total: int, text: str) -> None:
     console.print()
-    console.print(f"[bold blue]Paso {index}/{total}:[/bold blue] [bold white]{text}[/bold white]")
+    console.print(f"[bold blue]Step {index}/{total}:[/bold blue] [bold white]{text}[/bold white]")
 
 
 def info(text: str) -> None:
@@ -71,15 +71,15 @@ def match_summary(result: dict[str, Any]) -> None:
         summary("Estados", {str(key): value for key, value in sorted(status_counts.items())})
 
 
-def progress_bar(current: int, total: int, *, label: str = "", width: int = 28) -> str:
+def progress_bar(current: int, total: int, *, label: str = "", width: int = 40) -> str:
     if total <= 0:
         return f"{label} 0/0"
     current = min(max(current, 0), total)
     filled = round(width * current / total)
-    bar = "█" * filled + "░" * (width - filled)
+    bar = "━" * filled + " " * (width - filled)
     percent = round(100 * current / total)
     prefix = f"{label} " if label else ""
-    return f"{prefix}[{bar}] {current:,}/{total:,} {percent:>3}%"
+    return f"{prefix}{bar} {percent:>3}% {current:,}/{total:,} pages"
 
 
 def progress_iter(items: Iterable[T], *, total: int, label: str) -> Iterator[tuple[int, T]]:
@@ -93,7 +93,7 @@ def print_download_result(result: dict[str, Any]) -> None:
     pages = result.get("downloaded_pages", 0)
     new_reviews = result.get("new_reviews", 0)
     reason = result.get("stop_reason", "")
-    console.print(f"  [dim]- source {source_id} → profesor {professor_id}: {pages} páginas, {new_reviews} nuevas, corte={reason}[/dim]")
+    console.print(f"  [dim]- source {source_id} → professor {professor_id}: {pages} pages, {new_reviews} new, cutoff={reason}[/dim]")
 
 
 def flush_line() -> None:

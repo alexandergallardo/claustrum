@@ -4,7 +4,7 @@ import argparse
 from datetime import datetime, timezone
 from typing import Any
 
-from reviews.console import info, match_summary, print_download_result, progress_iter, step, success, title, warning
+from reviews.console import console, info, match_summary, print_download_result, progress_iter, step, success, title, warning
 from reviews.paths import RAW_CANDIDATES_ROOT, RAW_PROFESSORS_ROOT, PROFESSORS_OUTPUT
 from reviews.processing.pipeline import main as process_main
 from reviews.professors.audit import main as audit_main
@@ -136,7 +136,7 @@ def sync_command() -> None:
     success("Workflow finalizado.")
 
 
-def import_professor_command() -> None:
+def import_professor_command(is_subcommand: bool = False) -> None:
     parser = argparse.ArgumentParser(description="Download and process reviews for specific professors.")
     parser.add_argument("--professor-id", action="append", type=int, required=True, help="Local professor id to import. Can be repeated.")
     parser.add_argument("--complete-history", action="store_true", help="Continue past known overlap until all historical pages are saved.")
@@ -149,18 +149,21 @@ def import_professor_command() -> None:
     args, process_args = parser.parse_known_args()
 
     professor_ids = set(args.professor_id)
-    title("Import professor reviews")
+    if not is_subcommand:
+        title("Import professor reviews")
 
-    step(1, 3, "Descarga de historial completo")
+    step_num = 3 if is_subcommand else 1
+    total_steps = 4 if is_subcommand else 2
+
+    step(step_num, total_steps, "Downloading full history")
     matches = [match for match in load_match_files() if match.professor_id in professor_ids]
     if not matches:
-        warning("No se encontraron matches confirmados para esos professor_id.")
+        warning("No confirmed matches found for those professor_id(s).")
         return
 
     index = load_download_index()
     fetched_at = datetime.now(timezone.utc).isoformat()
     for profile_index, match in enumerate(matches, start=1):
-        print(f"\nProfile {profile_index:,}/{len(matches):,}: professor {match.professor_id} · source {match.source_professor_id}")
         result = download_profile(
             match,
             output_root=RAW_PROFESSORS_ROOT,
@@ -170,14 +173,12 @@ def import_professor_command() -> None:
             complete_history=args.complete_history,
             show_progress=not args.quiet_download,
         )
-        info(
-            f"source {result['source_professor_id']}: "
-            f"{result['downloaded_pages']}/{result.get('total_pages', '?')} páginas, "
-            f"{result['new_reviews']} reseñas nuevas, corte={result['stop_reason']}"
-        )
+        console.print()
+        success(f"{result['new_reviews']} new reviews downloaded (cutoff={result['stop_reason']})")
+        console.print()
     save_download_index(index)
 
-    step(2, 3, "Procesamiento y SQL")
+    step(step_num + 1, total_steps, "Processing and SQL")
     import sys
 
     process_argv = [sys.argv[0], "--min-course-confidence", args.min_course_confidence]
@@ -193,9 +194,7 @@ def import_professor_command() -> None:
     sys.argv = process_argv
     process_main()
 
-    step(3, 3, "Auditoría")
-    audit_main()
-    success("Import finalizado.")
+    success("Import completed successfully.")
 
 
 def refresh_matches_command() -> None:
@@ -269,13 +268,13 @@ def reviews_command() -> None:
     parser.add_argument("--candidate-pages", type=int, default=2, help="Maximum pages per unmatched candidate profile.")
     args, unknown_args = parser.parse_known_args()
 
-    title(f"Búsqueda e importación por nombre: {args.name}")
-    step(1, 4, "Buscando profesor en base de datos local")
+    title(f"Search and import by name: {args.name}")
+    step(1, 4, "Searching for professor in local database")
     
     from rapidfuzz import process, fuzz
     db_professors = load_professors(only_active=True)
     if not db_professors:
-        warning("No hay profesores activos en la base de datos.")
+        warning("No active professors found in the database.")
         return
         
     db_names = {prof["id"]: normalize_name(prof["full_name"]) for prof in db_professors}
@@ -283,15 +282,15 @@ def reviews_command() -> None:
     best = process.extractOne(norm_query, db_names, scorer=fuzz.token_sort_ratio)
     
     if not best or best[1] < 60:
-        warning(f"No se encontró un profesor similar a '{args.name}' en la BD.")
+        warning(f"No professor similar to '{args.name}' found in the DB.")
         return
         
     professor_id = best[2]
     db_prof = next(p for p in db_professors if p["id"] == professor_id)
-    success(f"Encontrado: {db_prof['full_name']} (ID: {professor_id}, Score: {best[1]:.1f})")
+    success(f"Found: {db_prof['full_name']} (ID: {professor_id}, Score: {best[1]:.1f})")
 
-    step(2, 4, "Desambiguación y Matching en MisProfesores")
-    info("Obteniendo perfiles de MisProfesores y calculando matches...")
+    step(2, 4, "Disambiguation and matching on MisProfesores")
+    info("Fetching profiles and computing matches...")
     from reviews.professors.discovery import scrape_site_professors, source_id_from_url
     from reviews.professors.matching import match_site_professor, load_db_professors, load_manual_matches, load_reviews_by_source
     from reviews.models import MatchEntry
@@ -313,9 +312,9 @@ def reviews_command() -> None:
             candidate_site_profs.append(sp)
             
     if not candidate_site_profs:
-        warning("No se encontraron candidatos similares en MisProfesores.")
+        warning("No similar candidates found on MisProfesores.")
     else:
-        info(f"Se encontraron {len(candidate_site_profs)} perfiles candidatos. Descargando evidencia...")
+        info(f"Found {len(candidate_site_profs)} candidate profiles. Downloading evidence...")
         index = load_download_index()
         fetched_at = datetime.now(timezone.utc).isoformat()
         
@@ -347,6 +346,7 @@ def reviews_command() -> None:
         existing_json_by_source = {str(source_id_from_url(item.get("misprofesores_url", ""))): item for item in existing_json}
         
         new_matches_found = False
+        match_results = []
         for sp in candidate_site_profs:
             matched, details = match_site_professor(
                 sp,
@@ -357,18 +357,26 @@ def reviews_command() -> None:
                 manual_matches=manual_matches,
             )
             if matched and matched["professor_id"] == professor_id:
-                success(f"Match confirmado: {sp.url} (Score: {matched['match_score']})")
                 new_matches_found = True
                 existing_json_by_source[sp.source_professor_id] = matched
-            elif matched:
-                info(f"Descartado {sp.url} -> pertenece a otro prof (ID {matched['professor_id']})")
+                match_results.append((True, sp.url, matched["match_score"]))
             else:
-                info(f"Descartado {sp.url} -> sin match confiable")
+                score_val = matched["match_score"] if matched else (details.get("score", 0.0) if details else 0.0)
+                match_results.append((False, sp.url, score_val))
                 
+        if match_results:
+            max_url_len = max(len(m[1]) for m in match_results)
+            for is_match, url, score in match_results:
+                padded_url = url.ljust(max_url_len)
+                if is_match:
+                    console.print(f"[bold green]✓[/bold green] Match:    {padded_url} (Score: {score:>5.1f})")
+                else:
+                    console.print(f"[bold red]✗[/bold red] Rejected: {padded_url} (Score: {score:>5.1f})")
+
         if new_matches_found:
             save_json(PROFESSORS_OUTPUT, list(existing_json_by_source.values()))
 
     print("")
     import sys
     sys.argv = [sys.argv[0], "--professor-id", str(professor_id), "--write-sql"] + unknown_args
-    import_professor_command()
+    import_professor_command(is_subcommand=True)

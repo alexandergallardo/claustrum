@@ -386,15 +386,42 @@ def main() -> None:
     save_json(PROCESSED_REPORTS_ROOT / "offering-backfill.json", reports["offering_backfill_reviews"])
     save_json(PROCESSED_REPORTS_ROOT / "multiple-course-reviews.json", reports["multiple_course_reviews"])
 
-    print(f"Processed files: {len(processed_files)}")
-    print(f"Processed reviews: {counters['raw_reviews']}")
-    print(f"Ready reviews: {counters['ready_reviews']}")
-    print(f"Incomplete reviews: {counters['incomplete_reviews']}")
-    print(f"Course decisions: {len(decisions)}")
-    print(f"Course variation groups: {len(variations)}")
-    if args.write_sql:
-        print(f"SQL ready reviews: {sql_review_count}")
-    print(f"Saved under: {PROCESSED_PROFESSORS_ROOT}")
+    from rich.table import Table
+    from rich.box import ROUNDED
+    from reviews.console import console, success
+    
+    table = Table(box=ROUNDED)
+    table.add_column("Files")
+    table.add_column("Raw")
+    table.add_column("Ready")
+    table.add_column("Incomplete")
+    table.add_column("SQL")
+    table.add_column("Course Decisions")
+    table.add_column("Variation Groups")
+    
+    table.add_row(
+        str(len(processed_files)),
+        str(counters["raw_reviews"]),
+        str(counters["ready_reviews"]),
+        str(counters["incomplete_reviews"]),
+        str(sql_review_count) if args.write_sql else "-",
+        str(len(decisions)),
+        str(len(variations)),
+    )
+    console.print()
+    console.print(table)
+    console.print()
+    
+    home_dir = Path.home()
+    try:
+        if PROCESSED_PROFESSORS_ROOT.is_relative_to(home_dir):
+            saved_path = f"~/{PROCESSED_PROFESSORS_ROOT.relative_to(home_dir)}"
+        else:
+            saved_path = str(PROCESSED_PROFESSORS_ROOT)
+    except ValueError:
+        saved_path = str(PROCESSED_PROFESSORS_ROOT)
+        
+    success(f"Saved under: {saved_path}")
 
 
 if __name__ == "__main__":

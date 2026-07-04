@@ -224,12 +224,12 @@ def download_profile(
         if page == 1:
             total_pages = parse_total_pages(html)
             if show_progress:
-                label = f"source {match.source_professor_id}"
+                label = f"Downloading Profile {match.source_professor_id}"
                 print(progress_bar(0, total_pages, label=label), end="", flush=True)
         _, page_review_ids = write_page(match=match, page=page, total_pages=total_pages, page_html=html, output_root=output_root, fetched_at=fetched_at)
         downloaded_pages += 1
         if show_progress:
-            label = f"source {match.source_professor_id}"
+            label = f"Downloading Profile {match.source_professor_id}"
             print("\r" + progress_bar(page, total_pages, label=label), end="", flush=True)
 
         page_ids = set(page_review_ids)
