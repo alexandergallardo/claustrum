@@ -1410,51 +1410,52 @@ export function CourseDetails({
 
       {/* ========== SCHEDULES ========== */}
       <section>
-        <div className="mb-3 space-y-2">
-          <h2 className="text-xl font-semibold tracking-tight">Periodo</h2>
-          <Combobox
-            items={offeringTermGroups}
-            value={selectedOfferingTerm}
-            onValueChange={(term) => setOfferingTermId(term ? String(term.id) : "")}
-            itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
-          >
-            <ComboboxTrigger
-              render={<Button variant="outline" className="w-full justify-between sm:w-80" />}
+        <SectionHeader
+          title="Horarios"
+          action={
+            <Combobox
+              items={offeringTermGroups}
+              value={selectedOfferingTerm}
+              onValueChange={(term) => setOfferingTermId(term ? String(term.id) : "")}
+              itemToStringValue={(term) => formatTermNameWithoutYear(term.display_name)}
             >
-              <span
-                className={`block min-w-0 flex-1 truncate text-left ${!selectedOfferingTerm ? "text-muted-foreground" : ""}`}
+              <ComboboxTrigger
+                render={<Button variant="outline" className="w-[200px] justify-between sm:w-64" />}
               >
-                {selectedOfferingTerm
-                  ? formatClosedTermLabel(selectedOfferingTerm)
-                  : offeringTermsQuery.isLoading
-                    ? "Cargando periodos..."
-                    : "Selecciona un periodo"}
-              </span>
-            </ComboboxTrigger>
-            <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
-              <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
-              <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
-              <ComboboxList className="max-h-56 scrollbar-none">
-                {(group, index) => (
-                  <ComboboxGroup key={group.value} items={group.items}>
-                    <ComboboxLabel>{group.value}</ComboboxLabel>
-                    <ComboboxCollection>
-                      {(term) => (
-                        <ComboboxItem key={term.id} value={term}>
-                          <span className="block min-w-0 flex-1 truncate">
-                            {formatTermNameWithoutYear(term.display_name)}
-                          </span>
-                        </ComboboxItem>
-                      )}
-                    </ComboboxCollection>
-                    {index < offeringTermGroups.length - 1 && <ComboboxSeparator />}
-                  </ComboboxGroup>
-                )}
-              </ComboboxList>
-            </ComboboxContent>
-          </Combobox>
-        </div>
-        <SectionHeader title="Horarios" />
+                <span
+                  className={`block min-w-0 flex-1 truncate text-left ${!selectedOfferingTerm ? "text-muted-foreground" : ""}`}
+                >
+                  {selectedOfferingTerm
+                    ? formatClosedTermLabel(selectedOfferingTerm)
+                    : offeringTermsQuery.isLoading
+                      ? "Cargando periodos..."
+                      : "Selecciona un periodo"}
+                </span>
+              </ComboboxTrigger>
+              <ComboboxContent className="w-(--anchor-width) min-w-(--anchor-width)">
+                <ComboboxInput showTrigger={false} placeholder="Buscar periodo..." />
+                <ComboboxEmpty>No se encontraron periodos.</ComboboxEmpty>
+                <ComboboxList className="max-h-56 scrollbar-none">
+                  {(group, index) => (
+                    <ComboboxGroup key={group.value} items={group.items}>
+                      <ComboboxLabel>{group.value}</ComboboxLabel>
+                      <ComboboxCollection>
+                        {(term) => (
+                          <ComboboxItem key={term.id} value={term}>
+                            <span className="block min-w-0 flex-1 truncate">
+                              {formatTermNameWithoutYear(term.display_name)}
+                            </span>
+                          </ComboboxItem>
+                        )}
+                      </ComboboxCollection>
+                      {index < offeringTermGroups.length - 1 && <ComboboxSeparator />}
+                    </ComboboxGroup>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          }
+        />
         {latestGroupsQuery.isLoading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
