@@ -31,4 +31,16 @@ export const colorOptions = [
     value: "slate",
     label: "Slate",
   },
+  {
+    value: "pink",
+    label: "Pink",
+  },
+  {
+    value: "olive",
+    label: "Olive",
+  },
+  {
+    value: "lime",
+    label: "Lime",
+  },
 ];

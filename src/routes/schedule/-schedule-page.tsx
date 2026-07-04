@@ -153,6 +153,9 @@ const EXPORT_EVENT_COLORS = {
     fuchsia: ["rgb(250 232 255)", "rgb(245 208 254)", "rgb(240 171 252)", "rgb(112 26 117)"],
     violet: ["rgb(237 233 254)", "rgb(221 214 254)", "rgb(196 181 253)", "rgb(76 29 149)"],
     slate: ["rgb(241 245 249)", "rgb(226 232 240)", "rgb(203 213 225)", "rgb(15 23 42)"],
+    pink: ["rgb(252 231 243)", "rgb(251 207 232)", "rgb(249 168 212)", "rgb(131 24 67)"],
+    olive: ["rgb(240 242 227)", "rgb(222 227 195)", "rgb(198 206 153)", "rgb(75 80 44)"],
+    lime: ["rgb(236 252 203)", "rgb(217 249 157)", "rgb(190 242 100)", "rgb(63 98 18)"],
   },
   dark: {
     blue: ["rgb(23 37 84)", "rgb(30 58 138)", "rgb(29 78 216)", "rgb(219 234 254)"],
@@ -163,6 +166,9 @@ const EXPORT_EVENT_COLORS = {
     fuchsia: ["rgb(74 4 78)", "rgb(112 26 117)", "rgb(162 28 175)", "rgb(250 232 255)"],
     violet: ["rgb(46 16 101)", "rgb(76 29 149)", "rgb(109 40 217)", "rgb(237 233 254)"],
     slate: ["rgb(15 23 42)", "rgb(30 41 59)", "rgb(51 65 85)", "rgb(241 245 249)"],
+    pink: ["rgb(80 7 36)", "rgb(131 24 67)", "rgb(157 23 77)", "rgb(252 231 243)"],
+    olive: ["rgb(34 37 20)", "rgb(54 58 31)", "rgb(94 100 50)", "rgb(240 242 227)"],
+    lime: ["rgb(26 46 5)", "rgb(54 83 20)", "rgb(77 124 15)", "rgb(236 252 203)"],
   },
 } as const;
 
@@ -863,14 +869,43 @@ export function SchedulePage() {
     }
   }, [search, selectedUniversityId]);
 
+  const assignedColorsRef = useRef<Map<string, string>>(new Map());
+
   const courseColors = useMemo(() => {
-    const map = new Map<string, string>();
-    orderedCourses.forEach((course, index) => {
-      const color = colorOptions[index % colorOptions.length].value;
-      map.set(course.course_code, color);
+    const activeCourseCodes = new Set<string>();
+    selectedGroups.forEach((groupId) => {
+      const groupData = groupById.get(groupId);
+      if (groupData) {
+        activeCourseCodes.add(groupData.course.course_code);
+      }
     });
-    return map;
-  }, [orderedCourses]);
+
+    const currentMap = assignedColorsRef.current;
+
+    for (const [courseCode] of currentMap.entries()) {
+      if (!activeCourseCodes.has(courseCode)) {
+        currentMap.delete(courseCode);
+      }
+    }
+
+    const usedColors = new Set(currentMap.values());
+
+    activeCourseCodes.forEach((courseCode) => {
+      if (!currentMap.has(courseCode)) {
+        const availableColor = colorOptions.find((c) => !usedColors.has(c.value));
+
+        if (availableColor) {
+          currentMap.set(courseCode, availableColor.value);
+          usedColors.add(availableColor.value);
+        } else {
+          const fallbackColor = colorOptions[currentMap.size % colorOptions.length].value;
+          currentMap.set(courseCode, fallbackColor);
+        }
+      }
+    });
+
+    return new Map(currentMap);
+  }, [selectedGroups, groupById]);
 
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     if (!orderedCourses) return [];

@@ -236,6 +236,27 @@ code {
   --schedule-event-text: rgb(15 23 42);
 }
 
+[data-schedule-event-color="pink"] {
+  --schedule-event-bg: rgb(252 231 243);
+  --schedule-event-hover: rgb(251 207 232);
+  --schedule-event-border: rgb(249 168 212);
+  --schedule-event-text: rgb(131 24 67);
+}
+
+[data-schedule-event-color="olive"] {
+  --schedule-event-bg: rgb(240 242 227);
+  --schedule-event-hover: rgb(222 227 195);
+  --schedule-event-border: rgb(198 206 153);
+  --schedule-event-text: rgb(75 80 44);
+}
+
+[data-schedule-event-color="lime"] {
+  --schedule-event-bg: rgb(236 252 203);
+  --schedule-event-hover: rgb(217 249 157);
+  --schedule-event-border: rgb(190 242 100);
+  --schedule-event-text: rgb(63 98 18);
+}
+
 .dark [data-schedule-event-color="blue"],
 [data-export-theme="dark"] [data-schedule-event-color="blue"] {
   --schedule-event-bg: rgb(23 37 84);
@@ -300,6 +321,30 @@ code {
   --schedule-event-text: rgb(241 245 249);
 }
 
+.dark [data-schedule-event-color="pink"],
+[data-export-theme="dark"] [data-schedule-event-color="pink"] {
+  --schedule-event-bg: rgb(80 7 36);
+  --schedule-event-hover: rgb(131 24 67);
+  --schedule-event-border: rgb(157 23 77);
+  --schedule-event-text: rgb(252 231 243);
+}
+
+.dark [data-schedule-event-color="olive"],
+[data-export-theme="dark"] [data-schedule-event-color="olive"] {
+  --schedule-event-bg: rgb(34 37 20);
+  --schedule-event-hover: rgb(54 58 31);
+  --schedule-event-border: rgb(94 100 50);
+  --schedule-event-text: rgb(240 242 227);
+}
+
+.dark [data-schedule-event-color="lime"],
+[data-export-theme="dark"] [data-schedule-event-color="lime"] {
+  --schedule-event-bg: rgb(26 46 5);
+  --schedule-event-hover: rgb(54 83 20);
+  --schedule-event-border: rgb(77 124 15);
+  --schedule-event-text: rgb(236 252 203);
+}
+
 [data-export-theme="light"] [data-schedule-event-color="blue"] {
   --schedule-event-bg: rgb(219 234 254);
   --schedule-event-hover: rgb(191 219 254);
@@ -354,6 +399,27 @@ code {
   --schedule-event-hover: rgb(226 232 240);
   --schedule-event-border: rgb(203 213 225);
   --schedule-event-text: rgb(15 23 42);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="pink"] {
+  --schedule-event-bg: rgb(252 231 243);
+  --schedule-event-hover: rgb(251 207 232);
+  --schedule-event-border: rgb(249 168 212);
+  --schedule-event-text: rgb(131 24 67);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="olive"] {
+  --schedule-event-bg: rgb(240 242 227);
+  --schedule-event-hover: rgb(222 227 195);
+  --schedule-event-border: rgb(198 206 153);
+  --schedule-event-text: rgb(75 80 44);
+}
+
+[data-export-theme="light"] [data-schedule-event-color="lime"] {
+  --schedule-event-bg: rgb(236 252 203);
+  --schedule-event-hover: rgb(217 249 157);
+  --schedule-event-border: rgb(190 242 100);
+  --schedule-event-text: rgb(63 98 18);
 }
 
 /* Landing page schedule demo: preserve day widths in desktop */
