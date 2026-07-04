@@ -382,6 +382,14 @@ function ScheduleGroupCard({
   const meetings = group.meetings ?? [];
   const isFromEquivalentCourse = group.sourceCourseId !== currentCourseId;
 
+  const classrooms = meetings.map((meeting) => meeting.classroom);
+  const sharedClassroom =
+    meetings.length > 1 &&
+    classrooms.every((classroom): classroom is string => classroom !== null) &&
+    classrooms.every((classroom) => classroom === classrooms[0])
+      ? classrooms[0]
+      : null;
+
   return (
     <div className="border-border bg-card space-y-3 rounded-xl border p-4">
       <div className="flex items-center justify-between">
@@ -412,17 +420,16 @@ function ScheduleGroupCard({
       <Separator />
 
       <div className="space-y-2">
-        <div className="flex items-start gap-2">
-          <User className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
-          <div className="flex flex-wrap gap-1">
+        <div className="flex items-center gap-2">
+          <User className="text-muted-foreground size-3.5 shrink-0 self-center" />
+          <div className="flex flex-col justify-center gap-1">
             {professors.length === 0 ? (
               <span className="text-muted-foreground text-xs">Sin asignar</span>
             ) : (
-              professors.map((professor, index) => {
+              professors.map((professor) => {
                 const transitionKey = `group-${group.groupId}-${professor.id}`;
                 return (
                   <span key={transitionKey} className="text-xs">
-                    {index > 0 ? ", " : ""}
                     <Link
                       to="/professors/$professorId"
                       params={{ professorId: String(professor.id) }}
@@ -441,22 +448,39 @@ function ScheduleGroupCard({
           </div>
         </div>
 
-        <div className="flex items-start gap-2">
-          <Clock className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
-          <div className="flex flex-col gap-0.5">
-            {meetings.length === 0 ? (
-              <span className="text-muted-foreground text-xs">Sin horario registrado</span>
-            ) : (
-              meetings.map((meeting) => (
-                <span
-                  key={`${meeting.weekday}-${meeting.starts_at}`}
-                  className="text-foreground text-xs"
-                >
-                  {formatMeetingLine(meeting)}
-                </span>
-              ))
-            )}
+        <div className={cn("relative", sharedClassroom && "pr-16")}>
+          <div className="flex items-start gap-2">
+            <Clock className="text-muted-foreground size-3.5 shrink-0 self-center" />
+            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+              {meetings.length === 0 ? (
+                <span className="text-muted-foreground text-xs">Sin horario registrado</span>
+              ) : (
+                meetings.map((meeting) => (
+                  <div
+                    key={`${meeting.weekday}-${meeting.starts_at}`}
+                    className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2"
+                  >
+                    <span className="text-foreground min-w-0 text-xs leading-tight whitespace-nowrap">
+                      {WEEKDAYS[meeting.weekday] ?? `Dia ${meeting.weekday}`}{" "}
+                      {formatTime(meeting.starts_at)}-{formatTime(meeting.ends_at)}
+                    </span>
+                    {!sharedClassroom && meeting.classroom && (
+                      <span className="text-muted-foreground flex items-center gap-1 justify-self-end text-xs whitespace-nowrap">
+                        <MapPin className="size-3.5 shrink-0" />
+                        <span>{meeting.classroom}</span>
+                      </span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+          {sharedClassroom && (
+            <div className="text-muted-foreground absolute top-1/2 right-0 flex -translate-y-1/2 items-center gap-1 text-xs whitespace-nowrap">
+              <MapPin className="size-3.5 shrink-0" />
+              <span>{sharedClassroom}</span>
+            </div>
+          )}
         </div>
 
         <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
