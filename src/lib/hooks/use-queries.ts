@@ -953,6 +953,7 @@ export function useCourseLatestTermGroups(
     },
     enabled: !!courseId,
     staleTime: 2 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
 
