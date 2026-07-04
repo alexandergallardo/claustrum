@@ -176,17 +176,6 @@ function formatTime(value: string) {
   return value.slice(0, 5);
 }
 
-function formatMeetingLine(meeting: {
-  weekday: number;
-  starts_at: string;
-  ends_at: string;
-  classroom: string | null;
-}) {
-  const weekday = WEEKDAYS[meeting.weekday] ?? `Dia ${meeting.weekday}`;
-  const classroom = meeting.classroom ? ` • Aula ${meeting.classroom}` : "";
-  return `${weekday} ${formatTime(meeting.starts_at)}-${formatTime(meeting.ends_at)}${classroom}`;
-}
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
