@@ -5,8 +5,10 @@ type ProfessorsSearchInput = Record<string, unknown>;
 export interface ProfessorsSearch {
   q?: string;
   ms?: string;
-  mc?: string;
-  cc?: string;
+  mr?: string;
+  au?: string;
+  sortBy?: string;
+  sortDesc?: boolean;
   page?: number;
 }
 
@@ -15,8 +17,17 @@ export const Route = createFileRoute("/professors/")({
     return {
       q: typeof search.q === "string" ? search.q : undefined,
       ms: typeof search.ms === "string" ? search.ms : undefined,
-      mc: typeof search.mc === "string" ? search.mc : undefined,
-      cc: typeof search.cc === "string" ? search.cc : undefined,
+      mr: typeof search.mr === "string" ? search.mr : undefined,
+      au: typeof search.au === "string" ? search.au : undefined,
+      sortBy: typeof search.sortBy === "string" ? search.sortBy : undefined,
+      sortDesc:
+        typeof search.sortDesc === "boolean"
+          ? search.sortDesc
+          : search.sortDesc === "true"
+            ? true
+            : search.sortDesc === "false"
+              ? false
+              : undefined,
       page: search.page !== undefined ? Number(search.page) : undefined,
     };
   },

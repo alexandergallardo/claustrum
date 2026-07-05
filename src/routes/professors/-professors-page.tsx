@@ -2,11 +2,12 @@ import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, getRouteApi } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { ProfessorReviewStatsRow } from "@/lib/professor-reviews/types";
 
+import { FilterCombobox, normalizeText } from "@/components/filters/shared-filters";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,6 +20,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ScoreInput } from "@/components/ui/score-input";
 import {
   Select,
   SelectContent,
@@ -35,6 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useProfessorReviewStats } from "@/lib/hooks/use-professor-reviews";
+import { useAcademicUnitsWithProfessors } from "@/lib/hooks/use-queries";
 import {
   getProfessorById,
   getProfessorReviewSummary,
@@ -59,9 +62,80 @@ export function ProfessorsReviewsPage() {
 
   const searchInput = search.q ?? "";
   const [debouncedSearch] = useDebouncedValue(searchInput, { wait: 300 });
-  const [minAverageScoreInput, setMinAverageScoreInput] = useState("");
-  const [minReviewCountInput, setMinReviewCountInput] = useState("0");
-  const [courseCodeInput, setCourseCodeInput] = useState("");
+
+  const minAverageScoreInput = search.ms ?? "";
+  const setMinAverageScoreInput = (val: string) =>
+    void navigate({
+      search: (prev) => ({ ...prev, ms: val || undefined, page: undefined }),
+      replace: true,
+    });
+
+  const minReviewCountInput = search.mr ?? "0";
+  const setMinReviewCountInput = (val: string) =>
+    void navigate({
+      search: (prev) => ({ ...prev, mr: val === "0" ? undefined : val, page: undefined }),
+      replace: true,
+    });
+
+  const academicUnitIdInput = search.au ? parseInt(search.au) : null;
+  const setAcademicUnitIdInput = (val: number | null) =>
+    void navigate({
+      search: (prev) => ({ ...prev, au: val?.toString(), page: undefined }),
+      replace: true,
+    });
+
+  const sortBy = search.sortBy ?? "reviews";
+  const sortDesc = search.sortDesc ?? true;
+
+  const { data: allAcademicUnits = [] } = useAcademicUnitsWithProfessors();
+
+  const handleSort = (colId: string) => {
+    let newSortBy: string | undefined = colId;
+    let newSortDesc: boolean | undefined = true;
+
+    if (sortBy === colId) {
+      if (sortDesc === true) {
+        newSortDesc = false;
+      } else {
+        newSortBy = "none";
+        newSortDesc = undefined;
+      }
+    }
+
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        sortBy: newSortBy === "reviews" ? undefined : newSortBy,
+        sortDesc: newSortDesc === true && newSortBy === "reviews" ? undefined : newSortDesc,
+        page: undefined,
+      }),
+      replace: true,
+    });
+  };
+
+  const renderSortHeader = (title: string, colId: string) => (
+    <button
+      type="button"
+      onClick={() => handleSort(colId)}
+      className="hover:text-foreground focus-visible:ring-ring flex h-8 items-center font-medium transition-colors focus-visible:ring-1 focus-visible:outline-none"
+    >
+      {title}
+      <div className="ml-1.5 flex flex-col -space-y-[6px]">
+        <ChevronUp
+          className={cn(
+            "size-[10px]",
+            sortBy === colId && sortDesc === false ? "text-foreground" : "text-muted-foreground/50",
+          )}
+        />
+        <ChevronDown
+          className={cn(
+            "size-[10px]",
+            sortBy === colId && sortDesc === true ? "text-foreground" : "text-muted-foreground/50",
+          )}
+        />
+      </div>
+    </button>
+  );
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const page = search.page ? search.page - 1 : 0;
@@ -80,12 +154,16 @@ export function ProfessorsReviewsPage() {
     ? Number(minReviewCountInput)
     : 0;
 
+  const activeSortBy = sortBy === "none" ? null : sortBy;
+
   const query = useProfessorReviewStats({
     query: debouncedSearch,
     minAverageScore,
     minReviewCount,
-    courseCode: courseCodeInput,
+    academicUnitId: academicUnitIdInput,
     onlyWithApprovedReviews: false,
+    sortBy: activeSortBy,
+    sortDesc,
     limit: pageSize,
     offset: page * pageSize,
   });
@@ -101,7 +179,7 @@ export function ProfessorsReviewsPage() {
     () => [
       {
         accessorKey: "professor_name",
-        header: "Nombre",
+        header: () => renderSortHeader("Nombre", "name"),
         cell: ({ row }) => {
           const professorId = row.original.professor_id;
 
@@ -125,26 +203,52 @@ export function ProfessorsReviewsPage() {
           };
 
           return (
-            <Link
-              to="/professors/$professorId"
-              params={{ professorId }}
-              preload="intent"
-              viewTransition={{ types: ["professor-open"] }}
-              className="block truncate font-medium underline-offset-4 hover:underline"
-              style={{ viewTransitionName: getProfessorNameTransitionName(professorId) }}
-              onMouseEnter={prefetchProfessorDetail}
-              onPointerDown={prefetchProfessorDetail}
-              onTouchStart={prefetchProfessorDetail}
-              onFocus={prefetchProfessorDetail}
-            >
-              {row.original.professor_name}
-            </Link>
+            <div className="flex min-w-0 flex-col">
+              <Link
+                to="/professors/$professorId"
+                params={{ professorId }}
+                preload="intent"
+                viewTransition={{ types: ["professor-open"] }}
+                className="block truncate leading-tight font-medium underline-offset-4 hover:underline"
+                style={{ viewTransitionName: getProfessorNameTransitionName(professorId) }}
+                onMouseEnter={prefetchProfessorDetail}
+                onPointerDown={prefetchProfessorDetail}
+                onTouchStart={prefetchProfessorDetail}
+                onFocus={prefetchProfessorDetail}
+              >
+                {row.original.professor_name}
+              </Link>
+              {row.original.academic_unit && (
+                <span
+                  className="text-muted-foreground truncate text-[10px] leading-tight sm:hidden"
+                  title={row.original.academic_unit}
+                >
+                  {row.original.academic_unit}
+                </span>
+              )}
+            </div>
           );
         },
       },
       {
+        accessorKey: "academic_unit",
+        header: "Escuela",
+        cell: ({ row }) => (
+          <span
+            className="text-muted-foreground block truncate text-xs"
+            title={row.original.academic_unit || undefined}
+          >
+            {row.original.academic_unit || "-"}
+          </span>
+        ),
+      },
+      {
         accessorKey: "approved_review_count",
-        header: "Reseñas",
+        header: () => (
+          <div className="flex justify-end text-right">
+            {renderSortHeader("Reseñas", "reviews")}
+          </div>
+        ),
         cell: ({ row }) => (
           <span className="block text-right tabular-nums">
             {row.original.approved_review_count}
@@ -153,7 +257,9 @@ export function ProfessorsReviewsPage() {
       },
       {
         accessorKey: "average_overall_score",
-        header: "Promedio",
+        header: () => (
+          <div className="flex justify-end text-right">{renderSortHeader("Promedio", "score")}</div>
+        ),
         cell: ({ row }) => (
           <span className="block text-right tabular-nums">
             {formatScore(row.original.average_overall_score)}
@@ -161,7 +267,7 @@ export function ProfessorsReviewsPage() {
         ),
       },
     ],
-    [queryClient],
+    [queryClient, sortBy, sortDesc],
   );
 
   const table = useReactTable({
@@ -169,6 +275,53 @@ export function ProfessorsReviewsPage() {
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+  const filterMinAverage = (
+    <ScoreInput
+      label="Promedio mínimo"
+      value={minAverageScoreInput}
+      onChange={(val) => {
+        setMinAverageScoreInput(val);
+      }}
+      max={10}
+      step={0.1}
+    />
+  );
+
+  const filterMinReviews = (
+    <ScoreInput
+      label="Mínimo de reseñas"
+      value={minReviewCountInput}
+      onChange={(val) => {
+        setMinReviewCountInput(val);
+      }}
+      max={100}
+      step={1}
+      regex={/^\d*$/}
+    />
+  );
+
+  const filterSchool = (
+    <div className="space-y-2">
+      <Label>Escuela</Label>
+      <FilterCombobox
+        label="escuela"
+        value={academicUnitIdInput?.toString() || ""}
+        placeholder="Seleccionar escuela..."
+        items={allAcademicUnits}
+        onChange={(val) => {
+          setAcademicUnitIdInput(val ? parseInt(val) : null);
+        }}
+        isVisible={true}
+        itemLabel={(item) =>
+          item.code
+            ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
+            : normalizeText(item.name)
+        }
+        triggerClassName="h-9 sm:max-w-none"
+        disableAnimation={true}
+      />
+    </div>
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
@@ -182,98 +335,63 @@ export function ProfessorsReviewsPage() {
       </header>
 
       <Collapsible open={filtersExpanded} onOpenChange={setFiltersExpanded}>
-        <div className="flex items-end gap-2">
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="professor-search" className="sr-only">
-              Buscar por nombre de profesor
-            </Label>
-            <Input
-              id="professor-search"
-              placeholder="Ej: María González"
-              aria-label="Buscar por nombre de profesor"
-              value={searchInput}
-              onChange={(event) => {
-                setPage(0);
-                const newSearch = event.target.value;
-                void navigate({
-                  search: (prev) => ({ ...prev, q: newSearch || undefined }),
-                  replace: true,
-                });
-              }}
-            />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="flex flex-1 items-end gap-2">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="professor-search">Nombre</Label>
+              <Input
+                id="professor-search"
+                className="h-9"
+                placeholder="Ej: María González"
+                aria-label="Buscar por nombre de profesor"
+                value={searchInput}
+                onChange={(event) => {
+                  const newSearch = event.target.value;
+                  void navigate({
+                    search: (prev) => ({ ...prev, q: newSearch || undefined, page: undefined }),
+                    replace: true,
+                  });
+                }}
+              />
+            </div>
+            <CollapsibleTrigger asChild className="lg:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                className="size-9"
+                aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
+              >
+                {filtersExpanded ? (
+                  <ChevronDown className="size-4" />
+                ) : (
+                  <ChevronRight className="size-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
           </div>
-          <CollapsibleTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label={filtersExpanded ? "Ocultar filtros" : "Mostrar filtros"}
-            >
-              {filtersExpanded ? (
-                <ChevronDown className="size-4" />
-              ) : (
-                <ChevronRight className="size-4" />
-              )}
-            </Button>
-          </CollapsibleTrigger>
+
+          <div className="hidden lg:flex lg:items-end lg:gap-4">
+            <div className="w-40 shrink-0">{filterMinAverage}</div>
+            <div className="w-40 shrink-0">{filterMinReviews}</div>
+            <div className="w-72 shrink-0">{filterSchool}</div>
+          </div>
         </div>
 
-        <CollapsibleContent>
-          <div className="grid gap-4 pt-3 md:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="min-average">Promedio mínimo</Label>
-              <Input
-                id="min-average"
-                type="number"
-                min={0}
-                max={10}
-                step={0.1}
-                placeholder="0-10"
-                value={minAverageScoreInput}
-                onChange={(event) => {
-                  setPage(0);
-                  setMinAverageScoreInput(event.target.value);
-                }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="min-reviews">Mínimo de reseñas</Label>
-              <Input
-                id="min-reviews"
-                type="number"
-                min={0}
-                step={1}
-                value={minReviewCountInput}
-                onChange={(event) => {
-                  setPage(0);
-                  setMinReviewCountInput(event.target.value);
-                }}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="course-code">Código de curso</Label>
-              <Input
-                id="course-code"
-                placeholder="CI1230"
-                value={courseCodeInput}
-                onChange={(event) => {
-                  setPage(0);
-                  setCourseCodeInput(event.target.value.toUpperCase());
-                }}
-              />
-            </div>
+        <CollapsibleContent className="lg:hidden">
+          <div className="grid gap-4 pt-3 md:grid-cols-2">
+            {filterMinAverage}
+            {filterMinReviews}
+            <div className="md:col-span-2">{filterSchool}</div>
           </div>
         </CollapsibleContent>
       </Collapsible>
 
-      <Card className="py-0">
-        <CardContent className="p-4">
+      <Card className="overflow-hidden p-0">
+        <CardContent className="p-0">
           {rows.length === 0 && query.isLoading ? (
-            <div className="text-muted-foreground text-sm">Cargando profesores…</div>
+            <div className="text-muted-foreground p-4 text-sm">Cargando profesores…</div>
           ) : rows.length === 0 ? (
-            <div className="text-muted-foreground text-sm">
+            <div className="text-muted-foreground p-4 text-sm">
               No hay resultados para los filtros seleccionados.
             </div>
           ) : (
@@ -286,9 +404,11 @@ export function ProfessorsReviewsPage() {
                         <TableHead
                           key={header.id}
                           className={cn(
-                            header.column.id === "professor_name" && "w-[62%]",
-                            header.column.id === "approved_review_count" && "w-[18%]",
-                            header.column.id === "average_overall_score" && "w-[20%]",
+                            header.column.id === "professor_name" && "w-auto sm:w-[35%]",
+                            header.column.id === "academic_unit" &&
+                              "hidden sm:table-cell sm:w-[32%]",
+                            header.column.id === "approved_review_count" && "w-[72px] sm:w-[15%]",
+                            header.column.id === "average_overall_score" && "w-[80px] sm:w-[18%]",
                             (header.column.id === "approved_review_count" ||
                               header.column.id === "average_overall_score") &&
                               "text-right",
@@ -306,8 +426,17 @@ export function ProfessorsReviewsPage() {
                   {table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {cell.column.id === "professor_name" ? (
+                        <TableCell
+                          key={cell.id}
+                          className={cn(
+                            (cell.column.id === "professor_name" ||
+                              cell.column.id === "academic_unit") &&
+                              "max-w-0",
+                            cell.column.id === "academic_unit" && "hidden sm:table-cell",
+                          )}
+                        >
+                          {cell.column.id === "professor_name" ||
+                          cell.column.id === "academic_unit" ? (
                             <div className="max-w-full min-w-0 truncate">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
                             </div>
@@ -322,70 +451,68 @@ export function ProfessorsReviewsPage() {
               </Table>
             </div>
           )}
-
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">
-              {rows.length === 0
-                ? "Sin resultados"
-                : `Mostrando ${firstRow}-${lastRow} de ${totalCount}`}{" "}
-              · Página {page + 1} de {totalPages}
-              {query.isFetching ? (
-                <span className="ml-1 animate-pulse">(Actualizando…)</span>
-              ) : null}
-            </span>
-            <div className="flex items-center gap-3">
-              <Pagination className="w-auto">
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        setPage((value) => Math.max(value - 1, 0));
-                      }}
-                      aria-disabled={page === 0 || query.isFetching}
-                      className={cn(
-                        page === 0 || query.isFetching ? "pointer-events-none opacity-50" : "",
-                      )}
-                    />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        setPage((value) => value + 1);
-                      }}
-                      aria-disabled={!hasMore || query.isFetching}
-                      className={cn(
-                        !hasMore || query.isFetching ? "pointer-events-none opacity-50" : "",
-                      )}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-              <div className="w-28">
-                <Select
-                  value={String(pageSize)}
-                  onValueChange={(value) => {
-                    setPage(0);
-                    setPageSize(Number(value));
-                  }}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Filas" />
-                  </SelectTrigger>
-                  <SelectContent position="popper" align="end" sideOffset={4}>
-                    <SelectItem value="25">25 filas</SelectItem>
-                    <SelectItem value="50">50 filas</SelectItem>
-                    <SelectItem value="100">100 filas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
+
+      <div className="mt-2 flex items-center justify-between px-2">
+        <span className="text-muted-foreground text-xs">
+          {rows.length === 0
+            ? "Sin resultados"
+            : `Mostrando ${firstRow}-${lastRow} de ${totalCount}`}{" "}
+          · Página {page + 1} de {totalPages}
+          {query.isFetching ? <span className="ml-1 animate-pulse">(Actualizando…)</span> : null}
+        </span>
+        <div className="flex items-center gap-3">
+          <Pagination className="w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setPage((value) => Math.max(value - 1, 0));
+                  }}
+                  aria-disabled={page === 0 || query.isFetching}
+                  className={cn(
+                    page === 0 || query.isFetching ? "pointer-events-none opacity-50" : "",
+                  )}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setPage((value) => value + 1);
+                  }}
+                  aria-disabled={!hasMore || query.isFetching}
+                  className={cn(
+                    !hasMore || query.isFetching ? "pointer-events-none opacity-50" : "",
+                  )}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+          <div className="w-28">
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                setPage(0);
+                setPageSize(Number(value));
+              }}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Filas" />
+              </SelectTrigger>
+              <SelectContent position="popper" align="end" sideOffset={4}>
+                <SelectItem value="25">25 filas</SelectItem>
+                <SelectItem value="50">50 filas</SelectItem>
+                <SelectItem value="100">100 filas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

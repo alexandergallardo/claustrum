@@ -10,6 +10,7 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
+import { cn } from "@/lib/utils";
 
 export const normalizeText = (text: string) =>
   text
@@ -45,6 +46,8 @@ export function FilterCombobox({
   isVisible,
   showCode = false,
   itemLabel,
+  triggerClassName,
+  disableAnimation = false,
 }: {
   label?: string;
   value: string;
@@ -54,6 +57,8 @@ export function FilterCombobox({
   isVisible: boolean;
   showCode?: boolean;
   itemLabel?: (item: FilterItem) => string;
+  triggerClassName?: string;
+  disableAnimation?: boolean;
 }) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -68,7 +73,12 @@ export function FilterCombobox({
   const selectedText = selectedItem ? getItemLabel(selectedItem) : null;
 
   return (
-    <div className="animate-in fade-in-0 slide-in-from-left-2 min-w-0 duration-300">
+    <div
+      className={cn(
+        "min-w-0",
+        !disableAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
+      )}
+    >
       <Combobox
         items={items}
         value={selectedItem}
@@ -80,7 +90,10 @@ export function FilterCombobox({
           render={
             <Button
               variant="outline"
-              className="h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]"
+              className={cn(
+                "h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]",
+                triggerClassName,
+              )}
             />
           }
         >
@@ -101,7 +114,15 @@ export function FilterCombobox({
           <ComboboxEmpty>No se encontraron resultados.</ComboboxEmpty>
           <ComboboxList className="max-h-56 scrollbar-none">
             {(item) => (
-              <ComboboxItem key={item.id} value={item}>
+              <ComboboxItem
+                key={item.id}
+                value={item}
+                onClick={() => {
+                  if (selectedItem?.id === item.id) {
+                    onChange("");
+                  }
+                }}
+              >
                 <span className="block w-full min-w-0 truncate">{getItemLabel(item)}</span>
               </ComboboxItem>
             )}
