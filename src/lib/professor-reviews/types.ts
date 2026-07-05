@@ -60,6 +60,7 @@ export type ProfessorReviewStatsRow = {
   courses_reviewed_count: number;
   last_approved_review_at: string | null;
   search_rank: number;
+  academic_unit: string | null;
   total_count: number;
 };
 
@@ -158,8 +159,10 @@ export type SearchProfessorReviewStatsParams = {
   query: string;
   minAverageScore: number | null;
   minReviewCount: number;
-  courseCode: string;
+  academicUnitId: number | null;
   onlyWithApprovedReviews: boolean;
+  sortBy: string | null;
+  sortDesc: boolean | null;
   limit: number;
   offset: number;
 };

@@ -40,6 +40,17 @@ export function useUniversities() {
   });
 }
 
+export function useAcademicUnitsWithProfessors() {
+  return useQuery({
+    queryKey: ["academic-units-with-professors"],
+    queryFn: async () => {
+      const { getAcademicUnitsWithProfessors } = await import("@/lib/api");
+      return getAcademicUnitsWithProfessors();
+    },
+    staleTime: Infinity,
+  });
+}
+
 export function useCampuses(universityId: number | null) {
   return useQuery({
     queryKey: ["campuses", universityId],

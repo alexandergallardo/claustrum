@@ -52,8 +52,10 @@ export async function searchProfessorReviewStats(
     p_query: params.query.trim() === "" ? null : params.query.trim(),
     p_min_avg_score: params.minAverageScore,
     p_min_review_count: params.minReviewCount,
-    p_course_code: params.courseCode.trim() === "" ? null : params.courseCode.trim().toUpperCase(),
+    p_academic_unit_id: params.academicUnitId,
     p_only_with_approved_reviews: params.onlyWithApprovedReviews,
+    p_sort_by: params.sortBy,
+    p_sort_desc: params.sortDesc,
     p_limit: params.limit,
     p_offset: params.offset,
   });

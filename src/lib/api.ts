@@ -57,6 +57,18 @@ export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {
   };
 }
 
+export async function getAcademicUnitsWithProfessors(): Promise<CatalogCareerProgram[]> {
+  const { data, error } = await supabase.rpc("get_academic_units_with_professors");
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    code: row.code,
+    name: row.name,
+  }));
+}
+
 export async function getAcademicUnitsForCampus(campusId: number): Promise<CatalogCareerProgram[]> {
   const { data, error } = await supabase.rpc("get_academic_units_for_campus", {
     p_campus_id: campusId,
