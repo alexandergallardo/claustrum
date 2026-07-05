@@ -204,7 +204,7 @@ export function ProfessorDetailPage() {
               <ArrowLeft className="size-4" />
             </Button>
             <h1
-              className="min-w-0 text-xl leading-tight font-semibold break-words md:text-2xl"
+              className="mt-0.5 min-w-0 text-xl leading-tight font-semibold break-words md:mt-0 md:text-2xl"
               style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
             >
               {headingProfessorName}
