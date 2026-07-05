@@ -1,7 +1,8 @@
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import { UserIcon, ShieldIcon, PaletteIcon } from "lucide-react";
+import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { UserIcon, ShieldIcon, PaletteIcon, LogOutIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { signOut } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
 
 export function SettingsLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-1 flex-col px-4 py-4 lg:px-6 lg:py-6">
@@ -49,6 +51,18 @@ export function SettingsLayout() {
                   </Link>
                 );
               })}
+              <div className="bg-border my-1 h-px lg:hidden" />
+              <button
+                type="button"
+                onClick={async () => {
+                  await signOut();
+                  void navigate({ to: "/auth/signin" });
+                }}
+                className="text-destructive hover:bg-destructive/10 flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors lg:hidden"
+              >
+                <LogOutIcon className="size-4" />
+                Cerrar sesión
+              </button>
             </nav>
           </CardContent>
         </Card>
