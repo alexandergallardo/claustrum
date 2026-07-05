@@ -190,13 +190,13 @@ export function ProfessorDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       <div className="flex flex-col gap-3">
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="mt-0.5 shrink-0 md:mt-0"
+              className="shrink-0"
               onClick={handleBack}
               aria-label="Atrás"
               title="Atrás"
