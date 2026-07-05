@@ -86,7 +86,6 @@ function ProfilePage() {
   const studyPlans = useStudyPlans(effectiveAcademicUnitId);
 
   const isInitialLoading = isAuthLoading || isUniversitiesLoading || profileContext.isLoading;
-  const hasData = profileContext.data?.study_plan_id !== null;
 
   const setDraftsFromContext = (ctx: typeof profileContext.data) => {
     if (!ctx) {
@@ -368,20 +367,30 @@ function ProfilePage() {
                 (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft) ?? null
               }
               onValueChange={(item) => handleCampusChange(item ? String(item.id) : "")}
-              itemToStringValue={(item) => item.name}
+              itemToStringValue={(item) => (item.code ? `${item.code}: ${item.name}` : item.name)}
               disabled={!effectiveUniversityId || campuses.isLoading}
             >
               <ComboboxTrigger
                 ref={campusTriggerRef}
-                render={<Button variant="outline" className="w-full justify-between font-normal" />}
+                render={
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between text-base font-normal md:text-sm"
+                  />
+                }
               >
                 <span
                   className={`block min-w-0 flex-1 truncate text-left ${!campusIdDraft ? "text-muted-foreground" : ""}`}
                 >
                   {campuses.isLoading
                     ? "Cargando..."
-                    : ((campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)
-                        ?.name ?? "Selecciona tu sede")}
+                    : (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)
+                      ? (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)!
+                          .code
+                        ? `${(campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)!.code}: ${(campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)!.name}`
+                        : (campuses.data ?? []).find((item) => String(item.id) === campusIdDraft)!
+                            .name
+                      : "Selecciona tu sede"}
                 </span>
               </ComboboxTrigger>
               <ComboboxContent
@@ -393,7 +402,9 @@ function ProfilePage() {
                 <ComboboxList className="max-h-56 scrollbar-none">
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
-                      <span className="block w-full min-w-0 truncate">{item.name}</span>
+                      <span className="block w-full min-w-0 truncate">
+                        {item.code ? `${item.code}: ${item.name}` : item.name}
+                      </span>
                     </ComboboxItem>
                   )}
                 </ComboboxList>
@@ -411,12 +422,17 @@ function ProfilePage() {
                 ) ?? null
               }
               onValueChange={(item) => handleAcademicUnitChange(item ? String(item.id) : "")}
-              itemToStringValue={(item) => `${item.code} - ${item.name}`}
+              itemToStringValue={(item) => (item.code ? `${item.code}: ${item.name}` : item.name)}
               disabled={!campusIdDraft || academicUnits.isLoading}
             >
               <ComboboxTrigger
                 ref={academicUnitTriggerRef}
-                render={<Button variant="outline" className="w-full justify-between font-normal" />}
+                render={
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between text-base font-normal md:text-sm"
+                  />
+                }
               >
                 <span
                   className={`block min-w-0 flex-1 truncate text-left ${!academicUnitIdDraft ? "text-muted-foreground" : ""}`}
@@ -426,7 +442,13 @@ function ProfilePage() {
                     : (academicUnits.data ?? []).find(
                           (item) => String(item.id) === academicUnitIdDraft,
                         )
-                      ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.code} - ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.name}`
+                      ? (academicUnits.data ?? []).find(
+                          (item) => String(item.id) === academicUnitIdDraft,
+                        )!.code
+                        ? `${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.code}: ${(academicUnits.data ?? []).find((item) => String(item.id) === academicUnitIdDraft)!.name}`
+                        : (academicUnits.data ?? []).find(
+                            (item) => String(item.id) === academicUnitIdDraft,
+                          )!.name
                       : "Selecciona tu escuela"}
                 </span>
               </ComboboxTrigger>
@@ -440,7 +462,7 @@ function ProfilePage() {
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
                       <span className="block w-full min-w-0 truncate">
-                        {item.code} - {item.name}
+                        {item.code ? `${item.code}: ${item.name}` : item.name}
                       </span>
                     </ComboboxItem>
                   )}
@@ -457,20 +479,34 @@ function ProfilePage() {
                 (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft) ?? null
               }
               onValueChange={(item) => handleStudyPlanChange(item ? String(item.id) : "")}
-              itemToStringValue={(item) => item.name}
+              itemToStringValue={(item) =>
+                item.external_plan_id ? `${item.external_plan_id}: ${item.name}` : item.name
+              }
               disabled={!academicUnitIdDraft || studyPlans.isLoading}
             >
               <ComboboxTrigger
                 ref={studyPlanTriggerRef}
-                render={<Button variant="outline" className="w-full justify-between font-normal" />}
+                render={
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between text-base font-normal md:text-sm"
+                  />
+                }
               >
                 <span
                   className={`block min-w-0 flex-1 truncate text-left ${!studyPlanIdDraft ? "text-muted-foreground" : ""}`}
                 >
                   {studyPlans.isLoading
                     ? "Cargando..."
-                    : ((studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)
-                        ?.name ?? "Selecciona tu plan")}
+                    : (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)
+                      ? (studyPlans.data ?? []).find(
+                          (item) => String(item.id) === studyPlanIdDraft,
+                        )!.external_plan_id
+                        ? `${(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)!.external_plan_id}: ${(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)!.name}`
+                        : (studyPlans.data ?? []).find(
+                            (item) => String(item.id) === studyPlanIdDraft,
+                          )!.name
+                      : "Selecciona tu plan"}
                 </span>
               </ComboboxTrigger>
               <ComboboxContent
@@ -482,7 +518,11 @@ function ProfilePage() {
                 <ComboboxList className="max-h-56 scrollbar-none">
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
-                      <span className="block w-full min-w-0 truncate">{item.name}</span>
+                      <span className="block w-full min-w-0 truncate">
+                        {item.external_plan_id
+                          ? `${item.external_plan_id}: ${item.name}`
+                          : item.name}
+                      </span>
                     </ComboboxItem>
                   )}
                 </ComboboxList>
@@ -505,12 +545,6 @@ function ProfilePage() {
               Guardar
             </Button>
           </div>
-
-          {!hasData && (
-            <div className="bg-muted text-muted-foreground rounded-md p-4 text-sm">
-              Completa tu información académica para personalizar tu experiencia.
-            </div>
-          )}
         </div>
       </SettingsSection>
     </SettingsPage>
