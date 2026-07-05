@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useRouter, getRouteApi } from "@tanstack/react-router";
 const routeApi = getRouteApi("/professors/$professorId");
-import { ArrowLeft, PenLine } from "lucide-react";
+import { ArrowLeft, PenLine, Plus } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -190,38 +190,13 @@ export function ProfessorDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3 md:hidden">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={handleBack}
-            aria-label="Atrás"
-            title="Atrás"
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
-          <Button type="button" onClick={() => setIsComposerOpen(true)}>
-            <PenLine className="mr-2 size-4" />
-            Escribir reseña
-          </Button>
-        </div>
-
-        <div className="min-w-0 md:hidden">
-          <h1
-            className="w-full text-xl leading-tight font-semibold break-words"
-            style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
-          >
-            {headingProfessorName}
-          </h1>
-        </div>
-
-        <div className="hidden min-w-0 items-center justify-between gap-3 md:flex">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <Button
               type="button"
               variant="outline"
               size="icon"
+              className="mt-0.5 shrink-0 md:mt-0"
               onClick={handleBack}
               aria-label="Atrás"
               title="Atrás"
@@ -229,15 +204,17 @@ export function ProfessorDetailPage() {
               <ArrowLeft className="size-4" />
             </Button>
             <h1
-              className="min-w-0 text-2xl leading-tight font-semibold break-words"
+              className="min-w-0 text-xl leading-tight font-semibold break-words md:text-2xl"
               style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
             >
               {headingProfessorName}
             </h1>
           </div>
           <Button type="button" className="shrink-0" onClick={() => setIsComposerOpen(true)}>
-            <PenLine className="mr-2 size-4" />
-            Escribir reseña
+            <PenLine className="mr-2 hidden size-4 md:inline-block" />
+            <Plus className="mr-1 size-4 md:hidden" />
+            <span className="hidden md:inline">Escribir reseña</span>
+            <span className="md:hidden">Agregar</span>
           </Button>
         </div>
       </div>
