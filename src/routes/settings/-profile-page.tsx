@@ -479,9 +479,7 @@ function ProfilePage() {
                 (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft) ?? null
               }
               onValueChange={(item) => handleStudyPlanChange(item ? String(item.id) : "")}
-              itemToStringValue={(item) =>
-                item.external_plan_id ? `${item.external_plan_id}: ${item.name}` : item.name
-              }
+              itemToStringValue={(item) => item.name.replace(" - ", ": ")}
               disabled={!academicUnitIdDraft || studyPlans.isLoading}
             >
               <ComboboxTrigger
@@ -499,13 +497,9 @@ function ProfilePage() {
                   {studyPlans.isLoading
                     ? "Cargando..."
                     : (studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)
-                      ? (studyPlans.data ?? []).find(
-                          (item) => String(item.id) === studyPlanIdDraft,
-                        )!.external_plan_id
-                        ? `${(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)!.external_plan_id}: ${(studyPlans.data ?? []).find((item) => String(item.id) === studyPlanIdDraft)!.name}`
-                        : (studyPlans.data ?? []).find(
-                            (item) => String(item.id) === studyPlanIdDraft,
-                          )!.name
+                      ? (studyPlans.data ?? [])
+                          .find((item) => String(item.id) === studyPlanIdDraft)!
+                          .name.replace(" - ", ": ")
                       : "Selecciona tu plan"}
                 </span>
               </ComboboxTrigger>
@@ -519,9 +513,7 @@ function ProfilePage() {
                   {(item) => (
                     <ComboboxItem key={item.id} value={item}>
                       <span className="block w-full min-w-0 truncate">
-                        {item.external_plan_id
-                          ? `${item.external_plan_id}: ${item.name}`
-                          : item.name}
+                        {item.name.replace(" - ", ": ")}
                       </span>
                     </ComboboxItem>
                   )}
