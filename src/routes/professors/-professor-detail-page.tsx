@@ -190,8 +190,8 @@ export function ProfessorDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       <div className="flex flex-col gap-3">
-        <div className="flex min-w-0 items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-3 md:items-center">
+          <div className="flex min-w-0 items-start gap-3 md:items-center">
             <Button
               type="button"
               variant="outline"
@@ -204,7 +204,7 @@ export function ProfessorDetailPage() {
               <ArrowLeft className="size-4" />
             </Button>
             <h1
-              className="mt-0.5 min-w-0 text-xl leading-tight font-semibold break-words md:mt-0 md:text-2xl"
+              className="min-w-0 text-xl leading-9 font-semibold break-words md:text-2xl md:leading-tight"
               style={{ viewTransitionName: getProfessorNameTransitionName(params.professorId) }}
             >
               {headingProfessorName}
