@@ -7,6 +7,7 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
 **Objetivo:** Instalar las librerías necesarias de TanStack Start y ajustar el `package.json`.
 
 1. **Instalar nuevas dependencias:**
+
    ```bash
    pnpm add @tanstack/react-start vinxi
    pnpm add -D @tanstack/start-vite-plugin @tanstack/start-router-manifest
@@ -21,49 +22,51 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
 
 1. **Modificar `vite.config.ts` (o crear `app.config.ts`):**
    TanStack Start prefiere un archivo `app.config.ts`. Debemos configurar el servidor de salida (Nitro) para Cloudflare Workers.
+
    ```typescript
    // app.config.ts
-   import { defineConfig } from '@tanstack/react-start/config'
-   import tsConfigPaths from 'vite-tsconfig-paths'
-   import tailwindcss from '@tailwindcss/vite'
-   
+   import { defineConfig } from "@tanstack/react-start/config";
+   import tsConfigPaths from "vite-tsconfig-paths";
+   import tailwindcss from "@tailwindcss/vite";
+
    export default defineConfig({
      server: {
-       preset: 'cloudflare-module', // Generará salida compatible con Cloudflare Workers
+       preset: "cloudflare-module", // Generará salida compatible con Cloudflare Workers
      },
      vite: {
        plugins: [
          tsConfigPaths({
-           projects: ['./tsconfig.json'],
+           projects: ["./tsconfig.json"],
          }),
          tailwindcss(),
        ],
      },
-   })
+   });
    ```
 
 2. **Reestructurar la entrada de la aplicación:**
    Divide tu actual `src/main.tsx` en `client.tsx` y `server.tsx` en el directorio `app/` o `src/` (según tu convención):
-
    - **`src/client.tsx`**
+
      ```typescript
      import { StartClient } from '@tanstack/react-start'
      import { hydrateRoot } from 'react-dom/client'
      import { createRouter } from './router'
-     
+
      const router = createRouter()
      hydrateRoot(document.getElementById('root')!, <StartClient router={router} />)
      ```
-   
+
    - **`src/server.tsx`**
+
      ```typescript
-     import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/server'
-     import { createRouter } from './router'
-     
+     import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
+     import { createRouter } from "./router";
+
      export default createStartHandler({
        createRouter,
-       getRouterManifest: () => import('@tanstack/start-router-manifest'),
-     })(defaultStreamHandler)
+       getRouterManifest: () => import("@tanstack/start-router-manifest"),
+     })(defaultStreamHandler);
      ```
 
 ## FASE 3: Implementación de SEO en las Rutas
@@ -72,14 +75,15 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
 
 1. **En `src/routes/__root.tsx`:**
    Elimina el `index.html` estático antiguo y renderiza el HTML desde React.
+
    ```tsx
-   import { Outlet, createRootRoute } from '@tanstack/react-router'
-   import { Meta, Scripts } from '@tanstack/react-start'
-   
+   import { Outlet, createRootRoute } from "@tanstack/react-router";
+   import { Meta, Scripts } from "@tanstack/react-start";
+
    export const Route = createRootRoute({
      component: RootComponent,
-   })
-   
+   });
+
    function RootComponent() {
      return (
        <html lang="es">
@@ -91,22 +95,26 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
            <Scripts />
          </body>
        </html>
-     )
+     );
    }
    ```
 
 2. **Inyectar Meta Tags Específicos:**
    En cada ruta importante (`_index.lazy.tsx` o `schedule.tsx`), define la propiedad `head` u opciones equivalentes del router para definir los tags. Para que no haya redirecciones a `/schedule` en la raíz (para que Google vea la landing o el schedule con los metadatos correctos), colócalos así:
    ```tsx
-   export const Route = createFileRoute('/schedule')({
+   export const Route = createFileRoute("/schedule")({
      head: () => ({
        meta: [
-         { title: 'Generador y Creador de Horarios TEC (ITCR) | Claustrum' },
-         { name: 'description', content: 'El mejor creador de horarios para el Tecnológico de Costa Rica. Arma tu horario, evalúa profesores y más.' }
-       ]
+         { title: "Generador y Creador de Horarios TEC (ITCR) | Claustrum" },
+         {
+           name: "description",
+           content:
+             "El mejor creador de horarios para el Tecnológico de Costa Rica. Arma tu horario, evalúa profesores y más.",
+         },
+       ],
      }),
      // ...
-   })
+   });
    ```
 
 ## FASE 4: Configuración de Cloudflare Workers (Reemplazando Pages)
@@ -115,6 +123,7 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
 
 1. **Crear `wrangler.jsonc` en la raíz del proyecto:**
    Cloudflare permite que una ruta más específica (`/api/*`) tome precedencia sobre una más genérica (`/*`). El frontend manejará `/*`.
+
    ```jsonc
    {
      "$schema": "node_modules/wrangler/config-schema.json",
@@ -125,12 +134,12 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
      "routes": [
        {
          "pattern": "claustrum.maugp.com/*",
-         "zone_name": "maugp.com"
-       }
+         "zone_name": "maugp.com",
+       },
      ],
      "observability": {
-       "enabled": true
-     }
+       "enabled": true,
+     },
    }
    ```
 
@@ -144,7 +153,7 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
      }
    ]
    ```
-   *Nota: Cloudflare enruta automáticamente al patrón más largo, por lo que `/api/*` siempre ganará sobre `/*`.*
+   _Nota: Cloudflare enruta automáticamente al patrón más largo, por lo que `/api/_`siempre ganará sobre`/_`._
 
 ## FASE 5: Actualización del CI/CD (GitHub Actions)
 
@@ -153,22 +162,23 @@ Este documento detalla paso a paso cómo migrar Claustrum de una SPA en Vite (Ta
 Modificar `.github/workflows/production.yml`:
 
 1. **Reemplazar el paso de Pages:**
-   ```yaml
-         - name: Build TanStack Start (SSR)
-           env:
-             VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-             VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-             VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
-             VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-           run: pnpm run build # Asumiendo que ahora hace 'vinxi build'
 
-         - name: Deploy Frontend to Cloudflare Workers
-           uses: cloudflare/wrangler-action@v3
-           with:
-             apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-             accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-             command: deploy
-             # Wrangler leerá wrangler.jsonc de la raíz automáticamente
+   ```yaml
+   - name: Build TanStack Start (SSR)
+     env:
+       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+       VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
+       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+     run: pnpm run build # Asumiendo que ahora hace 'vinxi build'
+
+   - name: Deploy Frontend to Cloudflare Workers
+     uses: cloudflare/wrangler-action@v3
+     with:
+       apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+       accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+       command: deploy
+       # Wrangler leerá wrangler.jsonc de la raíz automáticamente
    ```
 
 2. **Manejo de Secretos/Entorno:**
@@ -187,5 +197,6 @@ Modificar `.github/workflows/production.yml`:
 3. Borra el proyecto de Cloudflare Pages cuando ya no sea necesario.
 
 ---
+
 **Siguiente Paso:**
 Sigue estas instrucciones para refactorizar la base del código. El UI se mantendrá intacto, pero ahora Cloudflare y Google verán tu aplicación lista para indexar con las etiquetas correctas de "Generador" y "Creador".
