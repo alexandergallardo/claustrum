@@ -30,8 +30,8 @@ import { getProfileContextServerFn, getOnboardingStatusServerFn } from "@/lib/se
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
-export function useUniversities() {
-  return useQuery({
+export function universitiesQueryOptions() {
+  return queryOptions({
     queryKey: ["universities"],
     queryFn: async () => {
       const sb = getSupabaseBrowserClient();
@@ -48,6 +48,10 @@ export function useUniversities() {
   });
 }
 
+export function useUniversities() {
+  return useQuery(universitiesQueryOptions());
+}
+
 export function useAcademicUnitsWithProfessors() {
   return useQuery({
     queryKey: ["academic-units-with-professors"],
@@ -59,8 +63,8 @@ export function useAcademicUnitsWithProfessors() {
   });
 }
 
-export function useCampuses(universityId: number | null) {
-  return useQuery({
+export function campusesQueryOptions(universityId: number | null) {
+  return queryOptions({
     queryKey: ["campuses", universityId],
     queryFn: async () => {
       if (!universityId) return [];
@@ -77,8 +81,12 @@ export function useCampuses(universityId: number | null) {
   });
 }
 
-export function useAcademicUnits(campusId: number | null) {
-  return useQuery({
+export function useCampuses(universityId: number | null) {
+  return useQuery(campusesQueryOptions(universityId));
+}
+
+export function academicUnitsQueryOptions(campusId: number | null) {
+  return queryOptions({
     queryKey: ["academicUnits", campusId],
     queryFn: async () => {
       if (!campusId) return [];
@@ -95,8 +103,12 @@ export function useAcademicUnits(campusId: number | null) {
   });
 }
 
-export function useStudyPlans(academicUnitId: number | null) {
-  return useQuery({
+export function useAcademicUnits(campusId: number | null) {
+  return useQuery(academicUnitsQueryOptions(campusId));
+}
+
+export function studyPlansQueryOptions(academicUnitId: number | null) {
+  return queryOptions({
     queryKey: ["studyPlansV2", academicUnitId],
     queryFn: async () => {
       if (!academicUnitId) return [];
@@ -114,6 +126,10 @@ export function useStudyPlans(academicUnitId: number | null) {
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
+}
+
+export function useStudyPlans(academicUnitId: number | null) {
+  return useQuery(studyPlansQueryOptions(academicUnitId));
 }
 
 export function profileContextQueryOptions(userId: string | null) {
@@ -437,8 +453,8 @@ export function useUserStudyPlan(userId: string | null, enabled = true) {
   });
 }
 
-export function useAcademicTerms(campusId: number | null, studyPlanId?: number | null) {
-  return useQuery({
+export function academicTermsQueryOptions(campusId: number | null, studyPlanId?: number | null) {
+  return queryOptions({
     queryKey: ["academicTerms", campusId, studyPlanId],
     queryFn: async () => {
       if (!campusId) return [];
@@ -468,6 +484,10 @@ export function useAcademicTerms(campusId: number | null, studyPlanId?: number |
     enabled: !!campusId,
     placeholderData: keepPreviousData,
   });
+}
+
+export function useAcademicTerms(campusId: number | null, studyPlanId?: number | null) {
+  return useQuery(academicTermsQueryOptions(campusId, studyPlanId));
 }
 
 export function useCourseOfferingTerms(

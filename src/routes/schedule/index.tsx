@@ -1,5 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import {
+  universitiesQueryOptions,
+  campusesQueryOptions,
+  academicUnitsQueryOptions,
+  studyPlansQueryOptions,
+  academicTermsQueryOptions,
+} from "@/lib/hooks/use-queries";
 import { buildSeoMeta } from "@/lib/seo";
 
 import {
@@ -39,5 +46,28 @@ export const Route = createFileRoute("/schedule/")({
         replace: true,
       });
     }
+  },
+  loaderDeps: ({ search }) => ({
+    university: search.university,
+    campus: search.campus,
+    career: search.career,
+    plan: search.plan,
+  }),
+  loader: async ({ context: { queryClient }, deps }) => {
+    const promises: Promise<unknown>[] = [];
+    promises.push(queryClient.ensureQueryData(universitiesQueryOptions()));
+
+    const u = deps.university ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
+    if (u) promises.push(queryClient.ensureQueryData(campusesQueryOptions(u)));
+    if (deps.campus)
+      promises.push(queryClient.ensureQueryData(academicUnitsQueryOptions(deps.campus)));
+    if (deps.career)
+      promises.push(queryClient.ensureQueryData(studyPlansQueryOptions(deps.career)));
+    if (deps.campus)
+      promises.push(
+        queryClient.ensureQueryData(academicTermsQueryOptions(deps.campus, deps.plan ?? null)),
+      );
+
+    await Promise.allSettled(promises);
   },
 });
