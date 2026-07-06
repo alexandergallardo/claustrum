@@ -4,10 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm run dev:web & pnpm run dev:api",
-    "dev:web": "vite --port 3000",
+    "dev:web": "vite dev --port 3000",
     "dev:api": "pnpm --filter claustrum-api dev",
     "build": "fumadocs-mdx && tsc && vite build",
-    "preview": "vite preview",
+    "preview": "wrangler dev",
     "test": "vitest run",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -55,6 +55,7 @@
     "@tanstack/react-query": "^5.100.14",
     "@tanstack/react-router": "^1.170.8",
     "@tanstack/react-router-devtools": "^1.167.0",
+    "@tanstack/react-start": "^1.168.27",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.25",
     "@tanstack/router-plugin": "^1.168.11",
@@ -92,10 +93,14 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
     "vaul": "^1.1.2",
+    "vinxi": "^0.5.11",
     "xstate": "^5.31.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.43.0",
+    "@tanstack/start-router-manifest": "^1.111.7",
+    "@tanstack/start-vite-plugin": "^1.91.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.9.1",
@@ -118,7 +123,7 @@
     "vite": "^8.0.14",
     "vitest": "^4.1.7",
     "web-vitals": "^5.2.0",
-    "wrangler": "^4.94.0"
+    "wrangler": "^4.107.0"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm exec lint-staged"
@@ -130,6 +135,13 @@
     ],
     "*.{yaml,yml,css,html}": [
       "oxfmt --write"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "simple-git-hooks",
+      "@parcel/watcher"
     ]
   },
   "packageManager": "pnpm@11.1.3"

@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "claustrum-web",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-07-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "claustrum.maugp.com/*",
+      "zone_name": "maugp.com"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "env": {
+    "preview": {
+      "name": "claustrum-web-preview",
+      "routes": []
+    }
+  }
+}
