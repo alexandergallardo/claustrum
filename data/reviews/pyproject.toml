@@ -5,12 +5,12 @@ description = "MisProfesores professor matching and review import pipeline"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "beautifulsoup4>=4.14.3",
-    "rapidfuzz>=3.14.5",
-    "requests>=2.34.2",
-    "python-dateutil>=2.9.0.post0",
-    "unidecode>=1.4.0",
-    "rich>=15.0.0",
+  "beautifulsoup4>=4.14.3",
+  "rapidfuzz>=3.14.5",
+  "requests>=2.34.2",
+  "python-dateutil>=2.9.0.post0",
+  "unidecode>=1.4.0",
+  "rich>=15.0.0",
 ]
 
 [project.scripts]

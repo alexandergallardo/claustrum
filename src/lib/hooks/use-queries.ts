@@ -1,4 +1,10 @@
-import { useQuery, useMutation, keepPreviousData, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  keepPreviousData,
+  useQueryClient,
+  queryOptions,
+} from "@tanstack/react-query";
 
 import type {
   AcademicTerm,
@@ -18,7 +24,9 @@ import type {
   CourseDetailRelatedCourse,
 } from "@/lib/types";
 
-import { authClient, getSession } from "@/lib/auth/client";
+import { authClient } from "@/lib/auth/client";
+import { getAuthSessionServerFn } from "@/lib/auth/server-fn";
+import { getProfileContextServerFn, getOnboardingStatusServerFn } from "@/lib/server-fns";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
@@ -108,28 +116,27 @@ export function useStudyPlans(academicUnitId: number | null) {
   });
 }
 
-export function useProfileContext(userId: string | null) {
-  return useQuery({
+export function profileContextQueryOptions(userId: string | null) {
+  return queryOptions({
     queryKey: ["profile", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .rpc("get_user_profile_with_context", { p_user_id: userId })
-        .select("*")
-        .maybeSingle();
-      if (error) throw error;
+      const data = await getProfileContextServerFn({ data: userId });
       return data as UserProfileContextRow | null;
     },
     enabled: !!userId,
   });
 }
 
-export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
-  return useQuery({
+export function useProfileContext(userId: string | null) {
+  return useQuery(profileContextQueryOptions(userId));
+}
+
+export function authUserQueryOptions() {
+  return queryOptions({
     queryKey: ["authUser"],
     queryFn: async () => {
-      const { data } = await getSession();
+      const data = await getAuthSessionServerFn();
       if (!data?.user) return null;
       const userMetadata =
         "userMetadata" in data.user && typeof data.user.userMetadata === "object"
@@ -144,8 +151,14 @@ export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
         },
       };
     },
-    enabled,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useAuthUser({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({
+    ...authUserQueryOptions(),
+    enabled,
   });
 }
 
@@ -197,23 +210,20 @@ export function useAuthAccounts(enabled = true) {
   });
 }
 
-export function useOnboardingStatus(userId: string | null) {
-  return useQuery({
+export function onboardingStatusQueryOptions(userId: string | null) {
+  return queryOptions({
     queryKey: ["onboardingStatus", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .from("user")
-        .select("onboarding_dismissed_at,onboarding_completed_at")
-        .eq("id", userId)
-        .maybeSingle();
-      if (error) throw error;
+      const data = await getOnboardingStatusServerFn({ data: userId });
       return data;
     },
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
   });
+}
+
+export function useOnboardingStatus(userId: string | null) {
+  return useQuery(onboardingStatusQueryOptions(userId));
 }
 
 export type UniversityRow = {

@@ -11,22 +11,22 @@ pipeline de datos TEC genera seeds versionados para mantener catálogo y oferta.
 
 El frontend necesita variables públicas para conectarse a servicios externos:
 
-| Variable | Uso |
-| --- | --- |
-| `VITE_SUPABASE_URL` | URL pública de Supabase. |
+| Variable                        | Uso                                |
+| ------------------------------- | ---------------------------------- |
+| `VITE_SUPABASE_URL`             | URL pública de Supabase.           |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Key pública para cliente Supabase. |
-| `VITE_API_BASE_URL` | Base URL del Worker API. |
-| `VITE_TURNSTILE_SITE_KEY` | Site key pública de Turnstile. |
+| `VITE_API_BASE_URL`             | Base URL del Worker API.           |
+| `VITE_TURNSTILE_SITE_KEY`       | Site key pública de Turnstile.     |
 
 El Worker necesita secretos de servidor:
 
-| Variable | Uso |
-| --- | --- |
-| `SUPABASE_URL` | URL del proyecto Supabase. |
-| `SUPABASE_SECRET_KEY` | Key de servicio para operaciones seguras. |
-| `TURNSTILE_SECRET_KEY` | Validación de Turnstile. |
-| `BETTER_AUTH_SECRET` | Firma/seguridad de Better Auth. |
-| `BETTER_AUTH_URL` | URL base pública de auth. |
+| Variable               | Uso                                       |
+| ---------------------- | ----------------------------------------- |
+| `SUPABASE_URL`         | URL del proyecto Supabase.                |
+| `SUPABASE_SECRET_KEY`  | Key de servicio para operaciones seguras. |
+| `TURNSTILE_SECRET_KEY` | Validación de Turnstile.                  |
+| `BETTER_AUTH_SECRET`   | Firma/seguridad de Better Auth.           |
+| `BETTER_AUTH_URL`      | URL base pública de auth.                 |
 
 El repositorio incluye `.env.example`, `.env.production.local.example` y
 `workers/api/.dev.vars.example` como plantillas.
@@ -62,10 +62,10 @@ contratos consumidos por la UI.
 
 El despliegue continuo usa dos ramas:
 
-| Rama | Workflow | Resultado |
-| --- | --- | --- |
-| `development` | `.github/workflows/preview.yml` | Preview en Cloudflare Pages. |
-| `main` | `.github/workflows/production.yml` | Worker API + frontend de producción. |
+| Rama          | Workflow                           | Resultado                            |
+| ------------- | ---------------------------------- | ------------------------------------ |
+| `development` | `.github/workflows/preview.yml`    | Preview en Cloudflare Pages.         |
+| `main`        | `.github/workflows/production.yml` | Worker API + frontend de producción. |
 
 ## Datos TEC en CI
 

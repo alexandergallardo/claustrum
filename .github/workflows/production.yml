@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy-production:
-    name: Deploy production to Cloudflare Pages
+    name: Deploy production to Cloudflare Workers
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,10 +49,10 @@ jobs:
           command: deploy
           packageManager: pnpm
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy Frontend to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=claustrum
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: deploy
+          packageManager: pnpm

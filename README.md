@@ -132,7 +132,7 @@ El frontend usa variables públicas con prefijo `VITE_`. Las credenciales privil
 | `SUPABASE_SECRET_KEY`           | Credencial de servidor para scripts/admin      | No en frontend, requerida para operaciones privilegiadas   |
 | `TURNSTILE_SECRET_KEY`          | Secret key de servidor de Turnstile            | Requerida en API Worker con captcha                        |
 | `BETTER_AUTH_SECRET`            | Secret key de Better Auth                      | Sí (producción)                                            |
-| `BETTER_AUTH_URL`              | URL base para enlaces de auth                  | Sí (producción)                                            |
+| `BETTER_AUTH_URL`               | URL base para enlaces de auth                  | Sí (producción)                                            |
 
 Archivos de referencia:
 
@@ -144,16 +144,16 @@ Archivos de referencia:
 
 Todos los comandos del proyecto principal deben ejecutarse con pnpm.
 
-| Comando                     | Descripción                                                           |
-| --------------------------- | --------------------------------------------------------------------- |
-| `pnpm install`              | Instala dependencias según `pnpm-lock.yaml`                           |
-| `pnpm run dev`              | Inicia Vite en `http://localhost:3000`                                |
-| `pnpm run build`            | Ejecuta `tsc` y genera build de producción en `dist/`                 |
-| `pnpm run preview`          | Sirve localmente el build de producción                               |
-| `pnpm run supabase:start`   | Levanta Supabase local                                                |
-| `pnpm run supabase:stop`    | Detiene Supabase local                                                |
-| `pnpm run supabase:status`  | Muestra estado y credenciales locales de Supabase                     |
-| `pnpm run supabase:migrate` | Aplica migraciones pendientes                                         |
+| Comando                     | Descripción                                           |
+| --------------------------- | ----------------------------------------------------- |
+| `pnpm install`              | Instala dependencias según `pnpm-lock.yaml`           |
+| `pnpm run dev`              | Inicia Vite en `http://localhost:3000`                |
+| `pnpm run build`            | Ejecuta `tsc` y genera build de producción en `dist/` |
+| `pnpm run preview`          | Sirve localmente el build de producción               |
+| `pnpm run supabase:start`   | Levanta Supabase local                                |
+| `pnpm run supabase:stop`    | Detiene Supabase local                                |
+| `pnpm run supabase:status`  | Muestra estado y credenciales locales de Supabase     |
+| `pnpm run supabase:migrate` | Aplica migraciones pendientes                         |
 
 ## Entorno de desarrollo
 
@@ -215,7 +215,7 @@ El Worker ubicado en `workers/api` es el backend unificado de la aplicación. Ma
 | `GET`  | `/evaluations/file?key=...` | Sirve/streaming de PDF si el usuario tiene permiso         |
 | `POST` | `/evaluations/moderate`     | Aprueba o rechaza evaluaciones, solo administradores       |
 | `POST` | `/professor-reviews`        | Envía una reseña de profesor (con Turnstile)               |
-| `*`    | `/auth/*`                   | Rutas de Better Auth (sesión, registro, 2FA, etc.)        |
+| `*`    | `/auth/*`                   | Rutas de Better Auth (sesión, registro, 2FA, etc.)         |
 
 ### Seguridad
 

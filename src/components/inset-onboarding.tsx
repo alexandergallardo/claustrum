@@ -33,7 +33,7 @@ export function InsetOnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const { data: universities, isLoading: isUniversitiesLoading } = useUniversities();
+  const { data: universities } = useUniversities();
 
   const defaultUniversity = useMemo(() => {
     const tec = (universities ?? []).find((u) => u.name.toLowerCase().includes("tecnologico"));
@@ -170,7 +170,7 @@ export function InsetOnboardingPage() {
   const showAcademicUnitError = showStepError && step === 2 && !academicUnitId;
   const showStudyPlanError = showStepError && step === 3 && !studyPlanId;
 
-  const isLoading = isAuthLoading || isUniversitiesLoading;
+  const isLoading = isAuthLoading;
   if (isLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">

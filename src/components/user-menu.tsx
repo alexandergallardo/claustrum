@@ -1,4 +1,5 @@
-import { IconLogout, IconNotification, IconUserCircle } from "@tabler/icons-react";
+import { IconLogout, IconSettings } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,28 +18,29 @@ export function UserMenu({
   user,
   trigger,
   side = "bottom",
-  align = "end",
 }: {
   user: {
     name: string;
     email: string;
-    avatar: string;
+    avatar?: string;
   };
   trigger: React.ReactNode;
   side?: "top" | "right" | "bottom" | "left";
-  align?: "start" | "center" | "end";
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 rounded-lg" side={side} align={align} sideOffset={4}>
+      <DropdownMenuContent className="w-56" side={side} align="end">
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="size-8">
+            <Avatar className="size-8 rounded-lg">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>MG</AvatarFallback>
+              <AvatarFallback className="rounded-lg">
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
@@ -50,20 +52,17 @@ export function UserMenu({
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link to="/settings/profile">
-              <IconUserCircle />
+              <IconSettings />
               Configuración
             </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <IconNotification />
-            Notificaciones
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={async () => {
             await signOut();
-            void navigate({ to: "." });
+            queryClient.clear();
+            void navigate({ to: "/" });
           }}
         >
           <IconLogout />

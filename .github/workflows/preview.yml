@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy-preview:
-    name: Deploy preview to Cloudflare Pages
+    name: Deploy preview to Cloudflare Workers
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,10 +38,10 @@ jobs:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: pnpm run build
 
-      - name: Deploy Preview to Cloudflare Pages
+      - name: Deploy Preview to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=claustrum --branch=development
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: deploy --env preview
+          packageManager: pnpm

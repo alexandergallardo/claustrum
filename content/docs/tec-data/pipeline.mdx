@@ -10,11 +10,11 @@ y genera seeds SQL para Supabase.
 El flujo actual trabaja por alcance lógico (`scope`), no por una bandera
 `--entity`. Los alcances válidos son:
 
-| Scope | Incluye |
-| --- | --- |
-| `catalog` | Catálogo institucional, periodos, planes, cursos y relaciones. |
-| `offering` | Profesores, ofertas, grupos, profesores por grupo y reuniones. |
-| `all` | Catálogo + oferta. Es el reemplazo de cualquier alcance histórico `mixed`. |
+| Scope      | Incluye                                                                    |
+| ---------- | -------------------------------------------------------------------------- |
+| `catalog`  | Catálogo institucional, periodos, planes, cursos y relaciones.             |
+| `offering` | Profesores, ofertas, grupos, profesores por grupo y reuniones.             |
+| `all`      | Catálogo + oferta. Es el reemplazo de cualquier alcance histórico `mixed`. |
 
 ## Comandos principales
 
@@ -54,10 +54,10 @@ de planes genera `study_plan`, `study_plan_campus`, `study_plan_level`, `course`
 
 La oferta académica se construye mezclando dos fuentes por año:
 
-| Fuente local | Origen | Uso principal |
-| --- | --- | --- |
-| `course_offer/{year}` | Oferta por escuela/año | Horas, periodo, sede y metadatos de curso. |
-| `schedule_guia/{year}` | Guía de horarios por sede/carrera/periodo | Grupos, días, horas, aula y profesores. |
+| Fuente local           | Origen                                    | Uso principal                              |
+| ---------------------- | ----------------------------------------- | ------------------------------------------ |
+| `course_offer/{year}`  | Oferta por escuela/año                    | Horas, periodo, sede y metadatos de curso. |
+| `schedule_guia/{year}` | Guía de horarios por sede/carrera/periodo | Grupos, días, horas, aula y profesores.    |
 
 La mezcla produce `course_offering`, `course_offering_group`,
 `course_offering_group_professor`, `course_offering_meeting` y `professor`. Los
@@ -101,15 +101,15 @@ deterministas.
 
 Cada seed generado incluye metadata estricta en cabecera y manifest:
 
-| Campo | Propósito |
-| --- | --- |
-| `environment_id` | Identifica host/proyecto/base destino. |
-| `scope` | `catalog`, `offering` o `all`. |
-| `years` | Años incluidos en la corrida. |
-| `term_external_keys` | Términos afectados por la corrida. |
-| `data_fingerprint` | Hash del payload normalizado para detectar cambios. |
-| `table_stats` | Inserciones, updates y soft deletes por tabla. |
-| `noop` | Indica que no hubo cambios de datos. |
+| Campo                | Propósito                                           |
+| -------------------- | --------------------------------------------------- |
+| `environment_id`     | Identifica host/proyecto/base destino.              |
+| `scope`              | `catalog`, `offering` o `all`.                      |
+| `years`              | Años incluidos en la corrida.                       |
+| `term_external_keys` | Términos afectados por la corrida.                  |
+| `data_fingerprint`   | Hash del payload normalizado para detectar cambios. |
+| `table_stats`        | Inserciones, updates y soft deletes por tabla.      |
+| `noop`               | Indica que no hubo cambios de datos.                |
 
 Si el fingerprint ya fue aplicado para el mismo scope/años/términos, `sync`
 genera un seed NOOP de auditoría y no vuelve a aplicar datos.
@@ -151,15 +151,15 @@ con los nuevos seeds en `supabase/seeds/tec-data`.
 
 La CLI está organizada por capas:
 
-| Ruta | Responsabilidad |
-| --- | --- |
-| `src/app/cli.py` | Entrada Typer y comandos públicos. |
-| `src/workflows/` | Orquestación de descarga, procesamiento, pipeline y sync. |
-| `src/infra/tec_api/` | Clientes HTTP para endpoints del TEC. |
-| `src/domains/catalog/` | Procesamiento de catálogo base. |
-| `src/domains/study_plan/` | Procesamiento de planes, cursos y relaciones. |
-| `src/domains/offering/` | Mezcla de oferta, grupos, reuniones y profesores. |
-| `src/domains/sync/` | Generación SQL, remapeo, fingerprint y helpers de seed. |
+| Ruta                      | Responsabilidad                                           |
+| ------------------------- | --------------------------------------------------------- |
+| `src/app/cli.py`          | Entrada Typer y comandos públicos.                        |
+| `src/workflows/`          | Orquestación de descarga, procesamiento, pipeline y sync. |
+| `src/infra/tec_api/`      | Clientes HTTP para endpoints del TEC.                     |
+| `src/domains/catalog/`    | Procesamiento de catálogo base.                           |
+| `src/domains/study_plan/` | Procesamiento de planes, cursos y relaciones.             |
+| `src/domains/offering/`   | Mezcla de oferta, grupos, reuniones y profesores.         |
+| `src/domains/sync/`       | Generación SQL, remapeo, fingerprint y helpers de seed.   |
 
 ## Consideraciones operativas
 

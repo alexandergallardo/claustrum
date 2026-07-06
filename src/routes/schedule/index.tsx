@@ -8,6 +8,16 @@ import {
 } from "./-schedule-search";
 
 export const Route = createFileRoute("/schedule/")({
+  head: () => ({
+    meta: [
+      { title: "Generador y Creador de Horarios TEC (ITCR) | Claustrum" },
+      {
+        name: "description",
+        content:
+          "El mejor creador de horarios para el Tecnológico de Costa Rica. Arma tu horario, evalúa profesores y más.",
+      },
+    ],
+  }),
   validateSearch: parseScheduleSearch,
   search: {
     middlewares: [

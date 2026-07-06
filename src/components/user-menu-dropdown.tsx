@@ -28,6 +28,8 @@ interface UserMenuDropdownProps {
   contentClass?: string;
 }
 
+import { useQueryClient } from "@tanstack/react-query";
+
 export function UserMenuDropdown({
   user,
   trigger,
@@ -39,6 +41,7 @@ export function UserMenuDropdown({
   contentClass = "w-56 rounded-lg",
 }: UserMenuDropdownProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
@@ -76,6 +79,7 @@ export function UserMenuDropdown({
         <DropdownMenuItem
           onClick={async () => {
             await signOut();
+            queryClient.clear();
             void navigate({ to: "/auth/signin" });
           }}
         >

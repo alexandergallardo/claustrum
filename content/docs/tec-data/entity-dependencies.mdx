@@ -52,11 +52,11 @@ flowchart TB
 
 ## Scopes y tablas
 
-| Scope | Tablas |
-| --- | --- |
-| `catalog` | `country`, `university`, `campus`, `academic_unit`, `academic_modality`, `academic_term`, `academic_unit_campus`, `study_plan`, `study_plan_campus`, `study_plan_level`, `course`, `study_plan_level_course`, `course_relation`, `professor` |
-| `offering` | `professor`, `course_offering`, `course_offering_group`, `course_offering_group_professor`, `course_offering_meeting` |
-| `all` | Todas las tablas anteriores |
+| Scope      | Tablas                                                                                                                                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog`  | `country`, `university`, `campus`, `academic_unit`, `academic_modality`, `academic_term`, `academic_unit_campus`, `study_plan`, `study_plan_campus`, `study_plan_level`, `course`, `study_plan_level_course`, `course_relation`, `professor` |
+| `offering` | `professor`, `course_offering`, `course_offering_group`, `course_offering_group_professor`, `course_offering_meeting`                                                                                                                        |
+| `all`      | Todas las tablas anteriores                                                                                                                                                                                                                  |
 
 `offering` incluye `professor` porque los profesores se descubren durante el
 procesamiento de horarios. Aun así, necesita que el catálogo ya exista para poder
@@ -142,11 +142,11 @@ natural como contrato de sincronización.
 
 Las tablas sync-managed usan lifecycle lógico:
 
-| Columna | Uso |
-| --- | --- |
-| `is_active` | Indica si la fila sigue vigente en la fuente sincronizada. |
-| `updated_at` | Marca actualizaciones y reactiva filas sincronizadas. |
-| `deactivated_at` | Guarda cuando una fila dejó de aparecer en la fuente. |
+| Columna          | Uso                                                        |
+| ---------------- | ---------------------------------------------------------- |
+| `is_active`      | Indica si la fila sigue vigente en la fuente sincronizada. |
+| `updated_at`     | Marca actualizaciones y reactiva filas sincronizadas.      |
+| `deactivated_at` | Guarda cuando una fila dejó de aparecer en la fuente.      |
 
 El sync no elimina físicamente catálogo ni oferta. Si una fila deja de aparecer,
 se marca inactiva para no romper historial, horarios guardados, evaluaciones o
@@ -159,18 +159,18 @@ Para oferta, los soft deletes se acotan a los términos sincronizados. Una corri
 
 `group_type` acepta actualmente estos valores:
 
-| Valor |
-| --- |
-| `REGULAR` |
-| `SEMIPRESENCIAL` |
-| `VIRTUAL` |
-| `ASISTIDA` |
-| `TUTORIA` |
-| `LABORATORIO` |
-| `RN` |
-| `ENSEÑANZA REMOTA` |
+| Valor                         |
+| ----------------------------- |
+| `REGULAR`                     |
+| `SEMIPRESENCIAL`              |
+| `VIRTUAL`                     |
+| `ASISTIDA`                    |
+| `TUTORIA`                     |
+| `LABORATORIO`                 |
+| `RN`                          |
+| `ENSEÑANZA REMOTA`            |
 | `TRABAJO FINAL DE GRADUACIÓN` |
-| `TALLER` |
+| `TALLER`                      |
 
 El procesador normaliza alias externos: `PRESENCIAL` pasa a `REGULAR`, `GRUPO RN`
 pasa a `RN`, variantes sin acento de enseñanza remota y TFG pasan a sus valores
@@ -179,26 +179,26 @@ agregar primero el valor al enum/mapeo.
 
 ## Archivos de salida
 
-| Archivo | Contenido |
-| --- | --- |
-| `country/data.json` | País de referencia. |
-| `university/data.json` | Institución. |
-| `campus/data.json` | Sedes con código y nombre. |
-| `academic_unit/data.json` | Unidades académicas. |
-| `academic_unit_campus/data.json` | Relación unidad-sede. |
-| `academic_modality/data.json` | Modalidades académicas. |
-| `academic_term/data.json` | Periodos por año, modalidad y número. |
-| `study_plan/data.json` | Planes de estudio. |
-| `study_plan_campus/data.json` | Sedes donde se ofrece cada plan. |
-| `study_plan_level/data.json` | Niveles del plan. |
-| `course/data.json` | Catálogo de cursos. |
-| `study_plan_level_course/data.json` | Cursos por nivel. |
-| `course_relation/data.json` | Prerequisitos, correquisitos y equivalencias. |
-| `professor/data.json` | Profesores descubiertos en horarios. |
-| `course_offering/data.json` | Ofertas por curso/sede/unidad/periodo. |
-| `course_offering_group/data.json` | Grupos de cada oferta. |
-| `course_offering_group_professor/data.json` | Profesores por grupo. |
-| `course_offering_meeting/data.json` | Reuniones de grupo. |
+| Archivo                                     | Contenido                                     |
+| ------------------------------------------- | --------------------------------------------- |
+| `country/data.json`                         | País de referencia.                           |
+| `university/data.json`                      | Institución.                                  |
+| `campus/data.json`                          | Sedes con código y nombre.                    |
+| `academic_unit/data.json`                   | Unidades académicas.                          |
+| `academic_unit_campus/data.json`            | Relación unidad-sede.                         |
+| `academic_modality/data.json`               | Modalidades académicas.                       |
+| `academic_term/data.json`                   | Periodos por año, modalidad y número.         |
+| `study_plan/data.json`                      | Planes de estudio.                            |
+| `study_plan_campus/data.json`               | Sedes donde se ofrece cada plan.              |
+| `study_plan_level/data.json`                | Niveles del plan.                             |
+| `course/data.json`                          | Catálogo de cursos.                           |
+| `study_plan_level_course/data.json`         | Cursos por nivel.                             |
+| `course_relation/data.json`                 | Prerequisitos, correquisitos y equivalencias. |
+| `professor/data.json`                       | Profesores descubiertos en horarios.          |
+| `course_offering/data.json`                 | Ofertas por curso/sede/unidad/periodo.        |
+| `course_offering_group/data.json`           | Grupos de cada oferta.                        |
+| `course_offering_group_professor/data.json` | Profesores por grupo.                         |
+| `course_offering_meeting/data.json`         | Reuniones de grupo.                           |
 
 ## Tablas operativas relacionadas
 
