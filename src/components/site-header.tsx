@@ -268,8 +268,8 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            aria-label={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
-            title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+            aria-label="Alternar tema"
+            title="Alternar tema"
             className="rounded-full"
           >
             <Sun className="size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
