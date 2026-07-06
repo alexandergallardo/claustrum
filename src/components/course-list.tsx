@@ -507,26 +507,25 @@ const CourseCard = memo(function CourseCard({
                         >
                           {groupView.group.group_type}
                         </span>
+                        {groupView.campusCode && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "ml-auto h-5 cursor-help px-1.5 text-[10px]",
+                                  isSelected && "border-foreground/20 text-inherit",
+                                )}
+                              >
+                                {groupView.campusCode}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {groupView.campusName || groupView.campusCode}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
-
-                      {groupView.campusCode && (
-                        <div className="mb-2 flex items-center gap-2">
-                          <MapPin
-                            className={cn(
-                              "h-3.5 w-3.5",
-                              isSelected ? "opacity-70" : "text-muted-foreground",
-                            )}
-                          />
-                          <span
-                            className={cn(
-                              "text-foreground text-xs whitespace-nowrap",
-                              isSelected && "opacity-80",
-                            )}
-                          >
-                            {groupView.campusName || groupView.campusCode}
-                          </span>
-                        </div>
-                      )}
 
                       <Separator className="mb-2" />
 
