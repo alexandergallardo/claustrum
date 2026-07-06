@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { getEvent } from "vinxi/http";
+// @ts-ignore
+import { env } from "cloudflare:workers";
 
 import type { UserProfileContextRow } from "@/lib/types";
 
@@ -13,10 +14,11 @@ export const getProfileContextServerFn = createServerFn({ method: "GET" })
     const req = getRequest();
     if (!req) return null;
 
-    const event = getEvent();
-    const env = event.context.cloudflare?.env;
     const customFetch = env?.API
-      ? (url: string | URL | Request, init?: RequestInit) => env.API.fetch(new Request(url, init))
+      ? (input: string | URL | Request, init?: RequestInit) => {
+          const req = new Request(input instanceof Request ? input : input.toString(), init);
+          return env.API.fetch(req);
+        }
       : undefined;
 
     const sb = await getSupabaseServerClient(req.headers, customFetch);
@@ -35,10 +37,11 @@ export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
     const req = getRequest();
     if (!req) return null;
 
-    const event = getEvent();
-    const env = event.context.cloudflare?.env;
     const customFetch = env?.API
-      ? (url: string | URL | Request, init?: RequestInit) => env.API.fetch(new Request(url, init))
+      ? (input: string | URL | Request, init?: RequestInit) => {
+          const req = new Request(input instanceof Request ? input : input.toString(), init);
+          return env.API.fetch(req);
+        }
       : undefined;
 
     const sb = await getSupabaseServerClient(req.headers, customFetch);
