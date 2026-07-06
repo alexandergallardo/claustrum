@@ -9,19 +9,20 @@ import { queryClient } from "@/lib/query-client";
 import { getRouter } from "./router";
 import "./styles.css";
 
-const CHUNK_RELOAD_KEY = "vite-chunk-reload";
+const CHUNK_RELOAD_KEY = "vite-chunk-reload-time";
 
 window.addEventListener("vite:preloadError", () => {
-  if (sessionStorage.getItem(CHUNK_RELOAD_KEY) === "1") {
+  const lastReloadStr = sessionStorage.getItem(CHUNK_RELOAD_KEY);
+  const lastReload = lastReloadStr ? parseInt(lastReloadStr, 10) : 0;
+  const now = Date.now();
+
+  if (now - lastReload < 10000) {
+    console.error("Vite chunk reload loop detected. Stopping.");
     return;
   }
 
-  sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+  sessionStorage.setItem(CHUNK_RELOAD_KEY, now.toString());
   window.location.reload();
-});
-
-window.addEventListener("pageshow", () => {
-  sessionStorage.removeItem(CHUNK_RELOAD_KEY);
 });
 
 const router = getRouter();
