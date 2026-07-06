@@ -29,6 +29,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Deploy Evaluation Upload Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: workers/api
+          command: deploy
+          packageManager: pnpm
+
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -39,15 +48,6 @@ jobs:
 
       - name: Audit dependencies
         run: pnpm audit --audit-level critical
-
-      - name: Deploy Evaluation Upload Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: workers/api
-          command: deploy
-          packageManager: pnpm
 
       - name: Deploy Frontend to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
