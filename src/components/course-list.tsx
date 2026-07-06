@@ -570,7 +570,9 @@ const CourseCard = memo(function CourseCard({
                         )}
                       </div>
 
-                      <Separator className="mb-2" />
+                      <Separator
+                        className={cn("mb-2 transition-colors", isSelected && "bg-foreground/20")}
+                      />
 
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
