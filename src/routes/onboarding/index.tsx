@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
 
-export const Route = createFileRoute("/moderation/")({
+export const Route = createFileRoute("/onboarding/")({
   head: () =>
     buildSeoMeta({
-      title: "Moderación | Claustrum",
+      title: "Onboarding | Claustrum",
       robots: NOINDEX_ROBOTS,
     }),
 });

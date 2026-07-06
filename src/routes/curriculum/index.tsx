@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { buildSeoMeta } from "@/lib/seo";
+
 import {
   CURRICULUM_DEFAULT_UNIVERSITY_ID,
   hasLegacyCurriculumSearchParams,
@@ -8,6 +10,14 @@ import {
 } from "./-curriculum-search";
 
 export const Route = createFileRoute("/curriculum/")({
+  head: () =>
+    buildSeoMeta({
+      title: "Planes de Estudio TEC (ITCR) | Claustrum",
+      description:
+        "Explora los planes de estudio del Tecnológico de Costa Rica. Revisa cursos, requisitos y malla curricular de tu carrera.",
+      breadcrumbName: "Planes de Estudio",
+      urlPath: "/curriculum",
+    }),
   validateSearch: parseCurriculumSearch,
   search: {
     middlewares: [

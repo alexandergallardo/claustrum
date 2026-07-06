@@ -17,7 +17,9 @@ import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
 import { Route as ProfessorsIndexRouteImport } from './routes/professors/index'
+import { Route as PoliciesIndexRouteImport } from './routes/policies/index'
 import { Route as OverviewIndexRouteImport } from './routes/overview/index'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as ModerationIndexRouteImport } from './routes/moderation/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
@@ -26,8 +28,6 @@ import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
 
-const PoliciesIndexLazyRouteImport = createFileRoute('/policies/')()
-const OnboardingIndexLazyRouteImport = createFileRoute('/onboarding/')()
 const SettingsSecurityLazyRouteImport = createFileRoute('/settings/security')()
 const SettingsProfileLazyRouteImport = createFileRoute('/settings/profile')()
 const SettingsAppearanceLazyRouteImport = createFileRoute(
@@ -58,20 +58,6 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PoliciesIndexLazyRoute = PoliciesIndexLazyRouteImport.update({
-  id: '/policies/',
-  path: '/policies/',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import('./routes/policies/index.lazy').then((d) => d.Route),
-)
-const OnboardingIndexLazyRoute = OnboardingIndexLazyRouteImport.update({
-  id: '/onboarding/',
-  path: '/onboarding/',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import('./routes/onboarding/index.lazy').then((d) => d.Route),
-)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -93,12 +79,26 @@ const ProfessorsIndexRoute = ProfessorsIndexRouteImport.update({
 } as any).lazy(() =>
   import('./routes/professors/index.lazy').then((d) => d.Route),
 )
+const PoliciesIndexRoute = PoliciesIndexRouteImport.update({
+  id: '/policies/',
+  path: '/policies/',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/policies/index.lazy').then((d) => d.Route),
+)
 const OverviewIndexRoute = OverviewIndexRouteImport.update({
   id: '/overview/',
   path: '/overview/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import('./routes/overview/index.lazy').then((d) => d.Route),
+)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/onboarding/index.lazy').then((d) => d.Route),
 )
 const ModerationIndexRoute = ModerationIndexRouteImport.update({
   id: '/moderation/',
@@ -227,12 +227,12 @@ export interface FileRoutesByFullPath {
   '/curriculum/': typeof CurriculumIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/moderation/': typeof ModerationIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/overview/': typeof OverviewIndexRoute
+  '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/onboarding/': typeof OnboardingIndexLazyRoute
-  '/policies/': typeof PoliciesIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa/': typeof Auth2faIndexLazyRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
@@ -253,12 +253,12 @@ export interface FileRoutesByTo {
   '/curriculum': typeof CurriculumIndexRoute
   '/docs': typeof DocsIndexRoute
   '/moderation': typeof ModerationIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/overview': typeof OverviewIndexRoute
+  '/policies': typeof PoliciesIndexRoute
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
-  '/onboarding': typeof OnboardingIndexLazyRoute
-  '/policies': typeof PoliciesIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa': typeof Auth2faIndexLazyRoute
   '/auth/magic-link': typeof AuthMagicLinkIndexLazyRoute
@@ -281,12 +281,12 @@ export interface FileRoutesById {
   '/curriculum/': typeof CurriculumIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/moderation/': typeof ModerationIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/overview/': typeof OverviewIndexRoute
+  '/policies/': typeof PoliciesIndexRoute
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/onboarding/': typeof OnboardingIndexLazyRoute
-  '/policies/': typeof PoliciesIndexLazyRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa/': typeof Auth2faIndexLazyRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
@@ -310,12 +310,12 @@ export interface FileRouteTypes {
     | '/curriculum/'
     | '/docs/'
     | '/moderation/'
+    | '/onboarding/'
     | '/overview/'
+    | '/policies/'
     | '/professors/'
     | '/schedule/'
     | '/settings/'
-    | '/onboarding/'
-    | '/policies/'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -336,12 +336,12 @@ export interface FileRouteTypes {
     | '/curriculum'
     | '/docs'
     | '/moderation'
+    | '/onboarding'
     | '/overview'
+    | '/policies'
     | '/professors'
     | '/schedule'
     | '/settings'
-    | '/onboarding'
-    | '/policies'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa'
     | '/auth/magic-link'
@@ -363,12 +363,12 @@ export interface FileRouteTypes {
     | '/curriculum/'
     | '/docs/'
     | '/moderation/'
+    | '/onboarding/'
     | '/overview/'
+    | '/policies/'
     | '/professors/'
     | '/schedule/'
     | '/settings/'
-    | '/onboarding/'
-    | '/policies/'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -388,11 +388,11 @@ export interface RootRouteChildren {
   CurriculumIndexRoute: typeof CurriculumIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
   OverviewIndexRoute: typeof OverviewIndexRoute
+  PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
-  OnboardingIndexLazyRoute: typeof OnboardingIndexLazyRoute
-  PoliciesIndexLazyRoute: typeof PoliciesIndexLazyRoute
   EvaluationsViewEvaluationSlugRoute: typeof EvaluationsViewEvaluationSlugRoute
 }
 
@@ -419,20 +419,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/policies/': {
-      id: '/policies/'
-      path: '/policies'
-      fullPath: '/policies/'
-      preLoaderRoute: typeof PoliciesIndexLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/': {
-      id: '/onboarding/'
-      path: '/onboarding'
-      fullPath: '/onboarding/'
-      preLoaderRoute: typeof OnboardingIndexLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings/': {
       id: '/settings/'
       path: '/'
@@ -454,11 +440,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfessorsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/policies/': {
+      id: '/policies/'
+      path: '/policies'
+      fullPath: '/policies/'
+      preLoaderRoute: typeof PoliciesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/overview/': {
       id: '/overview/'
       path: '/overview'
       fullPath: '/overview/'
       preLoaderRoute: typeof OverviewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/moderation/': {
@@ -626,11 +626,11 @@ const rootRouteChildren: RootRouteChildren = {
   CurriculumIndexRoute: CurriculumIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
+  PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
-  OnboardingIndexLazyRoute: OnboardingIndexLazyRoute,
-  PoliciesIndexLazyRoute: PoliciesIndexLazyRoute,
   EvaluationsViewEvaluationSlugRoute: EvaluationsViewEvaluationSlugRoute,
 }
 export const routeTree = rootRouteImport

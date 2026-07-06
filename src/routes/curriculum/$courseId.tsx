@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
+
 import {
   CURRICULUM_DEFAULT_UNIVERSITY_ID,
   hasLegacyCurriculumSearchParams,
@@ -8,6 +10,11 @@ import {
 } from "./-curriculum-search";
 
 export const Route = createFileRoute("/curriculum/$courseId")({
+  head: () =>
+    buildSeoMeta({
+      title: "Detalles del Curso | Claustrum",
+      robots: NOINDEX_ROBOTS,
+    }),
   validateSearch: parseCurriculumSearch,
   search: {
     middlewares: [

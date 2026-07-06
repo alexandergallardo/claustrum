@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { buildSeoMeta } from "@/lib/seo";
+
 type ProfessorsSearchInput = Record<string, unknown>;
 
 export interface ProfessorsSearch {
@@ -13,6 +15,14 @@ export interface ProfessorsSearch {
 }
 
 export const Route = createFileRoute("/professors/")({
+  head: () =>
+    buildSeoMeta({
+      title: "Reseñas de Profesores TEC (ITCR) | Claustrum",
+      description:
+        "Lee y comparte reseñas de profesores del Tecnológico de Costa Rica para armar el mejor horario.",
+      breadcrumbName: "Profesores",
+      urlPath: "/professors",
+    }),
   validateSearch: (search: ProfessorsSearchInput): ProfessorsSearch => {
     return {
       q: typeof search.q === "string" ? search.q : undefined,

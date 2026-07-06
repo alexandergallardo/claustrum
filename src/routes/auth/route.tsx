@@ -2,8 +2,14 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AuthShell } from "@/components/auth-shell";
 import { authUserQueryOptions } from "@/lib/hooks/use-queries";
+import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
 
 export const Route = createFileRoute("/auth")({
+  head: () =>
+    buildSeoMeta({
+      title: "Autenticación | Claustrum",
+      robots: NOINDEX_ROBOTS,
+    }),
   beforeLoad: async ({ context: { queryClient }, location }) => {
     if (location.pathname === "/auth" || location.pathname === "/auth/") {
       throw redirect({ to: "/auth/signin", replace: true });

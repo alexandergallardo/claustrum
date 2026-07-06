@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { buildSeoMeta } from "@/lib/seo";
+
 import {
   hasLegacyScheduleSearchParams,
   parseScheduleSearch,
@@ -8,16 +10,14 @@ import {
 } from "./-schedule-search";
 
 export const Route = createFileRoute("/schedule/")({
-  head: () => ({
-    meta: [
-      { title: "Generador y Creador de Horarios TEC (ITCR) | Claustrum" },
-      {
-        name: "description",
-        content:
-          "El mejor creador de horarios para el Tecnológico de Costa Rica. Arma tu horario, evalúa profesores y más.",
-      },
-    ],
-  }),
+  head: () =>
+    buildSeoMeta({
+      title: "Generador y Creador de Horarios TEC (ITCR) | Claustrum",
+      description:
+        "El mejor creador de horarios para el Tecnológico de Costa Rica. Arma tu horario, evalúa profesores y más.",
+      breadcrumbName: "Horarios",
+      urlPath: "/schedule",
+    }),
   validateSearch: parseScheduleSearch,
   search: {
     middlewares: [
