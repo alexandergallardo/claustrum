@@ -472,13 +472,16 @@ export function SchedulePage() {
   }, [navigate, plans, plansQuery.isFetching, search, selectedCareerId, selectedPlanId]);
 
   useEffect(() => {
+    const isValidSuggestedTerm =
+      suggestedTermQuery.data && terms.some((t) => t.id === suggestedTermQuery.data);
+
     if (
       selectedPlanId &&
       terms.length > 0 &&
       !selectedTermId &&
       !termsQuery.isFetching &&
       suggestedTermQuery.isSuccess &&
-      suggestedTermQuery.data
+      isValidSuggestedTerm
     ) {
       const autoTerm1: Record<string, unknown> = {
         ...search,
@@ -495,7 +498,7 @@ export function SchedulePage() {
       !selectedTermId &&
       !termsQuery.isFetching &&
       suggestedTermQuery.isSuccess &&
-      !suggestedTermQuery.data
+      !isValidSuggestedTerm
     ) {
       const autoTerm2: Record<string, unknown> = {
         ...search,

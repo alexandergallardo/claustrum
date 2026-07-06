@@ -58,7 +58,7 @@ export function CurriculumPage() {
     shouldAutoSelectPlanRef.current &&
     !!selectedAcademicUnitId &&
     !selectedPlanId &&
-    (plansQuery.isFetching || plans.length > 0);
+    (plansQuery.isFetching || (plansQuery.data?.length ?? 0) > 0);
   const isPendingFilters = isProfileLoading || isAutoSelectingPlan;
   const userStudyPlanUniversityId =
     normalizeCurriculumUniversityId(userStudyPlan?.universityId) ??
