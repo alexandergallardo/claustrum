@@ -26,6 +26,13 @@ import type {
 
 import { authClient } from "@/lib/auth/client";
 import { getAuthSessionServerFn } from "@/lib/auth/server-fn";
+import {
+  getUniversitiesServerFn,
+  getCampusesServerFn,
+  getAcademicUnitsServerFn,
+  getStudyPlansServerFn,
+  getAcademicTermsServerFn,
+} from "@/lib/catalog-server-fns";
 import { getProfileContextServerFn, getOnboardingStatusServerFn } from "@/lib/server-fns";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
@@ -34,12 +41,7 @@ export function universitiesQueryOptions() {
   return queryOptions({
     queryKey: ["universities"],
     queryFn: async () => {
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .from("v_universities")
-        .select("id,name,short_name")
-        .order("name", { ascending: true });
-      if (error) throw error;
+      const data = await getUniversitiesServerFn();
       return data ?? [];
     },
     staleTime: Infinity,
@@ -68,12 +70,7 @@ export function campusesQueryOptions(universityId: number | null) {
     queryKey: ["campuses", universityId],
     queryFn: async () => {
       if (!universityId) return [];
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .rpc("get_campuses_for_university", { p_university_id: universityId })
-        .select("id,university_id,code,name")
-        .order("name", { ascending: true });
-      if (error) throw error;
+      const data = await getCampusesServerFn({ data: universityId });
       return (data ?? []) as CampusRow[];
     },
     enabled: !!universityId,
@@ -90,12 +87,7 @@ export function academicUnitsQueryOptions(campusId: number | null) {
     queryKey: ["academicUnits", campusId],
     queryFn: async () => {
       if (!campusId) return [];
-      const sb = getSupabaseBrowserClient();
-      const { data, error } = await sb
-        .rpc("get_academic_units_for_campus", { p_campus_id: campusId })
-        .select("id,code,name")
-        .order("name", { ascending: true });
-      if (error) throw error;
+      const data = await getAcademicUnitsServerFn({ data: campusId });
       return (data ?? []) as AcademicUnitRow[];
     },
     enabled: !!campusId,
@@ -112,14 +104,7 @@ export function studyPlansQueryOptions(academicUnitId: number | null) {
     queryKey: ["studyPlansV2", academicUnitId],
     queryFn: async () => {
       if (!academicUnitId) return [];
-
-      const sb = getSupabaseBrowserClient();
-
-      const { data, error } = await sb
-        .rpc("get_study_plans_for_academic_unit", { p_academic_unit_id: academicUnitId })
-        .select("id,academic_unit_id,external_plan_id,name,academic_degree,modality_name");
-
-      if (error) throw error;
+      const data = await getStudyPlansServerFn({ data: academicUnitId });
       return (data ?? []) as CatalogStudyPlan[];
     },
     enabled: !!academicUnitId,
@@ -458,27 +443,7 @@ export function academicTermsQueryOptions(campusId: number | null, studyPlanId?:
     queryKey: ["academicTerms", campusId, studyPlanId],
     queryFn: async () => {
       if (!campusId) return [];
-      const sb = getSupabaseBrowserClient();
-
-      if (studyPlanId) {
-        const { data, error } = await sb
-          .rpc("get_academic_terms_by_plan", {
-            p_study_plan_id: studyPlanId,
-            p_campus_id: campusId,
-          })
-          .select("*")
-          .order("year", { ascending: false })
-          .order("period_number", { ascending: false });
-        if (error) throw error;
-        return (data ?? []) as AcademicTerm[];
-      }
-
-      const { data, error } = await sb
-        .rpc("get_active_academic_terms")
-        .select("*")
-        .order("year", { ascending: false })
-        .order("period_number", { ascending: false });
-      if (error) throw error;
+      const data = await getAcademicTermsServerFn({ data: { campusId, studyPlanId } });
       return (data ?? []) as AcademicTerm[];
     },
     enabled: !!campusId,
