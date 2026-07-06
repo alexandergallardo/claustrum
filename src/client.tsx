@@ -2,8 +2,6 @@ import { StartClient } from "@tanstack/react-start/client";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import "./styles.css";
-
 const CHUNK_RELOAD_KEY = "vite-chunk-reload-time";
 
 window.addEventListener("vite:preloadError", () => {

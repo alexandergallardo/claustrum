@@ -25,8 +25,17 @@ import { Kbd } from "@/components/ui/kbd";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuthUser, useOnboardingStatus, useProfileContext } from "@/lib/hooks/use-queries";
 import { useRouteSeo } from "@/lib/seo";
+import appCss from "@/styles.css?url";
 
 export const Route = createRootRoute({
+  head: () => ({
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
   component: RootComponent,
   notFoundComponent: NotFound,
 });
