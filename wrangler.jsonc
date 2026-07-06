@@ -11,7 +11,12 @@
     }
   ],
   "observability": {
-    "enabled": true,
+    "enabled": true
   },
-
+  "services": [
+    {
+      "binding": "API",
+      "service": "claustrum-api"
+    }
+  ]
 }

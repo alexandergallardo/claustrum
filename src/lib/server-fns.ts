@@ -7,18 +7,15 @@ import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 
 export const getProfileContextServerFn = createServerFn({ method: "GET" })
   .validator((userId: string) => userId)
-  .handler(async ({ data: userId }) => {
+  .handler(async ({ data: userId, context }) => {
     if (!userId) return null;
     const req = getRequest();
     if (!req) return null;
 
-    const fetchHeaders: Record<string, string> = {};
-    const cookie = req.headers.get("cookie");
-    const authorization = req.headers.get("authorization");
-    if (cookie) fetchHeaders.cookie = cookie;
-    if (authorization) fetchHeaders.authorization = authorization;
+    const env = (context as any).cloudflare?.env;
+    const customFetch = env?.API ? env.API.fetch.bind(env.API) : undefined;
 
-    const sb = await getSupabaseServerClient(fetchHeaders as any);
+    const sb = await getSupabaseServerClient(req.headers, customFetch);
     const { data, error } = await sb
       .rpc("get_user_profile_with_context", { p_user_id: userId })
       .select("*")
@@ -29,18 +26,15 @@ export const getProfileContextServerFn = createServerFn({ method: "GET" })
 
 export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
   .validator((userId: string) => userId)
-  .handler(async ({ data: userId }) => {
+  .handler(async ({ data: userId, context }) => {
     if (!userId) return null;
     const req = getRequest();
     if (!req) return null;
 
-    const fetchHeaders: Record<string, string> = {};
-    const cookie = req.headers.get("cookie");
-    const authorization = req.headers.get("authorization");
-    if (cookie) fetchHeaders.cookie = cookie;
-    if (authorization) fetchHeaders.authorization = authorization;
+    const env = (context as any).cloudflare?.env;
+    const customFetch = env?.API ? env.API.fetch.bind(env.API) : undefined;
 
-    const sb = await getSupabaseServerClient(fetchHeaders as any);
+    const sb = await getSupabaseServerClient(req.headers, customFetch);
     const { data, error } = await sb
       .from("user")
       .select("onboarding_dismissed_at,onboarding_completed_at")

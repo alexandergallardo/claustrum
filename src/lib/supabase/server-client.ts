@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { authClient } from "@/lib/auth/client";
 import { getSupabasePublicEnv } from "@/lib/env/public";
 
-export async function getSupabaseServerClient(headers: Headers) {
+export async function getSupabaseServerClient(headers: Headers, customFetchImpl?: any) {
   const { supabaseUrl, supabasePublishableKey } = getSupabasePublicEnv();
 
   const fetchHeaders: Record<string, string> = {};
@@ -23,6 +23,7 @@ export async function getSupabaseServerClient(headers: Headers) {
     .token({
       fetchOptions: {
         headers: fetchHeaders,
+        customFetchImpl,
       },
     })
     .catch((err) => ({ data: null, error: err }));

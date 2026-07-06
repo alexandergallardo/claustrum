@@ -3,26 +3,32 @@ import { getRequest } from "@tanstack/react-start/server";
 
 import { getSession } from "@/lib/auth/client";
 
-export const getAuthSessionServerFn = createServerFn({ method: "GET" }).handler(async () => {
-  const req = getRequest();
-  if (!req) return null;
+export const getAuthSessionServerFn = createServerFn({ method: "GET" }).handler(
+  async ({ context }) => {
+    const req = getRequest();
+    if (!req) return null;
 
-  const fetchHeaders: Record<string, string> = {};
-  const cookie = req.headers.get("cookie");
-  const authorization = req.headers.get("authorization");
+    const env = (context as any).cloudflare?.env;
+    const customFetch = env?.API ? env.API.fetch.bind(env.API) : undefined;
 
-  if (cookie) fetchHeaders.cookie = cookie;
-  if (authorization) fetchHeaders.authorization = authorization;
+    const fetchHeaders: Record<string, string> = {};
+    const cookie = req.headers.get("cookie");
+    const authorization = req.headers.get("authorization");
 
-  const { data, error } = await getSession({
-    fetchOptions: {
-      headers: fetchHeaders,
-    },
-  });
+    if (cookie) fetchHeaders.cookie = cookie;
+    if (authorization) fetchHeaders.authorization = authorization;
 
-  if (error) {
-    throw new Error(error.message || `Auth fetch failed with status: ${error.status}`);
-  }
+    const { data, error } = await getSession({
+      fetchOptions: {
+        headers: fetchHeaders,
+        customFetchImpl: customFetch,
+      },
+    });
 
-  return data;
-});
+    if (error) {
+      throw new Error(error.message || `Auth fetch failed with status: ${error.status}`);
+    }
+
+    return data;
+  },
+);
