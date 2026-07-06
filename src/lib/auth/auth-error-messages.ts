@@ -36,7 +36,14 @@ export function normalizeAuthError(
     };
   }
 
-  if (rawMessage.includes("email not confirmed") || rawCode.includes("email_not_confirmed")) {
+  if (
+    rawMessage.includes("email not confirmed") ||
+    rawCode.includes("email_not_confirmed") ||
+    rawMessage.includes("email not verified") ||
+    rawCode.includes("email_not_verified") ||
+    rawCode.includes("not_verified") ||
+    error?.status === 403 // Better Auth often returns 403 for unverified emails
+  ) {
     return {
       type: "email_unconfirmed",
       message: "Debes confirmar tu correo antes de iniciar sesión.",

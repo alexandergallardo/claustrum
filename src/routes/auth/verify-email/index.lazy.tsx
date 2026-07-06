@@ -43,7 +43,7 @@ function VerifyEmailPage() {
         if (session) {
           setStatus("success");
           setTimeout(() => {
-            void navigate({ to: "/overview" });
+            void navigate({ to: "/" });
           }, 2000);
         } else {
           setStatus("pending");

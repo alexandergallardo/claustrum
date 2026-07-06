@@ -58,7 +58,7 @@ export function InsetSignupPage() {
   return (
     <>
       <Heading title="Crea tu cuenta" subtitle="Completa el formulario para registrarte." />
-      <OAuthRow mode="signup" />
+      <OAuthRow />
       <MagicLinkButton />
       <OrSeparator />
       <SignUpForm />
@@ -421,22 +421,22 @@ function Heading({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-function OAuthRow({ mode = "signin" }: { mode?: "signin" | "signup" }) {
+function OAuthRow() {
   return (
     <div className="mt-4 grid grid-cols-1 gap-2.5">
-      <GoogleOAuthButton mode={mode} />
+      <GoogleOAuthButton />
     </div>
   );
 }
 
-function GoogleOAuthButton({ mode = "signin" }: { mode?: "signin" | "signup" }) {
+function GoogleOAuthButton() {
   const [pending, setPending] = useState(false);
 
   const onGoogleSignIn = async () => {
     setPending(true);
     const { error } = await signIn.social({
       provider: "google",
-      callbackURL: `${window.location.origin}/auth/${mode}`,
+      callbackURL: `${window.location.origin}/`,
     });
 
     if (error) {
@@ -480,7 +480,7 @@ async function invalidateAuthFlowQueries(
 }
 
 async function getPostSignInRedirect() {
-  return "/overview" as const;
+  return "/" as const;
 }
 
 function MagicLinkButton({ email = "" }: { email?: string }) {
@@ -601,7 +601,13 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
     });
 
     if (error) {
-      setFormError(normalizeAuthError(error, "login").message);
+      const normalizedError = normalizeAuthError(error, "login");
+      if (normalizedError.type === "email_unconfirmed") {
+        window.sessionStorage.setItem(VERIFY_EMAIL_KEY, email.trim());
+        void navigate({ to: "/auth/verify-email", replace: true });
+        return;
+      }
+      setFormError(normalizedError.message);
       setPending(false);
       return;
     }
