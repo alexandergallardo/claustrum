@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getWebRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 
 import type { UserProfileContextRow } from "@/lib/types";
 
@@ -9,7 +9,7 @@ export const getProfileContextServerFn = createServerFn({ method: "GET" })
   .validator((userId: string) => userId)
   .handler(async ({ data: userId }) => {
     if (!userId) return null;
-    const req = getWebRequest();
+    const req = getRequest();
     if (!req) return null;
 
     const fetchHeaders: Record<string, string> = {};
@@ -31,7 +31,7 @@ export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
   .validator((userId: string) => userId)
   .handler(async ({ data: userId }) => {
     if (!userId) return null;
-    const req = getWebRequest();
+    const req = getRequest();
     if (!req) return null;
 
     const fetchHeaders: Record<string, string> = {};
