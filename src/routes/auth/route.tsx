@@ -20,9 +20,14 @@ export const Route = createFileRoute("/auth")({
       location.pathname,
     );
     if (isLoginRoute) {
-      const authData = await queryClient.fetchQuery(authUserQueryOptions());
-      if (authData?.id) {
-        throw redirect({ to: "/", replace: true });
+      try {
+        const authData = await queryClient.fetchQuery(authUserQueryOptions());
+        if (authData?.id) {
+          throw redirect({ to: "/schedule", replace: true });
+        }
+      } catch (err: any) {
+        if (err?.isRedirect) throw err;
+        console.error("SSR fetch failed in auth route, skipping redirects", err);
       }
     }
   },

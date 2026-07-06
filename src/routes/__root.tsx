@@ -69,51 +69,61 @@ export const Route = createRootRouteWithContext<{
       pathname === "/";
 
     if (!isPublicRoute) {
-      const authData = await queryClient.fetchQuery(authUserQueryOptions());
-      if (authData?.id) {
-        const [profileContext, onboardingStatus] = await Promise.all([
-          queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
-          queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
-        ]);
+      try {
+        const authData = await queryClient.fetchQuery(authUserQueryOptions());
+        if (authData?.id) {
+          const [profileContext, onboardingStatus] = await Promise.all([
+            queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
+            queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
+          ]);
 
-        const completed = !!onboardingStatus?.onboarding_completed_at;
-        const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
-        const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        const isDismissedCooldownActive = dismissedAt
-          ? Date.now() - dismissedAt.getTime() < oneDayMs
-          : false;
-        const hasAcademicSetup = !!profileContext?.study_plan_id;
+          const completed = !!onboardingStatus?.onboarding_completed_at;
+          const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
+          const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          const isDismissedCooldownActive = dismissedAt
+            ? Date.now() - dismissedAt.getTime() < oneDayMs
+            : false;
+          const hasAcademicSetup = !!profileContext?.study_plan_id;
 
-        const needsOnboardingRedirect =
-          !completed && !isDismissedCooldownActive && !hasAcademicSetup;
+          const needsOnboardingRedirect =
+            !completed && !isDismissedCooldownActive && !hasAcademicSetup;
 
-        if (needsOnboardingRedirect) {
-          throw redirect({ to: "/onboarding", replace: true });
+          if (needsOnboardingRedirect) {
+            throw redirect({ to: "/onboarding", replace: true });
+          }
         }
+      } catch (err: any) {
+        if (err?.isRedirect) throw err;
+        console.error("SSR fetch failed in beforeLoad (private route), skipping redirects", err);
       }
     } else if (pathname.startsWith("/onboarding")) {
-      const authData = await queryClient.fetchQuery(authUserQueryOptions());
-      if (authData?.id) {
-        const [profileContext, onboardingStatus] = await Promise.all([
-          queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
-          queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
-        ]);
+      try {
+        const authData = await queryClient.fetchQuery(authUserQueryOptions());
+        if (authData?.id) {
+          const [profileContext, onboardingStatus] = await Promise.all([
+            queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
+            queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
+          ]);
 
-        const completed = !!onboardingStatus?.onboarding_completed_at;
-        const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
-        const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        const isDismissedCooldownActive = dismissedAt
-          ? Date.now() - dismissedAt.getTime() < oneDayMs
-          : false;
-        const hasAcademicSetup = !!profileContext?.study_plan_id;
+          const completed = !!onboardingStatus?.onboarding_completed_at;
+          const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
+          const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          const isDismissedCooldownActive = dismissedAt
+            ? Date.now() - dismissedAt.getTime() < oneDayMs
+            : false;
+          const hasAcademicSetup = !!profileContext?.study_plan_id;
 
-        const shouldLeaveOnboarding = completed || isDismissedCooldownActive || hasAcademicSetup;
+          const shouldLeaveOnboarding = completed || isDismissedCooldownActive || hasAcademicSetup;
 
-        if (shouldLeaveOnboarding) {
-          throw redirect({ to: "/overview", replace: true });
-        }
+          if (shouldLeaveOnboarding) {
+            throw redirect({ to: "/overview", replace: true });
+          }
+        } // close if (authData?.id)
+      } catch (err: any) {
+        if (err?.isRedirect) throw err;
+        console.error("SSR fetch failed in beforeLoad (/onboarding), skipping redirects", err);
       }
     }
   },

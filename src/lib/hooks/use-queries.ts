@@ -134,7 +134,7 @@ export function profileContextQueryOptions(userId: string | null) {
             .maybeSingle();
           return (data as UserProfileContextRow) || null;
         }
-        return null;
+        throw error;
       }
     },
     enabled: !!userId,
@@ -157,6 +157,8 @@ export function authUserQueryOptions() {
         if (typeof window !== "undefined") {
           const res = await authClient.getSession();
           data = res.data;
+        } else {
+          throw error;
         }
       }
 
@@ -252,7 +254,7 @@ export function onboardingStatusQueryOptions(userId: string | null) {
             .maybeSingle();
           return data;
         }
-        return null;
+        throw error;
       }
     },
     enabled: !!userId,
