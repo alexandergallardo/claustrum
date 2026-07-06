@@ -121,8 +121,21 @@ export function profileContextQueryOptions(userId: string | null) {
     queryKey: ["profile", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const data = await getProfileContextServerFn({ data: userId });
-      return data as UserProfileContextRow | null;
+      try {
+        const data = await getProfileContextServerFn({ data: userId });
+        return data as UserProfileContextRow | null;
+      } catch (error) {
+        console.warn("Server profile context fetch failed, falling back to client fetch", error);
+        if (typeof window !== "undefined") {
+          const sb = getSupabaseBrowserClient();
+          const { data } = await sb
+            .rpc("get_user_profile_with_context", { p_user_id: userId })
+            .select("*")
+            .maybeSingle();
+          return (data as UserProfileContextRow) || null;
+        }
+        return null;
+      }
     },
     enabled: !!userId,
   });
@@ -136,7 +149,17 @@ export function authUserQueryOptions() {
   return queryOptions({
     queryKey: ["authUser"],
     queryFn: async () => {
-      const data = await getAuthSessionServerFn();
+      let data = null;
+      try {
+        data = await getAuthSessionServerFn();
+      } catch (error) {
+        console.warn("Server auth fetch failed, falling back to client fetch", error);
+        if (typeof window !== "undefined") {
+          const res = await authClient.getSession();
+          data = res.data;
+        }
+      }
+
       if (!data?.user) return null;
       const userMetadata =
         "userMetadata" in data.user && typeof data.user.userMetadata === "object"
@@ -215,8 +238,22 @@ export function onboardingStatusQueryOptions(userId: string | null) {
     queryKey: ["onboardingStatus", userId],
     queryFn: async () => {
       if (!userId) return null;
-      const data = await getOnboardingStatusServerFn({ data: userId });
-      return data;
+      try {
+        const data = await getOnboardingStatusServerFn({ data: userId });
+        return data;
+      } catch (error) {
+        console.warn("Server onboarding status fetch failed, falling back to client fetch", error);
+        if (typeof window !== "undefined") {
+          const sb = getSupabaseBrowserClient();
+          const { data } = await sb
+            .from("user")
+            .select("onboarding_dismissed_at,onboarding_completed_at")
+            .eq("id", userId)
+            .maybeSingle();
+          return data;
+        }
+        return null;
+      }
     },
     enabled: !!userId,
   });

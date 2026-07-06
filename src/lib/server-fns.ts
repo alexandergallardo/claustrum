@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeaders } from "@tanstack/react-start/server";
+import { getWebRequest } from "@tanstack/react-start/server";
 
 import type { UserProfileContextRow } from "@/lib/types";
 
@@ -9,11 +9,12 @@ export const getProfileContextServerFn = createServerFn({ method: "GET" })
   .validator((userId: string) => userId)
   .handler(async ({ data: userId }) => {
     if (!userId) return null;
-    const headers = getRequestHeaders();
-    
+    const req = getWebRequest();
+    if (!req) return null;
+
     const fetchHeaders: Record<string, string> = {};
-    const cookie = typeof headers.get === "function" ? (headers as Headers).get("cookie") : (headers as any).cookie;
-    const authorization = typeof headers.get === "function" ? (headers as Headers).get("authorization") : (headers as any).authorization;
+    const cookie = req.headers.get("cookie");
+    const authorization = req.headers.get("authorization");
     if (cookie) fetchHeaders.cookie = cookie;
     if (authorization) fetchHeaders.authorization = authorization;
 
@@ -30,11 +31,12 @@ export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
   .validator((userId: string) => userId)
   .handler(async ({ data: userId }) => {
     if (!userId) return null;
-    const headers = getRequestHeaders();
-    
+    const req = getWebRequest();
+    if (!req) return null;
+
     const fetchHeaders: Record<string, string> = {};
-    const cookie = typeof headers.get === "function" ? (headers as Headers).get("cookie") : (headers as any).cookie;
-    const authorization = typeof headers.get === "function" ? (headers as Headers).get("authorization") : (headers as any).authorization;
+    const cookie = req.headers.get("cookie");
+    const authorization = req.headers.get("authorization");
     if (cookie) fetchHeaders.cookie = cookie;
     if (authorization) fetchHeaders.authorization = authorization;
 
