@@ -54,7 +54,7 @@ export function sessionToEvent({
   groupCode: string;
   groupId: string;
   groupType: string | null;
-  professors: string[] | null;
+  professors: Array<{ id: number; name: string }> | null;
   classroom: string | null;
   campusName: string | null;
   color: string;

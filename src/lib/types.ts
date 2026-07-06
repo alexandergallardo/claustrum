@@ -256,7 +256,7 @@ export interface ScheduleGroup {
   group_type: string;
   capacity: number;
   enrolled_count: number;
-  professors: string[] | null;
+  professors: Array<{ id: number; name: string }> | null;
   meetings: ScheduleSession[] | null;
   campus_id?: number | null;
 }
@@ -288,7 +288,7 @@ export interface CalendarEvent {
   groupCode: string;
   groupId: string;
   groupType: string | null;
-  professors: string[] | null;
+  professors: Array<{ id: number; name: string }> | null;
   classroom: string | null;
   campusName: string | null;
   color: string;

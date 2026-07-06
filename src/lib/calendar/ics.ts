@@ -41,7 +41,7 @@ function buildDescription(event: CalendarEvent): string {
   }
 
   if (event.professors?.length) {
-    parts.push(`Profesores: ${event.professors.join(", ")}`);
+    parts.push(`Profesores: ${event.professors.map((p) => p.name).join(", ")}`);
   }
 
   if (event.classroom) {
