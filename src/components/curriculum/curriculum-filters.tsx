@@ -68,7 +68,9 @@ export function CurriculumFilters({
 }: CurriculumFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
   const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
-  const [hasCompletedInitialReveal, setHasCompletedInitialReveal] = useState(false);
+  const [hasCompletedInitialReveal, setHasCompletedInitialReveal] = useState(() => {
+    return !!selectedCampusId || !!selectedCareerProgramId || !!selectedPlanId;
+  });
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;

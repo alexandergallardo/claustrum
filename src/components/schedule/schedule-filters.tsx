@@ -71,10 +71,6 @@ const FILTERS_PANEL_STORAGE_KEY = "schedule-filters-panel-open";
 const INITIAL_FILTER_REVEAL_DELAY_MS = 80;
 const FILTER_REVEAL_ANIMATION_MS = 220;
 
-function areStringArraysEqual(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((value, index) => value === b[index]);
-}
-
 function getInitialFiltersPanelOpen(): boolean {
   if (typeof window === "undefined") return true;
   const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY);
@@ -110,7 +106,10 @@ export function ScheduleFilters({
   onShowOtherCampusesChange,
 }: ScheduleFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
-  const [revealedFilterKeys, setRevealedFilterKeys] = useState<string[]>([]);
+  const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
+  const [hasCompletedInitialReveal, setHasCompletedInitialReveal] = useState(() => {
+    return !!selectedCampusId || !!selectedCareerId || !!selectedPlanId || !!selectedTermId;
+  });
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
@@ -145,42 +144,57 @@ export function ScheduleFilters({
       isUniversityFilterReady,
     ],
   );
+  const universityAnimationOrder = readyFilterKeys.indexOf("university");
+  const campusAnimationOrder = readyFilterKeys.indexOf("campus");
+  const careerAnimationOrder = readyFilterKeys.indexOf("career");
+  const planAnimationOrder = readyFilterKeys.indexOf("plan");
+  const termAnimationOrder = readyFilterKeys.indexOf("term");
   const readyFilterSignature = readyFilterKeys.join("|");
-  const revealedFilterSignature = revealedFilterKeys.join("|");
 
-  const showUniversityFilter = revealedFilterKeys.includes("university");
-  const showCampusFilter = revealedFilterKeys.includes("campus");
-  const showCareerFilter = revealedFilterKeys.includes("career");
-  const showPlanFilter = revealedFilterKeys.includes("plan");
-  const showTermFilter = revealedFilterKeys.includes("term");
+  const showUniversityFilter = hasCompletedInitialReveal
+    ? isUniversityFilterReady
+    : universityAnimationOrder >= 0 && revealedFiltersCount > universityAnimationOrder;
+  const showCampusFilter = hasCompletedInitialReveal
+    ? isCampusFilterReady
+    : campusAnimationOrder >= 0 && revealedFiltersCount > campusAnimationOrder;
+  const showCareerFilter = hasCompletedInitialReveal
+    ? isCareerFilterReady
+    : careerAnimationOrder >= 0 && revealedFiltersCount > careerAnimationOrder;
+  const showPlanFilter = hasCompletedInitialReveal
+    ? isPlanFilterReady
+    : planAnimationOrder >= 0 && revealedFiltersCount > planAnimationOrder;
+  const showTermFilter = hasCompletedInitialReveal
+    ? isTermFilterReady
+    : termAnimationOrder >= 0 && revealedFiltersCount > termAnimationOrder;
+
   const areAllReadyFiltersRevealed =
-    readyFilterKeys.length > 0 && readyFilterKeys.every((key) => revealedFilterKeys.includes(key));
+    hasCompletedInitialReveal || revealedFiltersCount >= readyFilterKeys.length;
 
   useEffect(() => {
-    const visibleKeys = revealedFilterKeys.filter((key) => readyFilterKeys.includes(key));
-    if (!areStringArraysEqual(visibleKeys, revealedFilterKeys)) {
-      setRevealedFilterKeys(visibleKeys);
-      return;
-    }
+    if (hasCompletedInitialReveal) return;
+
+    setRevealedFiltersCount(0);
 
     if (readyFilterKeys.length === 0) return;
 
-    const nextKey = readyFilterKeys.find((key) => !visibleKeys.includes(key));
-    if (!nextKey) return;
-
-    const delay =
-      visibleKeys.length === 0 ? INITIAL_FILTER_REVEAL_DELAY_MS : FILTER_REVEAL_ANIMATION_MS;
-    const timer = window.setTimeout(() => {
-      setRevealedFilterKeys((current) => {
-        if (current.includes(nextKey) || !readyFilterKeys.includes(nextKey)) return current;
-        return [...current, nextKey];
-      });
-    }, delay);
+    const timers = readyFilterKeys.map((_, index) =>
+      window.setTimeout(
+        () => {
+          setRevealedFiltersCount(index + 1);
+          if (index === readyFilterKeys.length - 1) {
+            setHasCompletedInitialReveal(true);
+          }
+        },
+        index === 0
+          ? INITIAL_FILTER_REVEAL_DELAY_MS
+          : INITIAL_FILTER_REVEAL_DELAY_MS + index * FILTER_REVEAL_ANIMATION_MS,
+      ),
+    );
 
     return () => {
-      window.clearTimeout(timer);
+      timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [readyFilterKeys, readyFilterSignature, revealedFilterKeys, revealedFilterSignature]);
+  }, [hasCompletedInitialReveal, readyFilterSignature]);
 
   const showAllControl = (
     <div className="flex items-center gap-2">
