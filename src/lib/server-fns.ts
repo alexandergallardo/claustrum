@@ -10,7 +10,14 @@ export const getProfileContextServerFn = createServerFn({ method: "GET" })
   .handler(async ({ data: userId }) => {
     if (!userId) return null;
     const headers = getRequestHeaders();
-    const sb = await getSupabaseServerClient(headers as any);
+    
+    const fetchHeaders: Record<string, string> = {};
+    const cookie = typeof headers.get === "function" ? (headers as Headers).get("cookie") : (headers as any).cookie;
+    const authorization = typeof headers.get === "function" ? (headers as Headers).get("authorization") : (headers as any).authorization;
+    if (cookie) fetchHeaders.cookie = cookie;
+    if (authorization) fetchHeaders.authorization = authorization;
+
+    const sb = await getSupabaseServerClient(fetchHeaders as any);
     const { data, error } = await sb
       .rpc("get_user_profile_with_context", { p_user_id: userId })
       .select("*")
@@ -24,7 +31,14 @@ export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
   .handler(async ({ data: userId }) => {
     if (!userId) return null;
     const headers = getRequestHeaders();
-    const sb = await getSupabaseServerClient(headers as any);
+    
+    const fetchHeaders: Record<string, string> = {};
+    const cookie = typeof headers.get === "function" ? (headers as Headers).get("cookie") : (headers as any).cookie;
+    const authorization = typeof headers.get === "function" ? (headers as Headers).get("authorization") : (headers as any).authorization;
+    if (cookie) fetchHeaders.cookie = cookie;
+    if (authorization) fetchHeaders.authorization = authorization;
+
+    const sb = await getSupabaseServerClient(fetchHeaders as any);
     const { data, error } = await sb
       .from("user")
       .select("onboarding_dismissed_at,onboarding_completed_at")
