@@ -1,15 +1,16 @@
+import type { QueryClient } from "@tanstack/react-query";
+
 import {
-  createRootRoute,
+  createRootRouteWithContext,
   Link,
   Outlet,
-  useNavigate,
+  redirect,
   useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { SearchIcon } from "lucide-react";
-import { useEffect } from "react";
 
 import { AppLayoutWrapper } from "@/components/app-layout-wrapper";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -23,11 +24,20 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { Toaster } from "@/components/ui/sonner";
-import { useAuthUser, useOnboardingStatus, useProfileContext } from "@/lib/hooks/use-queries";
-import { useRouteSeo } from "@/lib/seo";
+import {
+  authUserQueryOptions,
+  profileContextQueryOptions,
+  onboardingStatusQueryOptions,
+  useAuthUser,
+  useOnboardingStatus,
+  useProfileContext,
+} from "@/lib/hooks/use-queries";
+import { getSeoConfig, getCanonicalUrl, DEFAULT_IMAGE, BASE_URL, useRouteSeo } from "@/lib/seo";
 import appCss from "@/styles.css?url";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
+}>()({
   head: () => ({
     links: [
       {
@@ -36,13 +46,79 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  beforeLoad: async ({ context: { queryClient }, location }) => {
+    const pathname = location.pathname;
+    const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
+    const isPublicRoute =
+      isAuthRoute ||
+      pathname.startsWith("/onboarding") ||
+      pathname.startsWith("/docs") ||
+      pathname === "/";
+
+    if (!isPublicRoute) {
+      const authData = await queryClient.fetchQuery(authUserQueryOptions());
+      if (authData?.id) {
+        const [profileContext, onboardingStatus] = await Promise.all([
+          queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
+          queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
+        ]);
+
+        const completed = !!onboardingStatus?.onboarding_completed_at;
+        const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
+        const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const isDismissedCooldownActive = dismissedAt
+          ? Date.now() - dismissedAt.getTime() < oneDayMs
+          : false;
+        const hasAcademicSetup = !!profileContext?.study_plan_id;
+
+        const needsOnboardingRedirect =
+          !completed && !isDismissedCooldownActive && !hasAcademicSetup;
+
+        if (needsOnboardingRedirect) {
+          throw redirect({ to: "/onboarding", replace: true });
+        }
+      }
+    } else if (pathname.startsWith("/onboarding")) {
+      const authData = await queryClient.fetchQuery(authUserQueryOptions());
+      if (authData?.id) {
+        const [profileContext, onboardingStatus] = await Promise.all([
+          queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
+          queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
+        ]);
+
+        const completed = !!onboardingStatus?.onboarding_completed_at;
+        const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
+        const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        const isDismissedCooldownActive = dismissedAt
+          ? Date.now() - dismissedAt.getTime() < oneDayMs
+          : false;
+        const hasAcademicSetup = !!profileContext?.study_plan_id;
+
+        const shouldLeaveOnboarding = completed || isDismissedCooldownActive || hasAcademicSetup;
+
+        if (shouldLeaveOnboarding) {
+          throw redirect({ to: "/overview", replace: true });
+        }
+      }
+    }
+  },
   component: RootComponent,
   notFoundComponent: NotFound,
 });
 
 function RootComponent() {
-  const navigate = useNavigate();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) =>
+      state.status === "pending"
+        ? (state.resolvedLocation?.pathname ?? state.location.pathname)
+        : state.location.pathname,
+  });
+  const seo = getSeoConfig(pathname);
+  const canonicalUrl = getCanonicalUrl(pathname);
+  const imageUrl = new URL(DEFAULT_IMAGE, BASE_URL).toString();
+
   useRouteSeo(pathname);
 
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
@@ -56,54 +132,34 @@ function RootComponent() {
   const profileContext = useProfileContext(authUser?.id ?? null);
   const onboardingStatus = useOnboardingStatus(authUser?.id ?? null);
 
-  const completed = !!onboardingStatus.data?.onboarding_completed_at;
-  const dismissedAtRaw = onboardingStatus.data?.onboarding_dismissed_at;
-  const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  const isDismissedCooldownActive = dismissedAt
-    ? Date.now() - dismissedAt.getTime() < oneDayMs
-    : false;
-  const hasAcademicSetup = !!profileContext.data?.study_plan_id;
-  const canEvaluateOnboarding =
-    !isAuthLoading &&
-    !!authUser &&
-    !profileContext.isLoading &&
-    !onboardingStatus.isLoading &&
-    !profileContext.isError &&
-    !onboardingStatus.isError;
-
-  const needsOnboardingRedirect =
-    !isPublicRoute &&
-    canEvaluateOnboarding &&
-    !completed &&
-    !isDismissedCooldownActive &&
-    !hasAcademicSetup;
-
-  const shouldLeaveOnboarding =
-    pathname.startsWith("/onboarding") &&
-    canEvaluateOnboarding &&
-    (completed || isDismissedCooldownActive || hasAcademicSetup);
-
   const shouldHoldPrivateRender =
     !isPublicRoute &&
-    (isAuthLoading ||
-      (!!authUser && (profileContext.isLoading || onboardingStatus.isLoading)) ||
-      needsOnboardingRedirect);
-
-  useEffect(() => {
-    if (needsOnboardingRedirect) {
-      void navigate({ to: "/onboarding", replace: true });
-      return;
-    }
-
-    if (shouldLeaveOnboarding) {
-      void navigate({ to: "/overview", replace: true });
-    }
-  }, [navigate, needsOnboardingRedirect, shouldLeaveOnboarding]);
+    (isAuthLoading || (!!authUser && (profileContext.isLoading || onboardingStatus.isLoading)));
 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        <title>{seo.title}</title>
+        <meta name="description" content={seo.description} />
+        <meta name="robots" content={seo.robots} />
+
+        <meta property="og:title" content={seo.title} />
+        <meta property="og:description" content={seo.description} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="512" />
+        <meta property="og:image:height" content="512" />
+        <meta property="og:image:alt" content="Logo de Claustrum" />
+        <meta property="og:type" content={seo.ogType ?? "website"} />
+
+        <meta name="twitter:title" content={seo.title} />
+        <meta name="twitter:description" content={seo.description} />
+        <meta name="twitter:image" content={imageUrl} />
+        <meta name="twitter:image:alt" content="Logo de Claustrum" />
+
+        <link rel="canonical" href={canonicalUrl} />
+
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="preconnect" href="https://api.github.com" />
@@ -120,7 +176,6 @@ function RootComponent() {
         <meta name="format-detection" content="telephone=no" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
-        <link rel="canonical" href="https://claustrum.maugp.com/" />
         <meta name="author" content="Mauricio González Prendas" />
         <style
           dangerouslySetInnerHTML={{

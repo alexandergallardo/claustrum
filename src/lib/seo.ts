@@ -3,11 +3,11 @@ import { useEffect } from "react";
 const DEFAULT_TITLE = "Claustrum | Horarios, cursos y avance académico TEC";
 const DEFAULT_DESCRIPTION =
   "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes.";
-const DEFAULT_IMAGE = "/logo512.png";
 const INDEXABLE_ROBOTS = "index, follow, max-snippet:150, max-image-preview:large";
 const NOINDEX_ROBOTS = "noindex, follow";
 
-const BASE_URL = "https://claustrum.maugp.com";
+export const BASE_URL = "https://claustrum.maugp.com";
+export const DEFAULT_IMAGE = "/logo512.png";
 
 type SeoConfig = {
   title: string;
@@ -17,7 +17,7 @@ type SeoConfig = {
   breadcrumbName?: string;
 };
 
-function getSeoConfig(pathname: string): SeoConfig {
+export function getSeoConfig(pathname: string): SeoConfig {
   if (pathname === "/" || pathname === "") {
     return {
       title: DEFAULT_TITLE,
@@ -223,7 +223,7 @@ function removeJsonLd(id: string) {
   }
 }
 
-function getCanonicalUrl(pathname: string) {
+export function getCanonicalUrl(pathname: string) {
   return `${BASE_URL}${pathname}`;
 }
 
