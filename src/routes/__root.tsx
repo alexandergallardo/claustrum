@@ -32,20 +32,33 @@ import {
   useOnboardingStatus,
   useProfileContext,
 } from "@/lib/hooks/use-queries";
-import { getSeoConfig, getCanonicalUrl, DEFAULT_IMAGE, BASE_URL, useRouteSeo } from "@/lib/seo";
 import appCss from "@/styles.css?url";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
 }>()({
-  head: () => ({
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
-  }),
+  head: () => {
+    return {
+      links: [
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+      ],
+      meta: [
+        { charSet: "UTF-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+        { name: "application-name", content: "Claustrum" },
+        { name: "apple-mobile-web-app-title", content: "Claustrum" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "mobile-web-app-capable", content: "yes" },
+        { name: "format-detection", content: "telephone=no" },
+        { name: "theme-color", media: "(prefers-color-scheme: light)", content: "#ffffff" },
+        { name: "theme-color", media: "(prefers-color-scheme: dark)", content: "#0a0a0a" },
+        { name: "author", content: "Mauricio González Prendas" },
+      ],
+    };
+  },
   beforeLoad: async ({ context: { queryClient }, location }) => {
     const pathname = location.pathname;
     const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
@@ -115,11 +128,6 @@ function RootComponent() {
         ? (state.resolvedLocation?.pathname ?? state.location.pathname)
         : state.location.pathname,
   });
-  const seo = getSeoConfig(pathname);
-  const canonicalUrl = getCanonicalUrl(pathname);
-  const imageUrl = new URL(DEFAULT_IMAGE, BASE_URL).toString();
-
-  useRouteSeo(pathname);
 
   const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
   const isPublicRoute =
@@ -139,29 +147,6 @@ function RootComponent() {
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        <title>{seo.title}</title>
-        <meta name="description" content={seo.description} />
-        <meta name="robots" content={seo.robots} />
-
-        <meta property="og:title" content={seo.title} />
-        <meta property="og:description" content={seo.description} />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:image" content={imageUrl} />
-        <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:width" content="512" />
-        <meta property="og:image:height" content="512" />
-        <meta property="og:image:alt" content="Logo de Claustrum" />
-        <meta property="og:type" content={seo.ogType ?? "website"} />
-
-        <meta name="twitter:title" content={seo.title} />
-        <meta name="twitter:description" content={seo.description} />
-        <meta name="twitter:image" content={imageUrl} />
-        <meta name="twitter:image:alt" content="Logo de Claustrum" />
-
-        <link rel="canonical" href={canonicalUrl} />
-
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="preconnect" href="https://api.github.com" />
         <link rel="dns-prefetch" href="https://api.github.com" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
@@ -169,14 +154,6 @@ function RootComponent() {
         <link rel="apple-touch-icon" href="/logo192.png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/logo512.png" sizes="512x512" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="application-name" content="Claustrum" />
-        <meta name="apple-mobile-web-app-title" content="Claustrum" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
-        <meta name="author" content="Mauricio González Prendas" />
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -214,35 +191,7 @@ function RootComponent() {
         `,
           }}
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: `
-          {
-            "@context": "https://schema.org",
-            "@graph": [
-              {
-                "@type": "WebSite",
-                "name": "Claustrum",
-                "url": "https://claustrum.maugp.com/",
-                "inLanguage": "es-CR",
-                "description": "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes."
-              },
-              {
-                "@type": "SoftwareApplication",
-                "name": "Claustrum",
-                "applicationCategory": "EducationalApplication",
-                "operatingSystem": "Web",
-                "inLanguage": "es-CR",
-                "description": "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes.",
-                "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CRC" },
-                "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "ratingCount": "150" }
-              }
-            ]
-          }
-        `,
-          }}
-        />
+
         <HeadContent />
       </head>
       <body>
