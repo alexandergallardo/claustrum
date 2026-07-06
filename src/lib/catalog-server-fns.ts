@@ -3,9 +3,9 @@ import { createServerFn } from "@tanstack/react-start";
 
 import { getSupabasePublicEnv } from "@/lib/env/public";
 
-let publicClient: ReturnType<typeof createClient> | null = null;
+let publicClient: any = null;
 
-function getSupabasePublicClient() {
+function getSupabasePublicClient(): any {
   if (!publicClient) {
     const { supabaseUrl, supabasePublishableKey } = getSupabasePublicEnv();
     publicClient = createClient(supabaseUrl, supabasePublishableKey, {
@@ -37,7 +37,7 @@ export const getUniversitiesServerFn = createServerFn({ method: "GET" }).handler
       .select("id,name,short_name")
       .order("name", { ascending: true });
     if (error) throw error;
-    return data ?? [];
+    return (data ?? []) as any[];
   });
 });
 
@@ -51,7 +51,7 @@ export const getCampusesServerFn = createServerFn({ method: "GET" })
         .select("id,university_id,code,name")
         .order("name", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     });
   });
 
@@ -65,7 +65,7 @@ export const getAcademicUnitsServerFn = createServerFn({ method: "GET" })
         .select("id,code,name")
         .order("name", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     });
   });
 
@@ -78,7 +78,7 @@ export const getStudyPlansServerFn = createServerFn({ method: "GET" })
         .rpc("get_study_plans_for_academic_unit", { p_academic_unit_id: academicUnitId })
         .select("id,academic_unit_id,external_plan_id,name,academic_degree,modality_name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     });
   });
 
@@ -97,7 +97,7 @@ export const getAcademicTermsServerFn = createServerFn({ method: "GET" })
           .order("year", { ascending: false })
           .order("period_number", { ascending: false });
         if (error) throw error;
-        return data ?? [];
+        return (data ?? []) as any[];
       }
       const { data, error } = await sb
         .rpc("get_active_academic_terms")
@@ -105,6 +105,6 @@ export const getAcademicTermsServerFn = createServerFn({ method: "GET" })
         .order("year", { ascending: false })
         .order("period_number", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as any[];
     });
   });
