@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   BookOpen,
@@ -83,6 +83,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   formatClosedTermLabel,
@@ -99,7 +100,7 @@ import {
   useCourseOfferingTerms,
   useUpdateCourseAttempt,
 } from "@/lib/hooks/use-queries";
-import { cn } from "@/lib/utils";
+import { cn, getCampusCodeFromName } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /*  Types & constants                                                  */
@@ -361,7 +362,6 @@ function formatCourseLabel<T extends { code: string; name: string }>(course: T) 
 function ScheduleGroupCard({
   group,
   currentCourseId,
-  onPrepareTransition,
 }: {
   group: CourseLatestTermGroup;
   currentCourseId: number;
@@ -384,18 +384,29 @@ function ScheduleGroupCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs font-semibold">
-            Grupo {group.groupCode}
+            <span className="hidden sm:inline">Grupo </span>
+            <span className="sm:hidden">GR </span>
+            {group.groupCode}
           </Badge>
           <span className="text-muted-foreground text-xs">{group.groupType}</span>
         </div>
-      </div>
 
-      {group.campusName ? (
-        <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-          <MapPin className="size-3.5" />
-          {group.campusName}
-        </div>
-      ) : null}
+        {group.campusName && (
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="bg-muted text-muted-foreground h-5 cursor-help px-1.5 text-[10px]"
+                >
+                  {getCampusCodeFromName(group.campusName) || group.campusName}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>{group.campusName}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
 
       {isFromEquivalentCourse ? (
         <div className="bg-muted/40 border-border rounded-md border px-2 py-1.5 text-xs">
@@ -419,17 +430,7 @@ function ScheduleGroupCard({
                 const transitionKey = `group-${group.groupId}-${professor.id}`;
                 return (
                   <span key={transitionKey} className="text-xs">
-                    <Link
-                      to="/professors/$professorId"
-                      params={{ professorId: String(professor.id) }}
-                      viewTransition={{ types: ["professor-open"] }}
-                      className="text-foreground underline-offset-2 hover:underline"
-                      onPointerDown={() =>
-                        onPrepareTransition(transitionKey, professor.id, professor.name)
-                      }
-                    >
-                      {professor.name}
-                    </Link>
+                    {professor.name}
                   </span>
                 );
               })

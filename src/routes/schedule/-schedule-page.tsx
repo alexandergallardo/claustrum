@@ -1376,6 +1376,7 @@ export function SchedulePage() {
                           className={cn("h-[50vh] overflow-hidden", !isCourseListOpen && "hidden")}
                         >
                           <CourseList
+                            courseColors={courseColors}
                             key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
                             courses={orderedCourses}
                             selectedGroups={selectedGroups}
@@ -1552,6 +1553,7 @@ export function SchedulePage() {
                           </div>
                           <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
                             <CourseList
+                              courseColors={courseColors}
                               courses={orderedCourses}
                               selectedGroups={selectedGroups}
                               onSelectionChange={updateSelectedGroups}

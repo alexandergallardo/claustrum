@@ -43,9 +43,8 @@ const CalendarEvent = memo(function CalendarEvent({
 
   const classroomLabel = event.classroom?.trim();
   const showClassroom = classroomLabel && !classroomLabel.toLowerCase().includes("no disponible");
-  const professorLabels = event.professors?.filter(Boolean);
-  const professorLines = professorLabels?.length ? professorLabels : ["Sin asignar"];
-  const professorLabel = professorLines.join(" • ");
+  const professors = event.professors ?? [];
+  const professorNames = professors.length ? professors.map((p) => p.name) : ["Sin asignar"];
   const modalityLabel = event.groupType ?? "Sin modalidad";
   const campusLabel = event.campusName;
   const heightValue = month ? null : position?.height ? parseFloat(position.height) : null;
@@ -117,19 +116,30 @@ const CalendarEvent = memo(function CalendarEvent({
                 isCompact && "hidden",
               )}
             >
-              <span className="flex size-3 shrink-0 items-center justify-center self-center sm:size-4">
+              <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
                 <User className="size-3 sm:size-4" />
               </span>
-              <span
-                className={cn(
-                  "min-w-0 leading-tight",
-                  professorLineCount === 1 && "truncate whitespace-nowrap",
-                  professorLineCount === 2 && "line-clamp-2 break-words whitespace-normal",
-                  professorLineCount === 3 && "line-clamp-3 break-words whitespace-normal",
-                )}
-              >
-                {professorLabel}
-              </span>
+              <div className="flex min-w-0 flex-1 flex-col justify-center">
+                {professorNames.map((name, i) => {
+                  const allowedLines = Math.max(
+                    1,
+                    Math.floor(professorLineCount / professorNames.length),
+                  );
+                  return (
+                    <span
+                      key={`${name}-${i}`}
+                      className={cn(
+                        "min-w-0 leading-tight",
+                        allowedLines === 1 && "truncate whitespace-nowrap",
+                        allowedLines === 2 && "line-clamp-2 break-words whitespace-normal",
+                        allowedLines >= 3 && "line-clamp-3 break-words whitespace-normal",
+                      )}
+                    >
+                      {name}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
             {isCompact && (
               <p className="text-[9px] opacity-80 sm:text-[10px]">
@@ -141,7 +151,7 @@ const CalendarEvent = memo(function CalendarEvent({
       </TooltipTrigger>
       <TooltipContent className="max-w-xs text-wrap">
         <div className="space-y-1">
-          <p className="max-w-[220px] leading-tight font-semibold break-words">
+          <p className="leading-tight font-semibold break-words">
             {event.courseCode}: {event.courseName}
           </p>
           <p className="flex items-center gap-2 text-sm">
@@ -185,13 +195,13 @@ const CalendarEvent = memo(function CalendarEvent({
             <span className="flex size-4 shrink-0 items-center justify-center">
               <User className="size-4" />
             </span>
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-              {professorLines.map((professor) => (
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              {professorNames.map((professorName, i) => (
                 <span
-                  key={professor}
-                  className="min-w-0 leading-tight break-words whitespace-normal"
+                  key={`${professorName}-${i}`}
+                  className="max-w-full truncate whitespace-nowrap"
                 >
-                  {professor}
+                  {professorName}
                 </span>
               ))}
             </div>

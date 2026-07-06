@@ -76,14 +76,46 @@ const formatClassroom = (classroom: string | null | undefined): string | null =>
 };
 
 const COLOR_STYLE_MAP: Record<string, { bg: string; border: string; text: string }> = {
-  blue: { bg: "rgb(30 58 138 / 0.2)", border: "rgb(59 130 246)", text: "rgb(147 197 253)" },
-  emerald: { bg: "rgb(6 78 59 / 0.2)", border: "rgb(16 185 129)", text: "rgb(110 231 183)" },
-  yellow: { bg: "rgb(113 63 18 / 0.2)", border: "rgb(234 179 8)", text: "rgb(254 240 138)" },
-  red: { bg: "rgb(153 27 27 / 0.2)", border: "rgb(239 68 68)", text: "rgb(252 165 165)" },
-  orange: { bg: "rgb(154 52 18 / 0.2)", border: "rgb(249 115 22)", text: "rgb(253 186 116)" },
-  fuchsia: { bg: "rgb(112 26 117 / 0.2)", border: "rgb(217 70 239)", text: "rgb(245 208 254)" },
-  violet: { bg: "rgb(76 29 149 / 0.2)", border: "rgb(139 92 246)", text: "rgb(221 214 254)" },
-  slate: { bg: "rgb(51 65 85 / 0.2)", border: "rgb(100 116 139)", text: "rgb(203 213 225)" },
+  blue: {
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    border: "border-blue-200 dark:border-blue-800",
+    text: "text-blue-500",
+  },
+  emerald: {
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    border: "border-emerald-200 dark:border-emerald-800",
+    text: "text-emerald-500",
+  },
+  yellow: {
+    bg: "bg-yellow-100 dark:bg-yellow-900/30",
+    border: "border-yellow-200 dark:border-yellow-800",
+    text: "text-yellow-500",
+  },
+  red: {
+    bg: "bg-red-100 dark:bg-red-900/30",
+    border: "border-red-200 dark:border-red-800",
+    text: "text-red-500",
+  },
+  orange: {
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    border: "border-orange-200 dark:border-orange-800",
+    text: "text-orange-500",
+  },
+  fuchsia: {
+    bg: "bg-fuchsia-100 dark:bg-fuchsia-900/30",
+    border: "border-fuchsia-200 dark:border-fuchsia-800",
+    text: "text-fuchsia-500",
+  },
+  violet: {
+    bg: "bg-violet-100 dark:bg-violet-900/30",
+    border: "border-violet-200 dark:border-violet-800",
+    text: "text-violet-500",
+  },
+  slate: {
+    bg: "bg-slate-100 dark:bg-slate-800/50",
+    border: "border-slate-200 dark:border-slate-700",
+    text: "text-slate-500",
+  },
 };
 
 const getColorStyles = (color: string) => COLOR_STYLE_MAP[color] || COLOR_STYLE_MAP.blue;
@@ -95,6 +127,7 @@ interface CourseListProps {
   campusById?: Map<number, { code: string; name: string }>;
   showCampus?: boolean;
   viewMode?: "card" | "table";
+  courseColors?: Map<string, string>;
 }
 
 interface GroupView {
@@ -104,7 +137,7 @@ interface GroupView {
   campusName: string | null;
   meetingViews: Array<{ id: string; label: string; shortLabel: string; classroom: string | null }>;
   sharedClassroom: string | null;
-  professorLabels: string[];
+  professors: Array<{ id: number | null; name: string }>;
 }
 
 interface CourseViewData {
@@ -129,7 +162,9 @@ function createGroupView(
   const campusName = campusData ? campusData.name : null;
 
   const meetings = group.meetings ?? [];
-  const professorLabels = group.professors?.filter(Boolean);
+  const professors = group.professors?.length
+    ? group.professors
+    : [{ id: null, name: "Sin asignar" }];
   const meetingViews = meetings.map((session, idx) => {
     const classroom = formatClassroom(session.classroom);
     const label = `${formatWeekday(session.weekday)} ${formatTime(session.starts_at)}-${formatTime(session.ends_at)}`;
@@ -156,7 +191,7 @@ function createGroupView(
     campusName,
     meetingViews,
     sharedClassroom,
-    professorLabels: professorLabels?.length ? professorLabels : ["Sin asignar"],
+    professors,
   };
 }
 
@@ -224,12 +259,19 @@ function calculateConflictMap(courses: ScheduleCourse[]): Map<string, Set<string
   return map;
 }
 
+export interface ConflictReason {
+  courseCode: string;
+  courseName: string;
+  groupCode: string;
+  campusLabel: string | null;
+}
+
 function createGroupLabelMap(
   courses: ScheduleCourse[],
   showCampus: boolean,
   campusById?: Map<number, { code: string; name: string }>,
-): Map<string, string> {
-  const map = new Map<string, string>();
+): Map<string, ConflictReason> {
+  const map = new Map<string, ConflictReason>();
 
   courses.forEach((course) => {
     course.groups?.forEach((group) => {
@@ -241,12 +283,13 @@ function createGroupLabelMap(
         : showCampus && campusId
           ? `Sede ${campusId}`
           : null;
-      const campusSuffix = campusLabel ? ` • ${campusLabel}` : "";
 
-      map.set(
-        groupId,
-        `${course.course_code}: ${course.course_name} - GRUPO ${group.group_code}${campusSuffix}`,
-      );
+      map.set(groupId, {
+        courseCode: course.course_code,
+        courseName: course.course_name,
+        groupCode: group.group_code,
+        campusLabel,
+      });
     });
   });
 
@@ -259,8 +302,8 @@ function createConflictReasons(
   courses: ScheduleCourse[],
   showCampus: boolean,
   campusById?: Map<number, { code: string; name: string }>,
-): { conflictReasons: Map<string, string[]>; disabledSet: Set<string> } {
-  const conflictReasons = new Map<string, string[]>();
+): { conflictReasons: Map<string, ConflictReason[]>; disabledSet: Set<string> } {
+  const conflictReasons = new Map<string, ConflictReason[]>();
   const disabledSet = new Set<string>();
   const groupLabelsById = createGroupLabelMap(courses, showCampus, campusById);
 
@@ -290,6 +333,7 @@ export default function CourseList({
   campusById,
   showCampus = false,
   viewMode = "card",
+  courseColors: courseColorsProp,
 }: CourseListProps) {
   const scrollAreaRootRef = useRef<HTMLDivElement | null>(null);
 
@@ -310,13 +354,14 @@ export default function CourseList({
   }, []);
 
   const courseColors = useMemo(() => {
+    if (courseColorsProp) return courseColorsProp;
     const map = new Map<string, string>();
     courses.forEach((course, index) => {
       const color = colorOptions[index % colorOptions.length].value;
       map.set(course.course_code, color);
     });
     return map;
-  }, [courses]);
+  }, [courses, courseColorsProp]);
 
   const courseColorStyles = useMemo(() => {
     const map = new Map<string, { bg: string; border: string; text: string }>();
@@ -417,7 +462,7 @@ const CourseCard = memo(function CourseCard({
   colorStyles: { bg: string; border: string; text: string };
   selectedGroupIds: SelectedGroups;
   disabledGroupIdSet: Set<string>;
-  conflictReasonsByGroupId: Map<string, string[]>;
+  conflictReasonsByGroupId: Map<string, ConflictReason[]>;
   onGroupToggle: (courseCode: string, groupCode: string) => void;
 }) {
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
@@ -467,16 +512,10 @@ const CourseCard = memo(function CourseCard({
                         disabled &&
                           "cursor-not-allowed opacity-50 hover:translate-y-0 hover:shadow-none",
                         !disabled && !isSelected && "hover:bg-muted/50 border-border",
-                        isSelected && "-translate-y-0.5 shadow-lg",
+                        isSelected && "-translate-y-0.5 shadow-md",
+                        isSelected && colorStyles.bg,
+                        isSelected && colorStyles.border,
                       )}
-                      style={
-                        isSelected
-                          ? {
-                              backgroundColor: colorStyles.bg,
-                              borderColor: colorStyles.border,
-                            }
-                          : undefined
-                      }
                       onClick={() =>
                         !disabled && onGroupToggle(course.course_code, groupView.group.group_code)
                       }
@@ -494,10 +533,12 @@ const CourseCard = memo(function CourseCard({
                             "text-xs whitespace-nowrap",
                             isSelected && "border",
                             isSelected && "bg-background/50",
+                            isSelected && colorStyles.border,
                           )}
-                          style={isSelected ? { borderColor: colorStyles.border } : undefined}
                         >
-                          Grupo {groupView.group.group_code}
+                          <span className="sm:hidden">GR</span>
+                          <span className="hidden sm:inline">Grupo</span>{" "}
+                          {groupView.group.group_code}
                         </Badge>
                         <span
                           className={cn(
@@ -514,7 +555,9 @@ const CourseCard = memo(function CourseCard({
                                 variant="outline"
                                 className={cn(
                                   "ml-auto h-5 cursor-help px-1.5 text-[10px]",
-                                  isSelected && "border-foreground/20 text-inherit",
+                                  isSelected
+                                    ? "border-foreground/20 bg-background/50 text-inherit"
+                                    : "bg-muted text-muted-foreground",
                                 )}
                               >
                                 {groupView.campusCode}
@@ -538,15 +581,15 @@ const CourseCard = memo(function CourseCard({
                             )}
                           />
                           <div className="flex flex-col justify-center gap-1">
-                            {groupView.professorLabels.map((professor) => (
+                            {groupView.professors.map((professor, i) => (
                               <span
-                                key={professor}
+                                key={`${professor.id}-${i}`}
                                 className={cn(
                                   "text-foreground text-xs whitespace-nowrap",
                                   isSelected && "opacity-80",
                                 )}
                               >
-                                {professor}
+                                {professor.name}
                               </span>
                             ))}
                           </div>
@@ -626,12 +669,18 @@ const CourseCard = memo(function CourseCard({
                   {disabled && reasons.length > 0 && (
                     <TooltipContent className="bg-destructive max-w-xs text-white">
                       <div className="space-y-1.5">
-                        <p className="text-base leading-tight font-semibold">
-                          Este grupo choca con:
-                        </p>
-                        <ul className="space-y-1 text-sm">
-                          {reasons.map((reason) => (
-                            <li key={reason}>{reason}</li>
+                        <p className="text-sm font-semibold">Este grupo choca con:</p>
+                        <ul className="space-y-2">
+                          {reasons.map((r, idx) => (
+                            <li key={idx} className="flex flex-col gap-0.5">
+                              <span className="text-xs font-semibold">
+                                {r.courseCode}: {r.courseName}
+                              </span>
+                              <div className="ml-1 flex flex-col pl-2 text-xs opacity-90">
+                                <span>Grupo {r.groupCode}</span>
+                                {r.campusLabel && <span>{r.campusLabel}</span>}
+                              </div>
+                            </li>
                           ))}
                         </ul>
                       </div>
@@ -663,7 +712,7 @@ const CourseTableItem = memo(function CourseTableItem({
   colorStyles: { bg: string; border: string; text: string };
   selectedGroupIds: SelectedGroups;
   disabledGroupIdSet: Set<string>;
-  conflictReasonsByGroupId: Map<string, string[]>;
+  conflictReasonsByGroupId: Map<string, ConflictReason[]>;
   onGroupToggle: (courseCode: string, groupCode: string) => void;
   showCampus: boolean;
 }) {
@@ -733,22 +782,19 @@ const CourseTableItem = memo(function CourseTableItem({
                         }
                         className={cn(
                           "cursor-pointer transition-colors",
-                          isSelected && "bg-muted/80 hover:bg-muted/90",
+                          isSelected && "hover:bg-muted/90",
+                          isSelected && !disabled && colorStyles.bg,
+                          !isSelected && !disabled && "hover:bg-muted/50",
                           disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
                         )}
-                        style={
-                          isSelected && !disabled ? { backgroundColor: colorStyles.bg } : undefined
-                        }
                       >
                         <TableCell className="pl-4 text-center">
                           <Badge
                             variant="secondary"
-                            className={cn(isSelected && "bg-background/50 text-foreground")}
-                            style={
-                              isSelected
-                                ? { borderColor: colorStyles.border, borderWidth: "1px" }
-                                : undefined
-                            }
+                            className={cn(
+                              isSelected && "bg-background/50 text-foreground border",
+                              isSelected && colorStyles.border,
+                            )}
                           >
                             {groupView.group.group_code}
                           </Badge>
@@ -774,8 +820,8 @@ const CourseTableItem = memo(function CourseTableItem({
                         )}
                         <TableCell className="w-full max-w-[0] min-w-[120px]">
                           <div className="flex w-full flex-col gap-1 text-xs">
-                            {groupView.professorLabels.map((prof, i) => (
-                              <TruncatableText key={i} text={prof} />
+                            {groupView.professors.map((prof, i) => (
+                              <TruncatableText key={`${prof.id ?? "nop"}-${i}`} text={prof.name} />
                             ))}
                           </div>
                         </TableCell>
@@ -808,9 +854,17 @@ const CourseTableItem = memo(function CourseTableItem({
                       <TooltipContent className="bg-destructive max-w-xs text-white">
                         <div className="space-y-1.5">
                           <p className="text-sm font-semibold">Este grupo choca con:</p>
-                          <ul className="space-y-1 text-xs">
-                            {reasons.map((r) => (
-                              <li key={r}>{r}</li>
+                          <ul className="space-y-2">
+                            {reasons.map((r, idx) => (
+                              <li key={idx} className="flex flex-col gap-0.5">
+                                <span className="text-xs font-semibold">
+                                  {r.courseCode}: {r.courseName}
+                                </span>
+                                <div className="ml-1 flex flex-col pl-2 text-xs opacity-90">
+                                  <span>Grupo {r.groupCode}</span>
+                                  {r.campusLabel && <span>{r.campusLabel}</span>}
+                                </div>
+                              </li>
                             ))}
                           </ul>
                         </div>
