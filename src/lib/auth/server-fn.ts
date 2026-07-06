@@ -14,11 +14,15 @@ export const getAuthSessionServerFn = createServerFn({ method: "GET" }).handler(
   if (cookie) fetchHeaders.cookie = cookie;
   if (authorization) fetchHeaders.authorization = authorization;
 
-  const { data } = await getSession({
+  const { data, error } = await getSession({
     fetchOptions: {
       headers: fetchHeaders,
     },
   });
+
+  if (error) {
+    throw new Error(error.message || `Auth fetch failed with status: ${error.status}`);
+  }
 
   return data;
 });
