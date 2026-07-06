@@ -4,19 +4,14 @@
   "main": "@tanstack/react-start/server-entry",
   "compatibility_date": "2026-07-06",
   "compatibility_flags": ["nodejs_compat"],
-  "routes": [
-    {
-      "pattern": "claustrum.maugp.com/*",
-      "zone_name": "maugp.com"
-    }
-  ],
+  "custom_domains": ["claustrum.maugp.com"],
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "env": {
     "preview": {
       "name": "claustrum-web-preview",
-      "routes": []
-    }
-  }
+      "custom_domains": [],
+    },
+  },
 }
