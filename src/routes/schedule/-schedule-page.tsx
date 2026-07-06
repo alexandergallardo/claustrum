@@ -306,7 +306,7 @@ export function SchedulePage() {
     userId: authUser?.id ?? null,
     isAuthReady: !isAuthLoading,
   });
-  const { data: userStudyPlan } = useUserStudyPlan(
+  const { data: userStudyPlan, isLoading: isUserStudyPlanLoading } = useUserStudyPlan(
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,
   );
@@ -1138,6 +1138,17 @@ export function SchedulePage() {
     termsQuery.isLoading;
   const isInitialLoading = isLoadingFilters && !universities?.length;
   const hasRequiredScheduleFilters = !!selectedCampusId && !!selectedTermId;
+  const isProfileLoading = isUsingProfileDefaults && (isAuthLoading || isUserStudyPlanLoading);
+  const isAutoSelectingPlan =
+    shouldAutoSelectPlanRef.current &&
+    !!selectedCareerId &&
+    !selectedPlanId &&
+    (plansQuery.isFetching || plans.length > 0);
+  const isAutoSelectingTerm =
+    !!selectedPlanId &&
+    !selectedTermId &&
+    (termsQuery.isFetching || suggestedTermQuery.isPending || terms.length > 0);
+  const isPendingFilters = isProfileLoading || isAutoSelectingPlan || isAutoSelectingTerm;
 
   if (isInitialLoading) {
     return (
@@ -1271,14 +1282,22 @@ export function SchedulePage() {
               </div>
             </div>
 
-            {!hasRequiredScheduleFilters && !coursesQuery.isLoading && (
+            {isPendingFilters && (
+              <div className="flex flex-1 px-4 lg:px-6">
+                <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 md:min-h-96">
+                  <Spinner className="text-muted-foreground size-6" />
+                </div>
+              </div>
+            )}
+
+            {!hasRequiredScheduleFilters && !coursesQuery.isLoading && !isPendingFilters && (
               <ScheduleEmptyState
                 title="Selecciona los filtros del horario"
                 description="Selecciona una sede y un periodo para visualizar los cursos disponibles."
               />
             )}
 
-            {hasRequiredScheduleFilters && coursesQuery.isLoading && (
+            {hasRequiredScheduleFilters && coursesQuery.isLoading && !isPendingFilters && (
               <div className="flex flex-1 px-4 lg:px-6">
                 <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 md:min-h-96">
                   <Spinner className="text-muted-foreground size-6" />

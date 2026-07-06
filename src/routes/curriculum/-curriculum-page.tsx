@@ -49,10 +49,17 @@ export function CurriculumPage() {
 
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const { data: userStudyPlan } = useUserStudyPlan(
+  const { data: userStudyPlan, isLoading: isUserStudyPlanLoading } = useUserStudyPlan(
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,
   );
+  const isProfileLoading = isUsingProfileDefaults && (isAuthLoading || isUserStudyPlanLoading);
+  const isAutoSelectingPlan =
+    shouldAutoSelectPlanRef.current &&
+    !!selectedAcademicUnitId &&
+    !selectedPlanId &&
+    (plansQuery.isFetching || plans.length > 0);
+  const isPendingFilters = isProfileLoading || isAutoSelectingPlan;
   const userStudyPlanUniversityId =
     normalizeCurriculumUniversityId(userStudyPlan?.universityId) ??
     CURRICULUM_DEFAULT_UNIVERSITY_ID;
@@ -421,7 +428,15 @@ export function CurriculumPage() {
             </div>
           )}
 
-          {!selectedPlanId && !planDetailQuery.isLoading && (
+          {isPendingFilters && (
+            <div className="flex flex-1 px-4 lg:px-6">
+              <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 md:min-h-96">
+                <Spinner className="text-muted-foreground size-6" />
+              </Card>
+            </div>
+          )}
+
+          {!selectedPlanId && !planDetailQuery.isLoading && !isPendingFilters && (
             <div className="flex flex-1 px-4 lg:px-6">
               <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 text-center md:min-h-96">
                 <p className="text-muted-foreground max-w-sm text-sm md:text-base">
