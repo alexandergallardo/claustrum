@@ -1,4 +1,3 @@
-import { QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRoute,
   Link,
@@ -25,7 +24,6 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Kbd } from "@/components/ui/kbd";
 import { Toaster } from "@/components/ui/sonner";
 import { useAuthUser, useOnboardingStatus, useProfileContext } from "@/lib/hooks/use-queries";
-import { queryClient } from "@/lib/query-client";
 import { useRouteSeo } from "@/lib/seo";
 
 export const Route = createRootRoute({
@@ -184,47 +182,45 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <RootProvider
-              key={pathname.startsWith("/docs") ? "docs-framework" : "app-framework"}
-              theme={{
-                enabled: pathname.startsWith("/docs"),
-                storageKey: "docs-theme",
-                defaultTheme: "system",
-                attribute: "class",
-              }}
-              search={{ enabled: pathname.startsWith("/docs") }}
-              i18n={{
-                translations: {
-                  chooseLanguage: "Elegir idioma",
-                  chooseTheme: "Tema",
-                  editOnGithub: "Editar en GitHub",
-                  lastUpdate: "Última actualización",
-                  nextPage: "Página siguiente",
-                  previousPage: "Página anterior",
-                  search: "Buscar",
-                  searchNoResult: "No se encontraron resultados",
-                  toc: "En esta página",
-                  tocNoHeadings: "Sin encabezados",
-                },
-              }}
-            >
-              {isPublicRoute ? (
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <RootProvider
+            key={pathname.startsWith("/docs") ? "docs-framework" : "app-framework"}
+            theme={{
+              enabled: pathname.startsWith("/docs"),
+              storageKey: "docs-theme",
+              defaultTheme: "system",
+              attribute: "class",
+            }}
+            search={{ enabled: pathname.startsWith("/docs") }}
+            i18n={{
+              translations: {
+                chooseLanguage: "Elegir idioma",
+                chooseTheme: "Tema",
+                editOnGithub: "Editar en GitHub",
+                lastUpdate: "Última actualización",
+                nextPage: "Página siguiente",
+                previousPage: "Página anterior",
+                search: "Buscar",
+                searchNoResult: "No se encontraron resultados",
+                toc: "En esta página",
+                tocNoHeadings: "Sin encabezados",
+              },
+            }}
+          >
+            {isPublicRoute ? (
+              <Outlet />
+            ) : shouldHoldPrivateRender ? (
+              <AppLayoutWrapper>
+                <div className="bg-background flex-1" />
+              </AppLayoutWrapper>
+            ) : (
+              <AppLayoutWrapper>
                 <Outlet />
-              ) : shouldHoldPrivateRender ? (
-                <AppLayoutWrapper>
-                  <div className="bg-background flex-1" />
-                </AppLayoutWrapper>
-              ) : (
-                <AppLayoutWrapper>
-                  <Outlet />
-                </AppLayoutWrapper>
-              )}
-              <Toaster />
-            </RootProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
+              </AppLayoutWrapper>
+            )}
+            <Toaster />
+          </RootProvider>
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
