@@ -12,7 +12,7 @@ from unidecode import unidecode
 from reviews.text import normalize_course_text
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-super-120b-a12b:free"
+DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free, nvidia/nemotron-3-super-120b-a12b:free, poolside/laguna-m.1:free"
 COURSE_MATCH_PROMPT_VERSION = 7
 COURSE_FAMILY_PROMPT_VERSION = 3
 CONFIDENCE_ORDER = {"none": 0, "low": 1, "medium": 2, "high": 3}
@@ -355,8 +355,8 @@ def has_extra_prefix_before_class_base(class_tokens: list[str], target_tokens: l
     return False
 
 
-def token_overlap_count(left_tokens: list[str], right_tokens: list[str]) -> int:
-    return sum(1 for token in left_tokens if token_is_related(token, right_tokens) or token_matches_course_acronym(token, right_tokens))
+def token_overlap_count(left_tokens: list[str], right_tokens: list[str], allow_acronyms: bool = True) -> int:
+    return sum(1 for token in left_tokens if token_is_related(token, right_tokens) or (allow_acronyms and token_matches_course_acronym(token, right_tokens)))
 
 
 def token_variants(token: str) -> set[str]:
@@ -407,6 +407,8 @@ def segment_is_course_acronym(segment_tokens: list[str], target_tokens: list[str
 
 def segment_mentions_course(segment_tokens: list[str], target_tokens: list[str]) -> bool:
     if not segment_tokens or not target_tokens:
+        return False
+    if not tokens_without_levels(segment_tokens):
         return False
     if segment_is_course_acronym(segment_tokens, target_tokens):
         return True
@@ -551,7 +553,7 @@ def course_contextual_score(
 
     score = max(
         fuzz.token_sort_ratio(normalized_class, normalized_name),
-        fuzz.partial_ratio(normalized_class, normalized_name),
+        fuzz.partial_ratio(normalized_class, normalized_name) if len(normalized_class) > 5 else 0,
     )
     if normalized_class == normalized_name:
         score = max(score, 100)
@@ -562,9 +564,15 @@ def course_contextual_score(
     if class_name_mentions_course(class_name, course):
         reasons.append("class tokens mention course")
         if class_name_mentions_course_acronym(class_name, course):
-            score = max(score, 95)
-            reasons.append("class token matches course acronym")
-    if class_tokens and all(token_is_related(token, target_tokens) or token_matches_course_acronym(token, target_tokens) for token in class_tokens):
+            if match_scope == "global_catalog":
+                reasons.append("ignored acronym match in global catalog")
+            else:
+                score = max(score, 95)
+                reasons.append("class token matches course acronym")
+    
+    if len(normalized_class) > 5 and fuzz.partial_ratio(normalized_class, normalized_name) >= 95:
+        reasons.append("strong partial name match")
+    if class_tokens and tokens_without_levels(class_tokens) and all(token_is_related(token, target_tokens) or (match_scope != "global_catalog" and token_matches_course_acronym(token, target_tokens)) for token in class_tokens):
         score = max(score, 88)
         reasons.append("all class tokens are explained by course name")
     if class_tokens and target_tokens[: len(class_tokens)] and all(token_is_related(token, target_tokens[index:index + 1]) for index, token in enumerate(class_tokens[: len(target_tokens)])):
@@ -802,7 +810,7 @@ def contextual_related_course_matches(
             variation_course_ids=variation_course_ids,
             course_prefix_affinity=course_prefix_affinity,
         )
-        base_overlap = token_overlap_count(class_base_tokens, target_base_tokens)
+        base_overlap = token_overlap_count(class_base_tokens, target_base_tokens, allow_acronyms=match_scope != "global_catalog")
         if class_level_set:
             if target_level in class_level_set and base_overlap >= 1:
                 score = max(score, 95)
@@ -1073,33 +1081,35 @@ def call_openrouter_for_course(*, api_key: str, model: str, professor_id: int, c
         "raw_tags": raw_tags,
         "course_options": course_options,
     }
-    models_list = [m.strip() for m in model.split(",")] if "," in model else None
-    payload = {
-        "messages": [
-            {"role": "system", "content": "You are a strict data-normalization assistant. Return only valid JSON, with no markdown."},
-            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}
-        ],
-        "temperature": 0
-    }
-    if models_list:
-        payload["models"] = models_list
-    else:
-        payload["model"] = model
-
+    models_list = [m.strip() for m in model.split(",")] if "," in model else [model]
+    
+    parsed = None
+    last_error = None
     for attempt in range(3):
+        current_model = models_list[attempt % len(models_list)]
+        payload = {
+            "model": current_model,
+            "messages": [
+                {"role": "system", "content": "You are a strict data-normalization assistant. Return only valid JSON, with no markdown."},
+                {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}
+            ],
+            "temperature": 0
+        }
         try:
             response = requests.post(
                 OPENROUTER_URL,
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json=payload,
-                timeout=60,
+                timeout=15,
             )
             response.raise_for_status()
             parsed = parse_json_content(response.json()["choices"][0]["message"]["content"])
             break
-        except Exception:
-            if attempt == 2:
-                raise
+        except Exception as e:
+            last_error = e
+            
+    if parsed is None:
+        raise last_error or Exception("All OpenRouter attempts failed.")
     course_id = parse_course_id(parsed.get("primary_course_id", parsed.get("course_id")))
     confidence = str(parsed.get("confidence") or "medium")
     if confidence not in {"high", "medium", "low", "none"}:
@@ -1200,33 +1210,35 @@ def call_openrouter_for_course_family(*, api_key: str, model: str, professor_id:
         "raw_tags": raw_tags,
         "course_options": course_options,
     }
-    models_list = [m.strip() for m in model.split(",")] if "," in model else None
-    payload = {
-        "messages": [
-            {"role": "system", "content": "You are a strict data-normalization assistant. Return only valid JSON, with no markdown."},
-            {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}
-        ],
-        "temperature": 0
-    }
-    if models_list:
-        payload["models"] = models_list
-    else:
-        payload["model"] = model
-
+    models_list = [m.strip() for m in model.split(",")] if "," in model else [model]
+    
+    parsed = None
+    last_error = None
     for attempt in range(3):
+        current_model = models_list[attempt % len(models_list)]
+        payload = {
+            "model": current_model,
+            "messages": [
+                {"role": "system", "content": "You are a strict data-normalization assistant. Return only valid JSON, with no markdown."},
+                {"role": "user", "content": json.dumps(prompt, ensure_ascii=False)}
+            ],
+            "temperature": 0
+        }
         try:
             response = requests.post(
                 OPENROUTER_URL,
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json=payload,
-                timeout=60,
+                timeout=15,
             )
             response.raise_for_status()
             parsed = parse_json_content(response.json()["choices"][0]["message"]["content"])
             break
-        except Exception:
-            if attempt == 2:
-                raise
+        except Exception as e:
+            last_error = e
+            
+    if parsed is None:
+        raise last_error or Exception("All OpenRouter attempts failed.")
     raw_ids = parsed.get("preferred_course_ids")
     preferred_ids = [course_id for value in raw_ids for course_id in [parse_course_id(value)] if course_id is not None] if isinstance(raw_ids, list) else []
     allowed_ids = {int(course["course_id"]) for course in course_options}

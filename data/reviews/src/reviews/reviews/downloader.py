@@ -101,6 +101,9 @@ def fetch_html(url: str) -> str:
     session = getattr(THREAD_STATE, "session", None)
     if session is None:
         session = requests.Session()
+        session.verify = False
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         THREAD_STATE.session = session
     response = session.get(url, timeout=30)
     response.raise_for_status()

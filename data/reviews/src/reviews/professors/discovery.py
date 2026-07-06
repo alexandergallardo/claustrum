@@ -58,7 +58,9 @@ def is_probable_garbage(name: str) -> bool:
 
 
 def scrape_site_professors() -> list[SiteProfessor]:
-    response = requests.get(SCHOOL_URL, timeout=30)
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    response = requests.get(SCHOOL_URL, timeout=30, verify=False)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")

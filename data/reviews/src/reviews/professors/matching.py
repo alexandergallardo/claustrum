@@ -195,11 +195,16 @@ def score_candidate(
     composite_score = round(name_score * 0.55 + course_score * 0.45, 2)
     if evidence["matched_review_count"] >= COURSE_OVERRIDE_MIN_MATCHES and evidence["course_match_ratio"] >= COURSE_OVERRIDE_MIN_RATIO:
         composite_score = round(max(composite_score, 82 + min(12, evidence["matched_review_count"] * 2)), 2)
+    query_tokens = set(site_professor.normalized_name.split())
+    db_tokens = set(professor.normalized_name.split())
+    is_subset = (query_tokens <= db_tokens) or (db_tokens <= query_tokens)
+    
     return {
         "professor_id": professor.id,
         "full_name": professor.full_name,
         "name_score": round(name_score, 1),
         "token_overlap": overlap,
+        "is_subset": is_subset,
         "course_score": round(course_score, 1),
         "composite_score": composite_score,
         **evidence,
@@ -213,10 +218,11 @@ def classify_match(best: dict[str, Any] | None, *, is_manual: bool, was_overridd
         return "course_evidence_override"
     if best["matched_review_count"] >= COURSE_OVERRIDE_MIN_MATCHES and best["course_match_ratio"] >= COURSE_OVERRIDE_MIN_RATIO:
         return "strong_course_evidence"
-    if best["name_score"] >= AUTO_STRONG_NAME_SCORE:
+    if best["name_score"] >= 90:
         return "strong_name"
     if best["name_score"] >= AUTO_LOW_NAME_SCORE and best["token_overlap"] >= 2:
-        return "probable_name"
+        if best.get("is_subset", False) or best["name_score"] >= 88:
+            return "probable_name"
     if is_manual:
         return "manual"
     return "unmatched"
