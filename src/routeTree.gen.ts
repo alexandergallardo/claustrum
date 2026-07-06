@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
@@ -44,6 +45,11 @@ const AuthResetPasswordIndexLazyRouteImport = createFileRoute(
 const AuthMagicLinkIndexLazyRouteImport = createFileRoute('/auth/magic-link/')()
 const Auth2faIndexLazyRouteImport = createFileRoute('/auth/2fa/')()
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/_index',
   getParentRoute: () => rootRouteImport,
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/docs/$': typeof DocsSplatRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRouteRouteWithChildren
   '/': typeof IndexRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/docs/$': typeof DocsSplatRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/docs/$': typeof DocsSplatRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/'
+    | '/sitemap.xml'
     | '/curriculum/$courseId'
     | '/docs/$'
     | '/professors/$professorId'
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/'
+    | '/sitemap.xml'
     | '/curriculum/$courseId'
     | '/docs/$'
     | '/professors/$professorId'
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/_index'
+    | '/sitemap.xml'
     | '/curriculum/$courseId'
     | '/docs/$'
     | '/professors/$professorId'
@@ -382,6 +394,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   DocsSplatRoute: typeof DocsSplatRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
@@ -398,6 +411,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_index': {
       id: '/_index'
       path: ''
@@ -620,6 +640,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   DocsSplatRoute: DocsSplatRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
