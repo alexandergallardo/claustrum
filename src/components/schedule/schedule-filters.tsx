@@ -76,9 +76,7 @@ function areStringArraysEqual(a: string[], b: string[]): boolean {
 }
 
 function getInitialFiltersPanelOpen(): boolean {
-  if (typeof window === "undefined") return true;
-  const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY);
-  return stored !== "false";
+  return true;
 }
 
 export function ScheduleFilters({
@@ -114,6 +112,14 @@ export function ScheduleFilters({
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
+
+  useEffect(() => {
+    const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY);
+    if (stored === "false") {
+      setIsFiltersVisible(false);
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString());
   }, [isFiltersVisible]);
