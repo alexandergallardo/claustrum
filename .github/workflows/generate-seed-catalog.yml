@@ -1,0 +1,187 @@
+name: Generate catalog seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      years:
+        description: "Comma-separated academic years to include in catalog terms"
+        required: false
+        default: "2020,2021,2022,2023,2024,2025,2026"
+
+jobs:
+  seed-history-sync-catalog:
+    name: Generate catalog seed
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      pull-requests: write
+    env:
+      CATALOG_YEARS: ${{ inputs.years || '2020,2021,2022,2023,2024,2025,2026' }}
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.ref || 'development' }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Run seed-history sync for catalog
+        working-directory: supabase/tec-data
+        run: >-
+          uv run tec-data sync
+          --target seed-history
+          --seed-dir ../seeds/tec-data
+          --scope catalog
+          --years "$CATALOG_YEARS"
+          --no-apply
+          --keep-sql
+          --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:5432/postgres
+
+      - name: Capture generated seed path
+        id: generated_seed
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          seed_dir = Path("supabase/seeds/tec-data")
+          seeds = sorted(seed_dir.glob("seed_*.sql"), key=lambda p: p.stat().st_mtime, reverse=True)
+          if not seeds:
+              raise SystemExit("No generated seed SQL file found")
+
+          latest_sql = seeds[0]
+          latest_manifest = latest_sql.with_suffix(".json")
+          if not latest_manifest.exists():
+              raise SystemExit(f"Manifest for generated seed not found: {latest_manifest}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"seed_sql={latest_sql}\n")
+              out.write(f"seed_manifest={latest_manifest}\n")
+          PY
+
+      - name: Detect non-noop seed changes
+        id: seed_check
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from datetime import datetime
+
+          manifest_path = Path(os.environ["SEED_MANIFEST_PATH"])
+          payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+          noop = bool(payload.get("noop", False))
+
+          scope = payload.get("scope", "catalog")
+          years_raw = payload.get("years", [])
+          years = ", ".join(str(y) for y in sorted(years_raw))
+          generated_utc = payload.get("generated_at_utc", "")
+          fp = payload.get("data_fingerprint", "")
+          term_keys = payload.get("term_external_keys", [])
+          table_stats = payload.get("table_stats", {})
+
+          # Parse and format datetime
+          try:
+              dt = datetime.fromisoformat(generated_utc)
+              formatted_dt = dt.strftime("%d/%m/%Y %H:%M")
+          except (ValueError, TypeError):
+              formatted_dt = generated_utc
+
+          # Build markdown table of stats
+          md_lines = ["| Table | Inserted | Updated | Soft-deleted |",
+                       "|-------|----------|---------|--------------|"]
+          line_parts = []
+          for table in sorted(table_stats.keys()):
+              stats = table_stats[table]
+              ins = stats.get("inserted", 0)
+              upd = stats.get("updated", 0)
+              sdel = stats.get("soft_deleted", 0)
+              md_lines.append(f"| {table} | {ins} | {upd} | {sdel} |")
+              parts = []
+              if ins:
+                  parts.append(f"{ins} inserted")
+              if upd:
+                  parts.append(f"{upd} updated")
+              if sdel:
+                  parts.append(f"{sdel} soft_deleted")
+              if parts:
+                  line_parts.append(f"{table}: {' | '.join(parts)}")
+
+          table_stats_md = "\n".join(md_lines)
+          table_stats_line = " | ".join(line_parts) if line_parts else "no changes"
+
+          term_count = str(len(term_keys))
+          fp_prefix = fp[:8] if fp else ""
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"create_pr={'true' if not noop else 'false'}\n")
+              out.write(f"seed_file={payload.get('seed_file', '')}\n")
+              out.write(f"formatted_datetime={formatted_dt}\n")
+              out.write(f"scope={scope}\n")
+              out.write(f"years={years}\n")
+              out.write(f"term_count={term_count}\n")
+              out.write(f"fp_prefix={fp_prefix}\n")
+              out.write(f"table_stats_md<<EOF_MD\n{table_stats_md}\nEOF_MD\n")
+              out.write(f"table_stats_line={table_stats_line}\n")
+
+          print(f"Manifest: {manifest_path.name}")
+          print(f"Seed file: {payload.get('seed_file', '')}")
+          print(f"Noop: {noop}")
+          print(f"Scope: {scope}")
+          print(f"Years: {years}")
+          print(f"Generated: {formatted_dt}")
+          print(f"Terms: {term_count}")
+          print(f"Tables:\n{table_stats_md}")
+          PY
+        env:
+          SEED_MANIFEST_PATH: ${{ steps.generated_seed.outputs.seed_manifest }}
+
+      - name: Create pull request with generated seeds
+        if: steps.seed_check.outputs.create_pr == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore(tec-data): catalog as of ${{ steps.seed_check.outputs.formatted_datetime }} with filter of: ${{ steps.seed_check.outputs.years }}"
+          branch: "bot/tec-data-catalog"
+          branch-suffix: "timestamp"
+          base: "development"
+          delete-branch: true
+          title: "chore(tec-data): catalog as of ${{ steps.seed_check.outputs.formatted_datetime }} with filter of: ${{ steps.seed_check.outputs.years }}"
+          body: |
+            ## Automated tec-data seed generation
+
+            **Scope:** `${{ steps.seed_check.outputs.scope }}`
+            **Years:** ${{ steps.seed_check.outputs.years }}
+            **Terms:** ${{ steps.seed_check.outputs.term_count }}
+            **Generated at:** ${{ steps.seed_check.outputs.formatted_datetime }} UTC
+
+            ### Table changes
+
+            ${{ steps.seed_check.outputs.table_stats_md }}
+
+            ---
+            _Target: seed-history | Source: GitHub Actions_
+          add-paths: |
+            supabase/seeds/tec-data/*.sql
+            supabase/seeds/tec-data/*.json
