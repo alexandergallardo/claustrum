@@ -363,7 +363,7 @@ def pg_type_to_generic(data_type: str, udt_name: str) -> str:
     if dt == "uuid":
         return "UUID"
     if dt == "user-defined" and udt:
-        return "TEXT"
+        return udt
     return "TEXT"
 
 
@@ -493,11 +493,11 @@ def build_batch_update_statements(
             assignments.append(f"{col} = nv.{col}::{column_types.get(col, 'TEXT')}")
             
         lifecycle = []
-        if "is_active" in available_columns:
+        if "is_active" in available_columns and "is_active" not in changed_columns:
             lifecycle.append("is_active = TRUE")
-        if "deactivated_at" in available_columns:
+        if "deactivated_at" in available_columns and "deactivated_at" not in changed_columns:
             lifecycle.append("deactivated_at = NULL")
-        if "updated_at" in available_columns:
+        if "updated_at" in available_columns and "updated_at" not in changed_columns:
             lifecycle.append("updated_at = NOW()")
             
         all_assignments = ",\n  ".join(assignments + lifecycle)
@@ -693,7 +693,7 @@ def generate_minimal_delta_seed(
             changed_columns = [
                 col
                 for col in columns
-                if col != "id"
+                if col not in ("id", "created_at", "updated_at")
                 and normalize_for_compare(
                     current.get(col), column_types.get(col, "TEXT")
                 )
@@ -875,9 +875,10 @@ def generate_minimal_delta_seed(
         else:
             actual_soft_deleted = len(stale_ids) if soft_delete_statements else 0
 
+        total_updated_rows = sum(len(rows) for rows in update_groups.values())
         table_stats[table] = {
             "inserted": len(insert_rows),
-            "updated": len(update_rows),
+            "updated": total_updated_rows,
             "soft_deleted": actual_soft_deleted,
         }
 
