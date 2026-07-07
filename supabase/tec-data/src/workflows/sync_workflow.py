@@ -704,10 +704,11 @@ def generate_minimal_delta_seed(
                     normalized_row.get(col), column_types.get(col, "TEXT")
                 )
             ]
-            if scope == "offering" and table == "course" and "name" in changed_columns:
+            if table == "course" and "name" in changed_columns:
                 payload_name = str(normalized_row.get("name") or "").strip().upper()
                 payload_code = str(normalized_row.get("code") or "").strip().upper()
-                if payload_name == payload_code:
+                current_name = str(current.get("name") or "").strip()
+                if payload_name == payload_code and current_name:
                     changed_columns = [c for c in changed_columns if c != "name"]
             if (
                 scope == "offering"

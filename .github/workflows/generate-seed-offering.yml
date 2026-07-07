@@ -9,12 +9,6 @@ on:
         default: "2026"
   schedule:
     - cron: "0 7 * * 1"
-  pull_request:
-    paths:
-      - "supabase/tec-data/**"
-      - "supabase/migrations/**"
-      - "supabase/seeds/tec-data/**"
-      - ".github/workflows/generate-seed.yml"
 
 jobs:
   seed-history-sync:
