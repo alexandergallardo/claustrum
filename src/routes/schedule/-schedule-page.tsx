@@ -1,6 +1,5 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { startOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -40,7 +39,6 @@ import {
   type ScheduleExportTheme,
 } from "@/components/schedule/schedule-export-dialog";
 import { ScheduleFilters } from "@/components/schedule/schedule-filters";
-import { ScheduleGeneratorPanel } from "@/components/schedule/schedule-generator-panel";
 import {
   ScheduleZoomControls,
   SCHEDULE_DEFAULT_HOUR_HEIGHT,
@@ -64,7 +62,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
@@ -85,11 +82,6 @@ import {
   useDeleteSchedule,
   type SavedSchedule,
 } from "@/lib/hooks/use-saved-schedules";
-import {
-  type SchedulePreferences,
-  type GeneratedSchedule,
-  generateSchedules,
-} from "@/lib/schedule-generator";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -302,16 +294,6 @@ export function SchedulePage() {
   const termsQuery = useAcademicTerms(selectedCampusId, selectedPlanId);
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const isAuthenticated = !!authUser;
-
-  // Generator states
-  const [scheduleMode, setScheduleMode] = useState<"manual" | "generator">("manual");
-  const [generatorSelectedCourseIds, setGeneratorSelectedCourseIds] = useState<Set<number>>(
-    new Set(),
-  );
-  const [generatorPreferences, setGeneratorPreferences] = useState<SchedulePreferences>({});
-  const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
-  const [currentGeneratedIndex, setCurrentGeneratedIndex] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
   const effectiveShowAllCourses = isAuthenticated ? showAllCourses : true;
   const coursesQuery = useScheduleCourses({
     termId: selectedTermId,
@@ -911,43 +893,6 @@ export function SchedulePage() {
 
     const events: CalendarEvent[] = [];
 
-    if (scheduleMode === "generator") {
-      const generated = generatedSchedules[currentGeneratedIndex];
-      if (!generated) return [];
-
-      generated.groups.forEach(({ course, group }) => {
-        if (!group.meetings) return;
-        const color = courseColors.get(course.course_code) || "blue";
-        const campusName = course.campus_id
-          ? (campusById.get(course.campus_id)?.name ?? null)
-          : null;
-
-        group.meetings.forEach((session: any) => {
-          try {
-            events.push(
-              sessionToEvent({
-                session,
-                courseId: course.course_code,
-                courseCode: course.course_code,
-                courseName: course.course_name,
-                groupCode: group.group_code,
-                groupId: group.group_code, // Use group_code as id since it's generated
-                groupType: group.group_type ?? null,
-                professors: group.professors ?? null,
-                classroom: session.classroom ?? null,
-                campusName,
-                color,
-                weekStart,
-              }),
-            );
-          } catch {
-            // ignore
-          }
-        });
-      });
-      return events;
-    }
-
     selectedGroups.forEach((selectedGroupId) => {
       const groupData = groupById.get(selectedGroupId);
       if (!groupData?.group.meetings) return;
@@ -987,17 +932,7 @@ export function SchedulePage() {
     });
 
     return events;
-  }, [
-    scheduleMode,
-    generatedSchedules,
-    currentGeneratedIndex,
-    selectedGroups,
-    courseColors,
-    weekStart,
-    campusById,
-    groupById,
-    orderedCourses,
-  ]);
+  }, [selectedGroups, courseColors, weekStart, campusById, groupById, orderedCourses]);
 
   const handleExport = useCallback(
     async (options: ScheduleExportOptions) => {
@@ -1175,20 +1110,6 @@ export function SchedulePage() {
     },
     [deleteScheduleMutation],
   );
-
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    // Give UI a tick to render loading state
-    setTimeout(() => {
-      const selectedCourses = orderedCourses.filter((c) =>
-        generatorSelectedCourseIds.has(c.course_id),
-      );
-      const results = generateSchedules(selectedCourses, generatorPreferences);
-      setGeneratedSchedules(results);
-      setCurrentGeneratedIndex(0);
-      setIsGenerating(false);
-    }, 10);
-  };
 
   const isLoadingFilters =
     isLoadingUniversities ||
@@ -1392,139 +1313,67 @@ export function SchedulePage() {
                   {isMobile ? (
                     <div className="flex flex-col">
                       <div className="flex flex-col border-b">
-                        <Tabs
-                          value={scheduleMode}
-                          onValueChange={(v) => setScheduleMode(v as "manual" | "generator")}
-                          className="flex flex-col"
-                        >
-                          <div className="bg-muted/30 border-border flex shrink-0 flex-col border-b">
-                            <TabsList className="flex h-[33px] w-full justify-start rounded-none bg-transparent p-0">
-                              <TabsTrigger
-                                value="manual"
-                                className="data-[state=active]:bg-muted/50 h-full flex-1 rounded-none px-4 text-xs font-medium"
+                        <div className="bg-muted/30 border-border flex h-10 shrink-0 items-center border-b px-3">
+                          <div className="flex w-full items-center justify-between gap-2">
+                            <h2 className="text-base leading-none font-semibold">
+                              {orderedCourses.length} curso
+                              {orderedCourses.length !== 1 ? "s" : ""} disponible
+                              {orderedCourses.length !== 1 ? "s" : ""}
+                            </h2>
+                            <div className="flex items-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-10 w-10 rounded-none"
+                                onClick={() =>
+                                  handleViewModeChange(viewMode === "card" ? "table" : "card")
+                                }
+                                aria-label="Cambiar vista"
                               >
-                                Selección manual
-                              </TabsTrigger>
-                              <TabsTrigger
-                                value="generator"
-                                className="data-[state=active]:bg-muted/50 h-full flex-1 rounded-none px-4 text-xs font-medium"
-                              >
-                                Generador automático
-                              </TabsTrigger>
-                            </TabsList>
-
-                            {/* Actions bar */}
-                            <div className="flex h-[33px] items-center justify-between px-3">
-                              <h2 className="text-sm leading-none font-semibold">
-                                {orderedCourses.length} curso
-                                {orderedCourses.length !== 1 ? "s" : ""} disponible
-                                {orderedCourses.length !== 1 ? "s" : ""}
-                              </h2>
-                              <div className="flex items-center">
-                                {scheduleMode === "manual" && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-10 w-10 rounded-none"
-                                    onClick={() =>
-                                      handleViewModeChange(viewMode === "card" ? "table" : "card")
-                                    }
-                                    aria-label="Cambiar vista"
-                                  >
-                                    {viewMode === "card" ? (
-                                      <List className="size-4" />
-                                    ) : (
-                                      <LayoutGrid className="size-4" />
-                                    )}
-                                  </Button>
+                                {viewMode === "card" ? (
+                                  <List className="size-4" />
+                                ) : (
+                                  <LayoutGrid className="size-4" />
                                 )}
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  className="-mr-3 h-10 w-10 rounded-none"
-                                  aria-label={isCourseListOpen ? "Contraer panel" : "Mostrar panel"}
-                                  onClick={() => setIsCourseListOpen((open) => !open)}
-                                >
-                                  <ChevronDown
-                                    className={cn(
-                                      "size-4 transition-transform",
-                                      isCourseListOpen ? "rotate-0" : "-rotate-90",
-                                    )}
-                                  />
-                                </Button>
-                              </div>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="-mr-3 h-10 w-10 rounded-none"
+                                aria-label={
+                                  isCourseListOpen
+                                    ? "Contraer cursos disponibles"
+                                    : "Mostrar cursos disponibles"
+                                }
+                                onClick={() => setIsCourseListOpen((open) => !open)}
+                              >
+                                <ChevronDown
+                                  className={cn(
+                                    "size-4 transition-transform",
+                                    isCourseListOpen ? "rotate-0" : "-rotate-90",
+                                  )}
+                                />
+                              </Button>
                             </div>
                           </div>
-
-                          <div
-                            className={cn(
-                              "h-[50vh] overflow-hidden",
-                              !isCourseListOpen && "hidden",
-                            )}
-                          >
-                            <TabsContent
-                              value="manual"
-                              className="m-0 h-full data-[state=inactive]:hidden"
-                            >
-                              <CourseList
-                                courseColors={courseColors}
-                                key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
-                                courses={orderedCourses}
-                                selectedGroups={selectedGroups}
-                                onSelectionChange={updateSelectedGroups}
-                                campusById={campusById}
-                                showCampus={showOtherCampuses}
-                                viewMode={viewMode}
-                              />
-                            </TabsContent>
-                            <TabsContent
-                              value="generator"
-                              className="m-0 h-full data-[state=inactive]:hidden"
-                            >
-                              <ScheduleGeneratorPanel
-                                courses={orderedCourses}
-                                selectedCourseIds={generatorSelectedCourseIds}
-                                onSelectedCourseIdsChange={setGeneratorSelectedCourseIds}
-                                preferences={generatorPreferences}
-                                onPreferencesChange={setGeneratorPreferences}
-                                onGenerate={handleGenerate}
-                                isGenerating={isGenerating}
-                              />
-                            </TabsContent>
-                          </div>
-                        </Tabs>
+                        </div>
+                        <div
+                          className={cn("h-[50vh] overflow-hidden", !isCourseListOpen && "hidden")}
+                        >
+                          <CourseList
+                            courseColors={courseColors}
+                            key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
+                            courses={orderedCourses}
+                            selectedGroups={selectedGroups}
+                            onSelectionChange={updateSelectedGroups}
+                            campusById={campusById}
+                            showCampus={showOtherCampuses}
+                            viewMode={viewMode}
+                          />
+                        </div>
                       </div>
 
                       <div className="relative min-h-[65vh]">
-                        {scheduleMode === "generator" && generatedSchedules.length > 0 && (
-                          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 absolute top-4 left-4 z-50 flex items-center gap-1 rounded-md border p-1 shadow-sm backdrop-blur">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => setCurrentGeneratedIndex((i) => Math.max(0, i - 1))}
-                              disabled={currentGeneratedIndex === 0}
-                            >
-                              <ChevronLeft className="size-4" />
-                            </Button>
-                            <span className="px-2 text-sm font-medium">
-                              {currentGeneratedIndex + 1} de {generatedSchedules.length}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() =>
-                                setCurrentGeneratedIndex((i) =>
-                                  Math.min(generatedSchedules.length - 1, i + 1),
-                                )
-                              }
-                              disabled={currentGeneratedIndex === generatedSchedules.length - 1}
-                            >
-                              <ChevronRight className="size-4" />
-                            </Button>
-                          </div>
-                        )}
                         <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                           <ScheduleZoomControls
                             hourHeight={hourHeight}
@@ -1663,84 +1512,41 @@ export function SchedulePage() {
                         className="min-w-0 overflow-hidden"
                       >
                         <div className="flex flex-col lg:h-full">
-                          <Tabs
-                            value={scheduleMode}
-                            onValueChange={(v) => setScheduleMode(v as "manual" | "generator")}
-                            className="flex h-full flex-col"
-                          >
-                            <div className="bg-muted/30 border-border flex shrink-0 flex-col border-b">
-                              <TabsList className="flex h-[33px] w-full justify-start rounded-none bg-transparent p-0">
-                                <TabsTrigger
-                                  value="manual"
-                                  className="data-[state=active]:bg-muted/50 h-full flex-1 rounded-none px-4 text-xs font-medium"
-                                >
-                                  Selección manual
-                                </TabsTrigger>
-                                <TabsTrigger
-                                  value="generator"
-                                  className="data-[state=active]:bg-muted/50 h-full flex-1 rounded-none px-4 text-xs font-medium"
-                                >
-                                  Generador automático
-                                </TabsTrigger>
-                              </TabsList>
-
-                              <div className="flex h-[33px] items-center justify-between px-4">
-                                <h2 className="text-sm leading-none font-semibold">
-                                  {orderedCourses.length} curso
-                                  {orderedCourses.length !== 1 ? "s" : ""} disponible
-                                  {orderedCourses.length !== 1 ? "s" : ""}
-                                </h2>
-                                {scheduleMode === "manual" && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="-mr-4 h-[33px] w-[33px] rounded-none"
-                                    onClick={() =>
-                                      handleViewModeChange(viewMode === "card" ? "table" : "card")
-                                    }
-                                    aria-label="Cambiar vista"
-                                  >
-                                    {viewMode === "card" ? (
-                                      <List className="size-4" />
-                                    ) : (
-                                      <LayoutGrid className="size-4" />
-                                    )}
-                                  </Button>
+                          <div className="bg-muted/30 border-border flex h-[33px] shrink-0 items-center border-b px-4">
+                            <div className="flex w-full items-center justify-between gap-2">
+                              <h2 className="text-base leading-none font-semibold">
+                                {orderedCourses.length} curso
+                                {orderedCourses.length !== 1 ? "s" : ""} disponible
+                                {orderedCourses.length !== 1 ? "s" : ""}
+                              </h2>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="-mr-4 h-[33px] w-[33px] rounded-none"
+                                onClick={() =>
+                                  handleViewModeChange(viewMode === "card" ? "table" : "card")
+                                }
+                                aria-label="Cambiar vista"
+                              >
+                                {viewMode === "card" ? (
+                                  <List className="size-4" />
+                                ) : (
+                                  <LayoutGrid className="size-4" />
                                 )}
-                              </div>
+                              </Button>
                             </div>
-
-                            <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
-                              <TabsContent
-                                value="manual"
-                                className="m-0 h-full data-[state=inactive]:hidden"
-                              >
-                                <CourseList
-                                  courseColors={courseColors}
-                                  courses={orderedCourses}
-                                  selectedGroups={selectedGroups}
-                                  onSelectionChange={updateSelectedGroups}
-                                  campusById={campusById}
-                                  showCampus={showOtherCampuses}
-                                  viewMode={viewMode}
-                                />
-                              </TabsContent>
-                              <TabsContent
-                                value="generator"
-                                className="m-0 h-full data-[state=inactive]:hidden"
-                              >
-                                <ScheduleGeneratorPanel
-                                  courses={orderedCourses}
-                                  selectedCourseIds={generatorSelectedCourseIds}
-                                  onSelectedCourseIdsChange={setGeneratorSelectedCourseIds}
-                                  preferences={generatorPreferences}
-                                  onPreferencesChange={setGeneratorPreferences}
-                                  onGenerate={handleGenerate}
-                                  isGenerating={isGenerating}
-                                />
-                              </TabsContent>
-                            </div>
-                          </Tabs>
+                          </div>
+                          <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
+                            <CourseList
+                              courseColors={courseColors}
+                              courses={orderedCourses}
+                              selectedGroups={selectedGroups}
+                              onSelectionChange={updateSelectedGroups}
+                              campusById={campusById}
+                              showCampus={showOtherCampuses}
+                              viewMode={viewMode}
+                            />
+                          </div>
                         </div>
                       </ResizablePanel>
 
@@ -1748,35 +1554,6 @@ export function SchedulePage() {
 
                       <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
                         <div className="relative lg:h-full">
-                          {scheduleMode === "generator" && generatedSchedules.length > 0 && (
-                            <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 absolute top-4 left-4 z-50 flex items-center gap-1 rounded-md border p-1 shadow-sm backdrop-blur">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setCurrentGeneratedIndex((i) => Math.max(0, i - 1))}
-                                disabled={currentGeneratedIndex === 0}
-                              >
-                                <ChevronLeft className="size-4" />
-                              </Button>
-                              <span className="px-2 text-sm font-medium">
-                                Opción {currentGeneratedIndex + 1} de {generatedSchedules.length}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() =>
-                                  setCurrentGeneratedIndex((i) =>
-                                    Math.min(generatedSchedules.length - 1, i + 1),
-                                  )
-                                }
-                                disabled={currentGeneratedIndex === generatedSchedules.length - 1}
-                              >
-                                <ChevronRight className="size-4" />
-                              </Button>
-                            </div>
-                          )}
                           <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                             <ScheduleZoomControls
                               hourHeight={hourHeight}
