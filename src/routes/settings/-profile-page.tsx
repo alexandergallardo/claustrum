@@ -238,6 +238,7 @@ function ProfilePage() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] });
+      await queryClient.invalidateQueries({ queryKey: ["userStudyPlan", authUser.id] });
       toast.success("Perfil actualizado correctamente");
     } catch (err) {
       setFormError(getErrorMessage(err));

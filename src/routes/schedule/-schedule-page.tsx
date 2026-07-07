@@ -210,8 +210,7 @@ export function SchedulePage() {
   const selectedCareerId = search.career ?? null;
   const selectedPlanId = search.plan ?? null;
   const selectedTermId = search.term ?? null;
-  const hasMeaningfulSearch = isMeaningfulScheduleSearch(search);
-  const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(() => !hasMeaningfulSearch);
+
   const shouldAutoSelectPlanRef = useRef(false);
   const [storedShowAll, setStoredShowAll] = useState(() => {
     if (typeof window === "undefined") return true;
@@ -380,17 +379,21 @@ export function SchedulePage() {
     (c) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId,
   );
 
+  const lastAppliedPlanRef = useRef<typeof userStudyPlan | null>(null);
+
   useEffect(() => {
-    if (!isAuthenticated) return;
-    if (!userStudyPlan || !isUsingProfileDefaults) return;
-    if (
-      selectedUniversityId === userStudyPlanUniversityId &&
-      search.campus === userStudyPlan.campusId &&
-      search.career === userStudyPlan.academicUnitId &&
-      search.plan === userStudyPlan.studyPlanId
-    ) {
+    if (!isAuthenticated || !userStudyPlan) {
+      if (!isAuthenticated) lastAppliedPlanRef.current = null;
       return;
     }
+
+    if (lastAppliedPlanRef.current === userStudyPlan) return;
+
+    if (isMeaningfulScheduleSearch(search)) {
+      lastAppliedPlanRef.current = userStudyPlan;
+      return;
+    }
+
     if (
       userStudyPlan.universityId ||
       userStudyPlan.campusId ||
@@ -408,41 +411,17 @@ export function SchedulePage() {
         p: userStudyPlan.studyPlanId ?? undefined,
         plan: userStudyPlan.studyPlanId ?? undefined,
       };
+
+      lastAppliedPlanRef.current = userStudyPlan;
       void navigate({
         to: "/schedule",
         search: profileSearch as never,
+        replace: true,
       });
+    } else {
+      lastAppliedPlanRef.current = userStudyPlan;
     }
-  }, [
-    isAuthenticated,
-    isUsingProfileDefaults,
-    navigate,
-    selectedUniversityId,
-    search,
-    userStudyPlan,
-    userStudyPlanUniversityId,
-  ]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (!userStudyPlan) return;
-    const hasSearch = hasMeaningfulSearch;
-    if (!hasSearch) {
-      setIsUsingProfileDefaults(true);
-      return;
-    }
-    const matchesProfile =
-      selectedUniversityId === userStudyPlanUniversityId &&
-      search.campus === userStudyPlan.campusId &&
-      search.career === userStudyPlan.academicUnitId &&
-      search.plan === userStudyPlan.studyPlanId;
-    setIsUsingProfileDefaults(matchesProfile);
-  }, [isAuthenticated, search, userStudyPlan]);
-
-  useEffect(() => {
-    if (isAuthenticated) return;
-    setIsUsingProfileDefaults(false);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userStudyPlan, navigate, search]);
 
   useEffect(() => {
     if (!shouldAutoSelectPlanRef.current) return;
@@ -721,7 +700,7 @@ export function SchedulePage() {
   const handleUniversityChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
-      setIsUsingProfileDefaults(false);
+      shouldAutoSelectPlanRef.current = false;
       void navigate({
         to: "/schedule",
         search: {
@@ -737,7 +716,7 @@ export function SchedulePage() {
   const handleCampusChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
-      setIsUsingProfileDefaults(false);
+
       const newSearch: Record<string, unknown> = {
         ...search,
         c: id ?? undefined,
@@ -754,7 +733,7 @@ export function SchedulePage() {
   const handleCareerChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = id !== null;
-      setIsUsingProfileDefaults(false);
+
       const newSearch: Record<string, unknown> = {
         ...search,
         r: id ?? undefined,
@@ -775,7 +754,7 @@ export function SchedulePage() {
   const handlePlanChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
-      setIsUsingProfileDefaults(false);
+
       const newSearch: Record<string, unknown> = {
         ...search,
         p: id ?? undefined,
@@ -791,7 +770,6 @@ export function SchedulePage() {
 
   const handleTermChange = useCallback(
     (id: number | null) => {
-      setIsUsingProfileDefaults(false);
       const newSearch: Record<string, unknown> = {
         ...search,
         t: id ?? undefined,
@@ -834,7 +812,7 @@ export function SchedulePage() {
 
   const handleUseProfileDefaults = useCallback(() => {
     if (!userStudyPlan) return;
-    setIsUsingProfileDefaults(true);
+    // isProfileActive will become true automatically based on URL
 
     const newSearch: Record<string, unknown> = {
       ...search,
@@ -1141,7 +1119,14 @@ export function SchedulePage() {
     termsQuery.isLoading;
   const isInitialLoading = isLoadingFilters && !universities?.length;
   const hasRequiredScheduleFilters = !!selectedCampusId && !!selectedTermId;
-  const isProfileLoading = isUsingProfileDefaults && (isAuthLoading || isUserStudyPlanLoading);
+  const isProfileActive =
+    !!userStudyPlan &&
+    selectedUniversityId === userStudyPlanUniversityId &&
+    search.campus === (userStudyPlan.campusId ?? undefined) &&
+    search.career === (userStudyPlan.academicUnitId ?? undefined) &&
+    search.plan === (userStudyPlan.studyPlanId ?? undefined);
+
+  const isProfileLoading = isProfileActive && (isAuthLoading || isUserStudyPlanLoading);
   const isAutoSelectingPlan =
     shouldAutoSelectPlanRef.current &&
     !!selectedCareerId &&
@@ -1272,14 +1257,14 @@ export function SchedulePage() {
                 {isAuthenticated && userStudyPlan && (
                   <Button
                     type="button"
-                    variant={isUsingProfileDefaults ? "secondary" : "outline"}
+                    variant={isProfileActive ? "secondary" : "outline"}
                     size="sm"
                     onClick={handleUseProfileDefaults}
-                    disabled={isUsingProfileDefaults}
+                    disabled={isProfileActive}
                     className="h-8 shrink-0 gap-1.5 text-xs"
                   >
                     <User className="size-3.5" />
-                    {isUsingProfileDefaults ? "Perfil activo" : "Usar mi perfil"}
+                    {isProfileActive ? "Perfil activo" : "Usar mi perfil"}
                   </Button>
                 )}
               </div>
