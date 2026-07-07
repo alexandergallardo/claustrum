@@ -1759,6 +1759,27 @@ def print_upsert_estimate(estimates: dict[str, dict[str, int]]) -> None:
     )
 
 
+def export_catalog_from_db(db_url: str, data_dir: Path) -> None:
+    """Export catalog tables from DB to data/raw/ as JSON for offering processors."""
+    typer.echo("Exporting catalog prerequisites from seed-history DB to JSON...")
+    catalog_tables = tables_for_scope("catalog")
+    if "professor" not in catalog_tables:
+        catalog_tables.append("professor")
+
+    for table in catalog_tables:
+        sql = f"SELECT row_to_json(t) FROM public.{table} t;"
+        try:
+            output = subprocess.check_output(
+                ["psql", db_url, "-At", "-c", sql],
+                text=True,
+            )
+            rows = [json.loads(line) for line in output.splitlines() if line.strip()]
+            out_path = data_dir / table / "data.json"
+            write_json(out_path, rows)
+        except Exception as exc:
+            typer.echo(f"Warning: Failed to export {table} from DB: {exc}")
+
+
 def run_sync(
     data_dir: Path,
     target: str,
@@ -1789,14 +1810,6 @@ def run_sync(
             output if output.is_absolute() else (tec_data_root / output).resolve()
         )
 
-    if not skip_pipeline:
-        pipeline_mode = "process-only" if skip_download else "download+process"
-        typer.echo(
-            f"Running full tec-data pipeline ({pipeline_mode}) for years={year_list}..."
-        )
-        run_sync_pipeline(data_dir, year_list, scope=scope, skip_download=skip_download)
-
-    backup_dir = backup_data_files(data_dir, scoped_tables)
     root_dir = Path(__file__).resolve().parents[3]
 
     try:
@@ -1824,6 +1837,19 @@ def run_sync(
                 db_url=resolved_db_url,
                 migrations_dir=migrations_dir,
             )
+
+            if scope == "offering":
+                export_catalog_from_db(resolved_db_url, data_dir)
+
+        if not skip_pipeline:
+            pipeline_mode = "process-only" if skip_download else "download+process"
+            typer.echo(
+                f"Running full tec-data pipeline ({pipeline_mode}) for years={year_list}..."
+            )
+            run_sync_pipeline(data_dir, year_list, scope=scope, skip_download=skip_download)
+
+        backup_dir = backup_data_files(data_dir, scoped_tables)
+        # Seed history setup moved above
 
         typer.echo("Remapping IDs against destination DB...")
         remap_all_ids_to_db(resolved_db_url, data_dir, tables_to_write=scoped_tables)
