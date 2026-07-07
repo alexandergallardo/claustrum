@@ -46,7 +46,11 @@ def tables_for_scope(scope: str) -> list[str]:
     if normalized == "all":
         return list(SYNC_TABLES)
     if normalized == "catalog":
-        return [table for table in SYNC_TABLES if table not in OFFERING_TABLES]
+        return [
+            table
+            for table in SYNC_TABLES
+            if table not in {"professor", *OFFERING_TABLES}
+        ]
     # Include "course" so that names updated by the offering processor
     # (when a course has name == code) are propagated to the DB.
     # Soft-deletes for course are blocked by the scope != "offering" guard
