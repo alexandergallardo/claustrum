@@ -51,7 +51,7 @@
   "table_stats": {
     "course": {
       "inserted": 0,
-      "updated": 6,
+      "updated": 1,
       "soft_deleted": 0
     },
     "professor": {
