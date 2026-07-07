@@ -51,7 +51,7 @@ BEGIN
   SELECT
     pr.id AS review_id,
     pr.professor_id,
-    p.name AS professor_name,
+    p.full_name AS professor_name,
     COALESCE(rc.courses, '[]'::jsonb) AS courses,
     pr.comment,
     pr.ease_score,
