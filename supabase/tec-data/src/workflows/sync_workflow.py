@@ -934,7 +934,10 @@ def restore_data_files(data_dir: Path, backup_dir: Path) -> None:
 def remap_all_ids_to_db(
     db_url: str, data_dir: Path, tables_to_write: list[str] | None = None
 ) -> None:
-    tables = {table: load_json(data_dir / table / "data.json") for table in SYNC_TABLES}
+    tables = {}
+    for table in SYNC_TABLES:
+        table_file = data_dir / table / "data.json"
+        tables[table] = load_json(table_file) if table_file.exists() else []
 
     countries = tables["country"]
     universities = tables["university"]
