@@ -245,7 +245,7 @@ def generate_seed(
             "order": 11,
             "conflict_columns": ["code"],
             "update_assignments": [
-                "name = EXCLUDED.name",
+                "name = COALESCE(NULLIF(EXCLUDED.name, EXCLUDED.code), NULLIF(course.name, ''), EXCLUDED.name)",
                 "default_credits = EXCLUDED.default_credits",
                 "default_weekly_hours = EXCLUDED.default_weekly_hours",
                 "is_active = TRUE",
