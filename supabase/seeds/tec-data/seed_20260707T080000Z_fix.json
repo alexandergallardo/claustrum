@@ -1,0 +1,27 @@
+{
+  "seed_file": "seed_20260707T080000Z_fix.sql",
+  "generated_at_utc": "2026-07-07T08:00:00.000000+00:00",
+  "scope": "catalog",
+  "years": [
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "table_stats": {
+    "academic_term": {
+      "inserted": 0,
+      "updated": 234,
+      "soft_deleted": 0
+    },
+    "course": {
+      "inserted": 0,
+      "updated": 415,
+      "soft_deleted": 0
+    }
+  },
+  "noop": false
+}
