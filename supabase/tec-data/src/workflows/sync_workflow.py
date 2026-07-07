@@ -310,8 +310,13 @@ def load_existing_rows_by_id(
     table: str,
     columns: list[str],
     column_types: dict[str, str],
+    where_clause: str | None = None,
 ) -> dict[int, dict[str, Any]]:
     query_columns = ", ".join(columns)
+    sql = f"SELECT {query_columns} FROM public.{table}"
+    if where_clause:
+        sql += f" {where_clause}"
+
     output = subprocess.check_output(
         [
             "psql",
@@ -322,7 +327,7 @@ def load_existing_rows_by_id(
             "-P",
             "null=\\N",
             "-c",
-            f"SELECT {query_columns} FROM public.{table}",
+            sql,
         ],
         text=True,
     )
@@ -338,50 +343,6 @@ def load_existing_rows_by_id(
             row[col] = normalize_for_compare(value, column_types.get(col, "TEXT"))
         rows[int(row["id"])] = row
     return rows
-
-
-def load_offering_existing_ids_for_terms(
-    db_url: str,
-    table: str,
-    term_ids: set[int],
-) -> set[int]:
-    if not term_ids:
-        return set()
-    term_ids_sql = ", ".join(str(value) for value in sorted(term_ids))
-
-    if table == "course_offering":
-        sql = (
-            "SELECT id FROM public.course_offering "
-            f"WHERE academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
-            "AND is_active = TRUE"
-        )
-    elif table == "course_offering_group":
-        sql = (
-            "SELECT g.id FROM public.course_offering_group g "
-            "JOIN public.course_offering co ON co.id = g.course_offering_id "
-            f"WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
-            "AND g.is_active = TRUE"
-        )
-    elif table == "course_offering_group_professor":
-        sql = (
-            "SELECT gp.id FROM public.course_offering_group_professor gp "
-            "JOIN public.course_offering_group g ON g.id = gp.course_offering_group_id "
-            "JOIN public.course_offering co ON co.id = g.course_offering_id "
-            f"WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
-            "AND gp.is_active = TRUE"
-        )
-    elif table == "course_offering_meeting":
-        sql = (
-            "SELECT m.id FROM public.course_offering_meeting m "
-            "JOIN public.course_offering_group g ON g.id = m.course_offering_group_id "
-            "JOIN public.course_offering co ON co.id = g.course_offering_id "
-            f"WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) "
-            "AND m.is_active = TRUE"
-        )
-    else:
-        return set()
-
-    return {int(value) for value in query_rows(db_url, sql)}
 
 
 def pg_type_to_generic(data_type: str, udt_name: str) -> str:
@@ -672,18 +633,24 @@ def generate_minimal_delta_seed(
             for row in payload_rows
             if row.get("id") is not None
         }
-        existing_rows = load_existing_rows_by_id(db_url, table, columns, column_types)
         if scope == "offering" and table in OFFERING_TABLES:
-            scoped_existing_ids = load_offering_existing_ids_for_terms(
-                db_url=db_url,
-                table=table,
-                term_ids=term_ids,
-            )
-            existing_rows = {
-                row_id: row
-                for row_id, row in existing_rows.items()
-                if row_id in scoped_existing_ids
-            }
+            if not term_ids:
+                existing_rows = {}
+            else:
+                term_ids_sql = ", ".join(str(value) for value in sorted(term_ids))
+                where_clause = ""
+                if table == "course_offering":
+                    where_clause = f"WHERE academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[]) AND is_active = TRUE"
+                elif table == "course_offering_group":
+                    where_clause = f"WHERE course_offering_id IN (SELECT id FROM public.course_offering WHERE academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[])) AND is_active = TRUE"
+                elif table == "course_offering_group_professor":
+                    where_clause = f"WHERE course_offering_group_id IN (SELECT g.id FROM public.course_offering_group g JOIN public.course_offering co ON co.id = g.course_offering_id WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[])) AND is_active = TRUE"
+                elif table == "course_offering_meeting":
+                    where_clause = f"WHERE course_offering_group_id IN (SELECT g.id FROM public.course_offering_group g JOIN public.course_offering co ON co.id = g.course_offering_id WHERE co.academic_term_id = ANY(ARRAY[{term_ids_sql}]::BIGINT[])) AND is_active = TRUE"
+                
+                existing_rows = load_existing_rows_by_id(db_url, table, columns, column_types, where_clause)
+        else:
+            existing_rows = load_existing_rows_by_id(db_url, table, columns, column_types)
 
         insert_rows: list[dict[str, Any]] = []
         update_rows: list[str] = []
@@ -933,7 +900,10 @@ def restore_data_files(data_dir: Path, backup_dir: Path) -> None:
 
 
 def remap_all_ids_to_db(
-    db_url: str, data_dir: Path, tables_to_write: list[str] | None = None
+    db_url: str, 
+    data_dir: Path, 
+    tables_to_write: list[str] | None = None,
+    term_external_keys: list[str] | None = None,
 ) -> None:
     tables = {}
     for table in SYNC_TABLES:
@@ -1056,25 +1026,32 @@ def remap_all_ids_to_db(
             (unit_code, int(external_plan_id), int(level_number))
         ] = int(pid)
 
+    where_clause = ""
+    if term_external_keys:
+        terms_sql = ", ".join(f"'{quote_literal(k)}'" for k in set(term_external_keys))
+        where_clause = f"WHERE at.external_key = ANY(ARRAY[{terms_sql}]::TEXT[])"
+
     offering_by_key: dict[tuple[str, str, str, str], int] = {}
     for line in query_rows(
         db_url,
-        """
+        f"""
         SELECT co.id, c.code, cp.code, au.code, at.external_key
         FROM public.course_offering co
         JOIN public.course c ON c.id = co.course_id
         JOIN public.campus cp ON cp.id = co.campus_id
         JOIN public.academic_unit au ON au.id = co.academic_unit_id
         JOIN public.academic_term at ON at.id = co.academic_term_id
+        {where_clause}
         """,
     ):
         pid, course_code, campus_code, unit_code, external_key = line.split("\t")
         offering_by_key[(course_code, campus_code, unit_code, external_key)] = int(pid)
 
+
     group_by_key: dict[tuple[str, str, str, str, str], int] = {}
     for line in query_rows(
         db_url,
-        """
+        f"""
         SELECT g.id, c.code, cp.code, au.code, at.external_key, g.group_code
         FROM public.course_offering_group g
         JOIN public.course_offering co ON co.id = g.course_offering_id
@@ -1082,6 +1059,7 @@ def remap_all_ids_to_db(
         JOIN public.campus cp ON cp.id = co.campus_id
         JOIN public.academic_unit au ON au.id = co.academic_unit_id
         JOIN public.academic_term at ON at.id = co.academic_term_id
+        {where_clause}
         """,
     ):
         pid, course_code, campus_code, unit_code, external_key, group_code = line.split(
@@ -1178,7 +1156,7 @@ def remap_all_ids_to_db(
     group_professor_by_key: dict[tuple[str, str, str, str, str, str], int] = {}
     for line in query_rows(
         db_url,
-        """
+        f"""
         SELECT gp.id, c.code, cp.code, au.code, at.external_key, g.group_code, p.full_name
         FROM public.course_offering_group_professor gp
         JOIN public.course_offering_group g ON g.id = gp.course_offering_group_id
@@ -1188,6 +1166,7 @@ def remap_all_ids_to_db(
         JOIN public.campus cp ON cp.id = co.campus_id
         JOIN public.academic_unit au ON au.id = co.academic_unit_id
         JOIN public.academic_term at ON at.id = co.academic_term_id
+        {where_clause}
         """,
     ):
         (
@@ -1216,7 +1195,7 @@ def remap_all_ids_to_db(
     meeting_by_key: dict[tuple[str, str, str, str, str, int, str, str], int] = {}
     for line in query_rows(
         db_url,
-        """
+        f"""
         SELECT m.id, c.code, cp.code, au.code, at.external_key, g.group_code, m.weekday, m.starts_at::text, m.ends_at::text
         FROM public.course_offering_meeting m
         JOIN public.course_offering_group g ON g.id = m.course_offering_group_id
@@ -1225,6 +1204,7 @@ def remap_all_ids_to_db(
         JOIN public.campus cp ON cp.id = co.campus_id
         JOIN public.academic_unit au ON au.id = co.academic_unit_id
         JOIN public.academic_term at ON at.id = co.academic_term_id
+        {where_clause}
         """,
     ):
         (
@@ -1855,10 +1835,14 @@ def run_sync(
         backup_dir = backup_data_files(data_dir, scoped_tables)
         # Seed history setup moved above
 
-        typer.echo("Remapping IDs against destination DB...")
-        remap_all_ids_to_db(resolved_db_url, data_dir, tables_to_write=scoped_tables)
-
         term_external_keys = collect_term_external_keys(data_dir, year_list)
+        typer.echo("Remapping IDs against destination DB...")
+        remap_all_ids_to_db(
+            resolved_db_url, 
+            data_dir, 
+            tables_to_write=scoped_tables,
+            term_external_keys=term_external_keys
+        )
         environment_id = infer_environment_id(resolved_db_url)
         sync_fingerprint = compute_sync_fingerprint(data_dir, scoped_tables)
         fingerprint_already_applied = ledger_fingerprint_applied(
