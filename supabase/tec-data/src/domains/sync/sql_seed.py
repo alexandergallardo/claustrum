@@ -143,7 +143,7 @@ def generate_seed(
                 "deactivated_at = NULL",
                 "updated_at = NOW()",
             ],
-            "supports_soft_delete": True,
+            "supports_soft_delete": False,
         },
         "academic_unit_campus": {
             "columns": ["id", "academic_unit_id", "campus_id"],
@@ -606,6 +606,18 @@ def generate_seed(
         output_lines.append(
             f"  AND co.academic_term_id = ANY(ARRAY[{term_ids_literal}]::BIGINT[]);"
         )
+
+    if years and "academic_term" in seeded_tables:
+        years_literal = ", ".join(str(y) for y in sorted(years))
+        output_lines.append("")
+        output_lines.append("-- Soft delete for stale academic_term rows in synced years")
+        output_lines.append("UPDATE public.academic_term")
+        output_lines.append(
+            "SET is_active = false, deactivated_at = NOW(), updated_at = NOW()"
+        )
+        output_lines.append("WHERE is_active = true")
+        output_lines.append("  AND updated_at < NOW()")
+        output_lines.append(f"  AND year = ANY(ARRAY[{years_literal}]::INTEGER[]);")
 
     soft_delete_tables = [
         table_name
