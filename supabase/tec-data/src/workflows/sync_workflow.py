@@ -463,26 +463,55 @@ def write_noop_seed(
     return output_path, stats
 
 
-def build_update_statement(
+def build_batch_update_statements(
     table: str,
-    row: dict[str, Any],
-    changed_columns: Iterable[str],
+    rows: list[dict[str, Any]],
+    changed_columns: tuple[str, ...],
     column_types: dict[str, str],
     available_columns: set[str],
-) -> str:
-    assignments = ", ".join(
-        f"{column} = {format_value(row.get(column), column_types.get(column, 'TEXT'))}"
-        for column in changed_columns
-    )
-    lifecycle: list[str] = []
-    if "is_active" in available_columns:
-        lifecycle.append("is_active = TRUE")
-    if "deactivated_at" in available_columns:
-        lifecycle.append("deactivated_at = NULL")
-    if "updated_at" in available_columns:
-        lifecycle.append("updated_at = NOW()")
-    all_assignments = ", ".join([assignments, *lifecycle]) if lifecycle else assignments
-    return f"UPDATE public.{table} SET {all_assignments} WHERE id = {int(row['id'])};"
+) -> list[str]:
+    if not rows or not changed_columns:
+        return []
+        
+    statements = []
+    batch_size = 1000
+    for i in range(0, len(rows), batch_size):
+        batch = rows[i:i + batch_size]
+        
+        values_lines = []
+        for row in batch:
+            row_values = [str(int(row["id"]))]
+            for col in changed_columns:
+                row_values.append(format_value(row.get(col), column_types.get(col, "TEXT")))
+            values_lines.append(f"  ({', '.join(row_values)})")
+            
+        values_str = ",\n".join(values_lines)
+        alias_list = ["id"] + list(changed_columns)
+        
+        assignments = []
+        for col in changed_columns:
+            assignments.append(f"{col} = nv.{col}::{column_types.get(col, 'TEXT')}")
+            
+        lifecycle = []
+        if "is_active" in available_columns:
+            lifecycle.append("is_active = TRUE")
+        if "deactivated_at" in available_columns:
+            lifecycle.append("deactivated_at = NULL")
+        if "updated_at" in available_columns:
+            lifecycle.append("updated_at = NOW()")
+            
+        all_assignments = ",\n  ".join(assignments + lifecycle)
+        
+        sql = f"""UPDATE public.{table} AS t
+SET
+  {all_assignments}
+FROM (VALUES
+{values_str}
+) AS nv ({', '.join(alias_list)})
+WHERE t.id = nv.id::BIGINT;"""
+        statements.append(sql)
+        
+    return statements
 
 
 def payload_row_normalized(
@@ -654,6 +683,7 @@ def generate_minimal_delta_seed(
 
         insert_rows: list[dict[str, Any]] = []
         update_rows: list[str] = []
+        update_groups: dict[tuple[str, ...], list[dict[str, Any]]] = {}
 
         for row_id, normalized_row in normalized_payload.items():
             current = existing_rows.get(row_id)
@@ -685,15 +715,19 @@ def generate_minimal_delta_seed(
             ):
                 continue
             if changed_columns:
-                update_rows.append(
-                    build_update_statement(
-                        table,
-                        normalized_row,
-                        changed_columns,
-                        column_types,
-                        db_column_set,
-                    )
+                key = tuple(changed_columns)
+                update_groups.setdefault(key, []).append(normalized_row)
+
+        for changed_cols, rows_for_cols in update_groups.items():
+            update_rows.extend(
+                build_batch_update_statements(
+                    table,
+                    rows_for_cols,
+                    changed_cols,
+                    column_types,
+                    db_column_set,
                 )
+            )
 
         stale_ids_set = set(existing_rows.keys()) - set(normalized_payload.keys())
         stale_ids = sorted(stale_ids_set)
