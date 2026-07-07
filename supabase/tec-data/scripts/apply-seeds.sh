@@ -53,16 +53,19 @@ if [[ ${#seed_files[@]} -eq 0 ]]; then
   exit 1
 fi
 
+echo "Fetching applied seed SHAs from database..."
+declare -A APPLIED_SHAS
+while read -r sha; do
+  if [[ -n "$sha" ]]; then
+    APPLIED_SHAS["$sha"]=1
+  fi
+done < <(psql "$DB_URL" -At -v ON_ERROR_STOP=1 -c "SELECT seed_sha256 FROM public.sync_seed_run WHERE status = 'applied';" 2>/dev/null || true)
+
 for seed_path in "${seed_files[@]}"; do
   seed_file="$(basename "$seed_path")"
   seed_sha="$(sha256sum "$seed_path" | awk '{print $1}')"
 
-  already_applied="$({
-    psql "$DB_URL" -At -v ON_ERROR_STOP=1 -c \
-      "SELECT 1 FROM public.sync_seed_run WHERE seed_sha256 = '$seed_sha' AND status = 'applied' LIMIT 1;"
-  } || true)"
-
-  if [[ "$already_applied" == "1" ]]; then
+  if [[ "${APPLIED_SHAS[$seed_sha]:-}" == "1" ]]; then
     echo "[skip] $seed_file already applied"
     continue
   fi
