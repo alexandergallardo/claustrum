@@ -173,7 +173,9 @@ export function ProfessorDetailPage() {
         professorId: professorIdText,
         ...parsed.data,
       });
-      toast.success("Reseña enviada. Quedará visible cuando sea aprobada por administración.");
+      toast.success("Reseña enviada", {
+        description: "Estará visible tras ser revisada por nuestro equipo",
+      });
       setIsComposerOpen(false);
       resetComposer();
       await reviewsQuery.refetch();

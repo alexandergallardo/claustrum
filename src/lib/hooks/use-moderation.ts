@@ -17,9 +17,9 @@ export function useModerationCounts(enabled = true) {
     queryKey: ["moderationCounts"],
     queryFn: async (): Promise<ModerationCounts> => {
       const [reviews, evaluations, reviewReports] = await Promise.all([
-        getProfessorReviewsForModeration("pending", 0, 0),
-        getEvaluationModerationQueue("pending", 0, 0),
-        getProfessorReviewReportsForModeration("pending", 0, 0),
+        getProfessorReviewsForModeration("pending", 1, 0),
+        getEvaluationModerationQueue("pending", 1, 0),
+        getProfessorReviewReportsForModeration("pending", 1, 0),
       ]);
       return {
         pendingReviews: reviews[0]?.total_count ?? 0,

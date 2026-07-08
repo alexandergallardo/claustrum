@@ -386,7 +386,7 @@ export function ProfessorReviewsList({
         turnstileToken,
       });
       toast.success("Reporte enviado", {
-        description: "Gracias. Nuestro equipo lo revisará pronto.",
+        description: "Nuestro equipo lo revisará a la mayor brevedad",
       });
       setReviewToReport(null);
       setTurnstileToken(null);
@@ -750,6 +750,7 @@ export function ProfessorReviewsList({
                 onClick={() => void submitReport()}
                 disabled={
                   !turnstileSiteKey ||
+                  !turnstileToken ||
                   reportMutation.isPending ||
                   (reportReason === "otro" && reportDescription.trim().length === 0)
                 }

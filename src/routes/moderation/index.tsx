@@ -1,11 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/moderation/")({
-  head: () =>
-    buildSeoMeta({
-      title: "Moderación | Claustrum",
-      robots: NOINDEX_ROBOTS,
-    }),
+  beforeLoad: () => {
+    throw redirect({ to: "/moderation/reviews" });
+  },
 });
