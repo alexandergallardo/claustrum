@@ -5,7 +5,7 @@ import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
 
 import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -474,20 +474,15 @@ const CourseCard = memo(function CourseCard({
     >
       <CardHeader className="gap-1 px-4">
         <CardTitle className="text-base leading-tight">
-          {course.course_code}: {course.course_name}
+          <div className="flex items-start justify-between gap-2">
+            <span>
+              {course.course_code}: {course.course_name}
+            </span>
+            <span className="bg-muted text-muted-foreground mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-xs leading-none font-normal">
+              {course.credits} créditos
+            </span>
+          </div>
         </CardTitle>
-        <CardDescription className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
-            {course.credits} créditos
-          </span>
-          {course.level_number !== null &&
-            course.level_number !== undefined &&
-            course.level_number < 999 && (
-              <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
-                {course.level_label ?? `Nivel ${course.level_number}`}
-              </span>
-            )}
-        </CardDescription>
       </CardHeader>
       <CardContent className="px-4">
         <ScrollArea className="w-full">
@@ -728,22 +723,13 @@ const CourseTableItem = memo(function CourseTableItem({
     >
       <CollapsibleTrigger asChild>
         <div className="hover:bg-muted/30 flex cursor-pointer items-center justify-between p-4 transition-colors">
-          <div className="flex flex-col gap-1">
+          <div className="flex min-w-0 flex-1 items-start justify-between gap-2 pr-4">
             <span className="text-base leading-tight font-semibold">
               {course.course_code}: {course.course_name}
             </span>
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
-                {course.credits} créditos
-              </span>
-              {course.level_number !== null &&
-                course.level_number !== undefined &&
-                course.level_number < 999 && (
-                  <span className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5">
-                    {course.level_label ?? `Nivel ${course.level_number}`}
-                  </span>
-                )}
-            </div>
+            <span className="bg-muted text-muted-foreground mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-xs leading-none font-normal">
+              {course.credits} créditos
+            </span>
           </div>
           <ChevronDown
             className={cn(

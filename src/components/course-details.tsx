@@ -533,7 +533,7 @@ function EvaluationDocument({
             {fileName}
           </button>
           <div className="text-muted-foreground shrink-0 text-right text-xs">
-            {evaluation.term_display_name ? <div>{evaluation.term_display_name}</div> : null}
+            {evaluation.term_display_name ? <div>{evaluation.term_display_name.replace(" - ", ": ")}</div> : null}
           </div>
         </div>
 
