@@ -14,6 +14,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as IndexRouteImport } from './routes/_index'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
+import { Route as ModerationRouteRouteImport } from './routes/moderation/route'
 import { Route as AuthRouteRouteImport } from './routes/auth/route'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ScheduleIndexRouteImport } from './routes/schedule/index'
@@ -25,6 +26,10 @@ import { Route as ModerationIndexRouteImport } from './routes/moderation/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
+import { Route as ModerationReviewsRouteImport } from './routes/moderation/reviews'
+import { Route as ModerationReportsRouteImport } from './routes/moderation/reports'
+import { Route as ModerationFeedbackRouteImport } from './routes/moderation/feedback'
+import { Route as ModerationEvaluationsRouteImport } from './routes/moderation/evaluations'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
@@ -57,6 +62,11 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsRouteRoute = SettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModerationRouteRoute = ModerationRouteRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -107,12 +117,10 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   import('./routes/onboarding/index.lazy').then((d) => d.Route),
 )
 const ModerationIndexRoute = ModerationIndexRouteImport.update({
-  id: '/moderation/',
-  path: '/moderation/',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import('./routes/moderation/index.lazy').then((d) => d.Route),
-)
+  id: '/',
+  path: '/',
+  getParentRoute: () => ModerationRouteRoute,
+} as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
@@ -152,6 +160,34 @@ const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() =>
   import('./routes/professors/$professorId.lazy').then((d) => d.Route),
+)
+const ModerationReviewsRoute = ModerationReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => ModerationRouteRoute,
+} as any).lazy(() =>
+  import('./routes/moderation/reviews.lazy').then((d) => d.Route),
+)
+const ModerationReportsRoute = ModerationReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ModerationRouteRoute,
+} as any).lazy(() =>
+  import('./routes/moderation/reports.lazy').then((d) => d.Route),
+)
+const ModerationFeedbackRoute = ModerationFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => ModerationRouteRoute,
+} as any).lazy(() =>
+  import('./routes/moderation/feedback.lazy').then((d) => d.Route),
+)
+const ModerationEvaluationsRoute = ModerationEvaluationsRouteImport.update({
+  id: '/evaluations',
+  path: '/evaluations',
+  getParentRoute: () => ModerationRouteRoute,
+} as any).lazy(() =>
+  import('./routes/moderation/evaluations.lazy').then((d) => d.Route),
 )
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
@@ -222,11 +258,16 @@ const EvaluationsViewEvaluationSlugRoute =
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
+  '/moderation': typeof ModerationRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/docs/$': typeof DocsSplatRoute
+  '/moderation/evaluations': typeof ModerationEvaluationsRoute
+  '/moderation/feedback': typeof ModerationFeedbackRoute
+  '/moderation/reports': typeof ModerationReportsRoute
+  '/moderation/reviews': typeof ModerationReviewsRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
@@ -254,6 +295,10 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/docs/$': typeof DocsSplatRoute
+  '/moderation/evaluations': typeof ModerationEvaluationsRoute
+  '/moderation/feedback': typeof ModerationFeedbackRoute
+  '/moderation/reports': typeof ModerationReportsRoute
+  '/moderation/reviews': typeof ModerationReviewsRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
@@ -278,11 +323,16 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/auth': typeof AuthRouteRouteWithChildren
+  '/moderation': typeof ModerationRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/_index': typeof IndexRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/curriculum/$courseId': typeof CurriculumCourseIdRoute
   '/docs/$': typeof DocsSplatRoute
+  '/moderation/evaluations': typeof ModerationEvaluationsRoute
+  '/moderation/feedback': typeof ModerationFeedbackRoute
+  '/moderation/reports': typeof ModerationReportsRoute
+  '/moderation/reviews': typeof ModerationReviewsRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
@@ -308,11 +358,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/auth'
+    | '/moderation'
     | '/settings'
     | '/'
     | '/sitemap.xml'
     | '/curriculum/$courseId'
     | '/docs/$'
+    | '/moderation/evaluations'
+    | '/moderation/feedback'
+    | '/moderation/reports'
+    | '/moderation/reviews'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
@@ -340,6 +395,10 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/curriculum/$courseId'
     | '/docs/$'
+    | '/moderation/evaluations'
+    | '/moderation/feedback'
+    | '/moderation/reports'
+    | '/moderation/reviews'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
@@ -363,11 +422,16 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/auth'
+    | '/moderation'
     | '/settings'
     | '/_index'
     | '/sitemap.xml'
     | '/curriculum/$courseId'
     | '/docs/$'
+    | '/moderation/evaluations'
+    | '/moderation/feedback'
+    | '/moderation/reports'
+    | '/moderation/reviews'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
@@ -392,6 +456,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  ModerationRouteRoute: typeof ModerationRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
   IndexRoute: typeof IndexRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -400,7 +465,6 @@ export interface RootRouteChildren {
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
-  ModerationIndexRoute: typeof ModerationIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   OverviewIndexRoute: typeof OverviewIndexRoute
   PoliciesIndexRoute: typeof PoliciesIndexRoute
@@ -430,6 +494,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/moderation': {
+      id: '/moderation'
+      path: '/moderation'
+      fullPath: '/moderation'
+      preLoaderRoute: typeof ModerationRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -483,10 +554,10 @@ declare module '@tanstack/react-router' {
     }
     '/moderation/': {
       id: '/moderation/'
-      path: '/moderation'
+      path: '/'
       fullPath: '/moderation/'
       preLoaderRoute: typeof ModerationIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ModerationRouteRoute
     }
     '/docs/': {
       id: '/docs/'
@@ -529,6 +600,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/professors/$professorId'
       preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/moderation/reviews': {
+      id: '/moderation/reviews'
+      path: '/reviews'
+      fullPath: '/moderation/reviews'
+      preLoaderRoute: typeof ModerationReviewsRouteImport
+      parentRoute: typeof ModerationRouteRoute
+    }
+    '/moderation/reports': {
+      id: '/moderation/reports'
+      path: '/reports'
+      fullPath: '/moderation/reports'
+      preLoaderRoute: typeof ModerationReportsRouteImport
+      parentRoute: typeof ModerationRouteRoute
+    }
+    '/moderation/feedback': {
+      id: '/moderation/feedback'
+      path: '/feedback'
+      fullPath: '/moderation/feedback'
+      preLoaderRoute: typeof ModerationFeedbackRouteImport
+      parentRoute: typeof ModerationRouteRoute
+    }
+    '/moderation/evaluations': {
+      id: '/moderation/evaluations'
+      path: '/evaluations'
+      fullPath: '/moderation/evaluations'
+      preLoaderRoute: typeof ModerationEvaluationsRouteImport
+      parentRoute: typeof ModerationRouteRoute
     }
     '/docs/$': {
       id: '/docs/$'
@@ -618,6 +717,26 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
   AuthRouteRouteChildren,
 )
 
+interface ModerationRouteRouteChildren {
+  ModerationEvaluationsRoute: typeof ModerationEvaluationsRoute
+  ModerationFeedbackRoute: typeof ModerationFeedbackRoute
+  ModerationReportsRoute: typeof ModerationReportsRoute
+  ModerationReviewsRoute: typeof ModerationReviewsRoute
+  ModerationIndexRoute: typeof ModerationIndexRoute
+}
+
+const ModerationRouteRouteChildren: ModerationRouteRouteChildren = {
+  ModerationEvaluationsRoute: ModerationEvaluationsRoute,
+  ModerationFeedbackRoute: ModerationFeedbackRoute,
+  ModerationReportsRoute: ModerationReportsRoute,
+  ModerationReviewsRoute: ModerationReviewsRoute,
+  ModerationIndexRoute: ModerationIndexRoute,
+}
+
+const ModerationRouteRouteWithChildren = ModerationRouteRoute._addFileChildren(
+  ModerationRouteRouteChildren,
+)
+
 interface SettingsRouteRouteChildren {
   SettingsAppearanceLazyRoute: typeof SettingsAppearanceLazyRoute
   SettingsProfileLazyRoute: typeof SettingsProfileLazyRoute
@@ -638,6 +757,7 @@ const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  ModerationRouteRoute: ModerationRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRouteWithChildren,
   IndexRoute: IndexRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -646,7 +766,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
-  ModerationIndexRoute: ModerationIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   OverviewIndexRoute: OverviewIndexRoute,
   PoliciesIndexRoute: PoliciesIndexRoute,
