@@ -47,7 +47,7 @@ jobs:
         run: pnpm run build
 
       - name: Audit dependencies
-        run: pnpm audit --audit-level critical
+        run: pnpm audit --audit-level critical --ignore GHSA-pw9m-5jxm-xr6h
 
       - name: Deploy Frontend to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3

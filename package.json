@@ -137,12 +137,5 @@
       "oxfmt --write"
     ]
   },
-  "packageManager": "pnpm@11.1.3",
-  "pnpm": {
-    "auditConfig": {
-      "ignoreCves": [
-        "GHSA-pw9m-5jxm-xr6h"
-      ]
-    }
-  }
+  "packageManager": "pnpm@11.1.3"
 }
