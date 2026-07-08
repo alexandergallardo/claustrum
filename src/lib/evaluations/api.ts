@@ -131,6 +131,43 @@ export async function getEvaluationDocument(
   return { blob, fileName };
 }
 
+export async function getEvaluationAnswersDocument(
+  evaluationId: number,
+): Promise<{ blob: Blob; fileName: string }> {
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) {
+    throw new Error("API Worker URL no configurado");
+  }
+
+  const { data: tokenData } = await authClient.token();
+  const accessToken = tokenData?.token;
+
+  const headers = new Headers();
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  const response = await fetch(`${apiBaseUrl}/evaluations/${evaluationId}/answers-file`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Error desconocido" }));
+    throw new Error(body.error ?? `Error ${response.status}`);
+  }
+
+  const blob = await response.blob();
+
+  const disposition = response.headers.get("Content-Disposition");
+  let fileName = `evaluacion-${evaluationId}-respuestas.pdf`;
+  if (disposition) {
+    const nameMatch = disposition.match(/filename="?(.+?)"?$/);
+    if (nameMatch) fileName = nameMatch[1];
+  }
+
+  return { blob, fileName };
+}
+
 export async function moderateEvaluation(
   evaluationId: number,
   status: "approved" | "rejected",

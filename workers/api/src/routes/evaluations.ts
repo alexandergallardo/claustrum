@@ -247,4 +247,55 @@ evaluationsRoutes.get("/:id/file", async (c) => {
   });
 });
 
+evaluationsRoutes.get("/:id/answers-file", async (c) => {
+  const request = c.req.raw;
+  const evaluationId = Number(c.req.param("id"));
+  if (!Number.isFinite(evaluationId) || evaluationId <= 0) {
+    return fail(400, "ID de evaluacion invalido", request, c.env);
+  }
+
+  const supabase = getSupabase(c.env);
+  const { data: evaluation, error } = await supabase
+    .from("course_evaluations")
+    .select(
+      "id, status, answers_file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)",
+    )
+    .eq("id", evaluationId)
+    .single();
+
+  if (error || !evaluation) return fail(404, "Evaluacion no encontrada", request, c.env);
+  if (!evaluation.answers_file_key) return fail(404, "Esta evaluación no tiene archivo de respuestas", request, c.env);
+
+  if (evaluation.status !== "approved") {
+    const userId = await verifyAuth(request, c.env);
+    if (!userId) {
+      return fail(401, "Unauthorized", request, c.env);
+    }
+
+    const admin = await isAdmin(userId, c.env);
+    if (!admin) return fail(403, "No tienes acceso a esta evaluacion", request, c.env);
+  }
+
+  const object = await c.env.EVALUATIONS_BUCKET.get(evaluation.answers_file_key);
+  if (!object) return fail(404, "Archivo de respuestas no encontrado", request, c.env);
+
+  const courseCode = (evaluation.course as { code: string } | null)?.code ?? null;
+  const baseName = formatFileName(
+    courseCode,
+    evaluation.evaluation_type,
+    evaluation.evaluation_number,
+    evaluation.custom_name,
+  );
+  const fileName = baseName.replace(".pdf", "-respuestas.pdf");
+
+  return new Response(object.body, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Length": String(object.size),
+      "Content-Disposition": `inline; filename="${fileName}"`,
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
+});
 export default evaluationsRoutes;

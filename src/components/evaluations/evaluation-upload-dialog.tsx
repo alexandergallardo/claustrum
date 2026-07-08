@@ -300,7 +300,9 @@ export function EvaluationUploadDialog({
         answersFile: hasSeparateAnswers ? answersFile : null,
       });
 
-      toast.success("Evaluación subida correctamente. Estará visible tras ser moderada.");
+      toast.success("Evaluación enviada", {
+        description: "Estará visible tras ser revisada por nuestro equipo",
+      });
       handleClose(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Error al subir la evaluación.");
