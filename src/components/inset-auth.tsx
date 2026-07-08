@@ -464,18 +464,19 @@ function GoogleOAuthButton() {
 const MAGIC_LINK_EMAIL_KEY = "claustrum.auth.magic_link_email";
 const VERIFY_EMAIL_KEY = "claustrum.auth.verify_email";
 
+import { resetSupabaseAuthTokenState } from "@/lib/supabase/browser-client";
+
 async function invalidateAuthFlowQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   userId?: string,
 ) {
-  await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+  resetSupabaseAuthTokenState();
+  queryClient.removeQueries({ queryKey: ["authUser"] });
   if (userId) {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["profile", userId] }),
-      queryClient.invalidateQueries({ queryKey: ["onboardingStatus", userId] }),
-      queryClient.invalidateQueries({ queryKey: ["userStudyPlan", userId] }),
-      queryClient.invalidateQueries({ queryKey: ["dashboardStats", userId] }),
-    ]);
+    queryClient.removeQueries({ queryKey: ["profile", userId] });
+    queryClient.removeQueries({ queryKey: ["onboardingStatus", userId] });
+    queryClient.removeQueries({ queryKey: ["userStudyPlan", userId] });
+    queryClient.removeQueries({ queryKey: ["dashboardStats", userId] });
   }
 }
 

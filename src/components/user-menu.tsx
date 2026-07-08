@@ -13,11 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/lib/auth/client";
+import { resetSupabaseAuthTokenState } from "@/lib/supabase/browser-client";
 
 export function UserMenu({
   user,
   trigger,
-  side = "bottom",
+  open,
+  onOpenChange,
 }: {
   user: {
     name: string;
@@ -25,22 +27,22 @@ export function UserMenu({
     avatar?: string;
   };
   trigger: React.ReactNode;
-  side?: "top" | "right" | "bottom" | "left";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const userInitial = user.name.charAt(0).toUpperCase();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" side={side} align="end">
+      <DropdownMenuContent className="w-56" align="end" side="bottom" sideOffset={8}>
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <Avatar className="size-8 rounded-lg">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">
-                {user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback className="rounded-lg">{userInitial}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
@@ -61,6 +63,7 @@ export function UserMenu({
         <DropdownMenuItem
           onClick={async () => {
             await signOut();
+            resetSupabaseAuthTokenState();
             queryClient.clear();
             void navigate({ to: "/" });
           }}

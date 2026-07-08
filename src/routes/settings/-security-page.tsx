@@ -28,6 +28,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { StatefulButton } from "@/components/ui/stateful-button";
 import { authClient, signOut } from "@/lib/auth/client";
 import { useAuthAccounts, useAuthUser } from "@/lib/hooks/use-queries";
+import { resetSupabaseAuthTokenState } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
 const passwordRequirements = [
@@ -593,6 +594,7 @@ export function SecurityPage() {
 
       if (sessionToken === currentSessionToken) {
         await signOut();
+        resetSupabaseAuthTokenState();
         queryClient.clear();
         void navigate({ to: "/auth/signin", replace: true });
         return;

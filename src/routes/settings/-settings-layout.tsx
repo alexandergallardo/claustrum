@@ -1,9 +1,11 @@
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { UserIcon, ShieldIcon, PaletteIcon, LogOutIcon } from "lucide-react";
+import { UserIcon, ShieldIcon, PaletteIcon, LogOutIcon, MessageCircleIcon } from "lucide-react";
+import { useState } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { signOut } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
+import { FeedbackDialog } from "@/components/feedback-dialog";
 
 const navItems = [
   {
@@ -26,6 +28,7 @@ const navItems = [
 export function SettingsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   return (
     <div className="flex flex-1 flex-col px-4 py-4 lg:px-6 lg:py-6">
@@ -54,6 +57,15 @@ export function SettingsLayout() {
               <div className="bg-border my-1 h-px lg:hidden" />
               <button
                 type="button"
+                onClick={() => setIsFeedbackOpen(true)}
+                className="hover:bg-accent hover:text-accent-foreground text-muted-foreground flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors lg:hidden"
+              >
+                <MessageCircleIcon className="size-4" />
+                Retroalimentación
+              </button>
+              <div className="bg-border my-1 h-px lg:hidden" />
+              <button
+                type="button"
                 onClick={async () => {
                   await signOut();
                   void navigate({ to: "/auth/signin" });
@@ -73,6 +85,7 @@ export function SettingsLayout() {
           </CardContent>
         </Card>
       </div>
+      <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
     </div>
   );
 }

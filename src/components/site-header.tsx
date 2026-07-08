@@ -93,7 +93,9 @@ export function SiteHeader() {
   const { data: isAdmin } = useIsAdmin(authUser?.id ?? null);
   const { data: moderationCounts } = useModerationCounts(!!authUser && isAdmin === true);
   const totalPending = isAdmin
-    ? (moderationCounts?.pendingReviews ?? 0) + (moderationCounts?.pendingEvaluations ?? 0)
+    ? (moderationCounts?.pendingReviews ?? 0) +
+      (moderationCounts?.pendingEvaluations ?? 0) +
+      (moderationCounts?.pendingReviewReports ?? 0)
     : 0;
 
   const professorId = getNumericPathSegment(pathname, "/professors/");

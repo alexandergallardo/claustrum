@@ -4,6 +4,7 @@ import {
   IconFileDescription,
   IconSchool,
   IconUsers,
+  IconMessageCircle,
 } from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
 import { EllipsisVertical, Loader2, LogIn } from "lucide-react";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { UserMenuDropdown } from "@/components/user-menu-dropdown";
 import { useAppAuth } from "@/lib/auth/app-auth-context";
 import { cn } from "@/lib/utils";
+import { FeedbackDialog } from "@/components/feedback-dialog";
 
 const data = {
   navMain: [
@@ -80,6 +82,7 @@ function ClaustrumLogo({ className }: { className?: string }) {
 export function AppSidebar() {
   const { authUser, isAuthLoading } = useAppAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const user = authUser
     ? {
@@ -149,6 +152,25 @@ export function AppSidebar() {
       </nav>
 
       <div className="flex flex-col gap-3">
+        <button
+          onClick={() => setIsFeedbackOpen(true)}
+          aria-label="Retroalimentación"
+          className={cn(
+            "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 w-full items-center gap-3 rounded-full text-sm font-medium transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
+        >
+          <span
+            className={cn(
+              "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
+            )}
+          >
+            <IconMessageCircle className="size-5" />
+          </span>
+          <span className="truncate opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-data-[user-menu=open]/sidebar:opacity-100">
+            Retroalimentación
+          </span>
+        </button>
+
         {data.navSecondary.map((item) => {
           return (
             <Link
@@ -245,6 +267,8 @@ export function AppSidebar() {
           </Button>
         )}
       </div>
+
+      <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
     </aside>
   );
 }
