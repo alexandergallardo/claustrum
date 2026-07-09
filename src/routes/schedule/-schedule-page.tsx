@@ -309,6 +309,7 @@ export function SchedulePage() {
     authUser?.id ?? null,
     !!authUser?.id && !isAuthLoading,
   );
+
   const userStudyPlanUniversityId =
     normalizeScheduleUniversityId(userStudyPlan?.universityId) ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
   const suggestedTermQuery = useSuggestedAcademicTerm(
@@ -1126,7 +1127,16 @@ export function SchedulePage() {
     search.career === (userStudyPlan.academicUnitId ?? undefined) &&
     search.plan === (userStudyPlan.studyPlanId ?? undefined);
 
-  const isProfileLoading = isProfileActive && (isAuthLoading || isUserStudyPlanLoading);
+  const isWaitingForProfile =
+    !isMeaningfulScheduleSearch(search) &&
+    (isAuthLoading || (isAuthenticated && isUserStudyPlanLoading));
+
+  const isWaitingForProfileNavigation =
+    !isMeaningfulScheduleSearch(search) &&
+    isAuthenticated &&
+    !!userStudyPlan &&
+    (!!userStudyPlan.campusId || !!userStudyPlan.academicUnitId || !!userStudyPlan.studyPlanId);
+
   const isAutoSelectingPlan =
     shouldAutoSelectPlanRef.current &&
     !!selectedCareerId &&
@@ -1136,7 +1146,11 @@ export function SchedulePage() {
     !!selectedPlanId &&
     !selectedTermId &&
     (termsQuery.isFetching || suggestedTermQuery.isPending || terms.length > 0);
-  const isPendingFilters = isProfileLoading || isAutoSelectingPlan || isAutoSelectingTerm;
+  const isPendingFilters =
+    isWaitingForProfile ||
+    isWaitingForProfileNavigation ||
+    isAutoSelectingPlan ||
+    isAutoSelectingTerm;
 
   if (isInitialLoading) {
     return (
