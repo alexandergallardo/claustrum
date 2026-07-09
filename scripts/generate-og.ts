@@ -34,7 +34,7 @@ async function main() {
     const context = await browser.newContext({
       viewport: { width: 1200, height: 630 },
       colorScheme: "dark",
-      deviceScaleFactor: 2, // High DPI for crisp text
+      deviceScaleFactor: 1, // Standard OG size (1200x630)
     });
 
     const page = await context.newPage();
