@@ -3,6 +3,7 @@ import { startOfWeek } from "date-fns";
 import { Suspense, lazy, useState } from "react";
 
 import type { Mode } from "@/components/calendar/calendar-types";
+
 import { demoCalendarEvents } from "@/routes/home/-data";
 import { Logo } from "@/routes/home/-icons";
 
@@ -19,10 +20,10 @@ function OgScheduleRoute() {
 
   return (
     <div
-      className="bg-background flex h-[630px] w-[1200px] flex-col pt-12 px-12 pb-0"
+      className="bg-background flex h-[630px] w-[1200px] flex-col px-12 pt-12 pb-0"
       style={{
         backgroundImage:
-          "radial-gradient(circle at 100% 100%, hsl(var(--primary) / 0.1), transparent 50%), radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.05), transparent 50%)",
+          "radial-gradient(circle at 100% 100%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 50%), radial-gradient(circle at 0% 0%, color-mix(in oklch, var(--primary) 5%, transparent), transparent 50%)",
       }}
     >
       <div className="mb-8 flex items-center justify-between px-4">
@@ -31,13 +32,11 @@ function OgScheduleRoute() {
             <Logo main="currentColor" accent="currentColor" className="text-primary size-10" />
             <h1 className="text-4xl font-bold tracking-tight">Claustrum</h1>
           </div>
-          <h2 className="text-muted-foreground text-2xl">
-            Generador de horarios para estudiantes
-          </h2>
+          <h2 className="text-muted-foreground text-2xl">Generador de horarios para estudiantes</h2>
         </div>
       </div>
 
-      <div className="border-border bg-card shadow-xs flex-1 overflow-hidden rounded-t-2xl border border-b-0">
+      <div className="border-border bg-background flex-1 overflow-hidden rounded-t-2xl border border-b-0 shadow-xs">
         <Suspense fallback={<div className="bg-background flex-1" />}>
           <Calendar
             events={events}

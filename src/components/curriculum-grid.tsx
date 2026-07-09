@@ -5,14 +5,14 @@ import { Lock, Unlock, Link } from "lucide-react";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { flushSync } from "react-dom";
 
-import type { StudyPlanDetail } from "@/lib/types";
+import type { StudyPlanDetail, CourseEffectiveStatus } from "@/lib/types";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useStudentCourseStatuses } from "@/lib/hooks/use-queries";
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
+import { cn } from "@/lib/utils";
 
 import { CourseCard, type RelationType } from "./course-card";
-import { cn } from "@/lib/utils";
 
 interface CurriculumGridProps {
   planDetail: StudyPlanDetail;
@@ -20,9 +20,17 @@ interface CurriculumGridProps {
   studyPlanId?: number;
   zoom?: number;
   readOnly?: boolean;
+  mockStatusMap?: Map<number, CourseEffectiveStatus>;
 }
 
-function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1, readOnly }: CurriculumGridProps) {
+function CurriculumGrid({
+  planDetail,
+  userId,
+  studyPlanId,
+  zoom = 1,
+  readOnly,
+  mockStatusMap,
+}: CurriculumGridProps) {
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
@@ -31,7 +39,8 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1, readOnly }:
   const navigate = useNavigate();
   const search = useSearch({ strict: false });
 
-  const { data: statusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null);
+  const { data: fetchedStatusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null);
+  const statusMap = mockStatusMap ?? fetchedStatusMap;
   const { semesters, courseById } = useCurriculumViewModel(planDetail, statusMap);
 
   useEffect(() => {
@@ -83,7 +92,12 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1, readOnly }:
 
   return (
     <div className="flex h-full min-w-0 flex-col">
-      <div className={cn("relative z-0 min-h-0 flex-1", readOnly ? "overflow-hidden" : "overflow-x-auto overflow-y-auto")}>
+      <div
+        className={cn(
+          "relative z-0 min-h-0 flex-1",
+          readOnly ? "overflow-hidden" : "overflow-x-auto overflow-y-auto",
+        )}
+      >
         <div
           className="origin-top-left px-4"
           style={{
@@ -157,57 +171,57 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1, readOnly }:
       {!readOnly && (
         <div className="border-border shrink-0 border-t px-4 pt-1 pb-2">
           <div className="flex flex-row gap-8">
-          <div>
-            <h3 className="text-foreground mb-3 text-sm font-semibold">Leyenda de estados</h3>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <div className="size-6 rounded border-2 border-emerald-500/30 bg-emerald-500/20" />
-                <span className="text-muted-foreground text-sm">Aprobado</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="size-6 rounded border-2 border-blue-500/30 bg-blue-500/20" />
-                <span className="text-muted-foreground text-sm">En curso</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="bg-muted border-border size-6 rounded border-2" />
-                <span className="text-muted-foreground text-sm">No cursado</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="size-6 rounded border-2 border-red-500/30 bg-red-500/20" />
-                <span className="text-muted-foreground text-sm">Reprobado</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="size-6 rounded border-2 border-amber-500/30 bg-amber-500/20" />
-                <span className="text-muted-foreground text-sm">Retirado</span>
+            <div>
+              <h3 className="text-foreground mb-3 text-sm font-semibold">Leyenda de estados</h3>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded border-2 border-emerald-500/30 bg-emerald-500/20" />
+                  <span className="text-muted-foreground text-sm">Aprobado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded border-2 border-blue-500/30 bg-blue-500/20" />
+                  <span className="text-muted-foreground text-sm">En curso</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="bg-muted border-border size-6 rounded border-2" />
+                  <span className="text-muted-foreground text-sm">No cursado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded border-2 border-red-500/30 bg-red-500/20" />
+                  <span className="text-muted-foreground text-sm">Reprobado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="size-6 rounded border-2 border-amber-500/30 bg-amber-500/20" />
+                  <span className="text-muted-foreground text-sm">Retirado</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <h3 className="text-foreground mb-3 text-sm font-semibold">Relaciones</h3>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <div className="bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-amber-500 text-amber-600 shadow-sm">
-                  <Lock className="size-3 shrink-0" />
+            <div>
+              <h3 className="text-foreground mb-3 text-sm font-semibold">Relaciones</h3>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-amber-500 text-amber-600 shadow-sm">
+                    <Lock className="size-3 shrink-0" />
+                  </div>
+                  <span className="text-muted-foreground text-sm">Requisito</span>
                 </div>
-                <span className="text-muted-foreground text-sm">Requisito</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-blue-500 text-blue-600 shadow-sm">
-                  <Link className="size-3 shrink-0" />
+                <div className="flex items-center gap-2">
+                  <div className="bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-blue-500 text-blue-600 shadow-sm">
+                    <Link className="size-3 shrink-0" />
+                  </div>
+                  <span className="text-muted-foreground text-sm">Correquisito</span>
                 </div>
-                <span className="text-muted-foreground text-sm">Correquisito</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500 text-emerald-600 shadow-sm">
-                  <Unlock className="size-3 shrink-0" />
+                <div className="flex items-center gap-2">
+                  <div className="bg-background flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-emerald-500 text-emerald-600 shadow-sm">
+                    <Unlock className="size-3 shrink-0" />
+                  </div>
+                  <span className="text-muted-foreground text-sm">Desbloquea</span>
                 </div>
-                <span className="text-muted-foreground text-sm">Desbloquea</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );

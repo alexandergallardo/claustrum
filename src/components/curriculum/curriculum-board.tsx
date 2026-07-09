@@ -11,6 +11,7 @@ import {
 import React, { useState, useEffect, useMemo } from "react";
 
 import type { StudyPlanDetail } from "@/lib/types";
+import type { CourseEffectiveStatus } from "@/lib/types";
 
 import { MemoizedCurriculumGrid } from "@/components/curriculum-grid";
 import { useAppAuth } from "@/lib/auth/app-auth-context";
@@ -21,6 +22,7 @@ interface CurriculumBoardProps {
   studyPlanId?: number;
   readOnly?: boolean;
   zoom?: number;
+  mockStatusMap?: Map<number, CourseEffectiveStatus>;
 }
 
 const ZOOM_MIN = 0.7;
@@ -43,12 +45,20 @@ function getInitialZoom(): number {
   return ZOOM_DEFAULT;
 }
 
-
-
-function CurriculumBoard({ planDetail, userId: propUserId, studyPlanId: propStudyPlanId, readOnly, zoom: propZoom }: CurriculumBoardProps) {
+function CurriculumBoard({
+  planDetail,
+  userId: propUserId,
+  studyPlanId: propStudyPlanId,
+  readOnly,
+  zoom: propZoom,
+  mockStatusMap,
+}: CurriculumBoardProps) {
   const { authUser } = useAppAuth();
   const userId = useMemo(() => propUserId ?? authUser?.id ?? undefined, [propUserId, authUser?.id]);
-  const studyPlanId = useMemo(() => propStudyPlanId ?? planDetail.plan?.id ?? undefined, [propStudyPlanId, planDetail.plan?.id]);
+  const studyPlanId = useMemo(
+    () => propStudyPlanId ?? planDetail.plan?.id ?? undefined,
+    [propStudyPlanId, planDetail.plan?.id],
+  );
 
   const [zoom, setZoom] = useState<number>(() => propZoom ?? getInitialZoom());
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
@@ -163,6 +173,7 @@ function CurriculumBoard({ planDetail, userId: propUserId, studyPlanId: propStud
           studyPlanId={studyPlanId}
           zoom={zoom}
           readOnly={readOnly}
+          mockStatusMap={mockStatusMap}
         />
       </div>
     </div>
