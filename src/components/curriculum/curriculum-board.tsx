@@ -17,6 +17,10 @@ import { useAppAuth } from "@/lib/auth/app-auth-context";
 
 interface CurriculumBoardProps {
   planDetail: StudyPlanDetail;
+  userId?: string;
+  studyPlanId?: number;
+  readOnly?: boolean;
+  zoom?: number;
 }
 
 const ZOOM_MIN = 0.7;
@@ -39,21 +43,24 @@ function getInitialZoom(): number {
   return ZOOM_DEFAULT;
 }
 
-function getInitialPanelOpen(): boolean {
-  if (typeof window === "undefined") return true;
-  const stored =
-    localStorage.getItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY) ??
-    localStorage.getItem(LEGACY_PANEL_OPEN_STORAGE_KEY);
-  return stored !== "false";
-}
 
-function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
+
+function CurriculumBoard({ planDetail, userId: propUserId, studyPlanId: propStudyPlanId, readOnly, zoom: propZoom }: CurriculumBoardProps) {
   const { authUser } = useAppAuth();
-  const userId = useMemo(() => authUser?.id ?? undefined, [authUser?.id]);
-  const studyPlanId = useMemo(() => planDetail.plan?.id ?? undefined, [planDetail.plan?.id]);
+  const userId = useMemo(() => propUserId ?? authUser?.id ?? undefined, [propUserId, authUser?.id]);
+  const studyPlanId = useMemo(() => propStudyPlanId ?? planDetail.plan?.id ?? undefined, [propStudyPlanId, planDetail.plan?.id]);
 
-  const [zoom, setZoom] = useState<number>(() => getInitialZoom());
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(getInitialPanelOpen);
+  const [zoom, setZoom] = useState<number>(() => propZoom ?? getInitialZoom());
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
+
+  useEffect(() => {
+    const stored =
+      localStorage.getItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_PANEL_OPEN_STORAGE_KEY);
+    if (stored === "false") {
+      setIsPanelOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY, isPanelOpen.toString());
@@ -85,75 +92,77 @@ function CurriculumBoard({ planDetail }: CurriculumBoardProps) {
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="absolute top-4 right-4 z-10">
-        <button
-          onClick={() => setIsPanelOpen(!isPanelOpen)}
-          className="bg-background/95 supports-[backdrop-filter]:bg-background/60 hover:bg-muted flex items-center gap-2 rounded-lg border p-1.5 shadow-sm backdrop-blur transition-colors"
-          title={isPanelOpen ? "Ocultar controles" : "Mostrar controles"}
-        >
-          <span className="text-sm font-medium">{Math.round(zoom * 100)}%</span>
-          {isPanelOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </button>
+      {!readOnly && (
+        <div className="absolute top-4 right-4 z-10">
+          <button
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            className="bg-background/95 supports-[backdrop-filter]:bg-background/60 hover:bg-muted flex items-center gap-2 rounded-lg border p-1.5 shadow-sm backdrop-blur transition-colors"
+            title={isPanelOpen ? "Ocultar controles" : "Mostrar controles"}
+          >
+            <span className="text-sm font-medium">{Math.round(zoom * 100)}%</span>
+            {isPanelOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          </button>
 
-        {isPanelOpen && (
-          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 absolute top-full right-0 mt-2 min-w-[220px] rounded-lg border p-3 shadow-lg backdrop-blur">
-            <div className="mb-3 flex items-center gap-1">
-              <button
-                onClick={handleZoomOut}
-                disabled={canZoomOut}
-                className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                title="Alejar"
-              >
-                <ZoomOut className="size-4" />
-              </button>
-              <button
-                onClick={handleZoomIn}
-                disabled={canZoomIn}
-                className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                title="Acercar"
-              >
-                <ZoomIn className="size-4" />
-              </button>
-              <div className="bg-border mx-1 h-5 w-px" />
-              <button
-                onClick={handleReset}
-                className="hover:bg-muted rounded-md p-2 transition-colors"
-                title="Restablecer tamaño"
-              >
-                <RotateCcw className="size-4" />
-              </button>
-            </div>
+          {isPanelOpen && (
+            <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 absolute top-full right-0 mt-2 min-w-[220px] rounded-lg border p-3 shadow-lg backdrop-blur">
+              <div className="mb-3 flex items-center gap-1">
+                <button
+                  onClick={handleZoomOut}
+                  disabled={canZoomOut}
+                  className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                  title="Alejar"
+                >
+                  <ZoomOut className="size-4" />
+                </button>
+                <button
+                  onClick={handleZoomIn}
+                  disabled={canZoomIn}
+                  className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                  title="Acercar"
+                >
+                  <ZoomIn className="size-4" />
+                </button>
+                <div className="bg-border mx-1 h-5 w-px" />
+                <button
+                  onClick={handleReset}
+                  className="hover:bg-muted rounded-md p-2 transition-colors"
+                  title="Restablecer tamaño"
+                >
+                  <RotateCcw className="size-4" />
+                </button>
+              </div>
 
-            {planDetail.plan && (
-              <>
-                <div className="border-border mt-2 space-y-2 border-t pt-2">
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <GraduationCap className="size-4" />
-                    <span>{planDetail.plan.academic_degree || "Sin grado"}</span>
-                  </div>
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <BookOpen className="size-4" />
-                    <span>{planDetail.plan.modality_name || "Sin modalidad"}</span>
-                  </div>
-                  {planDetail.plan.external_plan_id && (
+              {planDetail.plan && (
+                <>
+                  <div className="border-border mt-2 space-y-2 border-t pt-2">
                     <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <Calendar className="size-4" />
-                      <span>Plan: {planDetail.plan.external_plan_id}</span>
+                      <GraduationCap className="size-4" />
+                      <span>{planDetail.plan.academic_degree || "Sin grado"}</span>
                     </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                      <BookOpen className="size-4" />
+                      <span>{planDetail.plan.modality_name || "Sin modalidad"}</span>
+                    </div>
+                    {planDetail.plan.external_plan_id && (
+                      <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                        <Calendar className="size-4" />
+                        <span>Plan: {planDetail.plan.external_plan_id}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <div className="min-h-0 flex-1">
         <MemoizedCurriculumGrid
           planDetail={planDetail}
           userId={userId}
           studyPlanId={studyPlanId}
           zoom={zoom}
+          readOnly={readOnly}
         />
       </div>
     </div>

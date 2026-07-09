@@ -40,13 +40,7 @@ const CURRICULUM_FILTERS_PANEL_STORAGE_KEY = "curriculum-filters-panel-open";
 const LEGACY_FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open";
 const FILTER_REVEAL_ANIMATION_MS = 220;
 
-function getInitialFiltersPanelOpen(): boolean {
-  if (typeof window === "undefined") return true;
-  const stored =
-    localStorage.getItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY) ??
-    localStorage.getItem(LEGACY_FILTERS_PANEL_STORAGE_KEY);
-  return stored !== "false";
-}
+
 
 export function CurriculumFilters({
   universities,
@@ -66,7 +60,16 @@ export function CurriculumFilters({
   isLoadingCareerPrograms,
   isLoadingPlans,
 }: CurriculumFiltersProps) {
-  const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
+  const [isFiltersVisible, setIsFiltersVisible] = useState(true);
+
+  useEffect(() => {
+    const stored =
+      localStorage.getItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_FILTERS_PANEL_STORAGE_KEY);
+    if (stored === "false") {
+      setIsFiltersVisible(false);
+    }
+  }, []);
   const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
   const [hasCompletedInitialReveal, setHasCompletedInitialReveal] = useState(false);
   const hasUniversities = universities.length > 0;

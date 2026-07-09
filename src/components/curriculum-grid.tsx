@@ -12,22 +12,24 @@ import { useStudentCourseStatuses } from "@/lib/hooks/use-queries";
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
 
 import { CourseCard, type RelationType } from "./course-card";
+import { cn } from "@/lib/utils";
 
 interface CurriculumGridProps {
   planDetail: StudyPlanDetail;
   userId?: string;
   studyPlanId?: number;
   zoom?: number;
+  readOnly?: boolean;
 }
 
-function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: CurriculumGridProps) {
+function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1, readOnly }: CurriculumGridProps) {
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [contentWidth, setContentWidth] = useState<number | null>(null);
   const scaledContentRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate({ from: "/curriculum/" });
-  const search = useSearch({ from: "/curriculum/" });
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false });
 
   const { data: statusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null);
   const { semesters, courseById } = useCurriculumViewModel(planDetail, statusMap);
@@ -81,7 +83,7 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
 
   return (
     <div className="flex h-full min-w-0 flex-col">
-      <div className="relative z-0 min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+      <div className={cn("relative z-0 min-h-0 flex-1", readOnly ? "overflow-hidden" : "overflow-x-auto overflow-y-auto")}>
         <div
           className="origin-top-left px-4"
           style={{
@@ -152,8 +154,9 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
         </div>
       </div>
 
-      <div className="border-border shrink-0 border-t px-4 pt-1 pb-2">
-        <div className="flex flex-row gap-8">
+      {!readOnly && (
+        <div className="border-border shrink-0 border-t px-4 pt-1 pb-2">
+          <div className="flex flex-row gap-8">
           <div>
             <h3 className="text-foreground mb-3 text-sm font-semibold">Leyenda de estados</h3>
             <div className="flex flex-wrap gap-4">
@@ -205,6 +208,7 @@ function CurriculumGrid({ planDetail, userId, studyPlanId, zoom = 1 }: Curriculu
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
