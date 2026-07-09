@@ -21,7 +21,8 @@
     "supabase:migrate-dev": "supabase migration up",
     "supabase:migrate-prod": "supabase migration up --linked",
     "auth:schema": "pnpm --filter claustrum-api exec better-auth generate --config src/auth-cli.ts --output ../../supabase/migrations/0076_better_auth_schema.sql --yes",
-    "auth:migrate-users": "tsx scripts/migrate-supabase-auth-to-better-auth.ts"
+    "auth:migrate-users": "tsx scripts/migrate-supabase-auth-to-better-auth.ts",
+    "generate:og": "tsx scripts/generate-og.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -48,7 +49,6 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.106.1",
-    "@tabler/icons-react": "^3.44.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-devtools": "^0.10.8",
     "@tanstack/react-form": "^1.33.0",
@@ -113,6 +113,7 @@
     "oxfmt": "^0.48.0",
     "oxlint": "^1.66.0",
     "oxlint-tsgolint": "^0.22.1",
+    "playwright": "^1.61.1",
     "postgres": "^3.4.9",
     "rolldown": "^1.0.2",
     "simple-git-hooks": "^2.13.1",
