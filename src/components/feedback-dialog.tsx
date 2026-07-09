@@ -147,9 +147,9 @@ export function FeedbackDialog({
       </form.Field>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-h-[65px] min-w-[300px]">
+        <div>
           {turnstileSiteKey ? (
-            <Suspense fallback={<div className="h-[65px] w-[300px] animate-pulse rounded bg-muted" />}>
+            <Suspense fallback={null}>
               <Turnstile
                 siteKey={turnstileSiteKey}
                 onSuccess={(token) => setTurnstileToken(token)}
@@ -157,6 +157,8 @@ export function FeedbackDialog({
                 onExpire={() => setTurnstileToken(null)}
                 options={{
                   theme: "auto",
+                  size: "flexible",
+                  appearance: "interaction-only",
                 }}
               />
             </Suspense>

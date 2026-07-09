@@ -1,6 +1,6 @@
-export const DEFAULT_TITLE = "Claustrum | Horarios, cursos y avance académico TEC";
+export const DEFAULT_TITLE = "Claustrum | Generador de horarios y avance académico";
 export const DEFAULT_DESCRIPTION =
-  "Organiza horarios, cursos, evaluaciones y progreso académico del TEC en una plataforma hecha para estudiantes.";
+  "Organiza tu horario semestral, evalúa cursos y gestiona tu progreso académico de forma sencilla.";
 export const INDEXABLE_ROBOTS = "index, follow, max-snippet:150, max-image-preview:large";
 export const NOINDEX_ROBOTS = "noindex, follow";
 
@@ -14,6 +14,7 @@ export type SeoConfig = {
   ogType?: string;
   breadcrumbName?: string;
   urlPath?: string;
+  image?: string;
   jsonLd?: Record<string, unknown>[];
 };
 
@@ -23,7 +24,7 @@ export function buildSeoMeta(config: SeoConfig = {}) {
   const robots = config.robots ?? INDEXABLE_ROBOTS;
   const ogType = config.ogType ?? "website";
   const canonicalUrl = config.urlPath ? `${BASE_URL}${config.urlPath}` : BASE_URL;
-  const imageUrl = new URL(DEFAULT_IMAGE, BASE_URL).toString();
+  const imageUrl = new URL(config.image ?? DEFAULT_IMAGE, BASE_URL).toString();
 
   const meta = [
     { title },

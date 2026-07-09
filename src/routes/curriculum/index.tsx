@@ -18,11 +18,12 @@ import {
 export const Route = createFileRoute("/curriculum/")({
   head: () =>
     buildSeoMeta({
-      title: "Planes de Estudio TEC (ITCR) | Claustrum",
+      title: "Explorador de planes de estudio | Claustrum",
       description:
-        "Explora los planes de estudio del Tecnológico de Costa Rica. Revisa cursos, requisitos y malla curricular de tu carrera.",
+        "Explora los planes de estudio interactivos. Revisa cursos, requisitos y la malla curricular de tu carrera.",
       breadcrumbName: "Planes de Estudio",
       urlPath: "/curriculum",
+      image: "/og/og-curriculum.png",
     }),
   validateSearch: parseCurriculumSearch,
   search: {

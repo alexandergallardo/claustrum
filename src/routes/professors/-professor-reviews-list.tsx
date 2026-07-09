@@ -471,7 +471,7 @@ export function ProfessorReviewsList({
           </div>
 
           <div
-            className={frameless ? "hidden md:block" : "bg-card hidden rounded-xl border md:block"}
+            className={frameless ? "hidden md:block" : "bg-card hidden overflow-hidden rounded-xl border md:block"}
           >
             <table className="w-full">
               <thead>
@@ -634,20 +634,15 @@ export function ProfessorReviewsList({
               </div>
 
               {turnstileSiteKey ? (
-                <div className="min-h-[70px]">
-                  <Suspense
-                    fallback={
-                      <div className="text-muted-foreground text-xs">Cargando verificación…</div>
-                    }
-                  >
-                    <Turnstile
-                      siteKey={turnstileSiteKey}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onError={() => setTurnstileToken(null)}
-                      onExpire={() => setTurnstileToken(null)}
-                    />
-                  </Suspense>
-                </div>
+                <Suspense fallback={null}>
+                  <Turnstile
+                    siteKey={turnstileSiteKey}
+                    options={{ language: "es", size: "flexible", appearance: "interaction-only" }}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onError={() => setTurnstileToken(null)}
+                    onExpire={() => setTurnstileToken(null)}
+                  />
+                </Suspense>
               ) : (
                 <p className="text-muted-foreground text-xs">
                   Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
@@ -722,27 +717,22 @@ export function ProfessorReviewsList({
                 />
               </div>
 
-              <div className="min-h-[70px]">
-                {turnstileSiteKey ? (
-                  <Suspense
-                    fallback={
-                      <div className="text-muted-foreground text-xs">Cargando verificación…</div>
-                    }
-                  >
-                    <Turnstile
-                      siteKey={turnstileSiteKey}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onError={() => setTurnstileToken(null)}
-                      onExpire={() => setTurnstileToken(null)}
-                    />
-                  </Suspense>
-                ) : (
-                  <p className="text-muted-foreground text-xs">
-                    Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
-                    reportes.
-                  </p>
-                )}
-              </div>
+              {turnstileSiteKey ? (
+                <Suspense fallback={null}>
+                  <Turnstile
+                    siteKey={turnstileSiteKey}
+                    options={{ language: "es", size: "flexible", appearance: "interaction-only" }}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onError={() => setTurnstileToken(null)}
+                    onExpire={() => setTurnstileToken(null)}
+                  />
+                </Suspense>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar
+                  reportes.
+                </p>
+              )}
             </div>
 
             <DialogFooter>

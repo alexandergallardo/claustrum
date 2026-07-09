@@ -508,32 +508,21 @@ export function ReviewComposer({
         </Combobox>
       </div>
 
-      <div className="space-y-2">
-        <Label>Verificación humana</Label>
-        <div className="min-h-[70px]">
-          {turnstileSiteKey ? (
-            <div className="inline-flex min-h-[70px] w-[300px] max-w-full items-center overflow-hidden rounded-md">
-              <Suspense
-                fallback={
-                  <span className="text-muted-foreground text-sm">Cargando verificación…</span>
-                }
-              >
-                <Turnstile
-                  siteKey={turnstileSiteKey}
-                  options={{ language: "es", size: "normal" }}
-                  onSuccess={(token) => setTurnstileToken(token)}
-                  onError={() => setTurnstileToken(null)}
-                  onExpire={() => setTurnstileToken(null)}
-                />
-              </Suspense>
-            </div>
-          ) : (
-            <p className="text-sm text-amber-600">
-              Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar envío.
-            </p>
-          )}
-        </div>
-      </div>
+      {turnstileSiteKey ? (
+        <Suspense fallback={null}>
+          <Turnstile
+            siteKey={turnstileSiteKey}
+            options={{ language: "es", size: "flexible", appearance: "interaction-only" }}
+            onSuccess={(token) => setTurnstileToken(token)}
+            onError={() => setTurnstileToken(null)}
+            onExpire={() => setTurnstileToken(null)}
+          />
+        </Suspense>
+      ) : (
+        <p className="text-sm text-amber-600">
+          Turnstile no está configurado. Define VITE_TURNSTILE_SITE_KEY para habilitar envío.
+        </p>
+      )}
 
       <div className="flex justify-end">
         <Button
@@ -557,11 +546,11 @@ export function ReviewComposer({
       >
         <SheetContent
           side="bottom"
-          className="h-[90vh] overflow-hidden p-0"
+          className="max-h-[90vh] gap-0 overflow-hidden p-0"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
-          <SheetHeader>
+          <SheetHeader className="px-4 pt-4 pb-2">
             <SheetTitle>Enviar reseña</SheetTitle>
             <SheetDescription className="space-y-2">
               <span className="block">

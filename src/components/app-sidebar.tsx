@@ -1,13 +1,15 @@
-import {
-  IconCalendarTime,
-  IconDashboard,
-  IconFileDescription,
-  IconSchool,
-  IconUsers,
-  IconMessageCircle,
-} from "@tabler/icons-react";
 import { Link } from "@tanstack/react-router";
-import { EllipsisVertical, Loader2, LogIn } from "lucide-react";
+import {
+  CalendarClock,
+  EllipsisVertical,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  Loader2,
+  LogIn,
+  MessageCircle,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,29 +24,29 @@ const data = {
     {
       title: "Inicio",
       url: "/overview",
-      icon: IconDashboard,
+      icon: LayoutDashboard,
     },
     {
       title: "Horarios",
       url: "/schedule",
-      icon: IconCalendarTime,
+      icon: CalendarClock,
     },
     {
       title: "Plan de estudios",
       url: "/curriculum",
-      icon: IconSchool,
+      icon: GraduationCap,
     },
     {
       title: "Profesores",
       url: "/professors",
-      icon: IconUsers,
+      icon: Users,
     },
   ],
   navSecondary: [
     {
       title: "Reglamento y políticas",
       url: "/policies",
-      icon: IconFileDescription,
+      icon: FileText,
     },
   ],
 };
@@ -164,7 +166,7 @@ export function AppSidebar() {
               "flex size-12 shrink-0 items-center justify-center rounded-full transition-colors group-hover/sidebar:bg-transparent group-hover/sidebar:shadow-none group-data-[user-menu=open]/sidebar:bg-transparent group-data-[user-menu=open]/sidebar:shadow-none",
             )}
           >
-            <IconMessageCircle className="size-5" />
+            <MessageCircle className="size-5" />
           </span>
           <span className="truncate opacity-0 transition-opacity duration-150 group-hover/sidebar:opacity-100 group-data-[user-menu=open]/sidebar:opacity-100">
             Retroalimentación

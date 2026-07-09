@@ -26,6 +26,9 @@ import { Route as ModerationIndexRouteImport } from './routes/moderation/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as CurriculumIndexRouteImport } from './routes/curriculum/index'
 import { Route as ProfessorsProfessorIdRouteImport } from './routes/professors/$professorId'
+import { Route as OgScheduleRouteImport } from './routes/og/schedule'
+import { Route as OgProfessorsRouteImport } from './routes/og/professors'
+import { Route as OgCurriculumRouteImport } from './routes/og/curriculum'
 import { Route as ModerationReviewsRouteImport } from './routes/moderation/reviews'
 import { Route as ModerationReportsRouteImport } from './routes/moderation/reports'
 import { Route as ModerationFeedbackRouteImport } from './routes/moderation/feedback'
@@ -161,6 +164,21 @@ const ProfessorsProfessorIdRoute = ProfessorsProfessorIdRouteImport.update({
 } as any).lazy(() =>
   import('./routes/professors/$professorId.lazy').then((d) => d.Route),
 )
+const OgScheduleRoute = OgScheduleRouteImport.update({
+  id: '/og/schedule',
+  path: '/og/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OgProfessorsRoute = OgProfessorsRouteImport.update({
+  id: '/og/professors',
+  path: '/og/professors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OgCurriculumRoute = OgCurriculumRouteImport.update({
+  id: '/og/curriculum',
+  path: '/og/curriculum',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModerationReviewsRoute = ModerationReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
@@ -268,6 +286,9 @@ export interface FileRoutesByFullPath {
   '/moderation/feedback': typeof ModerationFeedbackRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/reviews': typeof ModerationReviewsRoute
+  '/og/curriculum': typeof OgCurriculumRoute
+  '/og/professors': typeof OgProfessorsRoute
+  '/og/schedule': typeof OgScheduleRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
@@ -299,6 +320,9 @@ export interface FileRoutesByTo {
   '/moderation/feedback': typeof ModerationFeedbackRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/reviews': typeof ModerationReviewsRoute
+  '/og/curriculum': typeof OgCurriculumRoute
+  '/og/professors': typeof OgProfessorsRoute
+  '/og/schedule': typeof OgScheduleRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
@@ -333,6 +357,9 @@ export interface FileRoutesById {
   '/moderation/feedback': typeof ModerationFeedbackRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/reviews': typeof ModerationReviewsRoute
+  '/og/curriculum': typeof OgCurriculumRoute
+  '/og/professors': typeof OgProfessorsRoute
+  '/og/schedule': typeof OgScheduleRoute
   '/professors/$professorId': typeof ProfessorsProfessorIdRoute
   '/settings/appearance': typeof SettingsAppearanceLazyRoute
   '/settings/profile': typeof SettingsProfileLazyRoute
@@ -368,6 +395,9 @@ export interface FileRouteTypes {
     | '/moderation/feedback'
     | '/moderation/reports'
     | '/moderation/reviews'
+    | '/og/curriculum'
+    | '/og/professors'
+    | '/og/schedule'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
@@ -399,6 +429,9 @@ export interface FileRouteTypes {
     | '/moderation/feedback'
     | '/moderation/reports'
     | '/moderation/reviews'
+    | '/og/curriculum'
+    | '/og/professors'
+    | '/og/schedule'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
@@ -432,6 +465,9 @@ export interface FileRouteTypes {
     | '/moderation/feedback'
     | '/moderation/reports'
     | '/moderation/reviews'
+    | '/og/curriculum'
+    | '/og/professors'
+    | '/og/schedule'
     | '/professors/$professorId'
     | '/settings/appearance'
     | '/settings/profile'
@@ -462,6 +498,9 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   CurriculumCourseIdRoute: typeof CurriculumCourseIdRoute
   DocsSplatRoute: typeof DocsSplatRoute
+  OgCurriculumRoute: typeof OgCurriculumRoute
+  OgProfessorsRoute: typeof OgProfessorsRoute
+  OgScheduleRoute: typeof OgScheduleRoute
   ProfessorsProfessorIdRoute: typeof ProfessorsProfessorIdRoute
   CurriculumIndexRoute: typeof CurriculumIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
@@ -599,6 +638,27 @@ declare module '@tanstack/react-router' {
       path: '/professors/$professorId'
       fullPath: '/professors/$professorId'
       preLoaderRoute: typeof ProfessorsProfessorIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/schedule': {
+      id: '/og/schedule'
+      path: '/og/schedule'
+      fullPath: '/og/schedule'
+      preLoaderRoute: typeof OgScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/professors': {
+      id: '/og/professors'
+      path: '/og/professors'
+      fullPath: '/og/professors'
+      preLoaderRoute: typeof OgProfessorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/curriculum': {
+      id: '/og/curriculum'
+      path: '/og/curriculum'
+      fullPath: '/og/curriculum'
+      preLoaderRoute: typeof OgCurriculumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/moderation/reviews': {
@@ -763,6 +823,9 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   CurriculumCourseIdRoute: CurriculumCourseIdRoute,
   DocsSplatRoute: DocsSplatRoute,
+  OgCurriculumRoute: OgCurriculumRoute,
+  OgProfessorsRoute: OgProfessorsRoute,
+  OgScheduleRoute: OgScheduleRoute,
   ProfessorsProfessorIdRoute: ProfessorsProfessorIdRoute,
   CurriculumIndexRoute: CurriculumIndexRoute,
   DocsIndexRoute: DocsIndexRoute,

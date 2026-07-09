@@ -17,11 +17,12 @@ export interface ProfessorsSearch {
 export const Route = createFileRoute("/professors/")({
   head: () =>
     buildSeoMeta({
-      title: "Reseñas de Profesores TEC (ITCR) | Claustrum",
+      title: "Reseñas y evaluaciones de profesores | Claustrum",
       description:
-        "Lee y comparte reseñas de profesores del Tecnológico de Costa Rica para armar el mejor horario.",
+        "Explora, lee y comparte opiniones sobre profesores para planificar tu próximo semestre.",
       breadcrumbName: "Profesores",
       urlPath: "/professors",
+      image: "/og/og-professors.png",
     }),
   validateSearch: (search: ProfessorsSearchInput): ProfessorsSearch => {
     return {

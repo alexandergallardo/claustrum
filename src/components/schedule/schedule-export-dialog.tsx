@@ -127,8 +127,8 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
           <ImageDown className="size-4" />
         </Button>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetContent side="bottom" className="h-[90vh] overflow-hidden p-0">
-            <SheetHeader>
+          <SheetContent side="bottom" className="max-h-[90vh] gap-0 overflow-hidden p-0">
+            <SheetHeader className="px-4 pt-4 pb-2">
               <SheetTitle>Exportar calendario</SheetTitle>
               <SheetDescription>
                 Descarga el horario como imagen o archivo de calendario.

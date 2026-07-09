@@ -1,10 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getEvaluationModerationQueue } from "@/lib/evaluations/api";
 import {
   getProfessorReviewReportsForModeration,
   getProfessorReviewsForModeration,
 } from "@/lib/professor-reviews/api";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 export type ModerationCounts = {
   pendingReviews: number;
@@ -12,7 +14,54 @@ export type ModerationCounts = {
   pendingReviewReports: number;
 };
 
+export function useModerationRealtime(enabled = true) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const supabase = getSupabaseBrowserClient();
+    
+    // Use a unique channel name per hook instance to avoid collisions 
+    // if multiple components use this hook at the same time.
+    const channelId = `moderation-updates-${crypto.randomUUID()}`;
+    const channel = supabase
+      .channel(channelId)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "professor_review" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
+          void queryClient.invalidateQueries({ queryKey: ["professorModerationQueue"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "course_evaluations" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
+          void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "professor_review_report" },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
+          void queryClient.invalidateQueries({ queryKey: ["professorReviewReportModerationQueue"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [enabled, queryClient]);
+}
+
 export function useModerationCounts(enabled = true) {
+  useModerationRealtime(enabled);
+
   return useQuery({
     queryKey: ["moderationCounts"],
     queryFn: async (): Promise<ModerationCounts> => {

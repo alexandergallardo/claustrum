@@ -1,6 +1,5 @@
-import { IconCalendarTime, IconDashboard, IconSchool, IconUsers } from "@tabler/icons-react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { LogInIcon } from "lucide-react";
+import { CalendarClock, GraduationCap, LayoutDashboard, LogInIcon, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAppAuth } from "@/lib/auth/app-auth-context";
@@ -10,22 +9,22 @@ const mainNavItems = [
   {
     title: "Inicio",
     url: "/overview",
-    icon: IconDashboard,
+    icon: LayoutDashboard,
   },
   {
     title: "Horarios",
     url: "/schedule",
-    icon: IconCalendarTime,
+    icon: CalendarClock,
   },
   {
     title: "Plan",
     url: "/curriculum",
-    icon: IconSchool,
+    icon: GraduationCap,
   },
   {
     title: "Profesores",
     url: "/professors",
-    icon: IconUsers,
+    icon: Users,
   },
 ];
 

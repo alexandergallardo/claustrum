@@ -144,6 +144,7 @@ function RootComponent() {
     isAuthRoute ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/docs") ||
+    pathname.startsWith("/og") ||
     pathname === "/";
 
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser({ enabled: !isPublicRoute });

@@ -32,6 +32,7 @@ export const Route = createFileRoute("/professors/$professorId")({
       description: `Lee las opiniones, facilidad y calidad de ${name} en el Tecnológico de Costa Rica.`,
       breadcrumbName: name,
       urlPath: `/professors/${ctx.params.professorId}`,
+      image: "/og/og-professors.png",
       jsonLd: [
         {
           "@context": "https://schema.org",

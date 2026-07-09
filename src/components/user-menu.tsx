@@ -1,4 +1,4 @@
-import { IconLogout, IconSettings } from "@tabler/icons-react";
+import { LogOut, Settings } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 
@@ -54,7 +54,7 @@ export function UserMenu({
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link to="/settings/profile">
-              <IconSettings />
+              <Settings />
               Configuración
             </Link>
           </DropdownMenuItem>
@@ -68,7 +68,7 @@ export function UserMenu({
             void navigate({ to: "/" });
           }}
         >
-          <IconLogout />
+          <LogOut />
           Cerrar sesión
         </DropdownMenuItem>
       </DropdownMenuContent>
