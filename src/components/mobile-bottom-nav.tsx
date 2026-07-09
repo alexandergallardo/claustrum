@@ -55,7 +55,7 @@ export function MobileBottomNav() {
             )}
           >
             {active ? (
-              <span className="bg-foreground absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
+              <span className="bg-foreground absolute top-0 left-1/2 h-0.5 w-10 -translate-x-1/2 rounded-full" />
             ) : null}
             <item.icon className="size-5 shrink-0" strokeWidth={active ? 2.4 : 2} />
             <span className="truncate">{item.title}</span>
@@ -74,7 +74,7 @@ export function MobileBottomNav() {
         )}
       >
         {isActive("/settings") || isActive("/auth") ? (
-          <span className="bg-foreground absolute top-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full" />
+          <span className="bg-foreground absolute top-0 left-1/2 h-0.5 w-10 -translate-x-1/2 rounded-full" />
         ) : null}
         {authUser ? (
           <Avatar className="border-muted-foreground/35 size-5 border">

@@ -1,11 +1,18 @@
 import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { UserIcon, ShieldIcon, PaletteIcon, LogOutIcon, MessageCircleIcon } from "lucide-react";
+import {
+  UserIcon,
+  ShieldIcon,
+  PaletteIcon,
+  LogOutIcon,
+  MessageCircleIcon,
+  FileTextIcon,
+} from "lucide-react";
 import { useState } from "react";
 
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { signOut } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
-import { FeedbackDialog } from "@/components/feedback-dialog";
 
 const navItems = [
   {
@@ -63,6 +70,13 @@ export function SettingsLayout() {
                 <MessageCircleIcon className="size-4" />
                 Retroalimentación
               </button>
+              <Link
+                to="/policies"
+                className="hover:bg-accent hover:text-accent-foreground text-muted-foreground flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors lg:hidden"
+              >
+                <FileTextIcon className="size-4" />
+                Reglamento y políticas
+              </Link>
               <div className="bg-border my-1 h-px lg:hidden" />
               <button
                 type="button"
