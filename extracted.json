@@ -1,0 +1,4011 @@
+{
+  "coursesData": [
+    {
+      "course_id": 537,
+      "level_number": 0,
+      "level_label": "SEMESTRE 0",
+      "credits": 0,
+      "weekly_hours": 0,
+      "sort_order": 0,
+      "course_code": "CI0200",
+      "course_name": "EXAMEN DIAGNÓSTICO",
+      "default_credits": 0,
+      "default_weekly_hours": 0
+    },
+    {
+      "course_id": 539,
+      "level_number": 0,
+      "level_label": "SEMESTRE 0",
+      "credits": 2,
+      "weekly_hours": 3,
+      "sort_order": 10,
+      "course_code": "CI0202",
+      "course_name": "INGLÉS BÁSICO",
+      "default_credits": 2,
+      "default_weekly_hours": 3
+    },
+    {
+      "course_id": 563,
+      "level_number": 0,
+      "level_label": "SEMESTRE 0",
+      "credits": 2,
+      "weekly_hours": 5,
+      "sort_order": 20,
+      "course_code": "MA0101",
+      "course_name": "MATEMÁTICA GENERAL",
+      "default_credits": 2,
+      "default_weekly_hours": 5
+    },
+    {
+      "course_id": 554,
+      "level_number": 1,
+      "level_label": "SEMESTRE 1",
+      "credits": 2,
+      "weekly_hours": 6,
+      "sort_order": 0,
+      "course_code": "CI1106",
+      "course_name": "COMUNICACIÓN ESCRITA",
+      "default_credits": 2,
+      "default_weekly_hours": 6
+    },
+    {
+      "course_id": 1017,
+      "level_number": 1,
+      "level_label": "SEMESTRE 1",
+      "credits": 3,
+      "weekly_hours": 9,
+      "sort_order": 10,
+      "course_code": "IC1400",
+      "course_name": "FUNDAMENTOS DE ORGANIZACIÓN DE COMPUTADORAS",
+      "default_credits": 3,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 1020,
+      "level_number": 1,
+      "level_label": "SEMESTRE 1",
+      "credits": 3,
+      "weekly_hours": 4,
+      "sort_order": 20,
+      "course_code": "IC1802",
+      "course_name": "INTRODUCCIÓN A LA PROGRAMACIÓN",
+      "default_credits": 3,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1022,
+      "level_number": 1,
+      "level_label": "SEMESTRE 1",
+      "credits": 3,
+      "weekly_hours": 4,
+      "sort_order": 30,
+      "course_code": "IC1803",
+      "course_name": "TALLER DE PROGRAMACIÓN",
+      "default_credits": 3,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1018,
+      "level_number": 1,
+      "level_label": "SEMESTRE 1",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 40,
+      "course_code": "MA1403",
+      "course_name": "MATEMÁTICA DISCRETA",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 497,
+      "level_number": 1,
+      "level_label": "SEMESTRE 1",
+      "credits": 0,
+      "weekly_hours": 2,
+      "sort_order": 50,
+      "course_code": "SE1100",
+      "course_name": "ACTIVIDAD CULTURAL I",
+      "default_credits": 0,
+      "default_weekly_hours": 2
+    },
+    {
+      "course_id": 600,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 1,
+      "weekly_hours": 3,
+      "sort_order": 0,
+      "course_code": "CI1107",
+      "course_name": "COMUNICACIÓN ORAL",
+      "default_credits": 1,
+      "default_weekly_hours": 3
+    },
+    {
+      "course_id": 545,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 2,
+      "weekly_hours": 6,
+      "sort_order": 10,
+      "course_code": "CI1230",
+      "course_name": "INGLÉS I",
+      "default_credits": 2,
+      "default_weekly_hours": 6
+    },
+    {
+      "course_id": 648,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 0,
+      "weekly_hours": 2,
+      "sort_order": 20,
+      "course_code": "FH1000",
+      "course_name": "CENTROS DE FORMACIÓN HUMANÍSTICA",
+      "default_credits": 0,
+      "default_weekly_hours": 2
+    },
+    {
+      "course_id": 1029,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 4,
+      "weekly_hours": 12,
+      "sort_order": 30,
+      "course_code": "IC2001",
+      "course_name": "ESTRUCTURAS DE DATOS",
+      "default_credits": 4,
+      "default_weekly_hours": 12
+    },
+    {
+      "course_id": 1030,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 3,
+      "weekly_hours": 9,
+      "sort_order": 40,
+      "course_code": "IC2101",
+      "course_name": "PROGRAMACIÓN ORIENTADA A OBJETOS",
+      "default_credits": 3,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 1032,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 50,
+      "course_code": "IC3101",
+      "course_name": "ARQUITECTURA DE COMPUTADORES",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 605,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 4,
+      "weekly_hours": 5,
+      "sort_order": 60,
+      "course_code": "MA1102",
+      "course_name": "CÁLCULO DIFERENCIAL E INTEGRAL",
+      "default_credits": 4,
+      "default_weekly_hours": 5
+    },
+    {
+      "course_id": 490,
+      "level_number": 2,
+      "level_label": "SEMESTRE 2",
+      "credits": 0,
+      "weekly_hours": 2,
+      "sort_order": 70,
+      "course_code": "SE1200",
+      "course_name": "ACTIVIDAD DEPORTIVA I",
+      "default_credits": 0,
+      "default_weekly_hours": 2
+    },
+    {
+      "course_id": 625,
+      "level_number": 3,
+      "level_label": "SEMESTRE 3",
+      "credits": 2,
+      "weekly_hours": 3,
+      "sort_order": 0,
+      "course_code": "CI1231",
+      "course_name": "INGLÉS II",
+      "default_credits": 2,
+      "default_weekly_hours": 3
+    },
+    {
+      "course_id": 1035,
+      "level_number": 3,
+      "level_label": "SEMESTRE 3",
+      "credits": 4,
+      "weekly_hours": 12,
+      "sort_order": 10,
+      "course_code": "IC3002",
+      "course_name": "ANÁLISIS DE ALGORITMOS",
+      "default_credits": 4,
+      "default_weekly_hours": 12
+    },
+    {
+      "course_id": 1037,
+      "level_number": 3,
+      "level_label": "SEMESTRE 3",
+      "credits": 4,
+      "weekly_hours": 9,
+      "sort_order": 20,
+      "course_code": "IC4301",
+      "course_name": "BASES DE DATOS I",
+      "default_credits": 4,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 1039,
+      "level_number": 3,
+      "level_label": "SEMESTRE 3",
+      "credits": 4,
+      "weekly_hours": 12,
+      "sort_order": 30,
+      "course_code": "IC5821",
+      "course_name": "REQUERIMIENTOS DE SOFTWARE",
+      "default_credits": 4,
+      "default_weekly_hours": 12
+    },
+    {
+      "course_id": 634,
+      "level_number": 3,
+      "level_label": "SEMESTRE 3",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 40,
+      "course_code": "MA1103",
+      "course_name": "CÁLCULO Y ÁLGEBRA LINEAL",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 647,
+      "level_number": 3,
+      "level_label": "SEMESTRE 3",
+      "credits": 0,
+      "weekly_hours": 2,
+      "sort_order": 50,
+      "course_code": "SE1400",
+      "course_name": "ACTIVIDAD CULTURAL-DEPORTIVA",
+      "default_credits": 0,
+      "default_weekly_hours": 2
+    },
+    {
+      "course_id": 628,
+      "level_number": 4,
+      "level_label": "SEMESTRE 4",
+      "credits": 2,
+      "weekly_hours": 6,
+      "sort_order": 0,
+      "course_code": "CS2101",
+      "course_name": "AMBIENTE HUMANO",
+      "default_credits": 2,
+      "default_weekly_hours": 6
+    },
+    {
+      "course_id": 1043,
+      "level_number": 4,
+      "level_label": "SEMESTRE 4",
+      "credits": 3,
+      "weekly_hours": 9,
+      "sort_order": 10,
+      "course_code": "IC4302",
+      "course_name": "BASES DE DATOS II",
+      "default_credits": 3,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 1045,
+      "level_number": 4,
+      "level_label": "SEMESTRE 4",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 20,
+      "course_code": "IC4700",
+      "course_name": "LENGUAJES DE PROGRAMACIÓN",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1047,
+      "level_number": 4,
+      "level_label": "SEMESTRE 4",
+      "credits": 4,
+      "weekly_hours": 12,
+      "sort_order": 30,
+      "course_code": "IC6821",
+      "course_name": "DISEÑO DE SOFTWARE",
+      "default_credits": 4,
+      "default_weekly_hours": 12
+    },
+    {
+      "course_id": 1049,
+      "level_number": 4,
+      "level_label": "SEMESTRE 4",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 40,
+      "course_code": "MA2404",
+      "course_name": "PROBABILIDADES",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 981,
+      "level_number": 5,
+      "level_label": "SEMESTRE 5",
+      "credits": 2,
+      "weekly_hours": 3,
+      "sort_order": 0,
+      "course_code": "CS3401",
+      "course_name": "SEMINARIO DE ESTUDIOS FILOSÓFICOS HISTÓRICOS",
+      "default_credits": 2,
+      "default_weekly_hours": 3
+    },
+    {
+      "course_id": 1052,
+      "level_number": 5,
+      "level_label": "SEMESTRE 5",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 10,
+      "course_code": "IC4810",
+      "course_name": "ADMINISTRACIÓN DE PROYECTOS",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1054,
+      "level_number": 5,
+      "level_label": "SEMESTRE 5",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 20,
+      "course_code": "IC5701",
+      "course_name": "COMPILADORES E INTERPRETES",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1056,
+      "level_number": 5,
+      "level_label": "SEMESTRE 5",
+      "credits": 3,
+      "weekly_hours": 9,
+      "sort_order": 30,
+      "course_code": "IC6831",
+      "course_name": "ASEGURAMIENTO DE LA CALIDAD DEL SOFTWARE",
+      "default_credits": 3,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 1057,
+      "level_number": 5,
+      "level_label": "SEMESTRE 5",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 40,
+      "course_code": "MA3405",
+      "course_name": "ESTADÍSTICA",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1004,
+      "level_number": 6,
+      "level_label": "SEMESTRE 6",
+      "credits": 2,
+      "weekly_hours": 3,
+      "sort_order": 0,
+      "course_code": "CS4402",
+      "course_name": "SEMINARIO DE ESTUDIOS COSTARRICENSES",
+      "default_credits": 2,
+      "default_weekly_hours": 3
+    },
+    {
+      "course_id": 1059,
+      "level_number": 6,
+      "level_label": "SEMESTRE 6",
+      "credits": 3,
+      "weekly_hours": 4,
+      "sort_order": 10,
+      "course_code": "IC4003",
+      "course_name": "ELECTIVA I",
+      "default_credits": 3,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1151,
+      "level_number": 6,
+      "level_label": "SEMESTRE 6",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 20,
+      "course_code": "IC6400",
+      "course_name": "INVESTIGACIÓN DE OPERACIONES",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1154,
+      "level_number": 6,
+      "level_label": "SEMESTRE 6",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 30,
+      "course_code": "IC6600",
+      "course_name": "PRINCIPIOS DE SISTEMAS OPERATIVOS",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1156,
+      "level_number": 6,
+      "level_label": "SEMESTRE 6",
+      "credits": 2,
+      "weekly_hours": 7,
+      "sort_order": 40,
+      "course_code": "IC7900",
+      "course_name": "COMPUTACIÓN Y SOCIEDAD",
+      "default_credits": 2,
+      "default_weekly_hours": 7
+    },
+    {
+      "course_id": 1158,
+      "level_number": 6,
+      "level_label": "SEMESTRE 6",
+      "credits": 3,
+      "weekly_hours": 9,
+      "sort_order": 50,
+      "course_code": "IC8071",
+      "course_name": "SEGURIDAD DEL SOFTWARE",
+      "default_credits": 3,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 965,
+      "level_number": 7,
+      "level_label": "SEMESTRE 7",
+      "credits": 4,
+      "weekly_hours": 12,
+      "sort_order": 0,
+      "course_code": "AE4208",
+      "course_name": "DESARROLLO DE EMPRENDEDORES",
+      "default_credits": 4,
+      "default_weekly_hours": 12
+    },
+    {
+      "course_id": 1160,
+      "level_number": 7,
+      "level_label": "SEMESTRE 7",
+      "credits": 3,
+      "weekly_hours": 4,
+      "sort_order": 10,
+      "course_code": "IC5001",
+      "course_name": "ELECTIVA II",
+      "default_credits": 3,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1162,
+      "level_number": 7,
+      "level_label": "SEMESTRE 7",
+      "credits": 4,
+      "weekly_hours": 4,
+      "sort_order": 20,
+      "course_code": "IC6200",
+      "course_name": "INTELIGENCIA ARTIFICIAL",
+      "default_credits": 4,
+      "default_weekly_hours": 4
+    },
+    {
+      "course_id": 1163,
+      "level_number": 7,
+      "level_label": "SEMESTRE 7",
+      "credits": 4,
+      "weekly_hours": 12,
+      "sort_order": 30,
+      "course_code": "IC7602",
+      "course_name": "REDES",
+      "default_credits": 4,
+      "default_weekly_hours": 12
+    },
+    {
+      "course_id": 1159,
+      "level_number": 7,
+      "level_label": "SEMESTRE 7",
+      "credits": 3,
+      "weekly_hours": 9,
+      "sort_order": 40,
+      "course_code": "IC7841",
+      "course_name": "PROYECTO DE INGENIERÍA DE SOFTWARE",
+      "default_credits": 3,
+      "default_weekly_hours": 9
+    },
+    {
+      "course_id": 1166,
+      "level_number": 8,
+      "level_label": "SEMESTRE 8",
+      "credits": 12,
+      "weekly_hours": 40,
+      "sort_order": 0,
+      "course_code": "IC8842",
+      "course_name": "PRÁCTICA PROFESIONAL",
+      "default_credits": 12,
+      "default_weekly_hours": 40
+    }
+  ],
+  "relationsData": [
+    {
+      "from_course_id": 490,
+      "to_course_id": 491,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 492,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 493,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 494,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 495,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 496,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 574,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 575,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 576,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 577,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 578,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 579,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 580,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 581,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 582,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 583,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 584,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 585,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 586,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 587,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 588,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 589,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 590,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 591,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 592,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 593,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 594,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 595,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 596,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 597,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 598,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 490,
+      "to_course_id": 599,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 498,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 499,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 500,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 501,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 502,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 503,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 504,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 505,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 506,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 507,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 508,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 509,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 510,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 511,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 512,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 513,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 619,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 620,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 621,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 622,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 623,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 497,
+      "to_course_id": 624,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 135,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 538,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 539,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 540,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 541,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 542,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 543,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 544,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 545,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 546,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 547,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 548,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 549,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 550,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 551,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 552,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 537,
+      "to_course_id": 553,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 135,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 537,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 538,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 540,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 541,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 542,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 543,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 544,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 545,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 546,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 547,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 548,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 549,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 550,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 551,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 552,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 539,
+      "to_course_id": 553,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 545,
+      "to_course_id": 537,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 545,
+      "to_course_id": 539,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 545,
+      "to_course_id": 549,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 554,
+      "to_course_id": 555,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 554,
+      "to_course_id": 556,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 600,
+      "to_course_id": 554,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 605,
+      "to_course_id": 563,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 605,
+      "to_course_id": 1018,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 605,
+      "to_course_id": 1034,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 625,
+      "to_course_id": 545,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 625,
+      "to_course_id": 627,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 628,
+      "to_course_id": 600,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 628,
+      "to_course_id": 1042,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 634,
+      "to_course_id": 605,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 634,
+      "to_course_id": 1041,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 490,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 491,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 492,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 493,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 494,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 495,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 496,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 497,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 498,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 499,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 500,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 501,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 502,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 503,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 504,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 505,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 506,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 507,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 508,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 509,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 510,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 511,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 512,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 513,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 574,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 575,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 576,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 577,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 578,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 579,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 580,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 581,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 583,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 584,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 585,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 586,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 587,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 589,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 590,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 591,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 592,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 593,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 594,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 595,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 596,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 597,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 598,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 599,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 618,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 619,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 620,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 621,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 622,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 623,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 647,
+      "to_course_id": 624,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 649,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 650,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 651,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 652,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 653,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 654,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 655,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 656,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 657,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 658,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 659,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 660,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 661,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 662,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 663,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 664,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 665,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 666,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 667,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 668,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 669,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 670,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 671,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 672,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 673,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 674,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 675,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 676,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 677,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 678,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 679,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 680,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 681,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 682,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 683,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 684,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 685,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 686,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 687,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 688,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 689,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 690,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 691,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 692,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 693,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 694,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 695,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 696,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 697,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 698,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 699,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 700,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 701,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 702,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 703,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 704,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 705,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 706,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 707,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 708,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 709,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 710,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 711,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 712,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 713,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 714,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 715,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 716,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 717,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 718,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 719,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 720,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 721,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 722,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 723,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 724,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 725,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 726,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 727,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 728,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 729,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 730,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 731,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 732,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 733,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 734,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 735,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 736,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 737,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 738,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 739,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 740,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 741,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 742,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 743,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 744,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 745,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 746,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 747,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 748,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 749,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 750,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 751,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 752,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 753,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 754,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 755,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 756,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 757,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 758,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 759,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 760,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 761,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 762,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 763,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 764,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 765,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 766,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 767,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 768,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 769,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 770,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 771,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 772,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 773,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 774,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 775,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 776,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 777,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 778,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 779,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 780,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 781,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 782,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 783,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 784,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 785,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 786,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 787,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 788,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 789,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 790,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 791,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 792,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 793,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 794,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 795,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 796,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 797,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 798,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 799,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 800,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 801,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 802,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 803,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 804,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 805,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 806,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 807,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 808,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 809,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 810,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 811,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 812,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 813,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 814,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 815,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 816,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 817,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 818,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 819,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 820,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 821,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 822,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 823,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 824,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 825,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 826,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 827,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 828,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 829,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 830,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 831,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 832,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 833,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 834,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 835,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 836,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 837,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 838,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 839,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 840,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 841,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 842,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 843,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 844,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 845,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 846,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 847,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 848,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 849,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 850,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 851,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 852,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 853,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 854,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 855,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 856,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 857,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 858,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 859,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 860,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 861,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 862,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 863,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 864,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 865,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 866,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 867,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 868,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 869,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 870,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 871,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 872,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 873,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 874,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 875,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 876,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 877,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 878,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 879,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 880,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 881,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 882,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 883,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 884,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 885,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 886,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 887,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 888,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 889,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 890,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 891,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 892,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 893,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 894,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 895,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 896,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 897,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 898,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 899,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 900,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 901,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 902,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 903,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 904,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 905,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 906,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 907,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 908,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 909,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 910,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 911,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 912,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 913,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 914,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 915,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 916,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 917,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 918,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 919,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 920,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 648,
+      "to_course_id": 921,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 965,
+      "to_course_id": 966,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 965,
+      "to_course_id": 967,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 965,
+      "to_course_id": 1159,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 981,
+      "to_course_id": 628,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 981,
+      "to_course_id": 1051,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1004,
+      "to_course_id": 981,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1004,
+      "to_course_id": 1005,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1017,
+      "to_course_id": 1018,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 1017,
+      "to_course_id": 1019,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1018,
+      "to_course_id": 1024,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1018,
+      "to_course_id": 1025,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1018,
+      "to_course_id": 1026,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1018,
+      "to_course_id": 1027,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1018,
+      "to_course_id": 1028,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1020,
+      "to_course_id": 1021,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1022,
+      "to_course_id": 1023,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1029,
+      "to_course_id": 1030,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 1029,
+      "to_course_id": 1031,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1030,
+      "to_course_id": 1020,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1030,
+      "to_course_id": 1022,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1032,
+      "to_course_id": 1017,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1032,
+      "to_course_id": 1022,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1032,
+      "to_course_id": 1033,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1035,
+      "to_course_id": 605,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1035,
+      "to_course_id": 1029,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1035,
+      "to_course_id": 1036,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1037,
+      "to_course_id": 634,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 1037,
+      "to_course_id": 1029,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1037,
+      "to_course_id": 1038,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1039,
+      "to_course_id": 1037,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 1039,
+      "to_course_id": 1040,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1043,
+      "to_course_id": 1037,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1043,
+      "to_course_id": 1044,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1045,
+      "to_course_id": 1032,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1045,
+      "to_course_id": 1035,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1045,
+      "to_course_id": 1046,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1047,
+      "to_course_id": 1039,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1047,
+      "to_course_id": 1048,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1049,
+      "to_course_id": 634,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1049,
+      "to_course_id": 1050,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1052,
+      "to_course_id": 1039,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1052,
+      "to_course_id": 1053,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1054,
+      "to_course_id": 1045,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1054,
+      "to_course_id": 1055,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1056,
+      "to_course_id": 1047,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1056,
+      "to_course_id": 1052,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 1057,
+      "to_course_id": 1049,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1057,
+      "to_course_id": 1058,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1060,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1061,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1062,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1063,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1064,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1065,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1066,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1067,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1068,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1069,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1070,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1071,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1072,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1073,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1074,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1075,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1076,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1077,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1078,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1079,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1080,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1081,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1082,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1083,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1084,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1085,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1086,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1087,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1088,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1089,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1090,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1091,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1092,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1093,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1094,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1095,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1096,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1097,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1098,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1099,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1100,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1101,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1102,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1103,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1104,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1105,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1106,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1107,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1108,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1109,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1110,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1111,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1112,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1113,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1114,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1115,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1116,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1117,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1118,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1119,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1120,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1121,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1122,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1123,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1124,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1125,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1126,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1127,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1128,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1129,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1130,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1131,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1132,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1133,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1134,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1135,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1136,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1137,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1138,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1139,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1140,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1141,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1142,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1143,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1144,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1145,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1146,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1147,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1148,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1149,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 1150,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1059,
+      "to_course_id": 4932,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1151,
+      "to_course_id": 1057,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1151,
+      "to_course_id": 1152,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1151,
+      "to_course_id": 1153,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1154,
+      "to_course_id": 1054,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1154,
+      "to_course_id": 1155,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1156,
+      "to_course_id": 1004,
+      "relation_type": "COREQUISITE"
+    },
+    {
+      "from_course_id": 1156,
+      "to_course_id": 1052,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1156,
+      "to_course_id": 1157,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1158,
+      "to_course_id": 1052,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1158,
+      "to_course_id": 1056,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1159,
+      "to_course_id": 1043,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1159,
+      "to_course_id": 1056,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1159,
+      "to_course_id": 1158,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1159,
+      "to_course_id": 1165,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1060,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1061,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1062,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1063,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1064,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1065,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1066,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1067,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1068,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1069,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1070,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1071,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1072,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1073,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1074,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1075,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1076,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1077,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1078,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1079,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1080,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1081,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1082,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1083,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1084,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1085,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1086,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1087,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1088,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1089,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1090,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1091,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1092,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1093,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1094,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1095,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1096,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1097,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1098,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1099,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1100,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1101,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1102,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1103,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1104,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1105,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1106,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1107,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1108,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1109,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1110,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1111,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1112,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1113,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1114,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1115,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1116,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1117,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1118,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1119,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1120,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1121,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1122,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1123,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1124,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1125,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1126,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1127,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1128,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1129,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1130,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1131,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1132,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1133,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1134,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1135,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1136,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1137,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1138,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1139,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1140,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1141,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1142,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1143,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1144,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1145,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1146,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1147,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1148,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1149,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1150,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 1161,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1160,
+      "to_course_id": 4932,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1162,
+      "to_course_id": 1054,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1162,
+      "to_course_id": 1151,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1163,
+      "to_course_id": 1154,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1163,
+      "to_course_id": 1164,
+      "relation_type": "EQUIVALENT"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 490,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 497,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 647,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 648,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 965,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 1059,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 1159,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 1160,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 1162,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 1163,
+      "relation_type": "PREREQUISITE"
+    },
+    {
+      "from_course_id": 1166,
+      "to_course_id": 1167,
+      "relation_type": "EQUIVALENT"
+    }
+  ]
+}

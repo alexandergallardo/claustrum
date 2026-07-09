@@ -1,17 +1,17 @@
 import {
-  IconBrandCloudflare,
-  IconBrandReact,
-  IconBrandSupabase,
-  IconBrandTailwind,
-  IconShieldLock,
-} from "@tabler/icons-react";
+  BetterAuthIcon,
+  CloudflareIcon,
+  ReactIcon,
+  SupabaseIcon,
+  TailwindCSSIcon,
+} from "./-icons";
 
 const STACK_ITEMS = [
-  { name: "React 19", role: "Interfaz", icon: IconBrandReact },
-  { name: "Tailwind CSS v4", role: "Estilos", icon: IconBrandTailwind },
-  { name: "Cloudflare", role: "Hosting y API", icon: IconBrandCloudflare },
-  { name: "Supabase", role: "Base de datos", icon: IconBrandSupabase },
-  { name: "Better Auth", role: "Autenticación", icon: IconShieldLock },
+  { name: "React 19", role: "Interfaz", icon: ReactIcon },
+  { name: "Tailwind CSS v4", role: "Estilos", icon: TailwindCSSIcon },
+  { name: "Cloudflare", role: "Hosting y API", icon: CloudflareIcon },
+  { name: "Supabase", role: "Base de datos", icon: SupabaseIcon },
+  { name: "Better Auth", role: "Autenticación", icon: BetterAuthIcon },
 ];
 
 export function StackSection() {
