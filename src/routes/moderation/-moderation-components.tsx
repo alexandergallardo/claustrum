@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { lazy, Suspense } from "react";
 
 import type { EvaluationModerationRow } from "@/lib/evaluations/types";
 import type {
@@ -13,15 +14,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { lazy, Suspense } from "react";
-
 const PdfViewer = lazy(() =>
   import("@/components/pdf-viewer").then((mod) => ({ default: mod.PdfViewer })),
 );
-import { getEvaluationAnswersDocument, getEvaluationDocument } from "@/lib/evaluations/api";
 import { formatEvaluationFileName, formatEvaluationTypeLabel } from "@/lib/evaluations/types";
-
-
+import {
+  useEvaluationDocumentQuery,
+  useEvaluationAnswersDocumentQuery,
+} from "@/lib/hooks/use-evaluations";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -33,13 +33,14 @@ function formatScore(value: number | null): string {
   return value === null ? "-" : value.toFixed(1);
 }
 
-
-
 function ReviewCourses({ review }: { review: ProfessorReviewModerationRow }) {
   return (
     <div className="space-y-1">
       {review.courses.map((course) => (
-        <p key={`${review.review_id}-${course.id}`} className="text-sm text-muted-foreground break-words">
+        <p
+          key={`${review.review_id}-${course.id}`}
+          className="text-muted-foreground text-sm break-words"
+        >
           {course.code}: {course.name}
         </p>
       ))}
@@ -51,17 +52,33 @@ function ReviewScoreSummary({ review }: { review: ProfessorReviewModerationRow }
   const scores = [
     { label: "Facilidad", value: formatScore(review.ease_score) },
     { label: "Calidad", value: formatScore(review.quality_score) },
-    ...(review.clarity_score !== null ? [{ label: "Claridad", value: formatScore(review.clarity_score) }] : []),
-    ...(review.fairness_score !== null ? [{ label: "Justicia", value: formatScore(review.fairness_score) }] : []),
-    ...(review.attendance_required !== null ? [{ label: "Asistencia", value: review.attendance_required ? "Obligatoria" : "No obligatoria" }] : []),
+    ...(review.clarity_score !== null
+      ? [{ label: "Claridad", value: formatScore(review.clarity_score) }]
+      : []),
+    ...(review.fairness_score !== null
+      ? [{ label: "Justicia", value: formatScore(review.fairness_score) }]
+      : []),
+    ...(review.attendance_required !== null
+      ? [
+          {
+            label: "Asistencia",
+            value: review.attendance_required ? "Obligatoria" : "No obligatoria",
+          },
+        ]
+      : []),
     ...(review.grade_received !== null ? [{ label: "Nota", value: review.grade_received }] : []),
-    ...(review.engagement_level !== null ? [{ label: "Interés", value: review.engagement_level }] : []),
+    ...(review.engagement_level !== null
+      ? [{ label: "Interés", value: review.engagement_level }]
+      : []),
   ];
 
   return (
     <div className="flex flex-wrap gap-2">
       {scores.map((s, i) => (
-        <div key={i} className="bg-muted text-muted-foreground flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs">
+        <div
+          key={i}
+          className="bg-muted text-muted-foreground flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs"
+        >
           <span className="font-medium">{s.label}:</span>
           <span>{s.value}</span>
         </div>
@@ -103,7 +120,7 @@ export function ReviewReportSection({
     <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <div
         className={cn(
-          "bg-card shadow-xs flex min-h-0 shrink-0 w-full flex-col overflow-hidden rounded-xl border lg:w-72 xl:w-80",
+          "bg-card flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border shadow-xs lg:w-72 xl:w-80",
           selectedReport && "hidden lg:flex",
         )}
       >
@@ -181,17 +198,17 @@ export function ReviewReportSection({
             </Button>
           </div>
 
-          <div className="bg-card text-card-foreground shadow-xs flex flex-col overflow-hidden rounded-xl border">
+          <div className="bg-card text-card-foreground flex flex-col overflow-hidden rounded-xl border shadow-xs">
             <div className="flex flex-col gap-3 p-5 md:p-6">
               <div className="space-y-1">
-                <h3 className="text-xl font-semibold leading-none tracking-tight">
+                <h3 className="text-xl leading-none font-semibold tracking-tight">
                   {selectedReport.course_code}: {selectedReport.course_name}
                 </h3>
               </div>
 
               <div className="relative mt-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="border-border/50 w-full border-t"></div>
+                  <div className="border-border/50 w-full border-t" />
                 </div>
               </div>
 
@@ -259,8 +276,6 @@ export function ReviewReportSection({
   );
 }
 
-
-
 export function ReviewSection({
   rows,
   selectedReview,
@@ -294,8 +309,8 @@ export function ReviewSection({
     <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <div
         className={cn(
-          "bg-card text-card-foreground shadow-xs flex min-h-0 shrink-0 w-full flex-col overflow-hidden rounded-xl border lg:w-72 xl:w-80",
-          selectedReview && "hidden lg:flex"
+          "bg-card text-card-foreground flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border shadow-xs lg:w-72 xl:w-80",
+          selectedReview && "hidden lg:flex",
         )}
       >
         <div className="flex items-center justify-between border-b p-2">
@@ -326,7 +341,9 @@ export function ReviewSection({
           {isLoading ? (
             <p className="text-muted-foreground p-3 text-center text-sm">Cargando reseñas…</p>
           ) : rows.length === 0 ? (
-            <p className="text-muted-foreground p-3 text-center text-sm">No hay reseñas pendientes.</p>
+            <p className="text-muted-foreground p-3 text-center text-sm">
+              No hay reseñas pendientes.
+            </p>
           ) : (
             <div className="flex flex-col gap-1">
               {rows.map((review) => (
@@ -368,10 +385,10 @@ export function ReviewSection({
             </Button>
           </div>
 
-          <div className="bg-card text-card-foreground shadow-xs flex flex-col overflow-hidden rounded-xl border">
+          <div className="bg-card text-card-foreground flex flex-col overflow-hidden rounded-xl border shadow-xs">
             <div className="flex flex-col gap-3 p-5 md:p-6">
               <div className="space-y-1">
-                <h3 className="text-xl font-semibold leading-none tracking-tight">
+                <h3 className="text-xl leading-none font-semibold tracking-tight">
                   {selectedReview.professor_name}
                 </h3>
                 <div className="pt-2">
@@ -381,7 +398,7 @@ export function ReviewSection({
 
               <div className="relative mt-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="border-border/50 w-full border-t"></div>
+                  <div className="border-border/50 w-full border-t" />
                 </div>
               </div>
 
@@ -451,49 +468,46 @@ function EvaluationPdfViewer({
 }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [answersBlobUrl, setAnswersBlobUrl] = useState<string | null>(null);
-  const [fileLoading, setFileLoading] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"evaluation" | "answers">("evaluation");
+  const {
+    data: evalDoc,
+    isLoading: isEvalLoading,
+    error: evalError,
+  } = useEvaluationDocumentQuery(selectedEvaluation.id);
+  const {
+    data: answersDoc,
+    isLoading: isAnswersLoading,
+    error: answersError,
+  } = useEvaluationAnswersDocumentQuery(
+    selectedEvaluation.has_separate_answers ? selectedEvaluation.id : null,
+  );
+
+  const fileLoading = isEvalLoading || isAnswersLoading;
+  const fileError = evalError
+    ? (evalError as Error).message
+    : answersError
+      ? (answersError as Error).message
+      : null;
 
   useEffect(() => {
-    setBlobUrl(null);
-    setAnswersBlobUrl(null);
-    setFileError(null);
-    setActiveTab("evaluation");
-
-    let cancelled = false;
     let evalUrl: string | null = null;
     let answersUrl: string | null = null;
 
-    async function loadFiles() {
-      setFileLoading(true);
-      try {
-        const evalResult = await getEvaluationDocument(selectedEvaluation.id);
-        if (cancelled) return;
-        evalUrl = URL.createObjectURL(evalResult.blob);
-        setBlobUrl(evalUrl);
-
-        if (selectedEvaluation.has_separate_answers) {
-          const answersResult = await getEvaluationAnswersDocument(selectedEvaluation.id);
-          if (cancelled) return;
-          answersUrl = URL.createObjectURL(answersResult.blob);
-          setAnswersBlobUrl(answersUrl);
-        }
-      } catch (err) {
-        if (!cancelled) setFileError(err instanceof Error ? err.message : "Error al cargar PDF");
-      } finally {
-        if (!cancelled) setFileLoading(false);
-      }
+    if (evalDoc?.blob) {
+      evalUrl = URL.createObjectURL(evalDoc.blob);
+      setBlobUrl(evalUrl);
     }
 
-    void loadFiles();
+    if (answersDoc?.blob) {
+      answersUrl = URL.createObjectURL(answersDoc.blob);
+      setAnswersBlobUrl(answersUrl);
+    }
 
     return () => {
-      cancelled = true;
       if (evalUrl) URL.revokeObjectURL(evalUrl);
       if (answersUrl) URL.revokeObjectURL(answersUrl);
     };
-  }, [selectedEvaluation]);
+  }, [evalDoc, answersDoc]);
 
   const baseFileName = formatEvaluationFileName(
     selectedEvaluation.course_code,
@@ -504,13 +518,13 @@ function EvaluationPdfViewer({
   const answersFileName = baseFileName.replace(".pdf", "-respuestas.pdf");
 
   return (
-    <div className="bg-card text-card-foreground shadow-xs flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border">
+    <div className="bg-card text-card-foreground flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border shadow-xs">
       {selectedEvaluation.has_separate_answers && (
         <div className="border-border/50 flex border-b">
           <button
             onClick={() => setActiveTab("evaluation")}
             className={cn(
-              "flex-1 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/50",
+              "hover:bg-muted/50 flex-1 px-4 py-2 text-sm font-medium transition-colors",
               activeTab === "evaluation" ? "bg-muted text-foreground" : "text-muted-foreground",
             )}
           >
@@ -519,7 +533,7 @@ function EvaluationPdfViewer({
           <button
             onClick={() => setActiveTab("answers")}
             className={cn(
-              "flex-1 border-l border-border/50 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted/50",
+              "border-border/50 hover:bg-muted/50 flex-1 border-l px-4 py-2 text-sm font-medium transition-colors",
               activeTab === "answers" ? "bg-muted text-foreground" : "text-muted-foreground",
             )}
           >
@@ -542,12 +556,14 @@ function EvaluationPdfViewer({
       )}
 
       {!fileLoading && !fileError && (
-        <Suspense fallback={
-          <div className="flex flex-1 flex-col items-center justify-center gap-4">
-            <Loader2 className="text-muted-foreground size-8 animate-spin" />
-            <p className="text-muted-foreground text-sm">Cargando visor…</p>
-          </div>
-        }>
+        <Suspense
+          fallback={
+            <div className="flex flex-1 flex-col items-center justify-center gap-4">
+              <Loader2 className="text-muted-foreground size-8 animate-spin" />
+              <p className="text-muted-foreground text-sm">Cargando visor…</p>
+            </div>
+          }
+        >
           {activeTab === "evaluation" && blobUrl && (
             <PdfViewer blobUrl={blobUrl} fileName={baseFileName} className="h-full rounded-b-xl" />
           )}
@@ -597,8 +613,8 @@ export function EvaluationSection({
     <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <div
         className={cn(
-          "bg-card text-card-foreground shadow-xs flex min-h-0 shrink-0 w-full flex-col overflow-hidden rounded-xl border lg:w-72 xl:w-80",
-          selectedEvaluation && "hidden lg:flex"
+          "bg-card text-card-foreground flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border shadow-xs lg:w-72 xl:w-80",
+          selectedEvaluation && "hidden lg:flex",
         )}
       >
         <div className="flex items-center justify-between border-b p-2">
@@ -629,7 +645,9 @@ export function EvaluationSection({
           {isLoading ? (
             <p className="text-muted-foreground p-3 text-center text-sm">Cargando evaluaciones…</p>
           ) : rows.length === 0 ? (
-            <p className="text-muted-foreground p-3 text-center text-sm">No hay evaluaciones pendientes.</p>
+            <p className="text-muted-foreground p-3 text-center text-sm">
+              No hay evaluaciones pendientes.
+            </p>
           ) : (
             <div className="flex flex-col gap-1">
               {rows.map((evaluation) => (
@@ -661,9 +679,11 @@ export function EvaluationSection({
                         {evaluation.professor_name ?? "—"}
                       </span>
                     </div>
-                    <div className="flex flex-col items-end gap-0.5 whitespace-nowrap text-xs">
+                    <div className="flex flex-col items-end gap-0.5 text-xs whitespace-nowrap">
                       <span className="text-muted-foreground">
-                        {evaluation.term_display_name ? evaluation.term_display_name.replace(" - ", ": ") : "—"}
+                        {evaluation.term_display_name
+                          ? evaluation.term_display_name.replace(" - ", ": ")
+                          : "—"}
                       </span>
                       <span className="text-muted-foreground font-mono">
                         {formatFileSize(evaluation.file_size)}
@@ -686,17 +706,17 @@ export function EvaluationSection({
             </Button>
           </div>
 
-          <div className="bg-card text-card-foreground shadow-xs flex min-h-0 shrink-0 flex-col overflow-y-auto overflow-x-hidden rounded-xl border lg:w-80">
+          <div className="bg-card text-card-foreground flex min-h-0 shrink-0 flex-col overflow-x-hidden overflow-y-auto rounded-xl border shadow-xs lg:w-80">
             <div className="flex flex-col gap-3 p-5 md:p-6">
               <div className="space-y-1">
-                <h3 className="text-xl font-semibold leading-none tracking-tight">
+                <h3 className="text-xl leading-none font-semibold tracking-tight">
                   {selectedEvaluation.course_code}: {selectedEvaluation.course_name}
                 </h3>
               </div>
 
               <div className="relative mt-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="border-border/50 w-full border-t"></div>
+                  <div className="border-border/50 w-full border-t" />
                 </div>
               </div>
 
@@ -709,10 +729,21 @@ export function EvaluationSection({
                     selectedEvaluation.custom_name,
                   )}
                 </span>
-                <span><strong>Período:</strong> {selectedEvaluation.term_display_name ? selectedEvaluation.term_display_name.replace(" - ", ": ") : "—"}</span>
-                <span><strong>Profesor:</strong> {selectedEvaluation.professor_name ?? "—"}</span>
-                <span><strong>Tamaño:</strong> {formatFileSize(selectedEvaluation.file_size)}</span>
-                <span><strong>Cátedra:</strong> {selectedEvaluation.is_catedra ? "Sí" : "No"}</span>
+                <span>
+                  <strong>Período:</strong>{" "}
+                  {selectedEvaluation.term_display_name
+                    ? selectedEvaluation.term_display_name.replace(" - ", ": ")
+                    : "—"}
+                </span>
+                <span>
+                  <strong>Profesor:</strong> {selectedEvaluation.professor_name ?? "—"}
+                </span>
+                <span>
+                  <strong>Tamaño:</strong> {formatFileSize(selectedEvaluation.file_size)}
+                </span>
+                <span>
+                  <strong>Cátedra:</strong> {selectedEvaluation.is_catedra ? "Sí" : "No"}
+                </span>
                 <span>
                   <strong>Respuestas:</strong>{" "}
                   {selectedEvaluation.has_separate_answers
@@ -761,10 +792,12 @@ export function EvaluationSection({
             </div>
           </div>
 
-          <EvaluationPdfViewer selectedEvaluation={selectedEvaluation} />
+          <EvaluationPdfViewer
+            key={selectedEvaluation.id}
+            selectedEvaluation={selectedEvaluation}
+          />
         </div>
       )}
     </div>
   );
 }
-

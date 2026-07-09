@@ -4,6 +4,8 @@ import type { EvaluationStatus, UploadEvaluationPayload } from "@/lib/evaluation
 
 import {
   getCourseEvaluations,
+  getEvaluationDocument,
+  getEvaluationAnswersDocument,
   getEvaluationModerationQueue,
   moderateEvaluation,
   uploadEvaluation,
@@ -39,6 +41,25 @@ export function useEvaluationModerationQueue(
     queryFn: () => getEvaluationModerationQueue(status, pageSize, page * pageSize),
     enabled,
     placeholderData: (previousData) => previousData,
+    staleTime: 60_000,
+  });
+}
+
+export function useEvaluationDocumentQuery(evaluationId: number | null) {
+  return useQuery({
+    queryKey: ["evaluationDocument", evaluationId],
+    queryFn: () => getEvaluationDocument(evaluationId!),
+    enabled: evaluationId !== null,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useEvaluationAnswersDocumentQuery(evaluationId: number | null) {
+  return useQuery({
+    queryKey: ["evaluationAnswersDocument", evaluationId],
+    queryFn: () => getEvaluationAnswersDocument(evaluationId!),
+    enabled: evaluationId !== null,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

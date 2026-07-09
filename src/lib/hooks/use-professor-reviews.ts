@@ -182,6 +182,7 @@ export function useModerationQueue(
     queryFn: () => getProfessorReviewsForModeration(status, pageSize, page * pageSize),
     enabled,
     placeholderData: (previousData) => previousData,
+    staleTime: 60_000,
   });
 }
 
@@ -209,6 +210,7 @@ export function useReportModerationQueue(
     queryFn: () => getProfessorReviewReportsForModeration(status, pageSize, page * pageSize),
     enabled,
     placeholderData: (previousData) => previousData,
+    staleTime: 60_000,
   });
 }
 
