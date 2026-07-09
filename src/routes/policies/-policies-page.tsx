@@ -283,9 +283,9 @@ export function PoliciesPage() {
               </h2>
 
               <div className="space-y-5">
-                {section.paragraphs.map((paragraph) => (
+                {section.paragraphs.map((paragraph, idx) => (
                   <p
-                    key={paragraph}
+                    key={idx}
                     className="text-foreground/90 max-w-4xl text-base leading-8 lg:text-lg"
                   >
                     {paragraph}
@@ -294,8 +294,8 @@ export function PoliciesPage() {
 
                 {section.bullets ? (
                   <ul className="text-foreground/90 max-w-4xl list-disc space-y-3 pl-6 text-base leading-8 lg:text-lg">
-                    {section.bullets.map((item) => (
-                      <li key={item}>{item}</li>
+                    {section.bullets.map((item, idx) => (
+                      <li key={idx}>{item}</li>
                     ))}
                   </ul>
                 ) : null}
