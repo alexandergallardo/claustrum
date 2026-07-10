@@ -5,6 +5,7 @@ import {
   Link,
   Outlet,
   redirect,
+  isRedirect,
   useRouterState,
   HeadContent,
   Scripts,
@@ -94,7 +95,7 @@ export const Route = createRootRouteWithContext<{
           }
         }
       } catch (err: any) {
-        if (err?.isRedirect) throw err;
+        if (isRedirect(err)) throw err;
         console.error("SSR fetch failed in beforeLoad (private route), skipping redirects", err);
       }
     } else if (pathname.startsWith("/onboarding")) {
@@ -122,7 +123,7 @@ export const Route = createRootRouteWithContext<{
           }
         } // close if (authData?.id)
       } catch (err: any) {
-        if (err?.isRedirect) throw err;
+        if (isRedirect(err)) throw err;
         console.error("SSR fetch failed in beforeLoad (/onboarding), skipping redirects", err);
       }
     }
