@@ -714,7 +714,7 @@ export function useUpdateCourseAttempt() {
       courseId: number;
       attemptId: number;
       grade: number | null;
-      academicTermId: number;
+      academicTermId: number | null;
       status?: string;
       equivalentCourseId?: number | null;
     }) => {
