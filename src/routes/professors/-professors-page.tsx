@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -77,10 +78,10 @@ export function ProfessorsReviewsPage() {
       replace: true,
     });
 
-  const academicUnitIdInput = search.au ? parseInt(search.au) : null;
+  const academicUnitIdInput = search.r ?? null;
   const setAcademicUnitIdInput = (val: number | null) =>
     void navigate({
-      search: (prev) => ({ ...prev, au: val?.toString(), page: undefined }),
+      search: (prev) => ({ ...prev, r: val ?? undefined, page: undefined }),
       replace: true,
     });
 
@@ -309,7 +310,8 @@ export function ProfessorsReviewsPage() {
         placeholder="Seleccionar escuela..."
         items={allAcademicUnits}
         onChange={(val) => {
-          setAcademicUnitIdInput(val ? parseInt(val) : null);
+          const newId = val ? parseInt(val) : null;
+          setAcademicUnitIdInput(newId === academicUnitIdInput ? null : newId);
         }}
         isVisible={true}
         itemLabel={(item) =>
@@ -386,44 +388,53 @@ export function ProfessorsReviewsPage() {
         </CollapsibleContent>
       </Collapsible>
 
-      <Card className="overflow-hidden p-0">
+      <Card className="h-fit overflow-hidden p-0">
         <CardContent className="p-0">
-          {rows.length === 0 && query.isLoading ? (
-            <div className="text-muted-foreground p-4 text-sm">Cargando profesores…</div>
-          ) : rows.length === 0 ? (
-            <div className="text-muted-foreground p-4 text-sm">
-              No hay resultados para los filtros seleccionados.
-            </div>
-          ) : (
-            <div className="relative min-h-[420px]">
-              <Table className="table-fixed">
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          className={cn(
-                            header.column.id === "professor_name" && "w-auto sm:w-[35%]",
-                            header.column.id === "academic_unit" &&
-                              "hidden sm:table-cell sm:w-[32%]",
-                            header.column.id === "approved_review_count" && "w-[72px] sm:w-[15%]",
-                            header.column.id === "average_overall_score" && "w-[80px] sm:w-[18%]",
-                            (header.column.id === "approved_review_count" ||
-                              header.column.id === "average_overall_score") &&
-                              "text-right",
-                          )}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows.map((row) => (
+          <div className="relative">
+            <Table className="table-fixed">
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          header.column.id === "professor_name" && "w-auto sm:w-[35%]",
+                          header.column.id === "academic_unit" && "hidden sm:table-cell sm:w-[32%]",
+                          header.column.id === "approved_review_count" && "w-[72px] sm:w-[15%]",
+                          header.column.id === "average_overall_score" && "w-[80px] sm:w-[18%]",
+                          (header.column.id === "approved_review_count" ||
+                            header.column.id === "average_overall_score") &&
+                            "text-right",
+                        )}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {query.isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="p-0">
+                      <div className="flex h-[650px] items-center justify-center">
+                        <Spinner className="text-muted-foreground size-8" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      <span className="text-muted-foreground text-sm">
+                        No hay resultados para los filtros seleccionados.
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
@@ -446,11 +457,11 @@ export function ProfessorsReviewsPage() {
                         </TableCell>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -8,7 +8,7 @@ export interface ProfessorsSearch {
   q?: string;
   ms?: string;
   mr?: string;
-  au?: string;
+  r?: number;
   sortBy?: string;
   sortDesc?: boolean;
   page?: number;
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/professors/")({
       q: typeof search.q === "string" ? search.q : undefined,
       ms: typeof search.ms === "string" ? search.ms : undefined,
       mr: typeof search.mr === "string" ? search.mr : undefined,
-      au: typeof search.au === "string" ? search.au : undefined,
+      r: search.r !== undefined && !isNaN(Number(search.r)) ? Number(search.r) : undefined,
       sortBy: typeof search.sortBy === "string" ? search.sortBy : undefined,
       sortDesc:
         typeof search.sortDesc === "boolean"
