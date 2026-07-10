@@ -108,15 +108,9 @@ export const Route = createRootRouteWithContext<{
           ]);
 
           const completed = !!onboardingStatus?.onboarding_completed_at;
-          const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
-          const dismissedAt = dismissedAtRaw ? new Date(dismissedAtRaw) : null;
-          const oneDayMs = 24 * 60 * 60 * 1000;
-          const isDismissedCooldownActive = dismissedAt
-            ? Date.now() - dismissedAt.getTime() < oneDayMs
-            : false;
           const hasAcademicSetup = !!profileContext?.study_plan_id;
 
-          const shouldLeaveOnboarding = completed || isDismissedCooldownActive || hasAcademicSetup;
+          const shouldLeaveOnboarding = completed || hasAcademicSetup;
 
           if (shouldLeaveOnboarding) {
             throw redirect({ to: "/overview", replace: true });

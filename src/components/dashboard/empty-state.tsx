@@ -22,8 +22,8 @@ export function EmptyDashboard({ isAuthenticated, hasProfile }: EmptyDashboardPr
       ? "Selecciona tu universidad, sede, carrera y plan de estudios para ver tu progreso académico."
       : "Agrega tu universidad, sede, carrera y plan para que podamos armar tu dashboard.";
 
-  const actionHref = hasProfile ? "/curriculum" : "/settings/profile";
-  const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Configurar perfil";
+  const actionHref = hasProfile ? "/curriculum" : "/onboarding";
+  const actionLabel = hasProfile ? "Ir al Plan de Estudios" : "Completar perfil académico";
   return (
     <div className="flex min-h-[calc(100svh-var(--header-height)-6rem)] flex-col items-center justify-center px-4 py-12 md:min-h-[calc(100svh-var(--header-height)-3rem)]">
       <div className="bg-primary/10 mb-4 rounded-full p-4">
