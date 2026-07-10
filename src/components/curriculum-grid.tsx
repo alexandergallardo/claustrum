@@ -7,12 +7,19 @@ import { flushSync } from "react-dom";
 
 import type { StudyPlanDetail, CourseEffectiveStatus } from "@/lib/types";
 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useStudentCourseStatuses } from "@/lib/hooks/use-queries";
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
 import { cn } from "@/lib/utils";
 
 import { CourseCard, type RelationType } from "./course-card";
+import { QuickRegisterDialog } from "./curriculum/quick-register-dialog";
 
 interface CurriculumGridProps {
   planDetail: StudyPlanDetail;
@@ -33,6 +40,7 @@ function CurriculumGrid({
 }: CurriculumGridProps) {
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [quickRegisterCourseId, setQuickRegisterCourseId] = useState<string | null>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const [contentWidth, setContentWidth] = useState<number | null>(null);
   const scaledContentRef = useRef<HTMLDivElement>(null);
@@ -90,6 +98,10 @@ function CurriculumGrid({
     [navigate, search],
   );
 
+  const handleRegisterProgressClick = useCallback((courseId: string) => {
+    setQuickRegisterCourseId(courseId);
+  }, []);
+
   return (
     <div className="flex h-full min-w-0 flex-col">
       <div
@@ -140,26 +152,36 @@ function CurriculumGrid({
                 </div>
                 <div className="space-y-4">
                   {semester.courses.map((course) => (
-                    <button
-                      type="button"
-                      key={course.id}
-                      className="block w-full text-left"
-                      onMouseEnter={() => setHoveredCourse(course.id)}
-                      onMouseLeave={() => setHoveredCourse(null)}
-                      onClick={() => handleCourseClick(course.id)}
-                    >
-                      <CourseCard
-                        id={`course-${course.id}`}
-                        course={course}
-                        transitionName={
-                          selectedCourseId === course.id ? `course-name-${course.id}` : undefined
-                        }
-                        isHovered={hoveredCourse === course.id}
-                        relationType={
-                          hoveredCourse ? getRelationType(hoveredCourse, course.id) : null
-                        }
-                      />
-                    </button>
+                    <ContextMenu key={course.id}>
+                      <ContextMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="block w-full text-left outline-none"
+                          onMouseEnter={() => setHoveredCourse(course.id)}
+                          onMouseLeave={() => setHoveredCourse(null)}
+                          onClick={() => handleCourseClick(course.id)}
+                        >
+                          <CourseCard
+                            id={`course-${course.id}`}
+                            course={course}
+                            transitionName={
+                              selectedCourseId === course.id
+                                ? `course-name-${course.id}`
+                                : undefined
+                            }
+                            isHovered={hoveredCourse === course.id}
+                            relationType={
+                              hoveredCourse ? getRelationType(hoveredCourse, course.id) : null
+                            }
+                          />
+                        </button>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={() => handleRegisterProgressClick(course.id)}>
+                          Registrar progreso
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </div>
               </div>
@@ -223,6 +245,15 @@ function CurriculumGrid({
           </div>
         </div>
       )}
+      <QuickRegisterDialog
+        course={quickRegisterCourseId ? (courseById.get(quickRegisterCourseId) ?? null) : null}
+        userId={userId}
+        studyPlanId={studyPlanId}
+        isOpen={quickRegisterCourseId !== null}
+        onOpenChange={(open) => {
+          if (!open) setQuickRegisterCourseId(null);
+        }}
+      />
     </div>
   );
 }

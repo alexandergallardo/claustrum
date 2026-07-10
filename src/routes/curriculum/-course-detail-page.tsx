@@ -42,7 +42,7 @@ export function CourseDetailPage() {
   const handleBack = useCallback(() => {
     void navigate({
       to: "/curriculum",
-      search,
+      search: { ...search, action: undefined },
       viewTransition: {
         types: ["course-close"],
       },
@@ -55,7 +55,7 @@ export function CourseDetailPage() {
       attempt: {
         status: Exclude<CourseStatus, "not_taken">;
         grade: number | null;
-        academicTermId: number;
+        academicTermId: number | null;
         equivalentCourseId?: number | null;
       },
     ) => {
@@ -133,6 +133,7 @@ export function CourseDetailPage() {
                 transitionName={`course-name-${selectedCourse.id}`}
                 onCreateAttempt={handleCreateAttempt}
                 onBack={handleBack}
+                initialOpenProgressSheet={search.action === "register"}
               />
             </div>
           ) : null}

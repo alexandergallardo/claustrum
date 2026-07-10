@@ -7,6 +7,7 @@ export interface CurriculumSearch {
   campus?: number;
   career?: number;
   plan?: number;
+  action?: string;
 }
 
 export interface CurriculumUrlSearch {
@@ -14,6 +15,7 @@ export interface CurriculumUrlSearch {
   c?: number;
   r?: number;
   p?: number;
+  a?: string;
 }
 
 const LEGACY_SEARCH_KEYS = ["university", "campus", "career", "plan"];
@@ -37,6 +39,7 @@ export function parseCurriculumSearch(search: SearchInput): CurriculumSearch {
     campus: parseNumber(getSearchValue(search, "campus", "c")),
     career: parseNumber(getSearchValue(search, "career", "r")),
     plan: parseNumber(getSearchValue(search, "plan", "p")),
+    action: getSearchValue(search, "action", "a") as string | undefined,
   };
 }
 
@@ -67,5 +70,6 @@ export function toCurriculumUrlSearch(search: CurriculumSearch): CurriculumUrlSe
     c: search.campus,
     r: search.career,
     p: search.plan,
+    a: search.action,
   };
 }

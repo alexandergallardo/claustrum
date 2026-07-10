@@ -118,11 +118,12 @@ interface CourseDetailsProps {
     attempt: {
       status: Exclude<CourseStatus, "not_taken">;
       grade: number | null;
-      academicTermId: number;
+      academicTermId: number | null;
       equivalentCourseId?: number | null;
     },
   ) => Promise<"success" | "local">;
   onBack?: () => void;
+  initialOpenProgressSheet?: boolean;
 }
 
 const statusLabels: Record<CourseStatus, string> = {
@@ -533,7 +534,9 @@ function EvaluationDocument({
             {fileName}
           </button>
           <div className="text-muted-foreground shrink-0 text-right text-xs">
-            {evaluation.term_display_name ? <div>{evaluation.term_display_name.replace(" - ", ": ")}</div> : null}
+            {evaluation.term_display_name ? (
+              <div>{evaluation.term_display_name.replace(" - ", ": ")}</div>
+            ) : null}
           </div>
         </div>
 
@@ -564,12 +567,13 @@ export function CourseDetails({
   transitionName,
   onCreateAttempt,
   onBack,
+  initialOpenProgressSheet,
 }: CourseDetailsProps) {
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const [gradeInput, setGradeInput] = useState("");
   const [academicTermId, setAcademicTermId] = useState<string>("");
-  const [isProgressSheetOpen, setIsProgressSheetOpen] = useState(false);
+  const [isProgressSheetOpen, setIsProgressSheetOpen] = useState(initialOpenProgressSheet ?? false);
   const [progressStatus, setProgressStatus] =
     useState<Exclude<CourseStatus, "not_taken">>("approved");
   const [isSaving, setIsSaving] = useState(false);
@@ -770,26 +774,23 @@ export function CourseDetails({
   };
 
   const parseSelectedTermId = () => {
+    if (!academicTermId) return null;
     const parsed = Number(academicTermId);
     if (!Number.isInteger(parsed) || parsed <= 0) {
-      toast.error("Debes seleccionar el periodo en que llevaste el curso");
-      return null;
+      toast.error("El periodo seleccionado no es válido");
+      return undefined;
     }
     return parsed;
   };
 
   const handleSaveProgress = async () => {
     const parsedAcademicTermId = parseSelectedTermId();
-    if (!parsedAcademicTermId) return;
+    if (parsedAcademicTermId === undefined) return;
 
     const requiresGrade = progressStatus === "approved" || progressStatus === "failed";
     const parsedGrade = gradeInput.trim() === "" ? null : Number(gradeInput);
 
-    if (requiresGrade) {
-      if (parsedGrade === null || Number.isNaN(parsedGrade)) {
-        toast.error("Debes ingresar una nota");
-        return;
-      }
+    if (parsedGrade !== null && !Number.isNaN(parsedGrade)) {
       if (parsedGrade < 0 || parsedGrade > 100) {
         toast.error("La nota debe estar entre 0 y 100");
         return;
@@ -884,20 +885,19 @@ export function CourseDetails({
       return;
     }
 
-    const parsedAcademicTermId = Number(editAcademicTermId);
-    if (!Number.isInteger(parsedAcademicTermId) || parsedAcademicTermId <= 0) {
-      toast.error("Debes seleccionar un periodo");
+    const parsedAcademicTermId = editAcademicTermId ? Number(editAcademicTermId) : null;
+    if (
+      editAcademicTermId &&
+      (!Number.isInteger(parsedAcademicTermId) || (parsedAcademicTermId as number) <= 0)
+    ) {
+      toast.error("El periodo seleccionado no es válido");
       return;
     }
 
     const requiresGrade = editStatus === "approved" || editStatus === "failed";
     const parsedGrade = editGradeInput.trim() === "" ? null : Number(editGradeInput);
 
-    if (requiresGrade) {
-      if (parsedGrade === null || Number.isNaN(parsedGrade)) {
-        toast.error("Debes ingresar una nota");
-        return;
-      }
+    if (parsedGrade !== null && !Number.isNaN(parsedGrade)) {
       if (parsedGrade < 0 || parsedGrade > 100) {
         toast.error("La nota debe estar entre 0 y 100");
         return;
@@ -963,7 +963,7 @@ export function CourseDetails({
   /* --- derived state for hero --- */
   const currentStatus = course.status;
   const requiresProgressGrade = progressStatus === "approved" || progressStatus === "failed";
-  const canSaveProgress = !!academicTermId && !!selectedAttemptCourse;
+  const canSaveProgress = !!selectedAttemptCourse;
   const isStatusFromAnotherSource =
     (currentStatus === "approved" || currentStatus === "in_progress") &&
     (course.statusOriginType === "same_course_global" || course.statusOriginType === "equivalent");
@@ -1124,7 +1124,7 @@ export function CourseDetails({
             inputMode="decimal"
             value={gradeInput}
             onChange={(event) => handleGradeInputChange(event.target.value)}
-            placeholder={requiresProgressGrade ? "0-100" : "No aplica"}
+            placeholder={requiresProgressGrade ? "0-100 (Opcional)" : "No aplica"}
             disabled={!requiresProgressGrade}
           />
           <Button
@@ -1725,7 +1725,7 @@ export function CourseDetails({
                     inputMode="decimal"
                     value={editGradeInput}
                     onChange={(event) => handleEditGradeInputChange(event.target.value)}
-                    placeholder="0-100"
+                    placeholder="0-100 (Opcional)"
                     disabled={updateCourseAttempt.isPending}
                   />
                   <Button
