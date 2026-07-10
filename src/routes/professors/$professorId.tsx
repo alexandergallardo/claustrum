@@ -29,10 +29,11 @@ export const Route = createFileRoute("/professors/$professorId")({
     const name = professor?.full_name ?? "Profesor";
     return buildSeoMeta({
       title: `Reseñas de ${name} | Claustrum`,
-      description: `Lee las opiniones, facilidad y calidad de ${name} en el Tecnológico de Costa Rica.`,
+      description: `Explora las reseñas y evaluaciones de ${name} escritas por estudiantes del Tecnológico de Costa Rica.`,
       breadcrumbName: name,
       urlPath: `/professors/${ctx.params.professorId}`,
       image: "/og/og-professors.png",
+      ogType: "profile",
       jsonLd: [
         {
           "@context": "https://schema.org",
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/professors/$professorId")({
           jobTitle: "Profesor",
           worksFor: {
             "@type": "EducationalOrganization",
-            name: "Tecnológico de Costa Rica",
+            name: "Instituto Tecnológico de Costa Rica",
           },
         },
       ],
