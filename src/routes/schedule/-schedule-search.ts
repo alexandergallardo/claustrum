@@ -13,6 +13,7 @@ export interface ScheduleSearch {
   showAll?: boolean;
   groups?: string;
   loadSchedule?: number;
+  filters?: boolean;
 }
 
 export interface ScheduleUrlSearch {
@@ -26,6 +27,7 @@ export interface ScheduleUrlSearch {
   a?: boolean;
   g?: string;
   l?: number;
+  f?: boolean;
 }
 
 const LEGACY_SEARCH_KEYS = [
@@ -90,6 +92,7 @@ export function parseScheduleSearch(search: SearchInput): ScheduleSearch {
     showAll: parseBoolean(getSearchValue(search, "showAll", "a")),
     groups: parseString(getSearchValue(search, "groups", "g")),
     loadSchedule: parseNumber(getSearchValue(search, "loadSchedule", "l")),
+    filters: parseBoolean(getSearchValue(search, "filters", "f")),
   };
 }
 
@@ -132,6 +135,7 @@ export function toScheduleUrlSearch(search: ScheduleSearch): ScheduleUrlSearch {
     a: search.showAll,
     g: search.groups,
     l: search.loadSchedule,
+    f: search.filters,
   };
 }
 

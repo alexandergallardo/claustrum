@@ -31,6 +31,7 @@ import {
   formatTermNameWithoutYear,
   groupTermsByYear,
 } from "@/lib/academic-terms";
+import { cn } from "@/lib/utils";
 
 interface ScheduleFiltersProps {
   universities: CatalogUniversity[];
@@ -59,6 +60,8 @@ interface ScheduleFiltersProps {
   showAllDisabledTooltip?: string;
   showOtherCampuses?: boolean;
   onShowOtherCampusesChange?: (checked: boolean) => void;
+  isVisible?: boolean;
+  onVisibleChange?: (visible: boolean) => void;
 }
 
 import {
@@ -66,18 +69,6 @@ import {
   normalizeText,
   removePlanPrefixFromName,
 } from "@/components/filters/shared-filters";
-
-const FILTERS_PANEL_STORAGE_KEY = "schedule-filters-panel-open";
-const INITIAL_FILTER_REVEAL_DELAY_MS = 80;
-const FILTER_REVEAL_ANIMATION_MS = 220;
-
-function areStringArraysEqual(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((value, index) => value === b[index]);
-}
-
-function getInitialFiltersPanelOpen(): boolean {
-  return true;
-}
 
 export function ScheduleFilters({
   universities,
@@ -106,87 +97,57 @@ export function ScheduleFilters({
   showAllDisabledTooltip,
   showOtherCampuses,
   onShowOtherCampusesChange,
+  isVisible = true,
+  onVisibleChange,
 }: ScheduleFiltersProps) {
-  const [isFiltersVisible, setIsFiltersVisible] = useState(getInitialFiltersPanelOpen);
-  const [revealedFilterKeys, setRevealedFilterKeys] = useState<string[]>([]);
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
 
-  useEffect(() => {
-    const stored = localStorage.getItem(FILTERS_PANEL_STORAGE_KEY);
-    if (stored === "false") {
-      setIsFiltersVisible(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString());
-  }, [isFiltersVisible]);
-
-  const showSwitches = !!selectedTermId;
-  const isShowAllDisabled = showAllDisabled;
-  const termGroups = useMemo(() => groupTermsByYear(terms), [terms]);
-  const selectedTerm = terms.find((term) => term.id === selectedTermId) ?? null;
   const isUniversityFilterReady = shouldShowUniversityFilter && !isLoadingUniversities;
   const isCampusFilterReady = canSelectCampus && !isLoadingCampuses;
   const isCareerFilterReady = !!selectedCampusId && !isLoadingCareers;
   const isPlanFilterReady = !!selectedCareerId && !isLoadingPlans;
   const isTermFilterReady = !!selectedPlanId && !isLoadingTerms;
 
-  const readyFilterKeys = useMemo(
-    () =>
-      [
-        isUniversityFilterReady ? "university" : null,
-        isCampusFilterReady ? "campus" : null,
-        isCareerFilterReady ? "career" : null,
-        isPlanFilterReady ? "plan" : null,
-        isTermFilterReady ? "term" : null,
-      ].filter((key): key is string => key !== null),
-    [
-      isCampusFilterReady,
-      isCareerFilterReady,
-      isPlanFilterReady,
-      isTermFilterReady,
-      isUniversityFilterReady,
-    ],
-  );
-  const readyFilterSignature = readyFilterKeys.join("|");
-  const revealedFilterSignature = revealedFilterKeys.join("|");
+  const showUniversityFilter = isUniversityFilterReady;
+  const showCampusFilter = isCampusFilterReady;
+  const showCareerFilter = isCareerFilterReady;
+  const showPlanFilter = isPlanFilterReady;
+  const showTermFilter = isTermFilterReady;
+  const showSwitches = !!selectedTermId;
 
-  const showUniversityFilter = revealedFilterKeys.includes("university");
-  const showCampusFilter = revealedFilterKeys.includes("campus");
-  const showCareerFilter = revealedFilterKeys.includes("career");
-  const showPlanFilter = revealedFilterKeys.includes("plan");
-  const showTermFilter = revealedFilterKeys.includes("term");
-  const areAllReadyFiltersRevealed =
-    readyFilterKeys.length > 0 && readyFilterKeys.every((key) => revealedFilterKeys.includes(key));
+  const [skipUniversityAnimation, setSkipUniversityAnimation] = useState(
+    () => showUniversityFilter,
+  );
+  const [skipCampusAnimation, setSkipCampusAnimation] = useState(() => showCampusFilter);
+  const [skipGroupsAnimation, setSkipGroupsAnimation] = useState(
+    () => showCareerFilter || showPlanFilter || showTermFilter,
+  );
+  const [skipSwitchesAnimation, setSkipSwitchesAnimation] = useState(() => showSwitches);
 
   useEffect(() => {
-    const visibleKeys = revealedFilterKeys.filter((key) => readyFilterKeys.includes(key));
-    if (!areStringArraysEqual(visibleKeys, revealedFilterKeys)) {
-      setRevealedFilterKeys(visibleKeys);
-      return;
+    if (!showUniversityFilter) setSkipUniversityAnimation(false);
+  }, [showUniversityFilter]);
+
+  useEffect(() => {
+    if (!showCampusFilter) setSkipCampusAnimation(false);
+  }, [showCampusFilter]);
+
+  useEffect(() => {
+    if (!(showCareerFilter || showPlanFilter || showTermFilter)) {
+      setSkipGroupsAnimation(false);
     }
+  }, [showCareerFilter, showPlanFilter, showTermFilter]);
 
-    if (readyFilterKeys.length === 0) return;
-
-    const nextKey = readyFilterKeys.find((key) => !visibleKeys.includes(key));
-    if (!nextKey) return;
-
-    const delay =
-      visibleKeys.length === 0 ? INITIAL_FILTER_REVEAL_DELAY_MS : FILTER_REVEAL_ANIMATION_MS;
-    const timer = window.setTimeout(() => {
-      setRevealedFilterKeys((current) => {
-        if (current.includes(nextKey) || !readyFilterKeys.includes(nextKey)) return current;
-        return [...current, nextKey];
-      });
-    }, delay);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [readyFilterKeys, readyFilterSignature, revealedFilterKeys, revealedFilterSignature]);
+  useEffect(() => {
+    if (!showSwitches) {
+      setSkipSwitchesAnimation(false);
+    }
+  }, [showSwitches]);
+  const isShowAllDisabled = showAllDisabled;
+  const termGroups = useMemo(() => groupTermsByYear(terms), [terms]);
+  const selectedTerm = terms.find((term) => term.id === selectedTermId) ?? null;
 
   const showAllControl = (
     <div className="flex items-center gap-2">
@@ -203,7 +164,11 @@ export function ScheduleFilters({
   );
 
   return (
-    <FiltersPanel isExpanded={isFiltersVisible} onExpandedChange={setIsFiltersVisible}>
+    <FiltersPanel
+      isExpanded={isVisible}
+      onExpandedChange={onVisibleChange ?? (() => {})}
+      className="w-full"
+    >
       <FilterCombobox
         label="Universidad"
         value={selectedUniversityId?.toString() || ""}
@@ -211,6 +176,7 @@ export function ScheduleFilters({
         items={universities}
         onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
         isVisible={showUniversityFilter}
+        skipAnimation={skipUniversityAnimation}
       />
 
       <FilterCombobox
@@ -225,6 +191,7 @@ export function ScheduleFilters({
             ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
             : normalizeText(item.name)
         }
+        skipAnimation={skipCampusAnimation}
       />
 
       <FilterCombobox
@@ -239,6 +206,7 @@ export function ScheduleFilters({
             ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
             : normalizeText(item.name)
         }
+        skipAnimation={skipGroupsAnimation}
       />
 
       <FilterCombobox
@@ -253,10 +221,16 @@ export function ScheduleFilters({
             ? `${item.external_plan_id}: ${removePlanPrefixFromName(item.name, item.external_plan_id)}`
             : normalizeText(item.name)
         }
+        skipAnimation={skipGroupsAnimation}
       />
 
       {showTermFilter && (
-        <div className="animate-in fade-in-0 slide-in-from-left-2 min-w-0 duration-300">
+        <div
+          className={cn(
+            "min-w-0",
+            !skipGroupsAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
+          )}
+        >
           {terms.length === 0 ? (
             <Button
               variant="outline"
@@ -313,9 +287,13 @@ export function ScheduleFilters({
       )}
 
       {showSwitches &&
-        areAllReadyFiltersRevealed &&
         (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined) && (
-          <div className="animate-in fade-in-0 slide-in-from-left-2 flex flex-wrap items-center gap-x-4 gap-y-2 duration-300">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-x-4 gap-y-2",
+              !skipSwitchesAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
+            )}
+          >
             {onShowAllChange !== undefined &&
               (isShowAllDisabled && showAllDisabledTooltip ? (
                 <TooltipProvider>

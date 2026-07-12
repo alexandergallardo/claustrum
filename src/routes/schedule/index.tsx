@@ -6,6 +6,8 @@ import {
   academicUnitsQueryOptions,
   studyPlansQueryOptions,
   academicTermsQueryOptions,
+  scheduleCoursesQueryOptions,
+  appStateQueryOptions,
 } from "@/lib/hooks/use-queries";
 import { buildSeoMeta } from "@/lib/seo";
 
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/schedule/")({
       ({ search, next }) => toScheduleUrlSearch(next(search)) as unknown as typeof search,
     ],
   },
-  beforeLoad: ({ search, location }) => {
+  beforeLoad: ({ search, location, context: { queryClient } }) => {
     const hasLegacyParams = hasLegacyScheduleSearchParams(location.searchStr);
     if (
       hasLegacyParams ||
@@ -40,12 +42,33 @@ export const Route = createFileRoute("/schedule/")({
     ) {
       throw redirect({
         to: "/schedule",
-        search: toScheduleUrlSearch({
+        search: {
           ...search,
           university: undefined,
-        }) as unknown as typeof search,
+        },
         replace: true,
       });
+    }
+
+    const hasMeaningfulSearch =
+      !!search.campus || !!search.career || !!search.plan || !!search.term;
+    if (!hasMeaningfulSearch) {
+      const appState = queryClient.getQueryData(appStateQueryOptions().queryKey);
+      const profile = appState?.profileContext;
+
+      if (profile && profile.study_plan_id) {
+        throw redirect({
+          to: "/schedule",
+          search: {
+            ...search,
+            campus: profile.campus_id ?? undefined,
+            career: profile.academic_unit_id ?? undefined,
+            plan: profile.study_plan_id ?? undefined,
+            term: profile.term_id ? Number(profile.term_id) : undefined,
+          },
+          replace: true,
+        });
+      }
     }
   },
   loaderDeps: ({ search }) => ({
@@ -53,6 +76,9 @@ export const Route = createFileRoute("/schedule/")({
     campus: search.campus,
     career: search.career,
     plan: search.plan,
+    term: search.term,
+    otherCampuses: search.otherCampuses,
+    showAll: search.showAll,
   }),
   loader: async ({ context: { queryClient }, deps }) => {
     const promises: Promise<unknown>[] = [];
@@ -68,6 +94,24 @@ export const Route = createFileRoute("/schedule/")({
       promises.push(
         queryClient.ensureQueryData(academicTermsQueryOptions(deps.campus, deps.plan ?? null)),
       );
+
+    if (deps.campus && deps.term) {
+      const appState = queryClient.getQueryData(appStateQueryOptions().queryKey);
+      const userId = appState?.session?.user?.id ?? null;
+      promises.push(
+        queryClient.ensureQueryData(
+          scheduleCoursesQueryOptions({
+            termId: deps.term,
+            campusId: deps.campus,
+            careerId: deps.career ?? null,
+            planId: deps.plan ?? null,
+            includeOtherCampuses: deps.otherCampuses ?? false,
+            showAllCourses: deps.showAll ?? false,
+            userId,
+          }),
+        ),
+      );
+    }
 
     await Promise.allSettled(promises);
   },

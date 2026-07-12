@@ -127,14 +127,17 @@ export function ScheduleExportDialog({ onExport }: ScheduleExportDialogProps) {
           <ImageDown className="size-4" />
         </Button>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetContent side="bottom" className="max-h-[90vh] gap-0 overflow-hidden p-0">
+          <SheetContent
+            side="bottom"
+            className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0"
+          >
             <SheetHeader className="px-4 pt-4 pb-2">
               <SheetTitle>Exportar calendario</SheetTitle>
               <SheetDescription>
                 Descarga el horario como imagen o archivo de calendario.
               </SheetDescription>
             </SheetHeader>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            <div className="min-h-0 overflow-y-auto px-4 pb-4">
               {formFields}
               <div className="mt-5">
                 <Button onClick={handleExport} disabled={isExporting} className="w-full">
