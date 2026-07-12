@@ -21,6 +21,7 @@ export interface UserStudyPlanContext {
   universityId: number | null;
   departmentId: number | null;
   academicUnitId: number | null;
+  termId: number | null;
 }
 
 const supabase = getSupabaseBrowserClient();
@@ -54,6 +55,7 @@ export async function getUserStudyPlan(): Promise<UserStudyPlanContext | null> {
     universityId: profile.university_id,
     departmentId: profile.academic_unit_id,
     academicUnitId: profile.academic_unit_id,
+    termId: profile.term_id,
   };
 }
 

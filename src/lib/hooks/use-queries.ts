@@ -305,8 +305,8 @@ function buildStudyPlanPeriods(items: Array<Record<string, unknown>>): StudyPeri
     );
 }
 
-export function useStudyPlanCoursesDetails(planId: number | null) {
-  return useQuery({
+export function studyPlanCoursesDetailsQueryOptions(planId: number | null) {
+  return queryOptions({
     queryKey: ["studyPlanCourses", planId],
     queryFn: async () => {
       if (!planId) return null;
@@ -317,16 +317,19 @@ export function useStudyPlanCoursesDetails(planId: number | null) {
       if (coursesResult.error) throw coursesResult.error;
       return buildStudyPlanPeriods(coursesResult.data ?? []);
     },
-    enabled: !!planId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
-export function useStudyPlanDetail(
-  planId: number | null,
-  selectedPlanData: CatalogStudyPlan | undefined,
-) {
+export function useStudyPlanCoursesDetails(planId: number | null) {
   return useQuery({
+    ...studyPlanCoursesDetailsQueryOptions(planId),
+    enabled: !!planId,
+  });
+}
+
+export function studyPlanDetailQueryOptions(planId: number | null) {
+  return queryOptions({
     queryKey: ["studyPlanDetail", planId],
     queryFn: async () => {
       if (!planId) return null;
@@ -378,6 +381,16 @@ export function useStudyPlanDetail(
         courseRelations,
       } as StudyPlanDetail;
     },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useStudyPlanDetail(
+  planId: number | null,
+  selectedPlanData: CatalogStudyPlan | undefined,
+) {
+  return useQuery({
+    ...studyPlanDetailQueryOptions(planId),
     select: (data) => {
       if (!data) return data;
       return {
@@ -386,7 +399,6 @@ export function useStudyPlanDetail(
       };
     },
     enabled: !!planId,
-    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -397,11 +409,12 @@ export function useUserStudyPlan(userId: string | null) {
   const userStudyPlan = profile?.study_plan_id
     ? {
         userId,
-        universityId: profile.university_id,
-        campusId: profile.campus_id,
-        academicUnitId: profile.academic_unit_id,
-        studyPlanId: profile.study_plan_id,
+        universityId: Number(profile.university_id),
+        campusId: Number(profile.campus_id),
+        academicUnitId: Number(profile.academic_unit_id),
+        studyPlanId: Number(profile.study_plan_id),
         studyPlanName: profile.study_plan_name,
+        termId: profile.term_id ? Number(profile.term_id) : null,
       }
     : null;
 
@@ -459,6 +472,49 @@ export function useCourseOfferingTerms(
   });
 }
 
+export function scheduleCoursesQueryOptions(params: {
+  termId: number | null;
+  campusId: number | null;
+  careerId: number | null;
+  planId: number | null;
+  includeOtherCampuses: boolean;
+  showAllCourses: boolean;
+  userId: string | null;
+}) {
+  return queryOptions({
+    queryKey: [
+      "scheduleCourses",
+      params.termId,
+      params.campusId,
+      params.careerId,
+      params.planId,
+      params.includeOtherCampuses,
+      params.userId ? params.showAllCourses : true,
+      params.userId,
+    ],
+    queryFn: async () => {
+      if (!params.termId || !params.campusId) return null;
+      const sb = getSupabaseBrowserClient();
+
+      const { data, error } = await sb
+        .rpc("get_schedule_courses", {
+          p_user_id: params.userId,
+          p_academic_term_id: params.termId,
+          p_campus_id: params.campusId,
+          p_study_plan_id: params.planId,
+          p_academic_unit_id: params.careerId,
+          p_include_other_campuses: params.includeOtherCampuses,
+          p_show_all_courses: params.userId ? params.showAllCourses : true,
+        })
+        .select("*");
+
+      if (error) throw error;
+      return (data ?? []) as import("@/lib/types").ScheduleCourse[];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useScheduleCourses(params: {
   termId: number | null;
   campusId: number | null;
@@ -469,49 +525,9 @@ export function useScheduleCourses(params: {
   userId: string | null;
   isAuthReady: boolean;
 }) {
-  const {
-    termId,
-    campusId,
-    careerId,
-    planId,
-    includeOtherCampuses,
-    showAllCourses,
-    userId,
-    isAuthReady,
-  } = params;
-
   return useQuery({
-    queryKey: [
-      "scheduleCourses",
-      termId,
-      campusId,
-      careerId,
-      planId,
-      includeOtherCampuses,
-      userId ? showAllCourses : true,
-      userId,
-    ],
-    queryFn: async () => {
-      if (!termId || !campusId) return null;
-      const sb = getSupabaseBrowserClient();
-
-      const { data, error } = await sb
-        .rpc("get_schedule_courses", {
-          p_user_id: userId,
-          p_academic_term_id: termId,
-          p_campus_id: campusId,
-          p_study_plan_id: planId,
-          p_academic_unit_id: careerId,
-          p_include_other_campuses: includeOtherCampuses,
-          p_show_all_courses: userId ? showAllCourses : true,
-        })
-        .select("*");
-
-      if (error) throw error;
-      return (data ?? []) as import("@/lib/types").ScheduleCourse[];
-    },
-    enabled: isAuthReady && !!termId && !!campusId,
-    staleTime: 2 * 60 * 1000,
+    ...scheduleCoursesQueryOptions(params),
+    enabled: params.isAuthReady && !!params.termId && !!params.campusId,
     placeholderData: keepPreviousData,
   });
 }
@@ -529,7 +545,8 @@ export function useSuggestedAcademicTerm(studyPlanId: number | null, enabled = t
       return data as number | null;
     },
     enabled: enabled && !!studyPlanId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours
   });
 }
 

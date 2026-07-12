@@ -127,6 +127,7 @@ export interface UserStudyPlanContext {
   universityId: number | null;
   departmentId: number | null;
   academicUnitId: number | null;
+  termId: number | null;
 }
 
 export interface UserProfileContextRow {
@@ -141,6 +142,7 @@ export interface UserProfileContextRow {
   study_plan_id: number | null;
   study_plan_name: string | null;
   entry_year: number | null;
+  term_id: number | null;
 }
 
 export interface DashboardStats {
@@ -296,16 +298,4 @@ export interface CalendarEvent {
   end: Date;
   courseId: string;
   group: number;
-}
-
-export interface UserStudyPlanContext {
-  user_id: string;
-  university_id: number | null;
-  campus_id: number | null;
-  academic_unit_id: number | null;
-  study_plan_id: number | null;
-  university_name: string | null;
-  campus_name: string | null;
-  academic_unit_name: string | null;
-  study_plan_name: string | null;
 }
