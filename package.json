@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm run dev:web & pnpm run dev:api",
+    "dev": "concurrently \"pnpm run dev:web\" \"pnpm run dev:api\"",
     "dev:web": "vite dev --port 3000",
     "dev:api": "pnpm --filter claustrum-api dev",
     "build": "fumadocs-mdx && tsc && vite build",
@@ -108,6 +108,7 @@
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "concurrently": "^10.0.3",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.4.0",
     "oxfmt": "^0.48.0",

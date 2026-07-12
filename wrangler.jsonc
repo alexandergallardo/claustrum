@@ -7,16 +7,16 @@
   "routes": [
     {
       "pattern": "claustrum.maugp.com",
-      "custom_domain": true
-    }
+      "custom_domain": true,
+    },
   ],
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "services": [
     {
       "binding": "API",
-      "service": "claustrum-api"
-    }
-  ]
+      "service": "claustrum-api",
+    },
+  ],
 }
