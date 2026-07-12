@@ -3,18 +3,15 @@ import { getRequest } from "@tanstack/react-start/server";
 // @ts-ignore
 import { env } from "cloudflare:workers";
 
-import { getSession } from "@/lib/auth/client";
+import { getApiBaseUrl } from "@/lib/env/public";
 
-export const getAuthSessionServerFn = createServerFn({ method: "GET" }).handler(async () => {
+const getBaseUrl = () => {
+  return getApiBaseUrl() ?? "http://localhost:3000/api";
+};
+
+export const appStateServerFn = createServerFn({ method: "GET" }).handler(async () => {
   const req = getRequest();
   if (!req) return null;
-
-  const customFetch = env?.API
-    ? (input: string | URL | Request, init?: RequestInit) => {
-        const req = new Request(input instanceof Request ? input : input.toString(), init);
-        return env.API.fetch(req);
-      }
-    : undefined;
 
   const fetchHeaders: Record<string, string> = {};
   const cookie = req.headers.get("cookie");
@@ -23,16 +20,20 @@ export const getAuthSessionServerFn = createServerFn({ method: "GET" }).handler(
   if (cookie) fetchHeaders.cookie = cookie;
   if (authorization) fetchHeaders.authorization = authorization;
 
-  const { data, error } = await getSession({
-    fetchOptions: {
-      headers: fetchHeaders,
-      customFetchImpl: customFetch,
-    },
-  });
+  const apiUrl = getBaseUrl() + "/auth/me";
 
-  if (error) {
-    throw new Error(error.message || `Auth fetch failed with status: ${error.status}`);
+  let response;
+  if (env?.API) {
+    const fetchReq = new Request(apiUrl, { headers: fetchHeaders });
+    response = await env.API.fetch(fetchReq);
+  } else {
+    response = await fetch(apiUrl, { headers: fetchHeaders });
   }
 
+  if (!response.ok) {
+    throw new Error(`App state fetch failed with status: ${response.status}`);
+  }
+
+  const data = await response.json();
   return data;
 });

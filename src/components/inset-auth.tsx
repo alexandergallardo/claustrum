@@ -13,13 +13,14 @@ import {
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Separator } from "@/components/ui/separator";
 import { normalizeAuthError } from "@/lib/auth/auth-error-messages";
-import { getSession, signIn, signUp } from "@/lib/auth/client";
+import { authClient, getSession, signIn, signUp } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -431,6 +432,7 @@ function OAuthRow() {
 
 function GoogleOAuthButton() {
   const [pending, setPending] = useState(false);
+  const lastMethod = authClient.getLastUsedLoginMethod();
 
   const onGoogleSignIn = async () => {
     setPending(true);
@@ -449,7 +451,7 @@ function GoogleOAuthButton() {
     <Button
       variant="outline"
       size="lg"
-      className="w-full"
+      className="w-full relative"
       onClick={onGoogleSignIn}
       disabled={pending}
     >
@@ -457,6 +459,11 @@ function GoogleOAuthButton() {
         <GoogleIcon />
       </span>
       <span className="truncate whitespace-nowrap">Google</span>
+      {lastMethod === "google" && (
+        <Badge variant="secondary" className="pointer-events-none absolute -top-2.5 -right-2 px-1.5 py-0 h-5 text-[10px] font-bold shadow-sm">
+          Último usado
+        </Badge>
+      )}
     </Button>
   );
 }
@@ -487,6 +494,7 @@ async function getPostSignInRedirect() {
 function MagicLinkButton({ email = "" }: { email?: string }) {
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
+  const lastMethod = authClient.getLastUsedLoginMethod();
 
   const onSendMagicLink = async () => {
     const trimmedEmail = email.trim();
@@ -520,13 +528,18 @@ function MagicLinkButton({ email = "" }: { email?: string }) {
     <Button
       variant="outline"
       size="lg"
-      className="mt-2 w-full"
+      className="mt-2 w-full relative"
       type="button"
       disabled={pending}
       onClick={onSendMagicLink}
     >
       <MailIcon />
       {pending ? "Enviando enlace..." : "Continuar con enlace mágico"}
+      {lastMethod === "magic-link" && (
+        <Badge variant="secondary" className="pointer-events-none absolute -top-2.5 -right-2 px-1.5 py-0 h-5 text-[10px] font-bold shadow-sm">
+          Último usado
+        </Badge>
+      )}
     </Button>
   );
 }
@@ -580,7 +593,7 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
     const bootstrapSession = async () => {
       const { data: session } = await getSession();
       if (session) {
-        await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+        await queryClient.invalidateQueries({ queryKey: ["appState"] });
         void navigate({ to: await getPostSignInRedirect(), replace: true });
       }
     };
@@ -633,9 +646,16 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
         </Alert>
       ) : null}
       <Field>
-        <FieldLabel htmlFor="login-email">
-          Correo electrónico <span className="text-muted-foreground">*</span>
-        </FieldLabel>
+        <div className="flex items-center justify-between">
+          <FieldLabel htmlFor="login-email">
+            Correo electrónico <span className="text-muted-foreground">*</span>
+          </FieldLabel>
+          {authClient.getLastUsedLoginMethod() === "email" && (
+            <Badge variant="secondary" className="pointer-events-none px-1.5 py-0 h-5 text-[10px] font-bold">
+              Último usado
+            </Badge>
+          )}
+        </div>
         <Input
           id="login-email"
           type="email"
@@ -749,7 +769,7 @@ function SignUpForm() {
     const bootstrapSession = async () => {
       const { data: session } = await getSession();
       if (session) {
-        await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+        await queryClient.invalidateQueries({ queryKey: ["appState"] });
         void navigate({ to: "/overview", replace: true });
       }
     };

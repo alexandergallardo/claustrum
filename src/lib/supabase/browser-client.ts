@@ -64,12 +64,21 @@ async function fetchAndCacheToken() {
 }
 
 export function getSupabaseBrowserClient(): SupabaseClient {
-  if (cached) return cached;
-
   const { supabaseUrl, supabasePublishableKey } = getSupabasePublicEnv();
 
-  cached = createClient(supabaseUrl, supabasePublishableKey, {
+  // En SSR no podemos compartir caché ni promesas en vuelo entre peticiones (provoca leaks y cuelgues)
+  const isServer = typeof window === "undefined";
+
+  if (!isServer && cached) return cached;
+
+  const client = createClient(supabaseUrl, supabasePublishableKey, {
     accessToken: async () => {
+      if (isServer) {
+        // En SSR simplemente buscamos el token sin caché para evitar cruce de contextos
+        const { data } = await authClient.token().catch(() => ({ data: null }));
+        return data?.token ?? null;
+      }
+
       if (isCachedTokenValid()) {
         return cachedToken;
       }
@@ -90,5 +99,9 @@ export function getSupabaseBrowserClient(): SupabaseClient {
     },
   });
 
-  return cached;
+  if (!isServer) {
+    cached = client;
+  }
+
+  return client;
 }

@@ -6,7 +6,7 @@ import { resetSupabaseAuthTokenState } from "@/lib/supabase/browser-client";
 export type AppAuthUser = NonNullable<ReturnType<typeof useAuthUser>["data"]>;
 
 type AppAuthContextValue = {
-  authUser: AppAuthUser | null;
+  authUser: AppAuthUser;
   isAuthLoading: boolean;
 };
 

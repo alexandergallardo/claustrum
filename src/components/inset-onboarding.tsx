@@ -64,7 +64,7 @@ export function InsetOnboardingPage() {
       await supabase
         .from("user")
         .upsert({ id: authUser.id, onboarding_dismissed_at: new Date().toISOString() });
-      await queryClient.invalidateQueries({ queryKey: ["onboardingStatus", authUser.id] });
+      await queryClient.invalidateQueries({ queryKey: ["appState"] });
       void navigate({ to: "/overview" });
     })();
   };
@@ -141,9 +141,7 @@ export function InsetOnboardingPage() {
         .upsert({ id: authUser.id, onboarding_completed_at: new Date().toISOString() });
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["onboardingStatus", authUser.id] }),
-        queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] }),
-        queryClient.invalidateQueries({ queryKey: ["userStudyPlan", authUser.id] }),
+        queryClient.invalidateQueries({ queryKey: ["appState"] }),
         queryClient.invalidateQueries({ queryKey: ["dashboardStats", authUser.id] }),
       ]);
       void navigate({ to: "/overview" });

@@ -103,16 +103,7 @@ export function AuthTwoFactorPage() {
       return;
     }
 
-    const { data: session } = await getSession();
-    await queryClient.invalidateQueries({ queryKey: ["authUser"] });
-    if (session?.user.id) {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["profile", session.user.id] }),
-        queryClient.invalidateQueries({ queryKey: ["onboardingStatus", session.user.id] }),
-        queryClient.invalidateQueries({ queryKey: ["userStudyPlan", session.user.id] }),
-      ]);
-    }
-
+    await queryClient.invalidateQueries({ queryKey: ["appState"] });
     setIsVerifying(false);
     void navigate({ to: "/overview", replace: true });
   }
