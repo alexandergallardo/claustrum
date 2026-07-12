@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { Pool } from "pg";
 
 import type { Env } from "../types";
 

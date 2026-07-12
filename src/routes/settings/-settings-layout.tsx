@@ -32,9 +32,14 @@ const navItems = [
   },
 ];
 
+import { useQueryClient } from "@tanstack/react-query";
+
+import { resetSupabaseAuthTokenState } from "@/lib/supabase/browser-client";
+
 export function SettingsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   return (
@@ -82,6 +87,8 @@ export function SettingsLayout() {
                 type="button"
                 onClick={async () => {
                   await signOut();
+                  resetSupabaseAuthTokenState();
+                  queryClient.clear();
                   void navigate({ to: "/auth/signin" });
                 }}
                 className="text-destructive hover:bg-destructive/10 flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors lg:hidden"
