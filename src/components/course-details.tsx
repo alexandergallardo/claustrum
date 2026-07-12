@@ -1275,7 +1275,10 @@ export function CourseDetails({
 
       {isMobile ? (
         <Sheet open={isProgressSheetOpen} onOpenChange={setIsProgressSheetOpen}>
-          <SheetContent side="bottom" className="max-h-[86vh] gap-0 overflow-hidden p-0">
+          <SheetContent
+            side="bottom"
+            className="grid max-h-[86vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0"
+          >
             <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
             <SheetHeader className="px-4 pt-4 pb-2">
               <SheetTitle>Registrar progreso</SheetTitle>
@@ -1283,7 +1286,7 @@ export function CourseDetails({
                 Guarda el estado de este curso para el periodo seleccionado.
               </SheetDescription>
             </SheetHeader>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{progressForm}</div>
+            <div className="min-h-0 overflow-y-auto px-4 pb-4">{progressForm}</div>
             <SheetFooter className="border-t px-4 pt-3 pb-4">
               <Button
                 type="button"

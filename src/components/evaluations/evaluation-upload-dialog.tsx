@@ -748,13 +748,16 @@ export function EvaluationUploadDialog({
   if (isMobile) {
     return (
       <Sheet open={open} onOpenChange={handleClose}>
-        <SheetContent side="bottom" className="max-h-[90vh] gap-0 overflow-hidden p-0">
+        <SheetContent
+          side="bottom"
+          className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0"
+        >
           <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
           <SheetHeader className="px-4 pt-4 pb-2">
             <SheetTitle>Subir evaluación</SheetTitle>
             <SheetDescription>Comparte material de estudio con otros estudiantes.</SheetDescription>
           </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div className="min-h-0 overflow-y-auto px-4 pb-4">
             {formFields}
             <div className="mt-5">
               <Button onClick={handleSubmit} disabled={!canSubmit} className="w-full">

@@ -47,7 +47,7 @@ export function FilterCombobox({
   showCode = false,
   itemLabel,
   triggerClassName,
-  disableAnimation = false,
+  skipAnimation = false,
 }: {
   label?: string;
   value: string;
@@ -58,7 +58,7 @@ export function FilterCombobox({
   showCode?: boolean;
   itemLabel?: (item: FilterItem) => string;
   triggerClassName?: string;
-  disableAnimation?: boolean;
+  skipAnimation?: boolean;
 }) {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -76,7 +76,7 @@ export function FilterCombobox({
     <div
       className={cn(
         "min-w-0",
-        !disableAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
+        !skipAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
       )}
     >
       <Combobox

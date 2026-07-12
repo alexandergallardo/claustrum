@@ -218,13 +218,13 @@ export function FeedbackDialog({
       >
         <SheetContent
           side="bottom"
-          className="flex max-h-[90vh] flex-col overflow-hidden p-0"
+          className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <SheetHeader className="px-6 pt-6 pb-2 text-left">
             <TitleAndDescription />
           </SheetHeader>
-          <ScrollArea className="min-h-0 flex-1">{formContent}</ScrollArea>
+          <ScrollArea className="min-h-0">{formContent}</ScrollArea>
         </SheetContent>
       </Sheet>
     );

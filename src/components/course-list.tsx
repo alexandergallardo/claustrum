@@ -409,7 +409,7 @@ export default function CourseList({
   return (
     <TooltipProvider>
       <div ref={scrollAreaRootRef} className="h-full">
-        <ScrollArea className="h-full w-full">
+        <ScrollArea className="h-full w-full [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!w-full">
           <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
             {viewData.map((courseData) => {
               const course = courseData.course;
@@ -469,7 +469,7 @@ const CourseCard = memo(function CourseCard({
 
   return (
     <Card
-      className="w-full gap-2"
+      className="w-full max-w-full gap-2"
       style={{ contentVisibility: "auto", containIntrinsicSize: "0 280px" }}
     >
       <CardHeader className="gap-1 px-4">
@@ -484,8 +484,8 @@ const CourseCard = memo(function CourseCard({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-4">
-        <ScrollArea className="w-full">
+      <CardContent className="max-w-full px-4">
+        <ScrollArea className="w-full max-w-full">
           <div className="flex snap-x snap-mandatory items-start gap-3 pt-1 pb-2">
             {groupViews.map((groupView) => {
               const isSelected = selectedGroupIds.has(groupView.groupId);
