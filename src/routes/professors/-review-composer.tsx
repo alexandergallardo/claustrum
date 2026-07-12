@@ -214,7 +214,7 @@ export function ReviewComposer({
     if (filtered.length !== selectedCourses.length) {
       setSelectedCourses(filtered);
     }
-  }, [courseOptions]);
+  }, [courseOptions, selectedCourses, setSelectedCourses]);
 
   const form = (
     <div className={`space-y-4 ${isMobile ? "px-4 pb-4" : "px-1 pb-2"}`}>
@@ -298,9 +298,8 @@ export function ReviewComposer({
                     : "Seleccionar periodo"}
               </span>
               {selectedTerm && (
-                <div
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   className="text-muted-foreground hover:text-foreground hover:bg-muted z-10 -mr-1.5 flex h-full items-center justify-center rounded-sm p-0.5 transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
@@ -317,7 +316,7 @@ export function ReviewComposer({
                 >
                   <X className="size-4" />
                   <span className="sr-only">Limpiar periodo seleccionado</span>
-                </div>
+                </button>
               )}
             </ComboboxTrigger>
             <ComboboxContent
@@ -546,7 +545,7 @@ export function ReviewComposer({
       >
         <SheetContent
           side="bottom"
-          className="max-h-[90vh] gap-0 overflow-hidden p-0"
+          className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <div ref={comboboxPortalContainerRef} className="absolute top-0 left-0 size-0" />
@@ -569,7 +568,7 @@ export function ReviewComposer({
               </Button>
             </SheetDescription>
           </SheetHeader>
-          <ScrollArea className="min-h-0 flex-1">{form}</ScrollArea>
+          <ScrollArea className="min-h-0">{form}</ScrollArea>
         </SheetContent>
       </Sheet>
     );

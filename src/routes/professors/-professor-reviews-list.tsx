@@ -596,13 +596,17 @@ export function ProfessorReviewsList({
             }
           }}
         >
-          <SheetContent side="bottom" className="p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
-            <SheetHeader className="text-left">
+          <SheetContent
+            side="bottom"
+            className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)] gap-0 p-0"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <SheetHeader className="px-4 pt-4 pb-2 text-left">
               <SheetTitle>Reportar reseña</SheetTitle>
               <SheetDescription>Reporte anónimo para revisión de moderación.</SheetDescription>
             </SheetHeader>
 
-            <div className="space-y-4 px-4 pb-4">
+            <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-4">
               <div className="space-y-2">
                 <p className="text-sm font-medium">Motivo</p>
                 <Select

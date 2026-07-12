@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, getRouteApi } from "@tanstack/react-router";
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 
 import type { ProfessorReviewStatsRow } from "@/lib/professor-reviews/types";
 
@@ -90,52 +90,62 @@ export function ProfessorsReviewsPage() {
 
   const { data: allAcademicUnits = [] } = useAcademicUnitsWithProfessors();
 
-  const handleSort = (colId: string) => {
-    let newSortBy: string | undefined = colId;
-    let newSortDesc: boolean | undefined = true;
+  const handleSort = useCallback(
+    (colId: string) => {
+      let newSortBy: string | undefined = colId;
+      let newSortDesc: boolean | undefined = true;
 
-    if (sortBy === colId) {
-      if (sortDesc === true) {
-        newSortDesc = false;
-      } else {
-        newSortBy = "none";
-        newSortDesc = undefined;
+      if (sortBy === colId) {
+        if (sortDesc === true) {
+          newSortDesc = false;
+        } else {
+          newSortBy = "none";
+          newSortDesc = undefined;
+        }
       }
-    }
 
-    void navigate({
-      search: (prev) => ({
-        ...prev,
-        sortBy: newSortBy === "reviews" ? undefined : newSortBy,
-        sortDesc: newSortDesc === true && newSortBy === "reviews" ? undefined : newSortDesc,
-        page: undefined,
-      }),
-      replace: true,
-    });
-  };
+      void navigate({
+        search: (prev) => ({
+          ...prev,
+          sortBy: newSortBy === "reviews" ? undefined : newSortBy,
+          sortDesc: newSortDesc === true && newSortBy === "reviews" ? undefined : newSortDesc,
+          page: undefined,
+        }),
+        replace: true,
+      });
+    },
+    [navigate, sortBy, sortDesc],
+  );
 
-  const renderSortHeader = (title: string, colId: string) => (
-    <button
-      type="button"
-      onClick={() => handleSort(colId)}
-      className="hover:text-foreground focus-visible:ring-ring flex h-8 items-center font-medium transition-colors focus-visible:ring-1 focus-visible:outline-none"
-    >
-      {title}
-      <div className="ml-1.5 flex flex-col -space-y-[6px]">
-        <ChevronUp
-          className={cn(
-            "size-[10px]",
-            sortBy === colId && sortDesc === false ? "text-foreground" : "text-muted-foreground/50",
-          )}
-        />
-        <ChevronDown
-          className={cn(
-            "size-[10px]",
-            sortBy === colId && sortDesc === true ? "text-foreground" : "text-muted-foreground/50",
-          )}
-        />
-      </div>
-    </button>
+  const renderSortHeader = useCallback(
+    (title: string, colId: string) => (
+      <button
+        type="button"
+        onClick={() => handleSort(colId)}
+        className="hover:text-foreground focus-visible:ring-ring flex h-8 items-center font-medium transition-colors focus-visible:ring-1 focus-visible:outline-none"
+      >
+        {title}
+        <div className="ml-1.5 flex flex-col -space-y-[6px]">
+          <ChevronUp
+            className={cn(
+              "size-[10px]",
+              sortBy === colId && sortDesc === false
+                ? "text-foreground"
+                : "text-muted-foreground/50",
+            )}
+          />
+          <ChevronDown
+            className={cn(
+              "size-[10px]",
+              sortBy === colId && sortDesc === true
+                ? "text-foreground"
+                : "text-muted-foreground/50",
+            )}
+          />
+        </div>
+      </button>
+    ),
+    [handleSort, sortBy, sortDesc],
   );
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -268,7 +278,7 @@ export function ProfessorsReviewsPage() {
         ),
       },
     ],
-    [queryClient, sortBy, sortDesc],
+    [queryClient, renderSortHeader],
   );
 
   const table = useReactTable({
@@ -320,7 +330,6 @@ export function ProfessorsReviewsPage() {
             : normalizeText(item.name)
         }
         triggerClassName="h-9 sm:max-w-none"
-        disableAnimation={true}
       />
     </div>
   );
