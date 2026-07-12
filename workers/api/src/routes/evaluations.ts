@@ -5,13 +5,12 @@ import type { Env } from "../types";
 
 import { fail, ok } from "../lib/http";
 import { isAdmin, verifyAuth, verifyTurnstileToken } from "../lib/security";
-import { getSupabase } from "../lib/supabase";
+import { getSupabaseAdmin } from "../lib/supabase";
 
 const evaluationsRoutes = new Hono<{ Bindings: Env }>();
 
 const uploadPayloadSchema = z
   .object({
-    courseId: z.number().int().positive(),
     academicTermId: z.number().int().positive().nullable(),
     professorId: z.number().int().positive().nullable(),
     evaluationType: z.enum(["parcial", "quiz", "final", "reposicion", "tarea", "proyecto", "otro"]),
@@ -87,7 +86,13 @@ function parseBooleanField(value: FormDataEntryValue | null): boolean {
   return value === "true";
 }
 
-evaluationsRoutes.post("/upload", async (c) => {
+evaluationsRoutes.post("/courses/:courseId/evaluations", async (c) => {
+  const courseIdParam = c.req.param("courseId");
+  const courseId = Number(courseIdParam);
+  if (!courseId || Number.isNaN(courseId)) {
+    return fail(400, "courseId invalido", c.req.raw, c.env);
+  }
+
   const request = c.req.raw;
   const formData = await request.formData();
 
@@ -103,7 +108,6 @@ evaluationsRoutes.post("/upload", async (c) => {
   }
 
   const payloadResult = uploadPayloadSchema.safeParse({
-    courseId: parseNullableNumber(formData.get("courseId")),
     academicTermId: parseNullableNumber(formData.get("academicTermId")),
     professorId: parseNullableNumber(formData.get("professorId")),
     evaluationType: formData.get("evaluationType"),
@@ -147,7 +151,7 @@ evaluationsRoutes.post("/upload", async (c) => {
   const fileSha256 = formData.get("fileSha256");
   const answersFileSha256 = formData.get("answersFileSha256");
 
-  const fileKey = `evaluations/${payload.courseId}/${crypto.randomUUID()}.pdf`;
+  const fileKey = `evaluations/${courseId}/${crypto.randomUUID()}.pdf`;
   let answersKey: string | null = null;
 
   try {
@@ -162,9 +166,9 @@ evaluationsRoutes.post("/upload", async (c) => {
       });
     }
 
-    const supabase = getSupabase(c.env);
+    const supabase = getSupabaseAdmin(c.env);
     const { error: dbError } = await supabase.from("course_evaluations").insert({
-      course_id: payload.courseId,
+      course_id: courseId,
       academic_term_id: payload.academicTermId,
       professor_id: payload.professorId,
       evaluation_type: payload.evaluationType,
@@ -197,29 +201,30 @@ evaluationsRoutes.post("/upload", async (c) => {
   return ok({ success: true, message: "Evaluacion subida correctamente" }, request, c.env);
 });
 
-evaluationsRoutes.get("/:id/file", async (c) => {
+evaluationsRoutes.get("/evaluations/:evaluationId/file", async (c) => {
   const request = c.req.raw;
-  const evaluationId = Number(c.req.param("id"));
-  if (!Number.isFinite(evaluationId) || evaluationId <= 0) {
+  const evaluationId = c.req.param("evaluationId");
+  if (!/^\d+$/.test(evaluationId)) {
     return fail(400, "ID de evaluacion invalido", request, c.env);
   }
 
-  const supabase = getSupabase(c.env);
+  const supabase = getSupabaseAdmin(c.env);
   const { data: evaluation, error } = await supabase
     .from("course_evaluations")
     .select(
       "id, status, file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)",
     )
-    .eq("id", evaluationId)
+    .eq("id", Number(evaluationId))
     .single();
 
   if (error || !evaluation) return fail(404, "Evaluacion no encontrada", request, c.env);
 
   if (evaluation.status !== "approved") {
-    const userId = await verifyAuth(request, c.env);
-    if (!userId) {
+    const authResult = await verifyAuth(request, c.env);
+    if (!authResult) {
       return fail(401, "Unauthorized", request, c.env);
     }
+    const { userId } = authResult;
 
     const admin = await isAdmin(userId, c.env);
     if (!admin) return fail(403, "No tienes acceso a esta evaluacion", request, c.env);
@@ -247,30 +252,32 @@ evaluationsRoutes.get("/:id/file", async (c) => {
   });
 });
 
-evaluationsRoutes.get("/:id/answers-file", async (c) => {
+evaluationsRoutes.get("/evaluations/:evaluationId/answers-file", async (c) => {
   const request = c.req.raw;
-  const evaluationId = Number(c.req.param("id"));
-  if (!Number.isFinite(evaluationId) || evaluationId <= 0) {
+  const evaluationId = c.req.param("evaluationId");
+  if (!/^\d+$/.test(evaluationId)) {
     return fail(400, "ID de evaluacion invalido", request, c.env);
   }
 
-  const supabase = getSupabase(c.env);
+  const supabase = getSupabaseAdmin(c.env);
   const { data: evaluation, error } = await supabase
     .from("course_evaluations")
     .select(
       "id, status, answers_file_key, evaluation_type, evaluation_number, custom_name, course:course_id!inner(code)",
     )
-    .eq("id", evaluationId)
+    .eq("id", Number(evaluationId))
     .single();
 
   if (error || !evaluation) return fail(404, "Evaluacion no encontrada", request, c.env);
-  if (!evaluation.answers_file_key) return fail(404, "Esta evaluación no tiene archivo de respuestas", request, c.env);
+  if (!evaluation.answers_file_key)
+    return fail(404, "Esta evaluación no tiene archivo de respuestas", request, c.env);
 
   if (evaluation.status !== "approved") {
-    const userId = await verifyAuth(request, c.env);
-    if (!userId) {
+    const authResult = await verifyAuth(request, c.env);
+    if (!authResult) {
       return fail(401, "Unauthorized", request, c.env);
     }
+    const { userId } = authResult;
 
     const admin = await isAdmin(userId, c.env);
     if (!admin) return fail(403, "No tienes acceso a esta evaluacion", request, c.env);

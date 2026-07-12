@@ -2,9 +2,12 @@ import { importJWK, jwtVerify, type JWK } from "jose";
 
 import type { Env } from "../types";
 
-import { getSupabase } from "./supabase";
+import { getSupabaseAdmin } from "./supabase";
 
-export async function verifyAuth(request: Request, env: Env): Promise<string | null> {
+export async function verifyAuth(
+  request: Request,
+  env: Env,
+): Promise<{ userId: string; token: string } | null> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
@@ -21,14 +24,14 @@ export async function verifyAuth(request: Request, env: Env): Promise<string | n
       audience: "authenticated",
     });
     if (payload.role !== "authenticated" || typeof payload.sub !== "string") return null;
-    return payload.sub;
+    return { userId: payload.sub, token };
   } catch {
     return null;
   }
 }
 
 export async function isAdmin(userId: string, env: Env): Promise<boolean> {
-  const supabase = getSupabase(env);
+  const supabase = getSupabaseAdmin(env);
   const { data, error } = await supabase
     .from("user_role")
     .select("id")

@@ -5,7 +5,7 @@ import type { Env } from "../types";
 
 import { fail, ok } from "../lib/http";
 import { verifyAuth, verifyTurnstileToken } from "../lib/security";
-import { getSupabase } from "../lib/supabase";
+import { getSupabaseAdmin, getSupabaseClient } from "../lib/supabase";
 
 const REVIEW_TAGS = [
   "Tomaría su clase nuevamente",
@@ -40,7 +40,6 @@ const courseCodeSchema = z
   .regex(/^[A-Z]{2,4}\d{3,4}$/);
 
 const professorReviewSchema = z.object({
-  professorId: z.string().regex(/^\d+$/),
   courseCodes: z.array(courseCodeSchema).min(1).max(6),
   academicTermId: z.number().int().positive().nullable().optional(),
   comment: z.string().trim().min(5).max(1000),
@@ -94,7 +93,8 @@ function isRealProfessorName(fullName: string): boolean {
 
 const professorReviewsRoutes = new Hono<{ Bindings: Env }>();
 
-professorReviewsRoutes.post("/", async (c) => {
+professorReviewsRoutes.post("/professors/:professorId/reviews", async (c) => {
+  const professorId = c.req.param("professorId");
   const request = c.req.raw;
   const body = await request.json();
   const parsed = professorReviewSchema.safeParse(body);
@@ -115,7 +115,7 @@ professorReviewsRoutes.post("/", async (c) => {
     return fail(400, "Invalid anti-spam token", request, c.env);
   }
 
-  const supabase = getSupabase(c.env);
+  const supabase = getSupabaseAdmin(c.env);
 
   const { data: courses, error: coursesError } = await supabase
     .from("course")
@@ -133,7 +133,7 @@ professorReviewsRoutes.post("/", async (c) => {
   const { data: professorExists, error: professorError } = await supabase
     .from("professor")
     .select("id,full_name")
-    .eq("id", parsed.data.professorId)
+    .eq("id", professorId)
     .maybeSingle();
 
   if (professorError) {
@@ -152,7 +152,7 @@ professorReviewsRoutes.post("/", async (c) => {
     const { data: termMatch, error: termMatchError } = await supabase
       .from("course_offering_group_professor")
       .select("professor_id, course_offering_group!inner(course_offering!inner(academic_term_id))")
-      .eq("professor_id", parsed.data.professorId)
+      .eq("professor_id", professorId)
       .eq("course_offering_group.course_offering.academic_term_id", parsed.data.academicTermId)
       .limit(1)
       .maybeSingle();
@@ -169,7 +169,7 @@ professorReviewsRoutes.post("/", async (c) => {
   const { data: inserted, error: insertError } = await supabase
     .from("professor_review")
     .insert({
-      professor_id: parsed.data.professorId,
+      professor_id: professorId,
       academic_term_id: parsed.data.academicTermId ?? null,
       comment: parsed.data.comment,
       ease_score: parsed.data.easeScore,
@@ -204,14 +204,13 @@ professorReviewsRoutes.post("/", async (c) => {
   return ok({ success: true, review: inserted }, request, c.env);
 });
 
-professorReviewsRoutes.post("/:reviewId/reaction", async (c) => {
+professorReviewsRoutes.post("/reviews/:reviewId/reactions", async (c) => {
   const request = c.req.raw;
-  const userId = await verifyAuth(request, c.env);
-  if (!userId) {
-    return fail(401, "Debes iniciar sesión para reaccionar a una reseña", request, c.env);
-  }
-
   const reviewId = c.req.param("reviewId");
+  const authResult = await verifyAuth(request, c.env);
+  if (!authResult) return fail(401, "Unauthorized", request, c.env);
+  const { userId, token } = authResult;
+
   if (!/^\d+$/.test(reviewId)) {
     return fail(400, "Invalid review id", request, c.env);
   }
@@ -222,7 +221,7 @@ professorReviewsRoutes.post("/:reviewId/reaction", async (c) => {
     return fail(400, "Invalid reaction payload", request, c.env);
   }
 
-  const supabase = getSupabase(c.env);
+  const supabase = getSupabaseClient(c.env, token);
 
   const { data: review, error: reviewError } = await supabase
     .from("professor_review")
@@ -298,7 +297,7 @@ professorReviewsRoutes.post("/:reviewId/reaction", async (c) => {
   );
 });
 
-professorReviewsRoutes.post("/:reviewId/report", async (c) => {
+professorReviewsRoutes.post("/reviews/:reviewId/reports", async (c) => {
   const request = c.req.raw;
   const reviewId = c.req.param("reviewId");
   if (!/^\d+$/.test(reviewId)) {
@@ -324,7 +323,7 @@ professorReviewsRoutes.post("/:reviewId/report", async (c) => {
     return fail(400, "Invalid anti-spam token", request, c.env);
   }
 
-  const supabase = getSupabase(c.env);
+  const supabase = getSupabaseAdmin(c.env);
 
   const { data: review, error: reviewError } = await supabase
     .from("professor_review")

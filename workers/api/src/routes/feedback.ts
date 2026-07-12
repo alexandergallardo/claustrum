@@ -5,7 +5,7 @@ import type { Env } from "../types";
 
 import { fail, ok } from "../lib/http";
 import { verifyTurnstileToken } from "../lib/security";
-import { getSupabase } from "../lib/supabase";
+import { getSupabaseAdmin } from "../lib/supabase";
 
 const feedbackSchema = z.object({
   type: z.enum(["bug", "feature", "other"]),
@@ -36,10 +36,15 @@ app.post("/", async (c) => {
     c.req.header("cf-connecting-ip") ?? null,
   );
   if (!isValidTurnstile) {
-    return fail(400, "Fallo en la validación de seguridad (Turnstile). Inténtalo de nuevo.", c.req.raw, c.env);
+    return fail(
+      400,
+      "Fallo en la validación de seguridad (Turnstile). Inténtalo de nuevo.",
+      c.req.raw,
+      c.env,
+    );
   }
 
-  const supabase = getSupabase(c.env);
+  const supabase = getSupabaseAdmin(c.env);
 
   const { error } = await supabase.from("user_feedback").insert({
     type,

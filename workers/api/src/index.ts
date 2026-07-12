@@ -7,8 +7,8 @@ import { getAllowedOrigins } from "./lib/cors";
 import { fail, HttpError } from "./lib/http";
 import authRoutes from "./routes/auth";
 import evaluationsRoutes from "./routes/evaluations";
-import professorReviewsRoutes from "./routes/professor-reviews";
 import feedbackRoutes from "./routes/feedback";
+import professorReviewsRoutes from "./routes/professor-reviews";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -28,8 +28,8 @@ app.use(
 );
 
 app.route("/api/auth", authRoutes);
-app.route("/api/evaluations", evaluationsRoutes);
-app.route("/api/professor-reviews", professorReviewsRoutes);
+app.route("/api", evaluationsRoutes);
+app.route("/api", professorReviewsRoutes);
 app.route("/api/feedback", feedbackRoutes);
 
 app.notFound((c) => fail(404, "Not found", c.req.raw, c.env));

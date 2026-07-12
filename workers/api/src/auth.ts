@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";
-import { magicLink, twoFactor, jwt } from "better-auth/plugins";
+import { magicLink, twoFactor, jwt, openAPI, lastLoginMethod } from "better-auth/plugins";
 import { importJWK, SignJWT, type JWK, type JWTPayload } from "jose";
 import { Pool } from "pg";
 import { Resend } from "resend";
@@ -153,6 +153,8 @@ export function createAuth(env: AuthEnv, pool: Pool): ReturnType<typeof betterAu
       },
     },
     plugins: [
+      openAPI(),
+      lastLoginMethod(),
       magicLink({
         sendMagicLink: async ({ email, url }) => {
           await sendAuthEmail(env, {
