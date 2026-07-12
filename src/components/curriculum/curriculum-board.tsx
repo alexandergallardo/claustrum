@@ -61,14 +61,14 @@ function CurriculumBoard({
   );
 
   const [zoom, setZoom] = useState<number>(() => propZoom ?? getInitialZoom());
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const stored =
       localStorage.getItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY) ??
       localStorage.getItem(LEGACY_PANEL_OPEN_STORAGE_KEY);
-    if (stored === "false") {
-      setIsPanelOpen(false);
+    if (stored === "true") {
+      setIsPanelOpen(true);
     }
   }, []);
 

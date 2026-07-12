@@ -1,6 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { AlertTriangle, User } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, User, Save } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { CatalogCampus, CatalogStudyPlan } from "@/lib/types";
 
@@ -10,15 +10,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import {
-  useAuthUser,
   useUniversities,
   useCampuses,
   useAcademicUnits,
   useStudyPlans,
   useStudyPlanDetail,
-  useUserStudyPlan,
 } from "@/lib/hooks/use-queries";
+import { saveLocalStudyPlan } from "@/lib/store/local-study-plan";
 
 import {
   CURRICULUM_DEFAULT_UNIVERSITY_ID,
@@ -39,6 +40,7 @@ export function CurriculumPage() {
   const hasMeaningfulSearch = isMeaningfulCurriculumSearch(search);
   const [isUsingProfileDefaults, setIsUsingProfileDefaults] = useState(() => !hasMeaningfulSearch);
   const shouldAutoSelectPlanRef = useRef(false);
+  const lastAppliedPlanRef = useRef<typeof userStudyPlan | null>(null);
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();
   const campusesQuery = useCampuses(selectedUniversityId);
@@ -48,27 +50,22 @@ export function CurriculumPage() {
   const selectedPlanData = plansQuery.data?.find((p: CatalogStudyPlan) => p.id === selectedPlanId);
 
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const { data: userStudyPlan, isLoading: isUserStudyPlanLoading } = useUserStudyPlan(
-    authUser?.id ?? null,
-  );
-  const isProfileLoading = isUsingProfileDefaults && (isAuthLoading || isUserStudyPlanLoading);
+  const { activePlan: userStudyPlan, isLoading: isProfileLoading, authUser } = useActiveStudyPlan();
   const isAutoSelectingPlan =
     shouldAutoSelectPlanRef.current &&
     !!selectedAcademicUnitId &&
     !selectedPlanId &&
     (plansQuery.isFetching || (plansQuery.data?.length ?? 0) > 0);
   const isPendingFilters = isProfileLoading || isAutoSelectingPlan;
-  const userStudyPlanUniversityId =
-    normalizeCurriculumUniversityId(userStudyPlan?.universityId) ??
-    CURRICULUM_DEFAULT_UNIVERSITY_ID;
+  const userStudyPlanUniversityId = userStudyPlan?.universityId ?? CURRICULUM_DEFAULT_UNIVERSITY_ID;
 
   const campuses = campusesQuery.data ?? [];
   const academicUnits = academicUnitsQuery.data ?? [];
   const plans = plansQuery.data ?? [];
 
-  const mainCampuses = campuses.filter(
-    (c: CatalogCampus) => MAIN_CAMPUS_CODES.has(c.code) || c.id === selectedCampusId,
+  const mainCampuses = useMemo(
+    () => campuses.filter((c: CatalogCampus) => MAIN_CAMPUS_CODES.has(c.code)),
+    [campuses],
   );
   const isAutoSelectingLatestPlan =
     shouldAutoSelectPlanRef.current &&
@@ -80,6 +77,7 @@ export function CurriculumPage() {
 
   useEffect(() => {
     if (!userStudyPlan) return;
+    if (lastAppliedPlanRef.current === userStudyPlan) return;
 
     const hasAnySearch =
       hasMeaningfulSearch || !!selectedCampusId || !!selectedAcademicUnitId || !!selectedPlanId;
@@ -87,6 +85,7 @@ export function CurriculumPage() {
 
     // Case 1: no params at all → load full profile
     if (isEmptySearch) {
+      lastAppliedPlanRef.current = userStudyPlan;
       setIsUsingProfileDefaults(true);
       void navigate({
         to: "/curriculum",
@@ -100,6 +99,7 @@ export function CurriculumPage() {
           plan: userStudyPlan.studyPlanId ?? undefined,
           p: userStudyPlan.studyPlanId ?? undefined,
         } as never,
+        replace: true,
       });
       return;
     }
@@ -116,6 +116,7 @@ export function CurriculumPage() {
       const missingPlan = !selectedPlanId && userStudyPlan.studyPlanId;
 
       if (missingCampus || missingCareer || missingPlan) {
+        lastAppliedPlanRef.current = userStudyPlan;
         setIsUsingProfileDefaults(true);
         void navigate({
           to: "/curriculum",
@@ -128,9 +129,13 @@ export function CurriculumPage() {
             plan: selectedPlanId ?? userStudyPlan.studyPlanId ?? undefined,
             p: selectedPlanId ?? userStudyPlan.studyPlanId ?? undefined,
           } as never,
+          replace: true,
         });
+        return;
       }
     }
+    
+    lastAppliedPlanRef.current = userStudyPlan;
   }, [
     userStudyPlan,
     isUsingProfileDefaults,
@@ -145,10 +150,6 @@ export function CurriculumPage() {
   ]);
 
   useEffect(() => {
-    if (!authUser) {
-      setIsUsingProfileDefaults(false);
-      return;
-    }
     if (!userStudyPlan) return;
     const hasSearch = hasMeaningfulSearch;
     if (!hasSearch) {
@@ -163,84 +164,83 @@ export function CurriculumPage() {
       search.plan === userStudyPlan.studyPlanId;
 
     setIsUsingProfileDefaults(matchesProfile);
-  }, [
-    authUser,
-    search,
-    userStudyPlan,
-    selectedUniversityId,
-    userStudyPlanUniversityId,
-    hasMeaningfulSearch,
-  ]);
+  }, [search, userStudyPlan, selectedUniversityId, userStudyPlanUniversityId, hasMeaningfulSearch]);
 
   const handleUniversityChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
-      const newSearch: Record<string, unknown> = {
-        ...search,
-        university: normalizeCurriculumUniversityId(id),
-        u: normalizeCurriculumUniversityId(id),
-      };
       void navigate({
         to: "/curriculum",
-        search: newSearch as never,
+        search: (prev) => ({
+          ...prev,
+          u: normalizeCurriculumUniversityId(id),
+          university: normalizeCurriculumUniversityId(id),
+        }),
       });
     },
-    [navigate, search],
+    [navigate],
   );
 
   const handleCampusChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
-      const newSearch: Record<string, unknown> = {
-        ...search,
-        c: id ?? undefined,
-        campus: id ?? undefined,
-      };
       void navigate({
         to: "/curriculum",
-        search: newSearch as never,
+        search: (prev) => ({
+          ...prev,
+          c: id ?? undefined,
+          campus: id ?? undefined,
+        }),
       });
     },
-    [navigate, search],
+    [navigate],
   );
 
   const handleAcademicUnitChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = id !== null;
       setIsUsingProfileDefaults(false);
-      const newSearch: Record<string, unknown> = {
-        ...search,
-        r: id ?? undefined,
-        career: id ?? undefined,
-        p: undefined,
-        plan: undefined,
-      };
       void navigate({
         to: "/curriculum",
-        search: newSearch as never,
+        search: (prev) => ({
+          ...prev,
+          r: id ?? undefined,
+          career: id ?? undefined,
+          p: undefined,
+          plan: undefined,
+        }),
       });
     },
-    [navigate, search],
+    [navigate],
   );
 
   const handlePlanChange = useCallback(
     (id: number | null) => {
       shouldAutoSelectPlanRef.current = false;
       setIsUsingProfileDefaults(false);
-      const newSearch: Record<string, unknown> = {
-        ...search,
-        p: id ?? undefined,
-        plan: id ?? undefined,
-      };
       void navigate({
         to: "/curriculum",
-        search: newSearch as never,
+        search: (prev) => ({
+          ...prev,
+          p: id ?? undefined,
+          plan: id ?? undefined,
+        }),
       });
     },
-    [navigate, search],
+    [navigate],
   );
+
+  const handleSaveLocalPlan = useCallback(() => {
+    saveLocalStudyPlan({
+      universityId:
+        selectedUniversityId === CURRICULUM_DEFAULT_UNIVERSITY_ID ? null : selectedUniversityId,
+      campusId: selectedCampusId,
+      academicUnitId: selectedAcademicUnitId,
+      studyPlanId: selectedPlanId,
+    });
+  }, [selectedUniversityId, selectedCampusId, selectedAcademicUnitId, selectedPlanId]);
 
   const handleUseProfileDefaults = useCallback(() => {
     if (!userStudyPlan) return;
@@ -268,7 +268,7 @@ export function CurriculumPage() {
   useEffect(() => {
     if (!selectedCampusId) return;
     if (campusesQuery.isFetching) return;
-    if (mainCampuses.some((c) => c.id === selectedCampusId)) return;
+    if (mainCampuses.some((c: CatalogCampus) => Number(c.id) === Number(selectedCampusId))) return;
 
     shouldAutoSelectPlanRef.current = false;
     const validateCampusSearch: Record<string, unknown> = {
@@ -397,6 +397,27 @@ export function CurriculumPage() {
                   {isUsingProfileDefaults ? "Perfil activo" : "Usar mi perfil"}
                 </Button>
               )}
+              {!authUser && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant={isUsingProfileDefaults ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={handleSaveLocalPlan}
+                        onPointerDown={(e) => e.preventDefault()}
+                        disabled={isUsingProfileDefaults}
+                        className="h-8 shrink-0 gap-1.5 text-xs"
+                      >
+                        <Save className="size-3.5" />
+                        {isUsingProfileDefaults ? "Guardado" : "Guardar"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Solo se guarda en este dispositivo</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
 
@@ -427,7 +448,7 @@ export function CurriculumPage() {
             </div>
           )}
 
-          {isPendingFilters && (
+          {isPendingFilters && !selectedPlanId && (
             <div className="flex flex-1 px-4 lg:px-6">
               <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 md:min-h-96">
                 <Spinner className="text-muted-foreground size-6" />

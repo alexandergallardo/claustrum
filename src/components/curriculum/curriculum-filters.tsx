@@ -38,7 +38,6 @@ interface CurriculumFiltersProps {
 
 const CURRICULUM_FILTERS_PANEL_STORAGE_KEY = "curriculum-filters-panel-open";
 const LEGACY_FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open";
-const FILTER_REVEAL_ANIMATION_MS = 220;
 
 export function CurriculumFilters({
   universities,
@@ -60,6 +59,10 @@ export function CurriculumFilters({
 }: CurriculumFiltersProps) {
   const [isFiltersVisible, setIsFiltersVisible] = useState(true);
 
+  const [skipAnimation, setSkipAnimation] = useState(
+    () =>
+      !!selectedUniversityId && !!selectedCampusId && !!selectedCareerProgramId && !!selectedPlanId,
+  );
   useEffect(() => {
     const stored =
       localStorage.getItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY) ??
@@ -68,8 +71,6 @@ export function CurriculumFilters({
       setIsFiltersVisible(false);
     }
   }, []);
-  const [revealedFiltersCount, setRevealedFiltersCount] = useState(0);
-  const [hasCompletedInitialReveal, setHasCompletedInitialReveal] = useState(false);
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
   const canSelectCampus = shouldShowUniversityFilter ? !!selectedUniversityId : hasUniversities;
@@ -79,56 +80,14 @@ export function CurriculumFilters({
   const isCareerFilterReady = !!selectedCampusId && !isLoadingCareerPrograms;
   const isPlanFilterReady = !!selectedCareerProgramId && !isLoadingPlans;
 
-  const readyFilterKeys = [
-    isUniversityFilterReady ? "university" : null,
-    isCampusFilterReady ? "campus" : null,
-    isCareerFilterReady ? "career" : null,
-    isPlanFilterReady ? "plan" : null,
-  ].filter((key): key is string => key !== null);
-  const readyFilterSignature = readyFilterKeys.join("|");
-
-  const universityAnimationOrder = readyFilterKeys.indexOf("university");
-  const campusAnimationOrder = readyFilterKeys.indexOf("campus");
-  const careerAnimationOrder = readyFilterKeys.indexOf("career");
-  const planAnimationOrder = readyFilterKeys.indexOf("plan");
-
-  const showUniversityFilter = hasCompletedInitialReveal
-    ? isUniversityFilterReady
-    : universityAnimationOrder >= 0 && revealedFiltersCount > universityAnimationOrder;
-  const showCampusFilter = hasCompletedInitialReveal
-    ? isCampusFilterReady
-    : campusAnimationOrder >= 0 && revealedFiltersCount > campusAnimationOrder;
-  const showCareerFilter = hasCompletedInitialReveal
-    ? isCareerFilterReady
-    : careerAnimationOrder >= 0 && revealedFiltersCount > careerAnimationOrder;
-  const showPlanFilter = hasCompletedInitialReveal
-    ? isPlanFilterReady
-    : planAnimationOrder >= 0 && revealedFiltersCount > planAnimationOrder;
+  const showUniversityFilter = isUniversityFilterReady;
+  const showCampusFilter = isCampusFilterReady;
+  const showCareerFilter = isCareerFilterReady;
+  const showPlanFilter = isPlanFilterReady;
 
   useEffect(() => {
     localStorage.setItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString());
   }, [isFiltersVisible]);
-
-  useEffect(() => {
-    if (hasCompletedInitialReveal) return;
-
-    setRevealedFiltersCount(0);
-
-    if (readyFilterKeys.length === 0) return;
-
-    const timers = readyFilterKeys.map((_, index) =>
-      window.setTimeout(() => {
-        setRevealedFiltersCount(index + 1);
-        if (index === readyFilterKeys.length - 1) {
-          setHasCompletedInitialReveal(true);
-        }
-      }, index * FILTER_REVEAL_ANIMATION_MS),
-    );
-
-    return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [hasCompletedInitialReveal, readyFilterSignature]);
 
   return (
     <FiltersPanel isExpanded={isFiltersVisible} onExpandedChange={setIsFiltersVisible}>
@@ -137,8 +96,12 @@ export function CurriculumFilters({
         value={selectedUniversityId?.toString() || ""}
         placeholder="Universidad"
         items={universities}
-        onChange={(val) => onUniversityChange(val ? parseInt(val) : null)}
+        onChange={(val) => {
+          setSkipAnimation(false);
+          onUniversityChange(val ? parseInt(val) : null);
+        }}
         isVisible={showUniversityFilter}
+        skipAnimation={skipAnimation}
       />
 
       <FilterCombobox
@@ -146,13 +109,17 @@ export function CurriculumFilters({
         value={selectedCampusId?.toString() || ""}
         placeholder="Sede"
         items={campuses}
-        onChange={(val) => onCampusChange(val ? parseInt(val) : null)}
+        onChange={(val) => {
+          setSkipAnimation(false);
+          onCampusChange(val ? parseInt(val) : null);
+        }}
         isVisible={showCampusFilter}
         itemLabel={(item) =>
           item.code
             ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
             : normalizeText(item.name)
         }
+        skipAnimation={skipAnimation}
       />
 
       <FilterCombobox
@@ -160,27 +127,35 @@ export function CurriculumFilters({
         value={selectedCareerProgramId?.toString() || ""}
         placeholder="Carrera"
         items={careerPrograms}
-        onChange={(val) => onCareerProgramChange(val ? parseInt(val) : null)}
+        onChange={(val) => {
+          setSkipAnimation(false);
+          onCareerProgramChange(val ? parseInt(val) : null);
+        }}
         isVisible={showCareerFilter}
         itemLabel={(item) =>
           item.code
             ? `${normalizeText(item.code)}: ${normalizeText(item.name)}`
             : normalizeText(item.name)
         }
+        skipAnimation={skipAnimation}
       />
 
       <FilterCombobox
-        label="Plan de estudios"
+        label="Plan"
         value={selectedPlanId?.toString() || ""}
         placeholder="Plan de estudios"
         items={plans}
-        onChange={(val) => onPlanChange(val ? parseInt(val) : null)}
+        onChange={(val) => {
+          setSkipAnimation(false);
+          onPlanChange(val ? parseInt(val) : null);
+        }}
         isVisible={showPlanFilter}
         itemLabel={(item) =>
           item.external_plan_id !== undefined
             ? `${item.external_plan_id}: ${removePlanPrefixFromName(item.name, item.external_plan_id)}`
             : normalizeText(item.name)
         }
+        skipAnimation={skipAnimation}
       />
     </FiltersPanel>
   );

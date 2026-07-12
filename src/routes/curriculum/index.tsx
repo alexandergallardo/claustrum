@@ -5,6 +5,7 @@ import {
   campusesQueryOptions,
   academicUnitsQueryOptions,
   studyPlansQueryOptions,
+  studyPlanDetailQueryOptions,
 } from "@/lib/hooks/use-queries";
 import { buildSeoMeta } from "@/lib/seo";
 
@@ -62,6 +63,8 @@ export const Route = createFileRoute("/curriculum/")({
       promises.push(queryClient.ensureQueryData(academicUnitsQueryOptions(deps.campus)));
     if (deps.career)
       promises.push(queryClient.ensureQueryData(studyPlansQueryOptions(deps.career)));
+    if (deps.plan)
+      promises.push(queryClient.ensureQueryData(studyPlanDetailQueryOptions(deps.plan)));
 
     await Promise.allSettled(promises);
   },
