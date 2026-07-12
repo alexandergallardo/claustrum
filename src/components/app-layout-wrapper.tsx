@@ -1,9 +1,15 @@
+import { useEffect } from "react";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { SiteHeader } from "@/components/site-header";
 import { AppAuthProvider } from "@/lib/auth/app-auth-context";
+import { hydrateLocalStudyPlan } from "@/lib/store/local-study-plan";
 
 export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    hydrateLocalStudyPlan();
+  }, []);
   return (
     <AppAuthProvider>
       <div

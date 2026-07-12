@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { UserMenuDropdown } from "@/components/user-menu-dropdown";
 import { useAppAuth } from "@/lib/auth/app-auth-context";
+import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import { cn } from "@/lib/utils";
 
 const data = {
@@ -83,6 +84,7 @@ function ClaustrumLogo({ className }: { className?: string }) {
 
 export function AppSidebar() {
   const { authUser, isAuthLoading } = useAppAuth();
+  const { activePlan } = useActiveStudyPlan();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
@@ -128,6 +130,17 @@ export function AppSidebar() {
                 includeSearch: false,
                 includeHash: false,
               }}
+              search={
+                (item.url === "/schedule" || item.url === "/curriculum") && activePlan
+                  ? {
+                      university: activePlan.universityId ?? undefined,
+                      campus: activePlan.campusId ?? undefined,
+                      career: activePlan.academicUnitId ?? undefined,
+                      plan: activePlan.studyPlanId ?? undefined,
+                      ...(item.url === "/schedule" ? { term: activePlan.termId ?? undefined } : {}),
+                    }
+                  : undefined
+              }
               aria-label={item.title}
               className={cn(
                 "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 items-center gap-3 rounded-full text-sm font-medium transition-colors",

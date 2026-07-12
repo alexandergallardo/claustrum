@@ -3,6 +3,7 @@ import { CalendarClock, GraduationCap, LayoutDashboard, LogInIcon, Users } from 
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAppAuth } from "@/lib/auth/app-auth-context";
+import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import { cn } from "@/lib/utils";
 
 const mainNavItems = [
@@ -31,6 +32,7 @@ const mainNavItems = [
 export function MobileBottomNav() {
   const location = useLocation();
   const { authUser } = useAppAuth();
+  const { activePlan } = useActiveStudyPlan();
   const userName = authUser?.user_metadata?.full_name ?? authUser?.email ?? "Perfil";
   const userInitial = userName.charAt(0).toUpperCase();
   const profileUrl = authUser ? "/settings/profile" : "/auth/signin";
@@ -47,6 +49,17 @@ export function MobileBottomNav() {
           <Link
             key={item.url}
             to={item.url}
+            search={
+              (item.url === "/schedule" || item.url === "/curriculum") && activePlan
+                ? {
+                    university: activePlan.universityId ?? undefined,
+                    campus: activePlan.campusId ?? undefined,
+                    career: activePlan.academicUnitId ?? undefined,
+                    plan: activePlan.studyPlanId ?? undefined,
+                    ...(item.url === "/schedule" ? { term: activePlan.termId ?? undefined } : {}),
+                  }
+                : undefined
+            }
             preload="intent"
             aria-current={active ? "page" : undefined}
             className={cn(

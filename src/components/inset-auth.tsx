@@ -451,7 +451,7 @@ function GoogleOAuthButton() {
     <Button
       variant="outline"
       size="lg"
-      className="w-full relative"
+      className="relative w-full"
       onClick={onGoogleSignIn}
       disabled={pending}
     >
@@ -460,7 +460,10 @@ function GoogleOAuthButton() {
       </span>
       <span className="truncate whitespace-nowrap">Google</span>
       {lastMethod === "google" && (
-        <Badge variant="secondary" className="pointer-events-none absolute -top-2.5 -right-2 px-1.5 py-0 h-5 text-[10px] font-bold shadow-sm">
+        <Badge
+          variant="secondary"
+          className="pointer-events-none absolute -top-2.5 -right-2 h-5 px-1.5 py-0 text-[10px] font-bold shadow-sm"
+        >
           Último usado
         </Badge>
       )}
@@ -478,12 +481,17 @@ async function invalidateAuthFlowQueries(
   userId?: string,
 ) {
   resetSupabaseAuthTokenState();
-  queryClient.removeQueries({ queryKey: ["authUser"] });
+
+  await queryClient.invalidateQueries({ queryKey: ["appState"] });
+  queryClient.removeQueries({ queryKey: ["authUser"] }); // fallback for any old queries
+
   if (userId) {
-    queryClient.removeQueries({ queryKey: ["profile", userId] });
-    queryClient.removeQueries({ queryKey: ["onboardingStatus", userId] });
-    queryClient.removeQueries({ queryKey: ["userStudyPlan", userId] });
-    queryClient.removeQueries({ queryKey: ["dashboardStats", userId] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["onboardingStatus", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["userStudyPlan", userId] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboardStats", userId] }),
+    ]);
   }
 }
 
@@ -528,7 +536,7 @@ function MagicLinkButton({ email = "" }: { email?: string }) {
     <Button
       variant="outline"
       size="lg"
-      className="mt-2 w-full relative"
+      className="relative mt-2 w-full"
       type="button"
       disabled={pending}
       onClick={onSendMagicLink}
@@ -536,7 +544,10 @@ function MagicLinkButton({ email = "" }: { email?: string }) {
       <MailIcon />
       {pending ? "Enviando enlace..." : "Continuar con enlace mágico"}
       {lastMethod === "magic-link" && (
-        <Badge variant="secondary" className="pointer-events-none absolute -top-2.5 -right-2 px-1.5 py-0 h-5 text-[10px] font-bold shadow-sm">
+        <Badge
+          variant="secondary"
+          className="pointer-events-none absolute -top-2.5 -right-2 h-5 px-1.5 py-0 text-[10px] font-bold shadow-sm"
+        >
           Último usado
         </Badge>
       )}
@@ -651,7 +662,10 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
             Correo electrónico <span className="text-muted-foreground">*</span>
           </FieldLabel>
           {authClient.getLastUsedLoginMethod() === "email" && (
-            <Badge variant="secondary" className="pointer-events-none px-1.5 py-0 h-5 text-[10px] font-bold">
+            <Badge
+              variant="secondary"
+              className="pointer-events-none h-5 px-1.5 py-0 text-[10px] font-bold"
+            >
               Último usado
             </Badge>
           )}
