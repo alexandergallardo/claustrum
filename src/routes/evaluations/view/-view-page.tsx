@@ -1,7 +1,6 @@
 import { useParams } from "@tanstack/react-router";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-
 import { lazy, Suspense } from "react";
 
 const PdfViewer = lazy(() =>

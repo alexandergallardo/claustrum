@@ -237,8 +237,7 @@ function ProfilePage() {
         if (insertError) throw insertError;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["profile", authUser.id] });
-      await queryClient.invalidateQueries({ queryKey: ["userStudyPlan", authUser.id] });
+      await queryClient.invalidateQueries({ queryKey: ["appState"] });
       toast.success("Perfil actualizado correctamente");
     } catch (err) {
       setFormError(getErrorMessage(err));
@@ -255,7 +254,7 @@ function ProfilePage() {
       const { error } = await authClient.updateUser({ name: nameDraft });
       if (error) throw error;
 
-      await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      await queryClient.invalidateQueries({ queryKey: ["appState"] });
       toast.success("Identidad actualizada correctamente");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al actualizar identidad");

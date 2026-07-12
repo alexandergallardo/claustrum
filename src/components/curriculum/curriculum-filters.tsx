@@ -40,8 +40,6 @@ const CURRICULUM_FILTERS_PANEL_STORAGE_KEY = "curriculum-filters-panel-open";
 const LEGACY_FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open";
 const FILTER_REVEAL_ANIMATION_MS = 220;
 
-
-
 export function CurriculumFilters({
   universities,
   campuses,

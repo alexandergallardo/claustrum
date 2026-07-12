@@ -71,7 +71,7 @@ export function ProfessorDetailPage() {
   const page = search.page ? search.page - 1 : 0;
   const setPage = (updater: number | ((prev: number) => number)) => {
     const newPage = typeof updater === "function" ? updater(page) : updater;
-    navigate({
+    void navigate({
       search: (prev) => ({
         ...prev,
         page: newPage === 0 ? undefined : newPage + 1,

@@ -35,7 +35,11 @@ function EvaluationsPage() {
 
   // Auto-select first if none selected
   useEffect(() => {
-    if (evaluationRows.length > 0 && selectedEvaluationId === null && !evaluationsQuery.isFetching) {
+    if (
+      evaluationRows.length > 0 &&
+      selectedEvaluationId === null &&
+      !evaluationsQuery.isFetching
+    ) {
       const firstId = evaluationRows[0].id;
       void navigate({
         from: "/moderation/evaluations",

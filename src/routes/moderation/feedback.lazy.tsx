@@ -1,10 +1,11 @@
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 
-import { useFeedbackList } from "@/lib/feedback/hooks";
 import type { FeedbackRow } from "@/lib/feedback/api";
+
 import { Button } from "@/components/ui/button";
+import { useFeedbackList } from "@/lib/feedback/hooks";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -30,11 +31,7 @@ function FeedbackModerationPage() {
 
   // Auto-select first if none selected
   useEffect(() => {
-    if (
-      feedbackRows.length > 0 &&
-      selectedFeedbackId === null &&
-      !feedbackQuery.isFetching
-    ) {
+    if (feedbackRows.length > 0 && selectedFeedbackId === null && !feedbackQuery.isFetching) {
       const firstId = feedbackRows[0].id;
       void navigate({
         from: "/moderation/feedback",
@@ -100,7 +97,7 @@ function FeedbackModerationPage() {
     <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <div
         className={cn(
-          "bg-card text-card-foreground shadow-xs flex min-h-0 shrink-0 w-full flex-col overflow-hidden rounded-xl border lg:w-72 xl:w-80",
+          "bg-card text-card-foreground flex min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border shadow-xs lg:w-72 xl:w-80",
           selectedFeedback ? "hidden lg:flex" : "flex",
         )}
       >
@@ -114,9 +111,7 @@ function FeedbackModerationPage() {
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="text-sm font-medium">
-            Página {page.toString().padStart(2, "0")}
-          </span>
+          <span className="text-sm font-medium">Página {page.toString().padStart(2, "0")}</span>
           <Button
             variant="ghost"
             size="icon"
@@ -147,7 +142,9 @@ function FeedbackModerationPage() {
                 )}
               >
                 <div className="flex w-full items-center justify-between gap-2">
-                  <span className={cn("truncate font-medium", getTypeColor(fb.type))}>{getTypeLabel(fb.type)}</span>
+                  <span className={cn("truncate font-medium", getTypeColor(fb.type))}>
+                    {getTypeLabel(fb.type)}
+                  </span>
                   <span className="text-muted-foreground shrink-0 text-xs">
                     {new Date(fb.created_at).toLocaleDateString()}
                   </span>
@@ -181,29 +178,35 @@ function FeedbackModerationPage() {
             </Button>
           </div>
 
-          <div className="bg-card text-card-foreground shadow-xs flex flex-col overflow-hidden rounded-xl border">
+          <div className="bg-card text-card-foreground flex flex-col overflow-hidden rounded-xl border shadow-xs">
             <div className="flex flex-col gap-3 p-5 md:p-6">
               <div className="space-y-1">
-                <h3 className={cn("text-xl font-semibold leading-none tracking-tight", getTypeColor(selectedFeedback.type))}>
+                <h3
+                  className={cn(
+                    "text-xl leading-none font-semibold tracking-tight",
+                    getTypeColor(selectedFeedback.type),
+                  )}
+                >
                   {getTypeLabel(selectedFeedback.type)}
                 </h3>
               </div>
 
               <div className="relative mt-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="border-border/50 w-full border-t"></div>
+                  <div className="border-border/50 w-full border-t" />
                 </div>
               </div>
 
               <div className="text-muted-foreground flex flex-col gap-1.5 text-xs">
                 <span>
-                  <strong>Enviado el:</strong> {new Date(selectedFeedback.created_at).toLocaleString()}
+                  <strong>Enviado el:</strong>{" "}
+                  {new Date(selectedFeedback.created_at).toLocaleString()}
                 </span>
               </div>
 
               <div className="mt-2 space-y-1.5">
                 <h4 className="text-sm font-medium">Contenido</h4>
-                <div className="bg-muted/50 rounded-md border p-3 text-sm whitespace-pre-wrap leading-relaxed">
+                <div className="bg-muted/50 rounded-md border p-3 text-sm leading-relaxed whitespace-pre-wrap">
                   {selectedFeedback.content}
                 </div>
               </div>

@@ -60,7 +60,6 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
   if (payload.answersFile) {
     formData.append("answersFile", payload.answersFile);
   }
-  formData.append("courseId", String(payload.courseId));
   if (payload.academicTermId) {
     formData.append("academicTermId", String(payload.academicTermId));
   }
@@ -83,7 +82,7 @@ export async function uploadEvaluation(payload: UploadEvaluationPayload): Promis
     formData.append("answersFileSha256", answersFileSha256);
   }
 
-  const response = await fetch(`${apiBaseUrl}/evaluations/upload`, {
+  const response = await fetch(`${apiBaseUrl}/courses/${payload.courseId}/evaluations`, {
     method: "POST",
     body: formData,
   });

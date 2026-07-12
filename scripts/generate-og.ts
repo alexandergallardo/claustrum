@@ -1,7 +1,8 @@
+/* eslint-disable no-console */
 import { spawn } from "node:child_process";
-import { chromium } from "playwright";
-import path from "node:path";
 import fs from "node:fs/promises";
+import path from "node:path";
+import { chromium } from "playwright";
 
 const PORT = 5173;
 const URL = `http://127.0.0.1:${PORT}`;
@@ -19,17 +20,21 @@ async function main() {
 
   // Start the dev server
   console.log("Starting Vite dev server...");
-  const server = spawn("pnpm", ["exec", "vite", "dev", "--port", PORT.toString(), "--host", "127.0.0.1", "--strictPort"], {
-    stdio: "inherit",
-    detached: true,
-  });
+  const server = spawn(
+    "pnpm",
+    ["exec", "vite", "dev", "--port", PORT.toString(), "--host", "127.0.0.1", "--strictPort"],
+    {
+      stdio: "inherit",
+      detached: true,
+    },
+  );
 
   try {
     await waitForServer();
 
     console.log("Launching Chromium...");
     const browser = await chromium.launch({ headless: true });
-    
+
     // Create a context with dark color scheme and standard OG size
     const context = await browser.newContext({
       viewport: { width: 1200, height: 630 },
@@ -48,7 +53,7 @@ async function main() {
     for (const route of routes) {
       console.log(`Navigating to ${route.path}...`);
       await page.goto(`${URL}${route.path}`, { waitUntil: "networkidle" });
-      
+
       // Wait a bit extra for fonts and animations to settle
       await page.waitForTimeout(2000);
 

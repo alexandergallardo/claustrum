@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ModerationLayout } from "./-moderation-layout";
+
 import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
+
+import { ModerationLayout } from "./-moderation-layout";
 
 export const Route = createFileRoute("/moderation")({
   head: () =>

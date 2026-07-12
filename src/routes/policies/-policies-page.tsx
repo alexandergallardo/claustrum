@@ -12,7 +12,7 @@ const EmailContact = () => {
   const email = "claustrum@maugp.com";
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(email);
+    void navigator.clipboard.writeText(email);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

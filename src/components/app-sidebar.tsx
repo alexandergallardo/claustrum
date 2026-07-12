@@ -12,12 +12,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { UserMenuDropdown } from "@/components/user-menu-dropdown";
 import { useAppAuth } from "@/lib/auth/app-auth-context";
 import { cn } from "@/lib/utils";
-import { FeedbackDialog } from "@/components/feedback-dialog";
 
 const data = {
   navMain: [
@@ -158,7 +158,7 @@ export function AppSidebar() {
           onClick={() => setIsFeedbackOpen(true)}
           aria-label="Retroalimentación"
           className={cn(
-            "group/nav-item hover:bg-background/70 hover:text-foreground flex h-12 w-full items-center gap-3 rounded-full text-sm font-medium transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "group/nav-item hover:bg-background/70 hover:text-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center gap-3 rounded-full text-sm font-medium transition-colors outline-none focus-visible:ring-2",
           )}
         >
           <span

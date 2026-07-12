@@ -34,13 +34,10 @@ export interface FeedbackRow {
   created_at: string;
 }
 
-export async function getFeedbackList(
-  limit: number,
-  offset: number,
-): Promise<FeedbackRow[]> {
+export async function getFeedbackList(limit: number, offset: number): Promise<FeedbackRow[]> {
   const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
   const supabase = getSupabaseBrowserClient();
-  
+
   const { data, error } = await supabase
     .from("user_feedback")
     .select("*")
@@ -48,6 +45,6 @@ export async function getFeedbackList(
     .range(offset, offset + limit - 1);
 
   if (error) throw error;
-  
+
   return data as FeedbackRow[];
 }

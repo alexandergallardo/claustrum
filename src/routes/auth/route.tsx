@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { AuthShell } from "@/components/auth-shell";
-import { authUserQueryOptions } from "@/lib/hooks/use-queries";
+import { appStateQueryOptions } from "@/lib/hooks/use-queries";
 import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
 
 export const Route = createFileRoute("/auth")({
@@ -21,13 +21,13 @@ export const Route = createFileRoute("/auth")({
     );
     if (isLoginRoute) {
       try {
-        const authData = await queryClient.fetchQuery(authUserQueryOptions());
+        const appState = await queryClient.fetchQuery(appStateQueryOptions());
+        const authData = appState?.user;
         if (authData?.id) {
-          throw redirect({ to: "/schedule", replace: true });
+          throw redirect({ to: "/overview", replace: true });
         }
       } catch (err: any) {
         if (err?.isRedirect) throw err;
-        console.error("SSR fetch failed in auth route, skipping redirects", err);
       }
     }
   },

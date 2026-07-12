@@ -195,7 +195,7 @@ export async function submitProfessorReview(payload: SubmitProfessorReviewPayloa
     throw new Error("API Worker URL no configurado");
   }
 
-  const response = await fetch(`${apiBaseUrl}/professor-reviews`, {
+  const response = await fetch(`${apiBaseUrl}/professors/${payload.professorId}/reviews`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -224,7 +224,7 @@ export async function setProfessorReviewReaction(
     throw new Error("Debes iniciar sesión para reaccionar a una reseña");
   }
 
-  const response = await fetch(`${apiBaseUrl}/professor-reviews/${reviewId}/reaction`, {
+  const response = await fetch(`${apiBaseUrl}/reviews/${reviewId}/reactions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -247,7 +247,7 @@ export async function submitProfessorReviewReport(
     throw new Error("API Worker URL no configurado");
   }
 
-  const response = await fetch(`${apiBaseUrl}/professor-reviews/${payload.reviewId}/report`, {
+  const response = await fetch(`${apiBaseUrl}/reviews/${payload.reviewId}/reports`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

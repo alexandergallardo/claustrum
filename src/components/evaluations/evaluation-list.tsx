@@ -72,7 +72,11 @@ export function EvaluationList({ courseId }: EvaluationListProps) {
                   )}
                 </Badge>
               </TableCell>
-              <TableCell className="text-sm">{evaluation.term_display_name ? evaluation.term_display_name.replace(" - ", ": ") : "—"}</TableCell>
+              <TableCell className="text-sm">
+                {evaluation.term_display_name
+                  ? evaluation.term_display_name.replace(" - ", ": ")
+                  : "—"}
+              </TableCell>
               <TableCell className="text-sm">{evaluation.professor_name ?? "—"}</TableCell>
               <TableCell className="text-sm">{evaluation.is_catedra ? "Sí" : "No"}</TableCell>
               <TableCell className="text-sm">

@@ -471,7 +471,11 @@ export function ProfessorReviewsList({
           </div>
 
           <div
-            className={frameless ? "hidden md:block" : "bg-card hidden overflow-hidden rounded-xl border md:block"}
+            className={
+              frameless
+                ? "hidden md:block"
+                : "bg-card hidden overflow-hidden rounded-xl border md:block"
+            }
           >
             <table className="w-full">
               <thead>

@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 import { getEvaluationModerationQueue } from "@/lib/evaluations/api";
 import {
@@ -21,35 +21,29 @@ export function useModerationRealtime(enabled = true) {
     if (!enabled) return;
 
     const supabase = getSupabaseBrowserClient();
-    
-    // Use a unique channel name per hook instance to avoid collisions 
+
+    // Use a unique channel name per hook instance to avoid collisions
     // if multiple components use this hook at the same time.
     const channelId = `moderation-updates-${crypto.randomUUID()}`;
     const channel = supabase
       .channel(channelId)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "professor_review" },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
-          void queryClient.invalidateQueries({ queryKey: ["professorModerationQueue"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "course_evaluations" },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
-          void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "professor_review" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
+        void queryClient.invalidateQueries({ queryKey: ["professorModerationQueue"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "course_evaluations" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
+        void queryClient.invalidateQueries({ queryKey: ["evaluationModerationQueue"] });
+      })
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "professor_review_report" },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
-          void queryClient.invalidateQueries({ queryKey: ["professorReviewReportModerationQueue"] });
-        }
+          void queryClient.invalidateQueries({
+            queryKey: ["professorReviewReportModerationQueue"],
+          });
+        },
       )
       .subscribe();
 

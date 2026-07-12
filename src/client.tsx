@@ -10,7 +10,6 @@ window.addEventListener("vite:preloadError", () => {
   const now = Date.now();
 
   if (now - lastReload < 10000) {
-    console.error("Vite chunk reload loop detected. Stopping.");
     return;
   }
 

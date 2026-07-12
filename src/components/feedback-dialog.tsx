@@ -1,20 +1,31 @@
-import { lazy, Suspense, useState } from "react";
+import { useForm } from "@tanstack/react-form";
 import { Loader2 } from "lucide-react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { useForm } from "@tanstack/react-form";
 
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import { useSubmitFeedback } from "@/lib/feedback/hooks";
-
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Label } from "@/components/ui/label";
 
 const Turnstile = lazy(() =>
   import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
@@ -63,7 +74,8 @@ export function FeedbackDialog({
         onCloseReset();
       } catch (error) {
         toast.error("Error al enviar", {
-          description: error instanceof Error ? error.message : "Ocurrió un problema, inténtalo más tarde.",
+          description:
+            error instanceof Error ? error.message : "Ocurrió un problema, inténtalo más tarde.",
         });
         setTurnstileToken(null);
       }
@@ -75,9 +87,9 @@ export function FeedbackDialog({
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        form.handleSubmit();
+        void form.handleSubmit();
       }}
-      className="flex flex-col gap-6 px-6 pb-6 pt-2"
+      className="flex flex-col gap-6 px-6 pt-2 pb-6"
     >
       <form.Field
         name="type"
@@ -174,7 +186,7 @@ export function FeedbackDialog({
             <Button
               type="submit"
               disabled={!canSubmit || isSubmitting || (!!turnstileSiteKey && !turnstileToken)}
-              className="w-full sm:w-auto shrink-0"
+              className="w-full shrink-0 sm:w-auto"
             >
               {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
               Enviar
@@ -189,7 +201,8 @@ export function FeedbackDialog({
     <>
       <SheetTitle>Retroalimentación</SheetTitle>
       <SheetDescription>
-        Ayúdanos a mejorar Claustrum enviando tus sugerencias o reportes de errores de forma completamente anónima.
+        Ayúdanos a mejorar Claustrum enviando tus sugerencias o reportes de errores de forma
+        completamente anónima.
       </SheetDescription>
     </>
   );
@@ -203,7 +216,11 @@ export function FeedbackDialog({
           if (!nextOpen) onCloseReset();
         }}
       >
-        <SheetContent side="bottom" className="max-h-[90vh] flex flex-col overflow-hidden p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetContent
+          side="bottom"
+          className="flex max-h-[90vh] flex-col overflow-hidden p-0"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <SheetHeader className="px-6 pt-6 pb-2 text-left">
             <TitleAndDescription />
           </SheetHeader>
@@ -221,7 +238,10 @@ export function FeedbackDialog({
         if (!nextOpen) onCloseReset();
       }}
     >
-      <DialogContent className="max-h-[90vh] max-w-2xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <DialogContent
+        className="max-h-[90vh] max-w-2xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden p-0"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader className="px-6 pt-6 pb-2 text-left">
           <TitleAndDescription />
         </DialogHeader>

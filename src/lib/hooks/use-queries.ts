@@ -25,7 +25,7 @@ import type {
 } from "@/lib/types";
 
 import { authClient } from "@/lib/auth/client";
-import { getAuthSessionServerFn } from "@/lib/auth/server-fn";
+import { appStateServerFn } from "@/lib/auth/server-fn";
 import {
   getUniversitiesServerFn,
   getCampusesServerFn,
@@ -33,7 +33,6 @@ import {
   getStudyPlansServerFn,
   getAcademicTermsServerFn,
 } from "@/lib/catalog-server-fns";
-import { getProfileContextServerFn, getOnboardingStatusServerFn } from "@/lib/server-fns";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { getLocalCourseStatusChanges } from "@/lib/utils/local-storage-utils";
 
@@ -119,26 +118,9 @@ export function useStudyPlans(academicUnitId: number | null) {
 
 export function profileContextQueryOptions(userId: string | null) {
   return queryOptions({
-    queryKey: ["profile", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      try {
-        const data = await getProfileContextServerFn({ data: userId });
-        return data as UserProfileContextRow | null;
-      } catch (error) {
-        console.warn("Server profile context fetch failed, falling back to client fetch", error);
-        if (typeof window !== "undefined") {
-          const sb = getSupabaseBrowserClient();
-          const { data } = await sb
-            .rpc("get_user_profile_with_context", { p_user_id: userId })
-            .select("*")
-            .maybeSingle();
-          return (data as UserProfileContextRow) || null;
-        }
-        throw error;
-      }
-    },
+    ...appStateQueryOptions(),
     enabled: !!userId,
+    select: (data) => data?.profileContext ?? null,
   });
 }
 
@@ -146,18 +128,18 @@ export function useProfileContext(userId: string | null) {
   return useQuery(profileContextQueryOptions(userId));
 }
 
-export function authUserQueryOptions() {
+export function appStateQueryOptions() {
   return queryOptions({
-    queryKey: ["authUser"],
+    queryKey: ["appState"],
     queryFn: async () => {
       let data = null;
       try {
-        data = await getAuthSessionServerFn();
+        data = await appStateServerFn();
       } catch (error) {
-        console.warn("Server auth fetch failed, falling back to client fetch", error);
         if (typeof window !== "undefined") {
-          const res = await authClient.getSession();
-          data = res.data;
+          const res = await fetch("/api/auth/me");
+          if (!res.ok) throw new Error("Client appState fetch failed");
+          data = await res.json();
         } else {
           throw error;
         }
@@ -168,7 +150,8 @@ export function authUserQueryOptions() {
         "userMetadata" in data.user && typeof data.user.userMetadata === "object"
           ? data.user.userMetadata
           : null;
-      return {
+
+      const user = {
         ...data.user,
         user_metadata: {
           ...userMetadata,
@@ -176,8 +159,25 @@ export function authUserQueryOptions() {
           avatar_url: data.user.image ?? undefined,
         },
       };
+
+      return {
+        user,
+        session: data.session,
+        profileContext: data.profileContext as UserProfileContextRow | null,
+        onboardingStatus: data.onboardingStatus as {
+          onboarding_dismissed_at: string | null;
+          onboarding_completed_at: string | null;
+        } | null,
+      };
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function authUserQueryOptions() {
+  return queryOptions({
+    ...appStateQueryOptions(),
+    select: (data) => data?.user ?? null,
   });
 }
 
@@ -238,27 +238,9 @@ export function useAuthAccounts(enabled = true) {
 
 export function onboardingStatusQueryOptions(userId: string | null) {
   return queryOptions({
-    queryKey: ["onboardingStatus", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      try {
-        const data = await getOnboardingStatusServerFn({ data: userId });
-        return data;
-      } catch (error) {
-        console.warn("Server onboarding status fetch failed, falling back to client fetch", error);
-        if (typeof window !== "undefined") {
-          const sb = getSupabaseBrowserClient();
-          const { data } = await sb
-            .from("user")
-            .select("onboarding_dismissed_at,onboarding_completed_at")
-            .eq("id", userId)
-            .maybeSingle();
-          return data;
-        }
-        throw error;
-      }
-    },
+    ...appStateQueryOptions(),
     enabled: !!userId,
+    select: (data) => data?.onboardingStatus ?? null,
   });
 }
 
@@ -408,34 +390,25 @@ export function useStudyPlanDetail(
   });
 }
 
-export function useUserStudyPlan(userId: string | null, enabled = true) {
-  return useQuery({
-    queryKey: ["userStudyPlan", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const sb = getSupabaseBrowserClient();
+export function useUserStudyPlan(userId: string | null) {
+  const query = useProfileContext(userId);
+  const profile = query.data;
 
-      const { data, error } = await sb
-        .rpc("get_user_profile_with_context", { p_user_id: userId })
-        .select("*")
-        .maybeSingle();
-
-      if (error) throw error;
-      const profile = data as UserProfileContextRow | null;
-      if (!profile || !profile.study_plan_id) return null;
-
-      return {
+  const userStudyPlan = profile?.study_plan_id
+    ? {
         userId,
         universityId: profile.university_id,
         campusId: profile.campus_id,
         academicUnitId: profile.academic_unit_id,
         studyPlanId: profile.study_plan_id,
         studyPlanName: profile.study_plan_name,
-      };
-    },
-    enabled: enabled && !!userId,
-    staleTime: 2 * 60 * 1000,
-  });
+      }
+    : null;
+
+  return {
+    ...query,
+    data: userStudyPlan,
+  };
 }
 
 export function academicTermsQueryOptions(campusId: number | null, studyPlanId?: number | null) {

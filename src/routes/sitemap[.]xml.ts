@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { getSupabasePublicEnv } from "@/lib/env/public";
 

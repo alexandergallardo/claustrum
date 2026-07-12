@@ -1,10 +1,4 @@
-import {
-  BetterAuthIcon,
-  CloudflareIcon,
-  ReactIcon,
-  SupabaseIcon,
-  TailwindCSSIcon,
-} from "./-icons";
+import { BetterAuthIcon, CloudflareIcon, ReactIcon, SupabaseIcon, TailwindCSSIcon } from "./-icons";
 
 const STACK_ITEMS = [
   { name: "React 19", role: "Interfaz", icon: ReactIcon },

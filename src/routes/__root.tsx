@@ -26,9 +26,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import { Kbd } from "@/components/ui/kbd";
 import { Toaster } from "@/components/ui/sonner";
 import {
-  authUserQueryOptions,
-  profileContextQueryOptions,
-  onboardingStatusQueryOptions,
+  appStateQueryOptions,
   useAuthUser,
   useOnboardingStatus,
   useProfileContext,
@@ -71,12 +69,12 @@ export const Route = createRootRouteWithContext<{
 
     if (!isPublicRoute) {
       try {
-        const authData = await queryClient.fetchQuery(authUserQueryOptions());
+        const appState = await queryClient.fetchQuery(appStateQueryOptions());
+        const authData = appState?.user;
+
         if (authData?.id) {
-          const [profileContext, onboardingStatus] = await Promise.all([
-            queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
-            queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
-          ]);
+          const profileContext = appState?.profileContext;
+          const onboardingStatus = appState?.onboardingStatus;
 
           const completed = !!onboardingStatus?.onboarding_completed_at;
           const dismissedAtRaw = onboardingStatus?.onboarding_dismissed_at;
@@ -96,16 +94,15 @@ export const Route = createRootRouteWithContext<{
         }
       } catch (err: any) {
         if (isRedirect(err)) throw err;
-        console.error("SSR fetch failed in beforeLoad (private route), skipping redirects", err);
       }
     } else if (pathname.startsWith("/onboarding")) {
       try {
-        const authData = await queryClient.fetchQuery(authUserQueryOptions());
+        const appState = await queryClient.fetchQuery(appStateQueryOptions());
+        const authData = appState?.user;
+
         if (authData?.id) {
-          const [profileContext, onboardingStatus] = await Promise.all([
-            queryClient.fetchQuery(profileContextQueryOptions(authData.id)),
-            queryClient.fetchQuery(onboardingStatusQueryOptions(authData.id)),
-          ]);
+          const profileContext = appState?.profileContext;
+          const onboardingStatus = appState?.onboardingStatus;
 
           const completed = !!onboardingStatus?.onboarding_completed_at;
           const hasAcademicSetup = !!profileContext?.study_plan_id;
@@ -115,10 +112,9 @@ export const Route = createRootRouteWithContext<{
           if (shouldLeaveOnboarding) {
             throw redirect({ to: "/overview", replace: true });
           }
-        } // close if (authData?.id)
+        }
       } catch (err: any) {
         if (isRedirect(err)) throw err;
-        console.error("SSR fetch failed in beforeLoad (/onboarding), skipping redirects", err);
       }
     }
   },

@@ -125,7 +125,9 @@ export function PdfViewer({ blobUrl, fileName, onClose, className = "" }: PdfVie
   }
 
   return (
-    <div className={`bg-background relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}>
+    <div
+      className={`bg-background relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}
+    >
       {!isViewerReady && (
         <div className="bg-background absolute inset-0 z-50 flex flex-col items-center justify-center gap-4">
           <Loader2 className="text-muted-foreground size-8 animate-spin" />

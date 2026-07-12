@@ -51,7 +51,6 @@ export function CurriculumPage() {
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const { data: userStudyPlan, isLoading: isUserStudyPlanLoading } = useUserStudyPlan(
     authUser?.id ?? null,
-    !!authUser?.id && !isAuthLoading,
   );
   const isProfileLoading = isUsingProfileDefaults && (isAuthLoading || isUserStudyPlanLoading);
   const isAutoSelectingPlan =

@@ -52,7 +52,7 @@ export function ModerationLayout() {
             <>
               Reseñas
               {reviewPending > 0 && (
-                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none">
+                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold">
                   {reviewPending > 99 ? "99+" : reviewPending}
                 </span>
               )}
@@ -70,7 +70,7 @@ export function ModerationLayout() {
             <>
               Evaluaciones
               {evaluationPending > 0 && (
-                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none">
+                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold">
                   {evaluationPending > 99 ? "99+" : evaluationPending}
                 </span>
               )}
@@ -88,7 +88,7 @@ export function ModerationLayout() {
             <>
               Reportes
               {reviewReportsPending > 0 && (
-                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none">
+                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold">
                   {reviewReportsPending > 99 ? "99+" : reviewReportsPending}
                 </span>
               )}
