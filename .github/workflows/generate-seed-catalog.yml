@@ -18,20 +18,6 @@ jobs:
       pull-requests: write
     env:
       CATALOG_YEARS: ${{ inputs.years || '2020,2021,2022,2023,2024,2025,2026' }}
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
 
     steps:
       - name: Checkout
@@ -47,6 +33,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+
+      - name: Start Supabase
+        run: supabase start
+
       - name: Run seed-history sync for catalog
         working-directory: supabase/tec-data
         run: >-
@@ -57,7 +49,7 @@ jobs:
           --years "$CATALOG_YEARS"
           --no-apply
           --keep-sql
-          --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:5432/postgres
+          --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
       - name: Capture generated seed path
         id: generated_seed
