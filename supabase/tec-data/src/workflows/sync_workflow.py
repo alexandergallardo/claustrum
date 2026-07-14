@@ -1804,7 +1804,38 @@ def export_catalog_from_db(db_url: str, data_dir: Path) -> None:
         except Exception as exc:
             typer.echo(f"Warning: Failed to export {table} from DB: {exc}")
 
+    # Export historical modalities by school
+    sql = """
+    SELECT json_build_object('school_code', au.code, 'modality_code', am.code)
+    FROM (
+        SELECT DISTINCT au.code, am.code
+        FROM public.course_offering co
+        JOIN public.academic_unit au ON au.id = co.academic_unit_id
+        JOIN public.academic_term at ON at.id = co.academic_term_id
+        JOIN public.academic_modality am ON am.id = at.academic_modality_id
+        WHERE co.is_active = true
+    ) t;
+    """
+    try:
+        output = subprocess.check_output(
+            ["psql", db_url, "-At", "-c", sql],
+            text=True,
+        )
+        historical: dict[str, list[str]] = {}
+        for line in output.splitlines():
+            if not line.strip():
+                continue
+            data = json.loads(line)
+            school_code = data.get("school_code")
+            mod_code = data.get("modality_code")
+            if school_code and mod_code:
+                historical.setdefault(school_code, []).append(mod_code)
 
+        out_path = data_dir / "academic_unit" / "historical_modalities.json"
+        write_json(out_path, historical)
+        typer.echo("Exported historical modalities mapping successfully.")
+    except Exception as exc:
+        typer.echo(f"Warning: Failed to export historical modalities from DB: {exc}")
 
 
 def run_sync(

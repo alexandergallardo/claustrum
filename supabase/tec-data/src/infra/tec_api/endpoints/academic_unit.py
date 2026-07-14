@@ -370,6 +370,7 @@ class AcademicUnitClient(APIClient):
 
         for sede, carrera, _modality_code, periodos in fallback_combinaciones:
             skip_remaining_periods = False
+            consecutive_empty_periods = 0
             for period_idx, periodo in enumerate(periodos):
                 if skip_remaining_periods:
                     processed += 1
@@ -412,7 +413,12 @@ class AcademicUnitClient(APIClient):
                     failed += 1
                     status = "error"
 
-                if period_idx == 0 and status == "empty":
+                if status == "empty":
+                    consecutive_empty_periods += 1
+                else:
+                    consecutive_empty_periods = 0
+
+                if period_idx == 1 and consecutive_empty_periods == 2:
                     skip_remaining_periods = True
 
                 if progress_callback is not None:
@@ -488,13 +494,46 @@ class AcademicUnitClient(APIClient):
         for periodos in periods_by_modality.values():
             periodos.sort(key=lambda value: int(value.rsplit("_", 1)[-1]))
 
+        # Load historical modalities from seed-history DB
+        historical_path = data_dir / "academic_unit" / "historical_modalities.json"
+        historical_modalities: dict[str, list[str]] = {}
+        if historical_path.exists():
+            try:
+                historical_modalities = json.loads(historical_path.read_text())
+            except Exception as e:
+                print(f"Warning: Failed to parse historical_modalities.json: {e}")
+
+        # Load study plans modalities
+        study_plan_path = data_dir / "study_plan" / "data.json"
+        active_modalities_by_unit: dict[int, set[str]] = {}
+        if study_plan_path.exists():
+            try:
+                study_plans = json.loads(study_plan_path.read_text())
+                for plan in study_plans:
+                    unit_id = int(plan.get("academic_unit_id") or 0)
+                    mod_id = int(plan.get("academic_modality_id") or 0)
+                    mod_code = modality_code_by_id.get(mod_id)
+                    if unit_id and mod_code:
+                        active_modalities_by_unit.setdefault(unit_id, set()).add(mod_code)
+            except Exception as e:
+                print(f"Warning: Failed to parse study_plan/data.json: {e}")
+
         fallback_combinations: list[tuple[str, str, str, list[str]]] = []
         for school_code in school_codes:
             unit_id = unit_id_by_code.get(school_code)
             if unit_id is None:
                 continue
+
+            # Merge modalities from study plans and history
+            allowed_modalities = set(active_modalities_by_unit.get(unit_id, set()))
+            allowed_modalities.update(historical_modalities.get(school_code, []))
+
             for campus_code in sorted(campuses_by_unit_id.get(unit_id, set())):
                 for modality_code, periodos in sorted(periods_by_modality.items()):
+                    # If allowed_modalities is empty (e.g. clean run or new school),
+                    # we do not filter (safe fallback). Otherwise we filter, but always allow Verano ('V').
+                    if allowed_modalities and modality_code not in allowed_modalities and modality_code != "V":
+                        continue
                     if periodos:
                         fallback_combinations.append(
                             (campus_code, school_code, modality_code, periodos)
