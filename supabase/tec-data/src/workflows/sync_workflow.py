@@ -162,6 +162,11 @@ def _apply_migrations(db_url: str, migrations_dir: Path) -> None:
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
         CREATE ROLE service_role NOLOGIN;
       END IF;
+
+      -- Create supabase_realtime publication to support realtime migrations
+      IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        CREATE PUBLICATION supabase_realtime;
+      END IF;
     END
     $$;
 
@@ -217,13 +222,14 @@ def _apply_migrations(db_url: str, migrations_dir: Path) -> None:
 
 
 def create_temp_seed_history_db(
-    seed_paths: list[Path], db_url: str, migrations_dir: Path
+    seed_paths: list[Path], db_url: str, migrations_dir: Path, skip_migrations: bool = False
 ) -> tuple[str | None, str]:
     admin_db_url = db_url
     temp_db_url = db_url
 
     try:
-        _apply_migrations(admin_db_url, migrations_dir)
+        if not skip_migrations:
+            _apply_migrations(admin_db_url, migrations_dir)
         subprocess.run(
             [
                 "psql",
@@ -1799,6 +1805,8 @@ def export_catalog_from_db(db_url: str, data_dir: Path) -> None:
             typer.echo(f"Warning: Failed to export {table} from DB: {exc}")
 
 
+
+
 def run_sync(
     data_dir: Path,
     target: str,
@@ -1815,6 +1823,7 @@ def run_sync(
     seed_dir: Path,
     baseline_seed: str | None,
     seed_history_db_url: str,
+    skip_migrations: bool = False,
 ) -> None:
     scope = normalize_scope(scope)
     scoped_tables = tables_for_scope(scope)
@@ -1855,6 +1864,7 @@ def run_sync(
                 seed_paths,
                 db_url=resolved_db_url,
                 migrations_dir=migrations_dir,
+                skip_migrations=skip_migrations,
             )
 
             if scope == "offering":
@@ -2149,6 +2159,11 @@ def sync_cmd(
         "--seed-history-db-url",
         help="Postgres URL used by target=seed-history (typically a GitHub service container)",
     ),
+    skip_migrations: bool = typer.Option(
+        False,
+        "--skip-migrations",
+        help="Skip applying migrations and bootstrap SQL to the seed history database",
+    ),
 ) -> None:
     """Run a full idempotent synchronization against local or remote DB."""
     year_list = [int(value.strip()) for value in years.split(",") if value.strip()]
@@ -2171,4 +2186,5 @@ def sync_cmd(
         seed_dir=seed_dir,
         baseline_seed=baseline_seed,
         seed_history_db_url=seed_history_db_url,
+        skip_migrations=skip_migrations,
     )

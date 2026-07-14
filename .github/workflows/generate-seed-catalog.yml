@@ -49,6 +49,7 @@ jobs:
           --years "$CATALOG_YEARS"
           --no-apply
           --keep-sql
+          --skip-migrations
           --seed-history-db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
       - name: Capture generated seed path
