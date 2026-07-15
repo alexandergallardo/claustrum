@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useProfessorReviewStats } from "@/lib/hooks/use-professor-reviews";
 import { useAcademicUnitsWithProfessors } from "@/lib/hooks/use-queries";
 import {
@@ -186,6 +187,8 @@ export function ProfessorsReviewsPage() {
   const firstRow = rows.length === 0 ? 0 : page * pageSize + 1;
   const lastRow = page * pageSize + rows.length;
 
+  const isMobile = useIsMobile();
+
   const columns = useMemo<ColumnDef<ProfessorReviewStatsRow>[]>(
     () => [
       {
@@ -241,18 +244,22 @@ export function ProfessorsReviewsPage() {
           );
         },
       },
-      {
-        accessorKey: "academic_unit",
-        header: "Escuela",
-        cell: ({ row }) => (
-          <span
-            className="text-muted-foreground block truncate text-xs"
-            title={row.original.academic_unit || undefined}
-          >
-            {row.original.academic_unit || "-"}
-          </span>
-        ),
-      },
+      ...(isMobile
+        ? []
+        : ([
+            {
+              accessorKey: "academic_unit",
+              header: "Escuela",
+              cell: ({ row }) => (
+                <span
+                  className="text-muted-foreground block truncate text-xs"
+                  title={row.original.academic_unit || undefined}
+                >
+                  {row.original.academic_unit || "-"}
+                </span>
+              ),
+            },
+          ] as ColumnDef<ProfessorReviewStatsRow>[])),
       {
         accessorKey: "approved_review_count",
         header: () => (
@@ -278,7 +285,7 @@ export function ProfessorsReviewsPage() {
         ),
       },
     ],
-    [queryClient, renderSortHeader],
+    [queryClient, renderSortHeader, isMobile],
   );
 
   const table = useReactTable({
@@ -409,7 +416,7 @@ export function ProfessorsReviewsPage() {
                         key={header.id}
                         className={cn(
                           header.column.id === "professor_name" && "w-auto sm:w-[35%]",
-                          header.column.id === "academic_unit" && "hidden sm:table-cell sm:w-[32%]",
+                          header.column.id === "academic_unit" && "w-[32%]",
                           header.column.id === "approved_review_count" && "w-[72px] sm:w-[15%]",
                           header.column.id === "average_overall_score" && "w-[80px] sm:w-[18%]",
                           (header.column.id === "approved_review_count" ||
@@ -452,7 +459,6 @@ export function ProfessorsReviewsPage() {
                             (cell.column.id === "professor_name" ||
                               cell.column.id === "academic_unit") &&
                               "max-w-0",
-                            cell.column.id === "academic_unit" && "hidden sm:table-cell",
                           )}
                         >
                           {cell.column.id === "professor_name" ||
