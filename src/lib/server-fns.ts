@@ -58,3 +58,21 @@ export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
       }) || null
     );
   });
+
+export const getDeviceHintServerFn = createServerFn({ method: "GET" }).handler(async () => {
+  const req = getRequest();
+  if (!req) return { isMobile: false }; // fallback
+
+  const ua = req.headers.get("user-agent") || "";
+  const chMobile = req.headers.get("sec-ch-ua-mobile");
+
+  let isMobile = false;
+
+  if (chMobile) {
+    isMobile = chMobile === "?1";
+  } else {
+    isMobile = /Mobi|Android|iPhone/i.test(ua);
+  }
+
+  return { isMobile };
+});
