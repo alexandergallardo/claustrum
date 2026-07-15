@@ -25,16 +25,19 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Kbd } from "@/components/ui/kbd";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   appStateQueryOptions,
   useAuthUser,
   useOnboardingStatus,
   useProfileContext,
 } from "@/lib/hooks/use-queries";
+import { getDeviceHintServerFn } from "@/lib/server-fns";
 import appCss from "@/styles.css?url";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
+  isMobileHint?: boolean;
 }>()({
   head: () => {
     return {
@@ -59,6 +62,14 @@ export const Route = createRootRouteWithContext<{
     };
   },
   beforeLoad: async ({ context: { queryClient }, location }) => {
+    let isMobile = false;
+    if (typeof document === "undefined") {
+      const { isMobile: serverIsMobile } = await getDeviceHintServerFn();
+      isMobile = serverIsMobile;
+    } else {
+      isMobile = window.innerWidth < 768;
+    }
+
     const pathname = location.pathname;
     const isAuthRoute = pathname === "/auth" || pathname.startsWith("/auth/");
     const isPublicRoute =
@@ -117,6 +128,8 @@ export const Route = createRootRouteWithContext<{
         if (isRedirect(err)) throw err;
       }
     }
+
+    return { isMobileHint: isMobile };
   },
   component: RootComponent,
   notFoundComponent: NotFound,
@@ -222,17 +235,19 @@ function RootComponent() {
               },
             }}
           >
-            {isPublicRoute ? (
-              <Outlet />
-            ) : shouldHoldPrivateRender ? (
-              <AppLayoutWrapper>
-                <div className="bg-background flex-1" />
-              </AppLayoutWrapper>
-            ) : (
-              <AppLayoutWrapper>
+            <TooltipProvider delayDuration={200}>
+              {isPublicRoute ? (
                 <Outlet />
-              </AppLayoutWrapper>
-            )}
+              ) : shouldHoldPrivateRender ? (
+                <AppLayoutWrapper>
+                  <div className="bg-background flex-1" />
+                </AppLayoutWrapper>
+              ) : (
+                <AppLayoutWrapper>
+                  <Outlet />
+                </AppLayoutWrapper>
+              )}
+            </TooltipProvider>
             <Toaster />
           </RootProvider>
         </ThemeProvider>
