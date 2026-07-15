@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatClosedTermLabel,
   formatTermNameWithoutYear,
@@ -296,16 +296,14 @@ export function ScheduleFilters({
           >
             {onShowAllChange !== undefined &&
               (isShowAllDisabled && showAllDisabledTooltip ? (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div>{showAllControl}</div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p>{showAllDisabledTooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>{showAllControl}</div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{showAllDisabledTooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : (
                 showAllControl
               ))}
