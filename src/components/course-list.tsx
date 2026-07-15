@@ -1,4 +1,4 @@
-import { User, Clock, MapPin, Users, ChevronDown } from "lucide-react";
+import { User, Clock, MapPin, Users, ChevronDown, Search } from "lucide-react";
 import { useMemo, useCallback, memo, useEffect, useRef, useState } from "react";
 
 import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
@@ -7,6 +7,7 @@ import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -25,6 +26,13 @@ type SelectedGroups = Set<string>;
 
 const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const WEEKDAYS_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+function normalizeSearchText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 const TruncatableText = ({ text }: { text: string }) => {
   const textRef = useRef<HTMLDivElement>(null);
@@ -376,6 +384,19 @@ export default function CourseList({
     return courses.map((course) => createCourseViewData(course, showCampus, campusById));
   }, [courses, showCampus, campusById]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredViewData = useMemo(() => {
+    if (!searchQuery.trim()) return viewData;
+    const query = normalizeSearchText(searchQuery);
+    return viewData.filter((data) => {
+      return (
+        normalizeSearchText(data.course.course_code).includes(query) ||
+        normalizeSearchText(data.course.course_name).includes(query)
+      );
+    });
+  }, [viewData, searchQuery]);
+
   const conflictMap = useMemo(() => {
     return calculateConflictMap(courses);
   }, [courses]);
@@ -407,44 +428,57 @@ export default function CourseList({
   );
 
   return (
-    <TooltipProvider>
-      <div ref={scrollAreaRootRef} className="h-full">
-        <ScrollArea className="h-full w-full [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!w-full">
-          <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
-            {viewData.map((courseData) => {
-              const course = courseData.course;
-              const colorStyles =
-                courseColorStyles.get(course.course_code) ?? getColorStyles("blue");
-
-              return viewMode === "table" ? (
-                <CourseTableItem
-                  key={course.offering_id}
-                  course={courseData.course}
-                  groupViews={courseData.groupViews}
-                  colorStyles={colorStyles}
-                  selectedGroupIds={selectedGroups}
-                  disabledGroupIdSet={disabledSet}
-                  conflictReasonsByGroupId={conflictReasons}
-                  onGroupToggle={handleGroupToggle}
-                  showCampus={showCampus}
-                />
-              ) : (
-                <CourseCard
-                  key={course.offering_id}
-                  course={courseData.course}
-                  groupViews={courseData.groupViews}
-                  colorStyles={colorStyles}
-                  selectedGroupIds={selectedGroups}
-                  disabledGroupIdSet={disabledSet}
-                  conflictReasonsByGroupId={conflictReasons}
-                  onGroupToggle={handleGroupToggle}
-                />
-              );
-            })}
-          </div>
-        </ScrollArea>
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="bg-background sticky top-0 z-10 shrink-0 border-b p-3">
+        <div className="relative">
+          <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
+          <Input
+            placeholder="Buscar por código o nombre..."
+            className="h-9 pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
-    </TooltipProvider>
+      <TooltipProvider>
+        <div ref={scrollAreaRootRef} className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full w-full [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!w-full">
+            <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
+              {filteredViewData.map((courseData) => {
+                const course = courseData.course;
+                const colorStyles =
+                  courseColorStyles.get(course.course_code) ?? getColorStyles("blue");
+
+                return viewMode === "table" ? (
+                  <CourseTableItem
+                    key={course.offering_id}
+                    course={courseData.course}
+                    groupViews={courseData.groupViews}
+                    colorStyles={colorStyles}
+                    selectedGroupIds={selectedGroups}
+                    disabledGroupIdSet={disabledSet}
+                    conflictReasonsByGroupId={conflictReasons}
+                    onGroupToggle={handleGroupToggle}
+                    showCampus={showCampus}
+                  />
+                ) : (
+                  <CourseCard
+                    key={course.offering_id}
+                    course={courseData.course}
+                    groupViews={courseData.groupViews}
+                    colorStyles={colorStyles}
+                    selectedGroupIds={selectedGroups}
+                    disabledGroupIdSet={disabledSet}
+                    conflictReasonsByGroupId={conflictReasons}
+                    onGroupToggle={handleGroupToggle}
+                  />
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      </TooltipProvider>
+    </div>
   );
 }
 
