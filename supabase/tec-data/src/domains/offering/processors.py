@@ -29,6 +29,7 @@ def normalize_group_type(raw_group_type: str) -> str:
         "RN": "RN",
         "PRESENCIAL": "REGULAR",
         "REGULAR": "REGULAR",
+        "CORRIENTE": "REGULAR",
         "SEMIPRESENCIAL": "SEMIPRESENCIAL",
         "VIRTUAL": "VIRTUAL",
         "ASISTIDA": "ASISTIDA",
