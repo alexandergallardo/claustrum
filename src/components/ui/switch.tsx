@@ -4,6 +4,23 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>) {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div
+        data-slot="switch-skeleton"
+        className={cn(
+          "bg-input/85 h-[1.15rem] w-8 shrink-0 rounded-full border border-transparent shadow-xs transition-all",
+          className,
+        )}
+      />
+    );
+  }
+
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
