@@ -1,16 +1,16 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { AlertTriangle, User, Save } from "lucide-react";
+import { AlertTriangle, User, Save, BookOpen } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { CatalogCampus, CatalogStudyPlan } from "@/lib/types";
 
 import { MemoizedCurriculumBoard } from "@/components/curriculum/curriculum-board";
 import { CurriculumFilters } from "@/components/curriculum/curriculum-filters";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Spinner } from "@/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import {
   useUniversities,
@@ -18,6 +18,8 @@ import {
   useAcademicUnits,
   useStudyPlans,
   useStudyPlanDetail,
+  useAcademicTerms,
+  useSuggestedAcademicTerm,
 } from "@/lib/hooks/use-queries";
 import { saveLocalStudyPlan } from "@/lib/store/local-study-plan";
 
@@ -42,6 +44,23 @@ export function CurriculumPage() {
   const shouldAutoSelectPlanRef = useRef(false);
   const lastAppliedPlanRef = useRef<typeof userStudyPlan | null>(null);
 
+  const filtersOpen = search.filters ?? !hasMeaningfulSearch;
+
+  const handleFiltersChange = useCallback(
+    (open: boolean) => {
+      void navigate({
+        to: "/curriculum",
+        search: {
+          ...search,
+          filters: open,
+        },
+        replace: true,
+        resetScroll: false,
+      });
+    },
+    [navigate, search],
+  );
+
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();
   const campusesQuery = useCampuses(selectedUniversityId);
   const academicUnitsQuery = useAcademicUnits(selectedCampusId);
@@ -50,6 +69,8 @@ export function CurriculumPage() {
   const selectedPlanData = plansQuery.data?.find((p: CatalogStudyPlan) => p.id === selectedPlanId);
 
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
+  const termsQuery = useAcademicTerms(selectedCampusId, selectedPlanId);
+  const suggestedTermQuery = useSuggestedAcademicTerm(selectedPlanId, !!selectedPlanId);
   const { activePlan: userStudyPlan, isLoading: isProfileLoading, authUser } = useActiveStudyPlan();
   const isAutoSelectingPlan =
     shouldAutoSelectPlanRef.current &&
@@ -134,7 +155,7 @@ export function CurriculumPage() {
         return;
       }
     }
-    
+
     lastAppliedPlanRef.current = userStudyPlan;
   }, [
     userStudyPlan,
@@ -159,9 +180,9 @@ export function CurriculumPage() {
 
     const matchesProfile =
       selectedUniversityId === userStudyPlanUniversityId &&
-      search.campus === userStudyPlan.campusId &&
-      search.career === userStudyPlan.academicUnitId &&
-      search.plan === userStudyPlan.studyPlanId;
+      selectedCampusId === (userStudyPlan.campusId ?? null) &&
+      selectedAcademicUnitId === (userStudyPlan.academicUnitId ?? null) &&
+      selectedPlanId === (userStudyPlan.studyPlanId ?? null);
 
     setIsUsingProfileDefaults(matchesProfile);
   }, [search, userStudyPlan, selectedUniversityId, userStudyPlanUniversityId, hasMeaningfulSearch]);
@@ -176,10 +197,11 @@ export function CurriculumPage() {
           ...prev,
           u: normalizeCurriculumUniversityId(id),
           university: normalizeCurriculumUniversityId(id),
+          filters: filtersOpen,
         }),
       });
     },
-    [navigate],
+    [navigate, filtersOpen],
   );
 
   const handleCampusChange = useCallback(
@@ -192,10 +214,11 @@ export function CurriculumPage() {
           ...prev,
           c: id ?? undefined,
           campus: id ?? undefined,
+          filters: filtersOpen,
         }),
       });
     },
-    [navigate],
+    [navigate, filtersOpen],
   );
 
   const handleAcademicUnitChange = useCallback(
@@ -210,10 +233,11 @@ export function CurriculumPage() {
           career: id ?? undefined,
           p: undefined,
           plan: undefined,
+          filters: filtersOpen,
         }),
       });
     },
-    [navigate],
+    [navigate, filtersOpen],
   );
 
   const handlePlanChange = useCallback(
@@ -226,21 +250,35 @@ export function CurriculumPage() {
           ...prev,
           p: id ?? undefined,
           plan: id ?? undefined,
+          filters: filtersOpen,
         }),
       });
     },
-    [navigate],
+    [navigate, filtersOpen],
   );
 
   const handleSaveLocalPlan = useCallback(() => {
+    let termToSave = suggestedTermQuery.data ?? null;
+    if (!termToSave && termsQuery.data && termsQuery.data.length > 0) {
+      termToSave = termsQuery.data[0].id;
+    }
+
     saveLocalStudyPlan({
       universityId:
         selectedUniversityId === CURRICULUM_DEFAULT_UNIVERSITY_ID ? null : selectedUniversityId,
       campusId: selectedCampusId,
       academicUnitId: selectedAcademicUnitId,
       studyPlanId: selectedPlanId,
+      termId: termToSave,
     });
-  }, [selectedUniversityId, selectedCampusId, selectedAcademicUnitId, selectedPlanId]);
+  }, [
+    selectedUniversityId,
+    selectedCampusId,
+    selectedAcademicUnitId,
+    selectedPlanId,
+    suggestedTermQuery.data,
+    termsQuery.data,
+  ]);
 
   const handleUseProfileDefaults = useCallback(() => {
     if (!userStudyPlan) return;
@@ -382,6 +420,11 @@ export function CurriculumPage() {
                     academicUnitsQuery.isFetching && academicUnitsQuery.data?.length === 0
                   }
                   isLoadingPlans={isLoadingPlansForFilters}
+                  canUseProfileDefaults={!!authUser && !!userStudyPlan}
+                  isUsingProfileDefaults={isUsingProfileDefaults}
+                  onUseProfileDefaults={handleUseProfileDefaults}
+                  isVisible={filtersOpen}
+                  onVisibleChange={handleFiltersChange}
                 />
               </div>
               {!!authUser && !!userStudyPlan && (
@@ -398,37 +441,39 @@ export function CurriculumPage() {
                 </Button>
               )}
               {!authUser && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant={isUsingProfileDefaults ? "secondary" : "outline"}
-                        size="sm"
-                        onClick={handleSaveLocalPlan}
-                        onPointerDown={(e) => e.preventDefault()}
-                        disabled={isUsingProfileDefaults}
-                        className="h-8 shrink-0 gap-1.5 text-xs"
-                      >
-                        <Save className="size-3.5" />
-                        {isUsingProfileDefaults ? "Guardado" : "Guardar"}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Solo se guarda en este dispositivo</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant={isUsingProfileDefaults ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={handleSaveLocalPlan}
+                      onPointerDown={(e) => e.preventDefault()}
+                      disabled={isUsingProfileDefaults}
+                      className="h-8 shrink-0 gap-1.5 text-xs"
+                    >
+                      <Save className="size-3.5" />
+                      {isUsingProfileDefaults ? "Guardado" : "Guardar"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Solo se guarda en este dispositivo</TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>
 
           {planDetailQuery.isError && (
-            <div className="px-4 lg:px-6">
-              <Alert variant="destructive">
-                <AlertTriangle className="size-4" />
-                <AlertDescription>
-                  Error al cargar el plan de estudios. Intenta de nuevo.
-                </AlertDescription>
-              </Alert>
+            <div className="flex flex-1 px-4 lg:px-6">
+              <EmptyState
+                title="Error al cargar el plan de estudios"
+                description={
+                  planDetailQuery.error instanceof Error
+                    ? planDetailQuery.error.message
+                    : "Ocurrió un problema de conexión o el plan no existe. Intenta de nuevo."
+                }
+                icon={AlertTriangle}
+                variant="error"
+              />
             </div>
           )}
 
@@ -458,11 +503,11 @@ export function CurriculumPage() {
 
           {!selectedPlanId && !planDetailQuery.isLoading && !isPendingFilters && (
             <div className="flex flex-1 px-4 lg:px-6">
-              <Card className="flex min-h-[45svh] w-full items-center justify-center p-6 text-center md:min-h-96">
-                <p className="text-muted-foreground max-w-sm text-sm md:text-base">
-                  Selecciona una carrera para visualizar el plan de estudios del TEC.
-                </p>
-              </Card>
+              <EmptyState
+                title="Busca un plan de estudios"
+                description="Selecciona una sede y una carrera para visualizar la malla curricular correspondiente."
+                icon={BookOpen}
+              />
             </div>
           )}
         </div>

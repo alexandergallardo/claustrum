@@ -1,4 +1,4 @@
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch, ClientOnly } from "@tanstack/react-router";
 import { startOfWeek } from "date-fns";
 import {
   AlertTriangle,
@@ -14,8 +14,6 @@ import {
   List,
 } from "lucide-react";
 import {
-  Suspense,
-  lazy,
   useState,
   useMemo,
   useCallback,
@@ -31,6 +29,7 @@ import type { Mode, CalendarEvent } from "@/components/calendar/calendar-types";
 import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
 
 import { START_HOUR, END_HOUR } from "@/components/calendar/body/day/calendar-body-day-margin";
+import Calendar from "@/components/calendar/calendar";
 import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import CourseList from "@/components/course-list";
 import {
@@ -62,9 +61,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
+import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import {
   useAuthUser,
   useUniversities,
@@ -73,7 +74,6 @@ import {
   useStudyPlans,
   useAcademicTerms,
   useScheduleCourses,
-  useUserStudyPlan,
   useSuggestedAcademicTerm,
 } from "@/lib/hooks/use-queries";
 import {
@@ -82,6 +82,7 @@ import {
   useDeleteSchedule,
   type SavedSchedule,
 } from "@/lib/hooks/use-saved-schedules";
+import { hydrateLocalStudyPlan, saveLocalStudyPlan } from "@/lib/store/local-study-plan";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { cn } from "@/lib/utils";
 
@@ -96,42 +97,8 @@ const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 const SHOW_ALL_STORAGE_KEY = "schedule-show-all";
 const SHOW_OTHER_CAMPUSES_STORAGE_KEY = "schedule-show-other-campuses";
 const VIEW_MODE_STORAGE_KEY = "schedule-list-view";
-const Calendar = lazy(() => import("@/components/calendar/calendar"));
 
-function ScheduleEmptyState({
-  title,
-  description,
-  variant = "default",
-}: {
-  title: string;
-  description: string;
-  variant?: "default" | "error";
-}) {
-  const Icon = variant === "error" ? AlertTriangle : CalendarDays;
-
-  return (
-    <div className="flex flex-1 px-4 lg:px-6">
-      <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 text-center md:min-h-96">
-        <div className="flex max-w-sm flex-col items-center gap-3">
-          <div
-            className={cn(
-              "flex size-12 items-center justify-center rounded-full",
-              variant === "error"
-                ? "bg-destructive/10 text-destructive"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            <Icon className="size-6" />
-          </div>
-          <div className="space-y-1.5">
-            <h2 className="text-lg font-semibold tracking-tight md:text-xl">{title}</h2>
-            <p className="text-muted-foreground text-sm md:text-base">{description}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Export constants - fixed, independent of user zoom/viewport
 const EXPORT_HOUR_HEIGHT = 64;
@@ -206,34 +173,54 @@ export function SchedulePage() {
   const navigate = useNavigate({ from: "/schedule/" });
 
   const selectedUniversityId = search.university ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
+  const [isHydrated, setIsHydrated] = useState(false);
+  useEffect(() => {
+    hydrateLocalStudyPlan();
+    setIsHydrated(true);
+  }, []);
   const selectedCampusId = search.campus ?? null;
   const selectedCareerId = search.career ?? null;
   const selectedPlanId = search.plan ?? null;
   const selectedTermId = search.term ?? null;
 
   const shouldAutoSelectPlanRef = useRef(false);
-  const [storedShowAll, setStoredShowAll] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const stored = localStorage.getItem(SHOW_ALL_STORAGE_KEY);
-    if (stored === null) return true;
-    return stored === "true";
-  });
-  const [storedShowOtherCampuses, setStoredShowOtherCampuses] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const stored = localStorage.getItem(SHOW_OTHER_CAMPUSES_STORAGE_KEY);
-    if (stored === null) return false;
-    return stored === "true";
-  });
+  const [storedShowAll, setStoredShowAll] = useState(true);
+  const [storedShowOtherCampuses, setStoredShowOtherCampuses] = useState(false);
+
+  useEffect(() => {
+    const storedAll = localStorage.getItem(SHOW_ALL_STORAGE_KEY);
+    if (storedAll !== null) setStoredShowAll(storedAll === "true");
+
+    const storedOther = localStorage.getItem(SHOW_OTHER_CAMPUSES_STORAGE_KEY);
+    if (storedOther !== null) setStoredShowOtherCampuses(storedOther === "true");
+  }, []);
+
   const showAllCourses = search.showAll ?? storedShowAll;
   const showOtherCampuses = search.otherCampuses ?? storedShowOtherCampuses;
 
-  const [storedViewMode, setStoredViewMode] = useState<"card" | "table">(() => {
-    if (typeof window === "undefined") return "card";
+  const [storedViewMode, setStoredViewMode] = useState<"card" | "table">("card");
+  useEffect(() => {
     const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    if (stored === "card" || stored === "table") return stored;
-    return "card";
-  });
+    if (stored === "card" || stored === "table") setStoredViewMode(stored);
+  }, []);
   const viewMode = search.view ?? storedViewMode;
+
+  const filtersOpen = search.filters ?? !(!!selectedCampusId && !!selectedTermId);
+
+  const handleFiltersChange = useCallback(
+    (open: boolean) => {
+      void navigate({
+        to: "/schedule",
+        search: {
+          ...search,
+          filters: open,
+        },
+        replace: true,
+        resetScroll: false,
+      });
+    },
+    [navigate, search],
+  );
 
   const handleViewModeChange = useCallback(
     (value: string) => {
@@ -273,8 +260,9 @@ export function SchedulePage() {
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [scheduleName, setScheduleName] = useState("");
+  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
 
-  const { data: savedSchedules } = useSavedSchedules();
+  const { data: savedSchedules } = useSavedSchedules(authUser?.id ?? null);
   const saveScheduleMutation = useSaveSchedule();
   const deleteScheduleMutation = useDeleteSchedule();
 
@@ -292,8 +280,8 @@ export function SchedulePage() {
   const careersQuery = useAcademicUnits(selectedCampusId);
   const plansQuery = useStudyPlans(selectedCareerId);
   const termsQuery = useAcademicTerms(selectedCampusId, selectedPlanId);
-  const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
   const isAuthenticated = !!authUser;
+  const isPendingLocalStorage = !isAuthenticated && !isHydrated;
   const effectiveShowAllCourses = isAuthenticated ? showAllCourses : true;
   const coursesQuery = useScheduleCourses({
     termId: selectedTermId,
@@ -305,9 +293,7 @@ export function SchedulePage() {
     userId: authUser?.id ?? null,
     isAuthReady: !isAuthLoading,
   });
-  const { data: userStudyPlan, isLoading: isUserStudyPlanLoading } = useUserStudyPlan(
-    authUser?.id ?? null,
-  );
+  const { activePlan: userStudyPlan, isLoading: isUserStudyPlanLoading } = useActiveStudyPlan();
 
   const userStudyPlanUniversityId =
     normalizeScheduleUniversityId(userStudyPlan?.universityId) ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
@@ -382,10 +368,7 @@ export function SchedulePage() {
   const lastAppliedPlanRef = useRef<typeof userStudyPlan | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || !userStudyPlan) {
-      if (!isAuthenticated) lastAppliedPlanRef.current = null;
-      return;
-    }
+    if (!userStudyPlan) return;
 
     if (lastAppliedPlanRef.current === userStudyPlan) return;
 
@@ -707,10 +690,11 @@ export function SchedulePage() {
           ...search,
           university: normalizeScheduleUniversityId(id),
           u: normalizeScheduleUniversityId(id),
+          filters: filtersOpen,
         } as never,
       });
     },
-    [navigate, search],
+    [navigate, search, filtersOpen],
   );
 
   const handleCampusChange = useCallback(
@@ -721,13 +705,14 @@ export function SchedulePage() {
         ...search,
         c: id ?? undefined,
         campus: id ?? undefined,
+        filters: filtersOpen,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search],
+    [navigate, search, filtersOpen],
   );
 
   const handleCareerChange = useCallback(
@@ -742,13 +727,14 @@ export function SchedulePage() {
         plan: undefined,
         t: undefined,
         term: undefined,
+        filters: filtersOpen,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search],
+    [navigate, search, filtersOpen],
   );
 
   const handlePlanChange = useCallback(
@@ -759,13 +745,14 @@ export function SchedulePage() {
         ...search,
         p: id ?? undefined,
         plan: id ?? undefined,
+        filters: filtersOpen,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search],
+    [navigate, search, filtersOpen],
   );
 
   const handleTermChange = useCallback(
@@ -774,13 +761,14 @@ export function SchedulePage() {
         ...search,
         t: id ?? undefined,
         term: id ?? undefined,
+        filters: filtersOpen,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search],
+    [navigate, search, filtersOpen],
   );
 
   const handleOtherCampusesChange = useCallback(
@@ -833,6 +821,17 @@ export function SchedulePage() {
       search: newSearch as never,
     });
   }, [navigate, search, userStudyPlan]);
+
+  const handleSaveLocalPlan = useCallback(() => {
+    saveLocalStudyPlan({
+      universityId:
+        selectedUniversityId === SCHEDULE_DEFAULT_UNIVERSITY_ID ? null : selectedUniversityId,
+      campusId: selectedCampusId,
+      academicUnitId: selectedCareerId,
+      studyPlanId: selectedPlanId,
+      termId: selectedTermId,
+    });
+  }, [selectedUniversityId, selectedCampusId, selectedCareerId, selectedPlanId, selectedTermId]);
 
   const handleCopyShortLink = useCallback(async () => {
     try {
@@ -1119,12 +1118,26 @@ export function SchedulePage() {
     termsQuery.isLoading;
   const isInitialLoading = isLoadingFilters && !universities?.length;
   const hasRequiredScheduleFilters = !!selectedCampusId && !!selectedTermId;
-  const isProfileActive =
-    !!userStudyPlan &&
-    selectedUniversityId === userStudyPlanUniversityId &&
-    search.campus === (userStudyPlan.campusId ?? undefined) &&
-    search.career === (userStudyPlan.academicUnitId ?? undefined) &&
-    search.plan === (userStudyPlan.studyPlanId ?? undefined);
+  const [isProfileActive, setIsProfileActive] = useState(false);
+
+  useEffect(() => {
+    const isActive =
+      !!userStudyPlan &&
+      selectedUniversityId === userStudyPlanUniversityId &&
+      selectedCampusId === (userStudyPlan.campusId ?? null) &&
+      selectedCareerId === (userStudyPlan.academicUnitId ?? null) &&
+      selectedPlanId === (userStudyPlan.studyPlanId ?? null) &&
+      selectedTermId === (userStudyPlan.termId ?? null);
+    setIsProfileActive(isActive);
+  }, [
+    userStudyPlan,
+    selectedUniversityId,
+    userStudyPlanUniversityId,
+    selectedCampusId,
+    selectedCareerId,
+    selectedPlanId,
+    selectedTermId,
+  ]);
 
   const isWaitingForProfile =
     !isMeaningfulScheduleSearch(search) &&
@@ -1186,6 +1199,8 @@ export function SchedulePage() {
                     showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
                     showOtherCampuses={showOtherCampuses}
                     onShowOtherCampusesChange={handleOtherCampusesChange}
+                    isVisible={filtersOpen}
+                    onVisibleChange={handleFiltersChange}
                   />
                 </div>
               </div>
@@ -1206,15 +1221,18 @@ export function SchedulePage() {
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <ScheduleEmptyState
-              title="Error al cargar el horario"
-              description={
-                coursesQuery.error instanceof Error
-                  ? coursesQuery.error.message
-                  : "Error desconocido"
-              }
-              variant="error"
-            />
+            <div className="flex flex-1 px-4 lg:px-6">
+              <EmptyState
+                title="Error al cargar el horario"
+                description={
+                  coursesQuery.error instanceof Error
+                    ? coursesQuery.error.message
+                    : "Error desconocido"
+                }
+                icon={AlertTriangle}
+                variant="error"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -1265,6 +1283,8 @@ export function SchedulePage() {
                     showAllDisabledTooltip="Inicia sesión para habilitar este filtro"
                     showOtherCampuses={showOtherCampuses}
                     onShowOtherCampusesChange={handleOtherCampusesChange}
+                    isVisible={filtersOpen}
+                    onVisibleChange={handleFiltersChange}
                   />
                 </div>
                 {isAuthenticated && userStudyPlan && (
@@ -1280,293 +1300,150 @@ export function SchedulePage() {
                     {isProfileActive ? "Perfil activo" : "Usar mi perfil"}
                   </Button>
                 )}
+                {!isAuthenticated && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant={isProfileActive ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={handleSaveLocalPlan}
+                        onPointerDown={(e) => e.preventDefault()}
+                        disabled={isProfileActive}
+                        className="h-8 shrink-0 gap-1.5 text-xs"
+                      >
+                        <Save className="size-3.5" />
+                        {isProfileActive ? "Guardado" : "Guardar"}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Solo se guarda en este dispositivo</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </div>
 
-            {isPendingFilters && (
-              <div className="flex flex-1 px-4 lg:px-6">
-                <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 md:min-h-96">
-                  <Spinner className="text-muted-foreground size-6" />
-                </div>
-              </div>
-            )}
-
             {!hasRequiredScheduleFilters && !coursesQuery.isLoading && !isPendingFilters && (
-              <ScheduleEmptyState
-                title="Selecciona los filtros del horario"
-                description="Selecciona una sede y un periodo para visualizar los cursos disponibles."
-              />
-            )}
-
-            {hasRequiredScheduleFilters && coursesQuery.isLoading && !isPendingFilters && (
               <div className="flex flex-1 px-4 lg:px-6">
-                <div className="bg-card flex min-h-[45svh] w-full items-center justify-center rounded-lg border p-6 md:min-h-96">
-                  <Spinner className="text-muted-foreground size-6" />
-                </div>
+                <EmptyState
+                  title="Selecciona los filtros del horario"
+                  description="Selecciona una sede y un periodo para visualizar los cursos disponibles."
+                  icon={CalendarDays}
+                />
               </div>
             )}
 
-            {hasRequiredScheduleFilters && !orderedCourses.length && !coursesQuery.isLoading && (
-              <ScheduleEmptyState
-                title="No hay cursos disponibles"
-                description="No se encontraron cursos con los filtros actuales. Prueba cambiando el periodo, carrera o sede."
-              />
-            )}
+            {hasRequiredScheduleFilters &&
+              !orderedCourses.length &&
+              !coursesQuery.isLoading &&
+              !isPendingFilters && (
+                <div className="flex flex-1 px-4 lg:px-6">
+                  <EmptyState
+                    title="No hay cursos disponibles"
+                    description="No se encontraron cursos con los filtros actuales. Prueba cambiando el periodo, carrera o sede."
+                    icon={CalendarDays}
+                  />
+                </div>
+              )}
 
-            {hasRequiredScheduleFilters && orderedCourses.length > 0 && (
-              <div className="px-4 lg:px-6">
-                <div
-                  className="h-auto shrink-0 overflow-hidden rounded-lg border lg:h-[var(--calendar-height)]"
-                  style={
-                    {
-                      "--calendar-height": `${calendarHeight}px`,
-                    } as CSSProperties
-                  }
-                >
-                  {isMobile ? (
-                    <div className="flex flex-col">
-                      <div className="flex flex-col border-b">
-                        <div className="bg-muted/30 border-border flex h-10 shrink-0 items-center border-b px-3">
-                          <div className="flex w-full items-center justify-between gap-2">
-                            <h2 className="text-base leading-none font-semibold">
-                              {orderedCourses.length} curso
-                              {orderedCourses.length !== 1 ? "s" : ""} disponible
-                              {orderedCourses.length !== 1 ? "s" : ""}
-                            </h2>
-                            <div className="flex items-center">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="h-10 w-10 rounded-none"
-                                onClick={() =>
-                                  handleViewModeChange(viewMode === "card" ? "table" : "card")
-                                }
-                                aria-label="Cambiar vista"
-                              >
-                                {viewMode === "card" ? (
-                                  <List className="size-4" />
-                                ) : (
-                                  <LayoutGrid className="size-4" />
-                                )}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="-mr-3 h-10 w-10 rounded-none"
-                                aria-label={
-                                  isCourseListOpen
-                                    ? "Contraer cursos disponibles"
-                                    : "Mostrar cursos disponibles"
-                                }
-                                onClick={() => setIsCourseListOpen((open) => !open)}
-                              >
-                                <ChevronDown
-                                  className={cn(
-                                    "size-4 transition-transform",
-                                    isCourseListOpen ? "rotate-0" : "-rotate-90",
-                                  )}
-                                />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                        <div
-                          className={cn("h-[50vh] overflow-hidden", !isCourseListOpen && "hidden")}
-                        >
-                          <CourseList
-                            courseColors={courseColors}
-                            key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
-                            courses={orderedCourses}
-                            selectedGroups={selectedGroups}
-                            onSelectionChange={updateSelectedGroups}
-                            campusById={campusById}
-                            showCampus={showOtherCampuses}
-                            viewMode={viewMode}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="relative min-h-[65vh]">
-                        <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-                          <ScheduleZoomControls
-                            hourHeight={hourHeight}
-                            setHourHeight={setHourHeight}
-                            isFloating={false}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            title="Copiar enlace corto"
-                            onClick={handleCopyShortLink}
-                          >
-                            <Link2 className="size-4" />
-                          </Button>
-                          {isAuthenticated && (
-                            <>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    title="Mis horarios guardados"
-                                  >
-                                    <Bookmark className="size-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                  {!savedSchedules?.length ? (
-                                    <DropdownMenuItem disabled>
-                                      Sin horarios guardados
-                                    </DropdownMenuItem>
-                                  ) : (
-                                    savedSchedules.map((s) => (
-                                      <DropdownMenuItem
-                                        key={s.id}
-                                        onClick={() => handleLoadSchedule(s)}
-                                      >
-                                        <div className="flex w-full items-center justify-between">
-                                          <span>{s.name}</span>
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeleteSchedule(s.id);
-                                            }}
-                                            className="text-muted-foreground hover:text-destructive ml-2 inline-flex cursor-pointer items-center"
-                                            onKeyDown={(e) => {
-                                              if (e.key === "Enter") {
-                                                e.stopPropagation();
-                                                handleDeleteSchedule(s.id);
-                                              }
-                                            }}
-                                          >
-                                            <Trash2 className="size-3.5" />
-                                          </button>
-                                        </div>
-                                      </DropdownMenuItem>
-                                    ))
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    disabled={!selectedGroups.size}
-                                    title="Guardar horario actual"
-                                  >
-                                    <Save className="size-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Guardar horario</DialogTitle>
-                                    <DialogDescription className="sr-only">
-                                      Guarda los grupos seleccionados como un horario con nombre
-                                      personalizado.
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="space-y-4 pt-4">
-                                    <div className="space-y-2">
-                                      <Label htmlFor="schedule-name-mobile">
-                                        Nombre del horario
-                                      </Label>
-                                      <Input
-                                        id="schedule-name-mobile"
-                                        value={scheduleName}
-                                        onChange={(e) => setScheduleName(e.target.value)}
-                                        placeholder="Ej: IS-2026-1"
-                                      />
-                                    </div>
-                                    <Button
-                                      onClick={handleSaveSchedule}
-                                      disabled={
-                                        !scheduleName.trim() || saveScheduleMutation.isPending
-                                      }
-                                      className="w-full"
-                                    >
-                                      {saveScheduleMutation.isPending && (
-                                        <Loader2 className="mr-2 size-4 animate-spin" />
-                                      )}
-                                      Guardar
-                                    </Button>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                            </>
-                          )}
-                          <ScheduleExportDialog onExport={handleExport} />
-                        </div>
-                        <div ref={calendarRef} className="overflow-hidden p-0">
-                          <Suspense fallback={<div className="bg-muted/20 h-full w-full" />}>
-                            <Calendar
-                              events={calendarEvents}
-                              setEvents={() => {}}
-                              mode={mode}
-                              setMode={() => {}}
-                              date={date}
-                              setDate={() => {}}
-                              onRemoveEvent={handleRemoveEvent}
-                              hourHeight={hourHeight}
-                              setHourHeight={setHourHeight}
-                            />
-                          </Suspense>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <ResizablePanelGroup orientation="horizontal" className="h-full">
-                      <ResizablePanel
-                        defaultSize="30%"
-                        minSize="20%"
-                        maxSize="50%"
-                        className="min-w-0 overflow-hidden"
-                      >
-                        <div className="flex flex-col lg:h-full">
-                          <div className="bg-muted/30 border-border flex h-[33px] shrink-0 items-center border-b px-4">
+            {(hasRequiredScheduleFilters || isPendingFilters) &&
+              (orderedCourses.length > 0 || coursesQuery.isLoading || isPendingFilters) && (
+                <div className="flex flex-1 flex-col px-4 pb-6 md:pb-0 lg:px-6">
+                  <div
+                    className="h-auto shrink-0 overflow-hidden rounded-lg border lg:h-[var(--calendar-height)]"
+                    style={
+                      {
+                        "--calendar-height": `${calendarHeight}px`,
+                      } as CSSProperties
+                    }
+                  >
+                    {isMobile ? (
+                      <div className="flex flex-col">
+                        <div className="flex flex-col border-b">
+                          <div className="bg-muted/30 border-border flex h-10 shrink-0 items-center border-b px-3">
                             <div className="flex w-full items-center justify-between gap-2">
                               <h2 className="text-base leading-none font-semibold">
                                 {orderedCourses.length} curso
                                 {orderedCourses.length !== 1 ? "s" : ""} disponible
                                 {orderedCourses.length !== 1 ? "s" : ""}
                               </h2>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className="-mr-4 h-[33px] w-[33px] rounded-none"
-                                onClick={() =>
-                                  handleViewModeChange(viewMode === "card" ? "table" : "card")
-                                }
-                                aria-label="Cambiar vista"
-                              >
-                                {viewMode === "card" ? (
-                                  <List className="size-4" />
-                                ) : (
-                                  <LayoutGrid className="size-4" />
-                                )}
-                              </Button>
+                              <div className="flex items-center">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="h-10 w-10 rounded-none"
+                                  onClick={() =>
+                                    handleViewModeChange(viewMode === "card" ? "table" : "card")
+                                  }
+                                  aria-label="Cambiar vista"
+                                >
+                                  {viewMode === "card" ? (
+                                    <List className="size-4" />
+                                  ) : (
+                                    <LayoutGrid className="size-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="-mr-3 h-10 w-10 rounded-none"
+                                  aria-label={
+                                    isCourseListOpen
+                                      ? "Contraer cursos disponibles"
+                                      : "Mostrar cursos disponibles"
+                                  }
+                                  onClick={() => setIsCourseListOpen((open) => !open)}
+                                >
+                                  <ChevronDown
+                                    className={cn(
+                                      "size-4 transition-transform",
+                                      isCourseListOpen ? "rotate-0" : "-rotate-90",
+                                    )}
+                                  />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                          <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
-                            <CourseList
-                              courseColors={courseColors}
-                              courses={orderedCourses}
-                              selectedGroups={selectedGroups}
-                              onSelectionChange={updateSelectedGroups}
-                              campusById={campusById}
-                              showCampus={showOtherCampuses}
-                              viewMode={viewMode}
-                            />
+                          <div
+                            className={cn(
+                              "h-[50vh] overflow-hidden",
+                              !isCourseListOpen && "hidden",
+                            )}
+                          >
+                            {(coursesQuery.isLoading ||
+                              isPendingFilters ||
+                              isPendingLocalStorage) &&
+                            orderedCourses.length === 0 ? (
+                              <div className="space-y-3 p-4">
+                                <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                              </div>
+                            ) : (
+                              <ClientOnly
+                                fallback={
+                                  <div className="space-y-3 p-4">
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  </div>
+                                }
+                              >
+                                <CourseList
+                                  courseColors={courseColors}
+                                  key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
+                                  courses={orderedCourses}
+                                  selectedGroups={selectedGroups}
+                                  onSelectionChange={updateSelectedGroups}
+                                  campusById={campusById}
+                                  showCampus={showOtherCampuses}
+                                  viewMode={viewMode}
+                                />
+                              </ClientOnly>
+                            )}
                           </div>
                         </div>
-                      </ResizablePanel>
 
-                      <ResizableHandle withHandle />
-
-                      <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
-                        <div className="relative lg:h-full">
+                        <div className="relative min-h-[65vh]">
                           <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                             <ScheduleZoomControls
                               hourHeight={hourHeight}
@@ -1650,11 +1527,11 @@ export function SchedulePage() {
                                     </DialogHeader>
                                     <div className="space-y-4 pt-4">
                                       <div className="space-y-2">
-                                        <Label htmlFor="schedule-name-desktop">
+                                        <Label htmlFor="schedule-name-mobile">
                                           Nombre del horario
                                         </Label>
                                         <Input
-                                          id="schedule-name-desktop"
+                                          id="schedule-name-mobile"
                                           value={scheduleName}
                                           onChange={(e) => setScheduleName(e.target.value)}
                                           placeholder="Ej: IS-2026-1"
@@ -1679,28 +1556,255 @@ export function SchedulePage() {
                             )}
                             <ScheduleExportDialog onExport={handleExport} />
                           </div>
-                          <div ref={calendarRef} className="overflow-hidden p-0 lg:h-full">
-                            <Suspense fallback={<div className="bg-muted/20 h-full w-full" />}>
-                              <Calendar
-                                events={calendarEvents}
-                                setEvents={() => {}}
-                                mode={mode}
-                                setMode={() => {}}
-                                date={date}
-                                setDate={() => {}}
-                                onRemoveEvent={handleRemoveEvent}
-                                hourHeight={hourHeight}
-                                setHourHeight={setHourHeight}
-                              />
-                            </Suspense>
+                          <div ref={calendarRef} className="relative overflow-hidden p-0">
+                            {(coursesQuery.isLoading ||
+                              isPendingFilters ||
+                              isPendingLocalStorage) &&
+                            orderedCourses.length === 0 ? (
+                              <div className="bg-muted/20 h-[801px] w-full animate-pulse rounded-lg" />
+                            ) : (
+                              <ClientOnly
+                                fallback={
+                                  <div className="bg-muted/20 h-[801px] w-full animate-pulse rounded-lg" />
+                                }
+                              >
+                                <Calendar
+                                  events={calendarEvents}
+                                  setEvents={() => {}}
+                                  mode={mode}
+                                  setMode={() => {}}
+                                  date={date}
+                                  setDate={() => {}}
+                                  onRemoveEvent={handleRemoveEvent}
+                                  hourHeight={hourHeight}
+                                  setHourHeight={setHourHeight}
+                                />
+                              </ClientOnly>
+                            )}
                           </div>
                         </div>
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
-                  )}
+                      </div>
+                    ) : (
+                      <ResizablePanelGroup orientation="horizontal" className="h-full">
+                        <ResizablePanel
+                          defaultSize="30%"
+                          minSize="20%"
+                          maxSize="50%"
+                          className="min-w-0 overflow-hidden"
+                        >
+                          <div className="flex flex-col lg:h-full">
+                            <div className="bg-muted/30 border-border flex h-[33px] shrink-0 items-center border-b px-4">
+                              <div className="flex w-full items-center justify-between gap-2">
+                                <h2 className="text-base leading-none font-semibold">
+                                  {orderedCourses.length} curso
+                                  {orderedCourses.length !== 1 ? "s" : ""} disponible
+                                  {orderedCourses.length !== 1 ? "s" : ""}
+                                </h2>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  className="-mr-4 h-[33px] w-[33px] rounded-none"
+                                  onClick={() =>
+                                    handleViewModeChange(viewMode === "card" ? "table" : "card")
+                                  }
+                                  aria-label="Cambiar vista"
+                                >
+                                  {viewMode === "card" ? (
+                                    <List className="size-4" />
+                                  ) : (
+                                    <LayoutGrid className="size-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
+                              {(coursesQuery.isLoading ||
+                                isPendingFilters ||
+                                isPendingLocalStorage) &&
+                              orderedCourses.length === 0 ? (
+                                <div className="space-y-3 p-4">
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                </div>
+                              ) : (
+                                <ClientOnly
+                                  fallback={
+                                    <div className="space-y-3 p-4">
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    </div>
+                                  }
+                                >
+                                  <CourseList
+                                    courseColors={courseColors}
+                                    courses={orderedCourses}
+                                    selectedGroups={selectedGroups}
+                                    onSelectionChange={updateSelectedGroups}
+                                    campusById={campusById}
+                                    showCampus={showOtherCampuses}
+                                    viewMode={viewMode}
+                                  />
+                                </ClientOnly>
+                              )}
+                            </div>
+                          </div>
+                        </ResizablePanel>
+
+                        <ResizableHandle withHandle />
+
+                        <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
+                          <div className="relative lg:h-full">
+                            <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+                              <ScheduleZoomControls
+                                hourHeight={hourHeight}
+                                setHourHeight={setHourHeight}
+                                isFloating={false}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                title="Copiar enlace corto"
+                                onClick={handleCopyShortLink}
+                              >
+                                <Link2 className="size-4" />
+                              </Button>
+                              {isAuthenticated && (
+                                <>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        title="Mis horarios guardados"
+                                      >
+                                        <Bookmark className="size-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                      {!savedSchedules?.length ? (
+                                        <DropdownMenuItem disabled>
+                                          Sin horarios guardados
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        savedSchedules.map((s) => (
+                                          <DropdownMenuItem
+                                            key={s.id}
+                                            onClick={() => handleLoadSchedule(s)}
+                                          >
+                                            <div className="flex w-full items-center justify-between">
+                                              <span>{s.name}</span>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteSchedule(s.id);
+                                                }}
+                                                className="text-muted-foreground hover:text-destructive ml-2 inline-flex cursor-pointer items-center"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter") {
+                                                    e.stopPropagation();
+                                                    handleDeleteSchedule(s.id);
+                                                  }
+                                                }}
+                                              >
+                                                <Trash2 className="size-3.5" />
+                                              </button>
+                                            </div>
+                                          </DropdownMenuItem>
+                                        ))
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        disabled={!selectedGroups.size}
+                                        title="Guardar horario actual"
+                                      >
+                                        <Save className="size-4" />
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Guardar horario</DialogTitle>
+                                        <DialogDescription className="sr-only">
+                                          Guarda los grupos seleccionados como un horario con nombre
+                                          personalizado.
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-4 pt-4">
+                                        <div className="space-y-2">
+                                          <Label htmlFor="schedule-name-desktop">
+                                            Nombre del horario
+                                          </Label>
+                                          <Input
+                                            id="schedule-name-desktop"
+                                            value={scheduleName}
+                                            onChange={(e) => setScheduleName(e.target.value)}
+                                            placeholder="Ej: IS-2026-1"
+                                          />
+                                        </div>
+                                        <Button
+                                          onClick={handleSaveSchedule}
+                                          disabled={
+                                            !scheduleName.trim() || saveScheduleMutation.isPending
+                                          }
+                                          className="w-full"
+                                        >
+                                          {saveScheduleMutation.isPending && (
+                                            <Loader2 className="mr-2 size-4 animate-spin" />
+                                          )}
+                                          Guardar
+                                        </Button>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                </>
+                              )}
+                              <ScheduleExportDialog onExport={handleExport} />
+                            </div>
+                            <div ref={calendarRef} className="overflow-hidden p-0 lg:h-full">
+                              {(coursesQuery.isLoading ||
+                                isPendingFilters ||
+                                isPendingLocalStorage) &&
+                              orderedCourses.length === 0 ? (
+                                <div className="bg-muted/20 h-full w-full animate-pulse" />
+                              ) : (
+                                <ClientOnly
+                                  fallback={
+                                    <div className="bg-muted/20 h-full w-full animate-pulse" />
+                                  }
+                                >
+                                  <Calendar
+                                    events={calendarEvents}
+                                    setEvents={() => {}}
+                                    mode={mode}
+                                    setMode={() => {}}
+                                    date={date}
+                                    setDate={() => {}}
+                                    onRemoveEvent={handleRemoveEvent}
+                                    hourHeight={hourHeight}
+                                    setHourHeight={setHourHeight}
+                                  />
+                                </ClientOnly>
+                              )}
+                            </div>
+                          </div>
+                        </ResizablePanel>
+                      </ResizablePanelGroup>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </div>
@@ -1711,19 +1815,17 @@ export function SchedulePage() {
         className="bg-background pointer-events-none fixed top-0 left-0 -z-10 overflow-hidden rounded-lg border opacity-0"
         style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
       >
-        <Suspense fallback={null}>
-          <Calendar
-            events={calendarEvents}
-            setEvents={() => {}}
-            mode="week"
-            setMode={() => {}}
-            date={date}
-            setDate={() => {}}
-            hourHeight={EXPORT_HOUR_HEIGHT}
-            dayWidth={EXPORT_DAY_WIDTH}
-            exportTheme={currentExportTheme}
-          />
-        </Suspense>
+        <Calendar
+          events={calendarEvents}
+          setEvents={() => {}}
+          mode="week"
+          setMode={() => {}}
+          date={date}
+          setDate={() => {}}
+          hourHeight={EXPORT_HOUR_HEIGHT}
+          dayWidth={EXPORT_DAY_WIDTH}
+          exportTheme={currentExportTheme}
+        />
       </div>
     </>
   );
