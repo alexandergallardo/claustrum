@@ -115,4 +115,5 @@ export const Route = createFileRoute("/schedule/")({
 
     await Promise.allSettled(promises);
   },
+  pendingComponent: () => <div className="bg-background flex-1" />,
 });

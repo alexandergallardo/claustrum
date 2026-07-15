@@ -68,4 +68,5 @@ export const Route = createFileRoute("/curriculum/")({
 
     await Promise.allSettled(promises);
   },
+  pendingComponent: () => <div className="bg-background flex-1" />,
 });
