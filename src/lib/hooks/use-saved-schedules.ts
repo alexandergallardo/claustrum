@@ -16,9 +16,9 @@ export type SavedScheduleItem = {
   course_offering_group_id: number;
 };
 
-export function useSavedSchedules() {
+export function useSavedSchedules(userId: string | null) {
   return useQuery({
-    queryKey: ["savedSchedules"],
+    queryKey: ["savedSchedules", userId],
     queryFn: async () => {
       const sb = getSupabaseBrowserClient();
       const { data, error } = await sb
@@ -29,6 +29,7 @@ export function useSavedSchedules() {
       return data as SavedSchedule[];
     },
     staleTime: 5 * 60 * 1000,
+    enabled: !!userId,
   });
 }
 
