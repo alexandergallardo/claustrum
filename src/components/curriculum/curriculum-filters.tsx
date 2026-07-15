@@ -34,10 +34,9 @@ interface CurriculumFiltersProps {
   canUseProfileDefaults?: boolean;
   isUsingProfileDefaults?: boolean;
   onUseProfileDefaults?: () => void;
+  isVisible?: boolean;
+  onVisibleChange?: (visible: boolean) => void;
 }
-
-const CURRICULUM_FILTERS_PANEL_STORAGE_KEY = "curriculum-filters-panel-open";
-const LEGACY_FILTERS_PANEL_STORAGE_KEY = "plan-filters-panel-open";
 
 export function CurriculumFilters({
   universities,
@@ -56,20 +55,15 @@ export function CurriculumFilters({
   isLoadingCampuses = false,
   isLoadingCareerPrograms,
   isLoadingPlans,
+  isVisible = true,
+  onVisibleChange,
 }: CurriculumFiltersProps) {
-  const [isFiltersVisible, setIsFiltersVisible] = useState(true);
-
   const [skipAnimation, setSkipAnimation] = useState(
     () =>
       !!selectedUniversityId && !!selectedCampusId && !!selectedCareerProgramId && !!selectedPlanId,
   );
   useEffect(() => {
-    const stored =
-      localStorage.getItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY) ??
-      localStorage.getItem(LEGACY_FILTERS_PANEL_STORAGE_KEY);
-    if (stored === "false") {
-      setIsFiltersVisible(false);
-    }
+    // We moved local storage state up to the page level to sync with search params
   }, []);
   const hasUniversities = universities.length > 0;
   const shouldShowUniversityFilter = universities.length > 1;
@@ -86,11 +80,11 @@ export function CurriculumFilters({
   const showPlanFilter = isPlanFilterReady;
 
   useEffect(() => {
-    localStorage.setItem(CURRICULUM_FILTERS_PANEL_STORAGE_KEY, isFiltersVisible.toString());
-  }, [isFiltersVisible]);
+    // Synced at page level now
+  }, []);
 
   return (
-    <FiltersPanel isExpanded={isFiltersVisible} onExpandedChange={setIsFiltersVisible}>
+    <FiltersPanel isExpanded={isVisible} onExpandedChange={onVisibleChange ?? (() => {})}>
       <FilterCombobox
         label="Universidad"
         value={selectedUniversityId?.toString() || ""}

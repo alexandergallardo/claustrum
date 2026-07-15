@@ -8,6 +8,7 @@ export interface CurriculumSearch {
   career?: number;
   plan?: number;
   action?: string;
+  filters?: boolean;
 }
 
 export interface CurriculumUrlSearch {
@@ -16,6 +17,7 @@ export interface CurriculumUrlSearch {
   r?: number;
   p?: number;
   a?: string;
+  f?: boolean;
 }
 
 const LEGACY_SEARCH_KEYS = ["university", "campus", "career", "plan"];
@@ -30,6 +32,18 @@ const parseNumber = (value: unknown): number | undefined => {
   return undefined;
 };
 
+const parseBoolean = (value: unknown): boolean | undefined => {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1") return true;
+    if (normalized === "false" || normalized === "0") return false;
+  }
+  return undefined;
+};
+
 const getSearchValue = (search: SearchInput, longKey: string, shortKey: string) =>
   search[longKey] ?? search[shortKey];
 
@@ -40,6 +54,7 @@ export function parseCurriculumSearch(search: SearchInput): CurriculumSearch {
     career: parseNumber(getSearchValue(search, "career", "r")),
     plan: parseNumber(getSearchValue(search, "plan", "p")),
     action: getSearchValue(search, "action", "a") as string | undefined,
+    filters: parseBoolean(getSearchValue(search, "filters", "f")),
   };
 }
 
@@ -71,5 +86,6 @@ export function toCurriculumUrlSearch(search: CurriculumSearch): CurriculumUrlSe
     r: search.career,
     p: search.plan,
     a: search.action,
+    f: search.filters,
   };
 }
