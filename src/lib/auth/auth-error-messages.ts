@@ -32,7 +32,7 @@ export function normalizeAuthError(
   if (rawMessage.includes("invalid login credentials") || rawCode.includes("invalid_credentials")) {
     return {
       type: "invalid_credentials",
-      message: "Correo o contraseña incorrectos. Revisa tus datos e inténtalo de nuevo.",
+      message: "Correo o contraseña incorrectos, vuelve a revisar los datos ingresados",
     };
   }
 
@@ -64,7 +64,10 @@ export function normalizeAuthError(
   ) {
     return {
       type: "invalid_email",
-      message: "El correo electrónico no tiene un formato válido.",
+      message:
+        flow === "login"
+          ? "Correo o contraseña incorrectos, vuelve a revisar los datos ingresados"
+          : "El correo electrónico no tiene un formato válido.",
     };
   }
 

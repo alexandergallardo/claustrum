@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -652,7 +652,6 @@ function SignInForm({ email, setEmail }: { email: string; setEmail: (value: stri
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {formError ? (
         <Alert variant="destructive">
-          <AlertTitle>No se pudo iniciar sesión</AlertTitle>
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
       ) : null}
@@ -867,7 +866,6 @@ function SignUpForm() {
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {formError ? (
         <Alert variant="destructive">
-          <AlertTitle>No se pudo crear la cuenta</AlertTitle>
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
       ) : null}
