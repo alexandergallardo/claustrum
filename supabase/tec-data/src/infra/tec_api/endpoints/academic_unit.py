@@ -578,8 +578,6 @@ class AcademicUnitClient(APIClient):
                 return []
 
             all_rows = table.find_all("tr")
-            if len(all_rows) < 2:
-                return []
 
             data_rows = []
             for row in all_rows:
