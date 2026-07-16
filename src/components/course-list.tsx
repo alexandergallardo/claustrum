@@ -1,4 +1,4 @@
-import { User, Clock, MapPin, Users, ChevronDown, Search } from "lucide-react";
+import { User, Clock, MapPin, Users, ChevronDown } from "lucide-react";
 import { useMemo, useCallback, memo, useEffect, useRef, useState } from "react";
 
 import type { ScheduleCourse, ScheduleGroup } from "@/lib/types";
@@ -7,7 +7,6 @@ import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {

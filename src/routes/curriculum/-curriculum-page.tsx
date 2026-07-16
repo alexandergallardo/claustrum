@@ -13,7 +13,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { sortTermsLogical } from "@/lib/academic-terms";
-import { MAIN_CAMPUS_CODES } from "@/lib/constants";
 import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import {
   useUniversities,

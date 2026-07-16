@@ -64,12 +64,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  formatClosedTermLabel,
-  formatTermNameWithoutYear,
-  groupTermsByYear,
-  sortTermsLogical,
-} from "@/lib/academic-terms";
+import { sortTermsLogical } from "@/lib/academic-terms";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
 import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
