@@ -104,7 +104,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 
 // Export constants - fixed, independent of user zoom/viewport
 const EXPORT_HOUR_HEIGHT = 64;
-const EXPORT_DAY_WIDTH = 150;
+const EXPORT_DAY_WIDTH = 200;
 const EXPORT_MARGIN_WIDTH = 48;
 const EXPORT_WEEK_DAYS = 6;
 const EXPORT_HEADER_HEIGHT = 33;
