@@ -316,7 +316,7 @@ export function ScheduleFilters({
                   onCheckedChange={onShowOtherCampusesChange}
                 />
                 <Label htmlFor="otherCampuses" className="cursor-pointer text-xs font-normal">
-                  Otras sedes
+                  Todas las sedes
                 </Label>
               </div>
             )}

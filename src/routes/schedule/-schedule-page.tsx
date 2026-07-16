@@ -32,6 +32,7 @@ import { START_HOUR, END_HOUR } from "@/components/calendar/body/day/calendar-bo
 import Calendar from "@/components/calendar/calendar";
 import { colorOptions } from "@/components/calendar/calendar-tailwind-classes";
 import CourseList from "@/components/course-list";
+import { CourseSearchInput } from "@/components/course-search-input";
 import {
   ScheduleExportDialog,
   type ScheduleExportOptions,
@@ -168,9 +169,9 @@ function applyExportEventColors(root: HTMLElement, theme: ScheduleExportTheme) {
 }
 
 export function SchedulePage() {
-  const isMobile = useIsMobile();
   const search = useSearch({ from: "/schedule/" });
   const navigate = useNavigate({ from: "/schedule/" });
+  const isMobile = useIsMobile();
 
   const selectedUniversityId = search.university ?? SCHEDULE_DEFAULT_UNIVERSITY_ID;
   const [isHydrated, setIsHydrated] = useState(false);
@@ -690,11 +691,11 @@ export function SchedulePage() {
           ...search,
           university: normalizeScheduleUniversityId(id),
           u: normalizeScheduleUniversityId(id),
-          filters: filtersOpen,
+          filters: isMobile ? filtersOpen : undefined,
         } as never,
       });
     },
-    [navigate, search, filtersOpen],
+    [navigate, search, filtersOpen, isMobile],
   );
 
   const handleCampusChange = useCallback(
@@ -705,14 +706,14 @@ export function SchedulePage() {
         ...search,
         c: id ?? undefined,
         campus: id ?? undefined,
-        filters: filtersOpen,
+        filters: isMobile ? filtersOpen : undefined,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search, filtersOpen],
+    [navigate, search, filtersOpen, isMobile],
   );
 
   const handleCareerChange = useCallback(
@@ -727,14 +728,14 @@ export function SchedulePage() {
         plan: undefined,
         t: undefined,
         term: undefined,
-        filters: filtersOpen,
+        filters: isMobile ? filtersOpen : undefined,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search, filtersOpen],
+    [navigate, search, filtersOpen, isMobile],
   );
 
   const handlePlanChange = useCallback(
@@ -745,14 +746,14 @@ export function SchedulePage() {
         ...search,
         p: id ?? undefined,
         plan: id ?? undefined,
-        filters: filtersOpen,
+        filters: isMobile ? filtersOpen : undefined,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search, filtersOpen],
+    [navigate, search, filtersOpen, isMobile],
   );
 
   const handleTermChange = useCallback(
@@ -761,14 +762,14 @@ export function SchedulePage() {
         ...search,
         t: id ?? undefined,
         term: id ?? undefined,
-        filters: filtersOpen,
+        filters: isMobile ? filtersOpen : undefined,
       };
       void navigate({
         to: "/schedule",
         search: newSearch as never,
       });
     },
-    [navigate, search, filtersOpen],
+    [navigate, search, filtersOpen, isMobile],
   );
 
   const handleOtherCampusesChange = useCallback(
@@ -1349,7 +1350,7 @@ export function SchedulePage() {
               (orderedCourses.length > 0 || coursesQuery.isLoading || isPendingFilters) && (
                 <div className="flex flex-1 flex-col px-4 pb-6 md:pb-0 lg:px-6">
                   <div
-                    className="h-auto shrink-0 overflow-hidden rounded-lg border lg:h-[var(--calendar-height)]"
+                    className="h-auto shrink-0 overflow-hidden rounded-lg border md:h-[var(--calendar-height)]"
                     style={
                       {
                         "--calendar-height": `${calendarHeight}px`,
@@ -1358,7 +1359,7 @@ export function SchedulePage() {
                   >
                     {isMobile ? (
                       <div className="flex flex-col">
-                        <div className="flex flex-col border-b">
+                        <div className={cn("flex flex-col", isCourseListOpen && "border-b")}>
                           <div className="bg-muted/30 border-border flex h-10 shrink-0 items-center border-b px-3">
                             <div className="flex w-full items-center justify-between gap-2">
                               <h2 className="text-base leading-none font-semibold">
@@ -1405,41 +1406,55 @@ export function SchedulePage() {
                           </div>
                           <div
                             className={cn(
-                              "h-[50vh] overflow-hidden",
+                              "flex h-[50vh] flex-col overflow-hidden",
                               !isCourseListOpen && "hidden",
                             )}
                           >
-                            {(coursesQuery.isLoading ||
-                              isPendingFilters ||
-                              isPendingLocalStorage) &&
-                            orderedCourses.length === 0 ? (
-                              <div className="space-y-3 p-4">
-                                <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                              </div>
-                            ) : (
-                              <ClientOnly
-                                fallback={
-                                  <div className="space-y-3 p-4">
-                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                  </div>
-                                }
-                              >
-                                <CourseList
-                                  courseColors={courseColors}
-                                  key={isCourseListOpen ? "course-list-open" : "course-list-closed"}
-                                  courses={orderedCourses}
-                                  selectedGroups={selectedGroups}
-                                  onSelectionChange={updateSelectedGroups}
-                                  campusById={campusById}
-                                  showCampus={showOtherCampuses}
-                                  viewMode={viewMode}
-                                />
-                              </ClientOnly>
-                            )}
+                            <CourseSearchInput
+                              initialQuery={search.q ?? ""}
+                              onSearchChange={(q) =>
+                                void navigate({
+                                  search: (prev) => ({ ...prev, q: q || undefined }),
+                                  replace: true,
+                                })
+                              }
+                            />
+                            <div className="flex-1 overflow-hidden">
+                              {(coursesQuery.isLoading ||
+                                isPendingFilters ||
+                                isPendingLocalStorage) &&
+                              orderedCourses.length === 0 ? (
+                                <div className="space-y-3 p-4">
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                </div>
+                              ) : (
+                                <ClientOnly
+                                  fallback={
+                                    <div className="space-y-3 p-4">
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    </div>
+                                  }
+                                >
+                                  <CourseList
+                                    courseColors={courseColors}
+                                    key={
+                                      isCourseListOpen ? "course-list-open" : "course-list-closed"
+                                    }
+                                    courses={orderedCourses}
+                                    selectedGroups={selectedGroups}
+                                    onSelectionChange={updateSelectedGroups}
+                                    campusById={campusById}
+                                    showCampus={showOtherCampuses}
+                                    viewMode={viewMode}
+                                    searchQuery={search.q}
+                                  />
+                                </ClientOnly>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1592,7 +1607,7 @@ export function SchedulePage() {
                           maxSize="50%"
                           className="min-w-0 overflow-hidden"
                         >
-                          <div className="flex flex-col lg:h-full">
+                          <div className="flex h-full flex-col">
                             <div className="bg-muted/30 border-border flex h-[33px] shrink-0 items-center border-b px-4">
                               <div className="flex w-full items-center justify-between gap-2">
                                 <h2 className="text-base leading-none font-semibold">
@@ -1617,41 +1632,53 @@ export function SchedulePage() {
                                 </Button>
                               </div>
                             </div>
-                            <div className="h-[60vh] overflow-hidden lg:h-auto lg:flex-1">
-                              {(coursesQuery.isLoading ||
-                                isPendingFilters ||
-                                isPendingLocalStorage) &&
-                              orderedCourses.length === 0 ? (
-                                <div className="space-y-3 p-4">
-                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                  <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                </div>
-                              ) : (
-                                <ClientOnly
-                                  fallback={
-                                    <div className="space-y-3 p-4">
-                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                      <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
-                                    </div>
-                                  }
-                                >
-                                  <CourseList
-                                    courseColors={courseColors}
-                                    courses={orderedCourses}
-                                    selectedGroups={selectedGroups}
-                                    onSelectionChange={updateSelectedGroups}
-                                    campusById={campusById}
-                                    showCampus={showOtherCampuses}
-                                    viewMode={viewMode}
-                                  />
-                                </ClientOnly>
-                              )}
+                            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                              <CourseSearchInput
+                                initialQuery={search.q ?? ""}
+                                onSearchChange={(q) =>
+                                  void navigate({
+                                    search: (prev) => ({ ...prev, q: q || undefined }),
+                                    replace: true,
+                                  })
+                                }
+                              />
+                              <div className="flex-1 overflow-hidden">
+                                {(coursesQuery.isLoading ||
+                                  isPendingFilters ||
+                                  isPendingLocalStorage) &&
+                                orderedCourses.length === 0 ? (
+                                  <div className="space-y-3 p-4">
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                    <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                  </div>
+                                ) : (
+                                  <ClientOnly
+                                    fallback={
+                                      <div className="space-y-3 p-4">
+                                        <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                        <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                        <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                        <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                        <div className="bg-muted/50 h-24 w-full animate-pulse rounded-md" />
+                                      </div>
+                                    }
+                                  >
+                                    <CourseList
+                                      courseColors={courseColors}
+                                      courses={orderedCourses}
+                                      selectedGroups={selectedGroups}
+                                      onSelectionChange={updateSelectedGroups}
+                                      campusById={campusById}
+                                      showCampus={showOtherCampuses}
+                                      viewMode={viewMode}
+                                      searchQuery={search.q}
+                                    />
+                                  </ClientOnly>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </ResizablePanel>
@@ -1659,7 +1686,7 @@ export function SchedulePage() {
                         <ResizableHandle withHandle />
 
                         <ResizablePanel defaultSize="70%" className="min-w-0 overflow-hidden">
-                          <div className="relative lg:h-full">
+                          <div className="relative h-full">
                             <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                               <ScheduleZoomControls
                                 hourHeight={hourHeight}
