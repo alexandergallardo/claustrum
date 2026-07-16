@@ -14,6 +14,7 @@ export interface ScheduleSearch {
   groups?: string;
   loadSchedule?: number;
   filters?: boolean;
+  q?: string;
 }
 
 export interface ScheduleUrlSearch {
@@ -28,6 +29,7 @@ export interface ScheduleUrlSearch {
   g?: string;
   l?: number;
   f?: boolean;
+  q?: string;
 }
 
 const LEGACY_SEARCH_KEYS = [
@@ -93,6 +95,7 @@ export function parseScheduleSearch(search: SearchInput): ScheduleSearch {
     groups: parseString(getSearchValue(search, "groups", "g")),
     loadSchedule: parseNumber(getSearchValue(search, "loadSchedule", "l")),
     filters: parseBoolean(getSearchValue(search, "filters", "f")),
+    q: parseString(search.q ?? search.s),
   };
 }
 
@@ -107,7 +110,8 @@ export function isMeaningfulScheduleSearch(search: ScheduleSearch): boolean {
     search.otherCampuses !== undefined ||
     search.showAll !== undefined ||
     search.groups !== undefined ||
-    search.loadSchedule !== undefined
+    search.loadSchedule !== undefined ||
+    search.q !== undefined
   );
 }
 
@@ -136,6 +140,7 @@ export function toScheduleUrlSearch(search: ScheduleSearch): ScheduleUrlSearch {
     g: search.groups,
     l: search.loadSchedule,
     f: search.filters,
+    q: search.q,
   };
 }
 
@@ -171,6 +176,7 @@ export function buildScheduleShortSearchParams(search: ScheduleSearch): URLSearc
   appendBoolean(params, "a", urlSearch.a);
   appendString(params, "g", urlSearch.g);
   appendNumber(params, "l", urlSearch.l);
+  appendString(params, "q", urlSearch.q);
 
   return params;
 }

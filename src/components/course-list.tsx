@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getGroupId } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +136,7 @@ interface CourseListProps {
   showCampus?: boolean;
   viewMode?: "card" | "table";
   courseColors?: Map<string, string>;
+  searchQuery?: string;
 }
 
 interface GroupView {
@@ -342,6 +343,7 @@ export default function CourseList({
   showCampus = false,
   viewMode = "card",
   courseColors: courseColorsProp,
+  searchQuery = "",
 }: CourseListProps) {
   const scrollAreaRootRef = useRef<HTMLDivElement | null>(null);
 
@@ -383,8 +385,6 @@ export default function CourseList({
   const viewData = useMemo(() => {
     return courses.map((course) => createCourseViewData(course, showCampus, campusById));
   }, [courses, showCampus, campusById]);
-
-  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredViewData = useMemo(() => {
     if (!searchQuery.trim()) return viewData;
@@ -429,39 +429,54 @@ export default function CourseList({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="bg-background sticky top-0 z-10 shrink-0 border-b p-3">
-        <div className="relative">
-          <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
-          <Input
-            placeholder="Buscar por código o nombre..."
-            className="h-9 pl-9"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-      <TooltipProvider>
-        <div ref={scrollAreaRootRef} className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full w-full [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!w-full">
-            <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
-              {filteredViewData.map((courseData) => {
+      <div ref={scrollAreaRootRef} className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full w-full [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!w-full">
+          <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
+            {viewMode === "table" ? (
+              <Table>
+                <TableHeader className="bg-muted/30 sticky top-0 z-10 shadow-sm">
+                  <TableRow>
+                    <TableHead className="w-[1%] pl-4 text-center whitespace-nowrap">
+                      Grupo
+                    </TableHead>
+                    <TableHead className="w-[1%] whitespace-nowrap">Tipo</TableHead>
+                    {showCampus && (
+                      <TableHead className="w-[1%] text-center whitespace-nowrap">Sede</TableHead>
+                    )}
+                    <TableHead className="w-auto min-w-[120px]">Profesor</TableHead>
+                    <TableHead className="w-[1%] whitespace-nowrap">Horario</TableHead>
+                    <TableHead className="w-[1%] text-center whitespace-nowrap">Aula</TableHead>
+                    <TableHead className="w-[1%] pr-4 text-center whitespace-nowrap">
+                      Cupos
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredViewData.map((courseData) => (
+                    <CourseTableItem
+                      key={courseData.course.offering_id}
+                      course={courseData.course}
+                      groupViews={courseData.groupViews}
+                      colorStyles={
+                        courseColorStyles.get(courseData.course.course_code) ??
+                        getColorStyles("blue")
+                      }
+                      selectedGroupIds={selectedGroups}
+                      disabledGroupIdSet={disabledSet}
+                      conflictReasonsByGroupId={conflictReasons}
+                      onGroupToggle={handleGroupToggle}
+                      showCampus={showCampus}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              filteredViewData.map((courseData) => {
                 const course = courseData.course;
                 const colorStyles =
                   courseColorStyles.get(course.course_code) ?? getColorStyles("blue");
 
-                return viewMode === "table" ? (
-                  <CourseTableItem
-                    key={course.offering_id}
-                    course={courseData.course}
-                    groupViews={courseData.groupViews}
-                    colorStyles={colorStyles}
-                    selectedGroupIds={selectedGroups}
-                    disabledGroupIdSet={disabledSet}
-                    conflictReasonsByGroupId={conflictReasons}
-                    onGroupToggle={handleGroupToggle}
-                    showCampus={showCampus}
-                  />
-                ) : (
+                return (
                   <CourseCard
                     key={course.offering_id}
                     course={courseData.course}
@@ -473,11 +488,11 @@ export default function CourseList({
                     onGroupToggle={handleGroupToggle}
                   />
                 );
-              })}
-            </div>
-          </ScrollArea>
-        </div>
-      </TooltipProvider>
+              })
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 }
