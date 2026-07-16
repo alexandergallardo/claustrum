@@ -19,3 +19,18 @@ export function groupTermsByYear<T extends { year: number }>(terms: T[]) {
     .sort((a, b) => b[0] - a[0])
     .map(([year, items]) => ({ value: String(year), items }));
 }
+
+export function sortTermsLogical<
+  T extends { year: number; display_name: string; period_number: number },
+>(terms: T[]): T[] {
+  return [...terms].sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+
+    const aPrefix = a.display_name.replace(/\d+/g, "").trim();
+    const bPrefix = b.display_name.replace(/\d+/g, "").trim();
+    const prefixCompare = aPrefix.localeCompare(bPrefix);
+    if (prefixCompare !== 0) return prefixCompare;
+
+    return b.period_number - a.period_number;
+  });
+}

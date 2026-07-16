@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { sortTermsLogical } from "@/lib/academic-terms";
+import { MAIN_CAMPUS_CODES } from "@/lib/constants";
 import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import {
   useUniversities,
@@ -72,6 +74,7 @@ export function CurriculumPage() {
 
   const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
   const termsQuery = useAcademicTerms(selectedCampusId, selectedPlanId);
+  const terms = useMemo(() => sortTermsLogical(termsQuery.data ?? []), [termsQuery.data]);
   const suggestedTermQuery = useSuggestedAcademicTerm(selectedPlanId, !!selectedPlanId);
   const { activePlan: userStudyPlan, isLoading: isProfileLoading, authUser } = useActiveStudyPlan();
   const isAutoSelectingPlan =
@@ -261,8 +264,8 @@ export function CurriculumPage() {
 
   const handleSaveLocalPlan = useCallback(() => {
     let termToSave = suggestedTermQuery.data ?? null;
-    if (!termToSave && termsQuery.data && termsQuery.data.length > 0) {
-      termToSave = termsQuery.data[0].id;
+    if (!termToSave && terms && terms.length > 0) {
+      termToSave = terms[0].id;
     }
 
     saveLocalStudyPlan({
@@ -279,7 +282,7 @@ export function CurriculumPage() {
     selectedAcademicUnitId,
     selectedPlanId,
     suggestedTermQuery.data,
-    termsQuery.data,
+    terms,
   ]);
 
   const handleUseProfileDefaults = useCallback(() => {

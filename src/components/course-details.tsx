@@ -88,6 +88,7 @@ import {
   formatClosedTermLabel,
   formatTermNameWithoutYear,
   groupTermsByYear,
+  sortTermsLogical,
 } from "@/lib/academic-terms";
 import { formatEvaluationFileName, type EvaluationType } from "@/lib/evaluations/types";
 import { useCourseEvaluations } from "@/lib/hooks/use-evaluations";
@@ -633,7 +634,8 @@ export function CourseDetails({
 
   const progressTermsQuery = useCourseOfferingTerms(progressCourseId, null, null);
   const academicTerms = useMemo(
-    () => (progressTermsQuery.isPlaceholderData ? [] : (progressTermsQuery.data ?? [])),
+    () =>
+      sortTermsLogical(progressTermsQuery.isPlaceholderData ? [] : (progressTermsQuery.data ?? [])),
     [progressTermsQuery.data, progressTermsQuery.isPlaceholderData],
   );
 
@@ -736,7 +738,10 @@ export function CourseDetails({
   }, [academicTermId, academicTerms]);
 
   const latestTermGroups = latestGroupsQuery.data ?? [];
-  const offeringTerms = useMemo(() => offeringTermsQuery.data ?? [], [offeringTermsQuery.data]);
+  const offeringTerms = useMemo(
+    () => sortTermsLogical(offeringTermsQuery.data ?? []),
+    [offeringTermsQuery.data],
+  );
   const selectedOfferingTerm =
     offeringTerms.find((term) => String(term.id) === offeringTermId) ?? null;
   const academicTermGroups = useMemo(() => groupTermsByYear(academicTerms), [academicTerms]);

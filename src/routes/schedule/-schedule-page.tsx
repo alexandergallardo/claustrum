@@ -64,6 +64,12 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  formatClosedTermLabel,
+  formatTermNameWithoutYear,
+  groupTermsByYear,
+  sortTermsLogical,
+} from "@/lib/academic-terms";
 import { getGroupId, sessionToEvent } from "@/lib/calendar-utils";
 import { buildScheduleIcs } from "@/lib/calendar/ics";
 import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
@@ -310,7 +316,7 @@ export function SchedulePage() {
   );
   const careers = careersQuery.data ?? [];
   const plans = plansQuery.data ?? [];
-  const terms = useMemo(() => termsQuery.data ?? [], [termsQuery.data]);
+  const terms = useMemo(() => sortTermsLogical(termsQuery.data ?? []), [termsQuery.data]);
   const isAutoSelectingLatestPlan =
     shouldAutoSelectPlanRef.current && !!selectedCareerId && !selectedPlanId && plans.length > 0;
   const isLoadingPlansForFilters =
