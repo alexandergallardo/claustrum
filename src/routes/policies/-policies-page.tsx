@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const EmailContact = () => {
   const [copied, setCopied] = useState(false);
@@ -64,19 +64,17 @@ const ITCR = () => (
   <>
     <span className="md:hidden">ITCR</span>
     <span className="hidden md:inline">
-      <TooltipProvider>
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger
-            type="button"
-            className="decoration-primary/50 cursor-help underline decoration-dashed underline-offset-4"
-          >
-            ITCR
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Instituto Tecnológico de Costa Rica</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger
+          type="button"
+          className="decoration-primary/50 cursor-help underline decoration-dashed underline-offset-4"
+        >
+          ITCR
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Instituto Tecnológico de Costa Rica</p>
+        </TooltipContent>
+      </Tooltip>
     </span>
   </>
 );

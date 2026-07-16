@@ -1,5 +1,3 @@
-import { TooltipProvider } from "@/components/ui/tooltip";
-
 import type { CalendarProps } from "./calendar-types";
 
 import CalendarBody from "./body/calendar-body";
@@ -36,9 +34,7 @@ export default function Calendar({
       setDayWidth={setDayWidth}
       exportTheme={exportTheme}
     >
-      <TooltipProvider delayDuration={200}>
-        <CalendarBody />
-      </TooltipProvider>
+      <CalendarBody />
     </CalendarProvider>
   );
 }
