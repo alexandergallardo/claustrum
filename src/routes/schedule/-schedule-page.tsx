@@ -1847,7 +1847,7 @@ export function SchedulePage() {
       {/* Hidden calendar for export - behind the page, within viewport so html-to-image can capture it */}
       <div
         ref={exportCalendarRef}
-        className="bg-background pointer-events-none fixed top-0 left-0 -z-10 overflow-hidden rounded-lg border opacity-0 [&_*]:!transition-none"
+        className="bg-background pointer-events-none fixed top-0 left-0 -z-10 overflow-hidden border opacity-0 [&_*]:!transition-none"
         style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
       >
         <Calendar
