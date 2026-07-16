@@ -637,8 +637,9 @@ export function SchedulePage() {
           search: {
             ...search,
             loadSchedule: undefined,
+            l: undefined,
             groups: matchingGroups.length ? matchingGroups.join(",") : undefined,
-          },
+          } as never,
           resetScroll: false,
         });
       } catch {
@@ -649,7 +650,8 @@ export function SchedulePage() {
             search: {
               ...search,
               loadSchedule: undefined,
-            },
+              l: undefined,
+            } as never,
             resetScroll: false,
           });
         }
