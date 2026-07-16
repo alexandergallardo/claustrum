@@ -51,6 +51,13 @@ export function InsetSigninPage() {
           ¿Olvidaste tu contraseña?
         </Link>
       </div>
+      <p className="text-muted-foreground mt-4 px-4 text-center text-[11px] leading-relaxed">
+        Al continuar, aceptas nuestras{" "}
+        <Link to="/policies" className="text-foreground hover:underline">
+          políticas y condiciones de uso
+        </Link>
+        .
+      </p>
     </>
   );
 }
@@ -69,6 +76,13 @@ export function InsetSignupPage() {
           Inicia sesión
         </Link>
       </div>
+      <p className="text-muted-foreground mt-4 px-4 text-center text-[11px] leading-relaxed">
+        Al continuar, aceptas nuestras{" "}
+        <Link to="/policies" className="text-foreground hover:underline">
+          políticas y condiciones de uso
+        </Link>
+        .
+      </p>
     </>
   );
 }
