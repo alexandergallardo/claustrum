@@ -67,7 +67,7 @@ export const Route = createRootRouteWithContext<{
       const { isMobile: serverIsMobile } = await getDeviceHintServerFn();
       isMobile = serverIsMobile;
     } else {
-      isMobile = window.innerWidth < 768;
+      isMobile = window.innerWidth < 1024;
     }
 
     const pathname = location.pathname;
