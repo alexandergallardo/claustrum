@@ -622,7 +622,7 @@ const CourseCard = memo(function CourseCard({
                           <User
                             className={cn(
                               "h-3.5 w-3.5 shrink-0 self-center",
-                              isSelected ? "opacity-70" : "text-muted-foreground",
+                              isSelected ? "text-foreground opacity-70" : "text-muted-foreground",
                             )}
                           />
                           <div className="flex flex-col justify-center gap-1">
@@ -645,7 +645,7 @@ const CourseCard = memo(function CourseCard({
                             <Clock
                               className={cn(
                                 "h-3.5 w-3.5 shrink-0 self-center",
-                                isSelected ? "opacity-70" : "text-muted-foreground",
+                                isSelected ? "text-foreground opacity-70" : "text-muted-foreground",
                               )}
                             />
                             <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
@@ -696,7 +696,7 @@ const CourseCard = memo(function CourseCard({
                           <Users
                             className={cn(
                               "mt-0.5 h-3.5 w-3.5 shrink-0",
-                              isSelected ? "opacity-70" : "text-muted-foreground",
+                              isSelected ? "text-foreground opacity-70" : "text-muted-foreground",
                             )}
                           />
                           <span
