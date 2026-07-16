@@ -974,8 +974,14 @@ export function SchedulePage() {
       await new Promise((resolve) => requestAnimationFrame(resolve));
       if (exportTheme) {
         calendarElement.setAttribute("data-export-theme", exportTheme);
+        if (exportTheme === "dark") {
+          calendarElement.classList.add("dark");
+        }
       }
       const resetEventColors = applyExportEventColors(calendarElement, options.theme);
+
+      // Add a small delay to ensure styles and CSS variables are fully applied by the browser
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       try {
         const { toJpeg, toPng } = await import("html-to-image");
@@ -1020,6 +1026,7 @@ export function SchedulePage() {
       } finally {
         if (exportTheme) {
           calendarElement.removeAttribute("data-export-theme");
+          calendarElement.classList.remove("dark");
         }
         resetEventColors();
       }
@@ -1840,7 +1847,7 @@ export function SchedulePage() {
       {/* Hidden calendar for export - behind the page, within viewport so html-to-image can capture it */}
       <div
         ref={exportCalendarRef}
-        className="bg-background pointer-events-none fixed top-0 left-0 -z-10 overflow-hidden rounded-lg border opacity-0"
+        className="bg-background pointer-events-none fixed top-0 left-0 -z-10 overflow-hidden rounded-lg border opacity-0 [&_*]:!transition-none"
         style={{ width: EXPORT_IMAGE_WIDTH, height: EXPORT_IMAGE_HEIGHT }}
       >
         <Calendar
