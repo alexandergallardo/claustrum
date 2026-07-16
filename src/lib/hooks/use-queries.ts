@@ -335,16 +335,24 @@ export function studyPlanDetailQueryOptions(planId: number | null) {
       if (!planId) return null;
       const sb = getSupabaseBrowserClient();
 
-      const [coursesResult, relationsResult] = await Promise.all([
+      const [coursesResult, relationsResult, planResult] = await Promise.all([
         sb.rpc("get_study_plan_courses_details", { p_study_plan_id: planId }),
         sb
           .from("course_relation")
           .select("from_course_id, to_course_id, relation_type")
           .eq("study_plan_id", planId),
+        sb
+          .from("study_plan")
+          .select(
+            "id, academic_unit_id, external_plan_id, name, academic_degree, academic_modality(name)",
+          )
+          .eq("id", planId)
+          .single(),
       ]);
 
       if (coursesResult.error) throw coursesResult.error;
       if (relationsResult.error) throw relationsResult.error;
+      if (planResult.error) throw planResult.error;
 
       const courseRelations = new Map<
         number,
@@ -368,15 +376,18 @@ export function studyPlanDetailQueryOptions(planId: number | null) {
 
       const periodArray = buildStudyPlanPeriods(coursesResult.data ?? []);
 
+      const rawPlan = planResult.data;
+      const formattedPlan: CatalogStudyPlan = {
+        id: rawPlan.id,
+        academic_unit_id: rawPlan.academic_unit_id,
+        external_plan_id: rawPlan.external_plan_id,
+        name: `${rawPlan.external_plan_id} - ${rawPlan.name}`,
+        academic_degree: rawPlan.academic_degree,
+        modality_name: (rawPlan.academic_modality as any)?.name,
+      };
+
       return {
-        plan: {
-          id: planId,
-          academic_unit_id: 0,
-          external_plan_id: 0,
-          name: "",
-          academic_degree: null,
-          modality_name: undefined,
-        } as CatalogStudyPlan,
+        plan: formattedPlan,
         periods: periodArray,
         courseRelations,
       } as StudyPlanDetail;

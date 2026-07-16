@@ -1,14 +1,5 @@
-import {
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  GraduationCap,
-  Calendar,
-  BookOpen,
-} from "lucide-react";
-import React, { useState, useEffect, useMemo } from "react";
+import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 
 import type { StudyPlanDetail } from "@/lib/types";
 import type { CourseEffectiveStatus } from "@/lib/types";
@@ -30,8 +21,6 @@ const ZOOM_MAX = 1.0;
 const ZOOM_STEP = 0.05;
 const CURRICULUM_ZOOM_STORAGE_KEY = "curriculum-board-zoom";
 const ZOOM_DEFAULT = 0.75;
-const CURRICULUM_PANEL_OPEN_STORAGE_KEY = "curriculum-board-panel-open";
-const LEGACY_PANEL_OPEN_STORAGE_KEY = "plan-board-panel-open";
 
 function getInitialZoom(): number {
   if (typeof window === "undefined") return ZOOM_DEFAULT;
@@ -61,20 +50,79 @@ function CurriculumBoard({
   );
 
   const [zoom, setZoom] = useState<number>(() => propZoom ?? getInitialZoom());
-  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(false);
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  const boardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const stored =
-      localStorage.getItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY) ??
-      localStorage.getItem(LEGACY_PANEL_OPEN_STORAGE_KEY);
-    if (stored === "true") {
-      setIsPanelOpen(true);
-    }
+    const el = boardRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        setZoom((prev) => {
+          const zoomChange = e.deltaY * -0.002;
+          const newZoom = Math.min(Math.max(prev + zoomChange, ZOOM_MIN), ZOOM_MAX);
+          localStorage.setItem(CURRICULUM_ZOOM_STORAGE_KEY, newZoom.toString());
+          return newZoom;
+        });
+      }
+    };
+
+    let initialPinchDistance: number | null = null;
+    let initialZoomForPinch = ZOOM_DEFAULT;
+
+    const getDistance = (touches: TouchList) => {
+      if (touches.length < 2) return 0;
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        initialPinchDistance = getDistance(e.touches);
+        initialZoomForPinch = zoomRef.current;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && initialPinchDistance !== null && initialPinchDistance > 0) {
+        if (e.cancelable) e.preventDefault();
+
+        const currentDistance = getDistance(e.touches);
+        const scale = currentDistance / initialPinchDistance;
+
+        const newZoom = Math.min(Math.max(initialZoomForPinch * scale, ZOOM_MIN), ZOOM_MAX);
+        setZoom(newZoom);
+        localStorage.setItem(CURRICULUM_ZOOM_STORAGE_KEY, newZoom.toString());
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        initialPinchDistance = null;
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    el.addEventListener("touchstart", handleTouchStart, { passive: false });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd);
+    el.addEventListener("touchcancel", handleTouchEnd);
+
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+      el.removeEventListener("touchcancel", handleTouchEnd);
+    };
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(CURRICULUM_PANEL_OPEN_STORAGE_KEY, isPanelOpen.toString());
-  }, [isPanelOpen]);
 
   const handleZoomIn = () => {
     setZoom((prev) => {
@@ -101,69 +149,43 @@ function CurriculumBoard({
   const canZoomOut = zoom <= ZOOM_MIN;
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div ref={boardRef} className="relative flex h-full flex-col">
       {!readOnly && (
         <div className="absolute top-4 right-4 z-10">
-          <button
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-            className="bg-background/95 supports-[backdrop-filter]:bg-background/60 hover:bg-muted flex items-center gap-2 rounded-lg border p-1.5 shadow-sm backdrop-blur transition-colors"
-            title={isPanelOpen ? "Ocultar controles" : "Mostrar controles"}
-          >
-            <span className="text-sm font-medium">{Math.round(zoom * 100)}%</span>
-            {isPanelOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-          </button>
+          <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 flex items-center gap-1 rounded-full border px-2 py-1.5 shadow-sm backdrop-blur">
+            <button
+              onClick={handleZoomOut}
+              disabled={canZoomOut}
+              className="hover:bg-muted rounded-full p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+              title="Alejar"
+            >
+              <ZoomOut className="size-4" />
+            </button>
 
-          {isPanelOpen && (
-            <div className="bg-background/95 supports-[backdrop-filter]:bg-background/60 absolute top-full right-0 mt-2 min-w-[220px] rounded-lg border p-3 shadow-lg backdrop-blur">
-              <div className="mb-3 flex items-center gap-1">
-                <button
-                  onClick={handleZoomOut}
-                  disabled={canZoomOut}
-                  className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                  title="Alejar"
-                >
-                  <ZoomOut className="size-4" />
-                </button>
-                <button
-                  onClick={handleZoomIn}
-                  disabled={canZoomIn}
-                  className="hover:bg-muted rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                  title="Acercar"
-                >
-                  <ZoomIn className="size-4" />
-                </button>
-                <div className="bg-border mx-1 h-5 w-px" />
-                <button
-                  onClick={handleReset}
-                  className="hover:bg-muted rounded-md p-2 transition-colors"
-                  title="Restablecer tamaño"
-                >
-                  <RotateCcw className="size-4" />
-                </button>
-              </div>
+            <span className="min-w-[3.5rem] cursor-default px-2 py-1 text-center text-xs font-medium">
+              {Math.round(zoom * 100)}%
+            </span>
 
-              {planDetail.plan && (
-                <>
-                  <div className="border-border mt-2 space-y-2 border-t pt-2">
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <GraduationCap className="size-4" />
-                      <span>{planDetail.plan.academic_degree || "Sin grado"}</span>
-                    </div>
-                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                      <BookOpen className="size-4" />
-                      <span>{planDetail.plan.modality_name || "Sin modalidad"}</span>
-                    </div>
-                    {planDetail.plan.external_plan_id && (
-                      <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                        <Calendar className="size-4" />
-                        <span>Plan: {planDetail.plan.external_plan_id}</span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+            <button
+              onClick={handleZoomIn}
+              disabled={canZoomIn}
+              className="hover:bg-muted rounded-full p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+              title="Acercar"
+            >
+              <ZoomIn className="size-4" />
+            </button>
+
+            <div className="bg-border mx-0.5 h-4 w-px" />
+
+            <button
+              onClick={handleReset}
+              disabled={zoom === ZOOM_DEFAULT}
+              className="hover:bg-muted rounded-full p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+              title="Restablecer tamaño"
+            >
+              <RotateCcw className="size-4" />
+            </button>
+          </div>
         </div>
       )}
       <div className="min-h-0 flex-1">

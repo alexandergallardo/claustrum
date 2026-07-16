@@ -2,10 +2,10 @@ import { createLazyFileRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
 const CourseDetailPage = lazy(() =>
-  import("./-course-detail-page").then((module) => ({ default: module.CourseDetailPage })),
+  import("../-course-detail-page").then((module) => ({ default: module.CourseDetailPage })),
 );
 
-export const Route = createLazyFileRoute("/curriculum/$courseId")({
+export const Route = createLazyFileRoute("/curriculum/$planId/$courseId")({
   component: CourseDetailRoute,
 });
 

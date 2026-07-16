@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useActiveStudyPlan } from "@/lib/hooks/use-active-study-plan";
 import {
   useUniversities,
@@ -34,6 +35,7 @@ const MAIN_CAMPUS_CODES = new Set(["AL", "CA", "LM", "SC", "SJ"]);
 export function CurriculumPage() {
   const search = useSearch({ from: "/curriculum/" });
   const navigate = useNavigate({ from: "/curriculum/" });
+  const isMobile = useIsMobile();
 
   const selectedUniversityId = search.university ?? CURRICULUM_DEFAULT_UNIVERSITY_ID;
   const selectedCampusId = search.campus ?? null;
@@ -197,11 +199,11 @@ export function CurriculumPage() {
           ...prev,
           u: normalizeCurriculumUniversityId(id),
           university: normalizeCurriculumUniversityId(id),
-          filters: filtersOpen,
+          filters: isMobile ? filtersOpen : undefined,
         }),
       });
     },
-    [navigate, filtersOpen],
+    [navigate, filtersOpen, isMobile],
   );
 
   const handleCampusChange = useCallback(
@@ -214,11 +216,11 @@ export function CurriculumPage() {
           ...prev,
           c: id ?? undefined,
           campus: id ?? undefined,
-          filters: filtersOpen,
+          filters: isMobile ? filtersOpen : undefined,
         }),
       });
     },
-    [navigate, filtersOpen],
+    [navigate, filtersOpen, isMobile],
   );
 
   const handleAcademicUnitChange = useCallback(
@@ -233,11 +235,11 @@ export function CurriculumPage() {
           career: id ?? undefined,
           p: undefined,
           plan: undefined,
-          filters: filtersOpen,
+          filters: isMobile ? filtersOpen : undefined,
         }),
       });
     },
-    [navigate, filtersOpen],
+    [navigate, filtersOpen, isMobile],
   );
 
   const handlePlanChange = useCallback(
@@ -250,11 +252,11 @@ export function CurriculumPage() {
           ...prev,
           p: id ?? undefined,
           plan: id ?? undefined,
-          filters: filtersOpen,
+          filters: isMobile ? filtersOpen : undefined,
         }),
       });
     },
-    [navigate, filtersOpen],
+    [navigate, filtersOpen, isMobile],
   );
 
   const handleSaveLocalPlan = useCallback(() => {

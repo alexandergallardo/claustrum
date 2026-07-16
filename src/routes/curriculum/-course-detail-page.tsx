@@ -1,9 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useCanGoBack } from "@tanstack/react-router";
+import { useNavigate, useParams, useSearch, useRouter } from "@tanstack/react-router";
 import { AlertTriangle } from "lucide-react";
 import { useCallback } from "react";
 
-import type { CatalogStudyPlan, CourseStatus } from "@/lib/types";
+import type { CourseStatus } from "@/lib/types";
 
 import { CourseDetails } from "@/components/course-details";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,42 +13,44 @@ import {
   useAuthUser,
   useCreateCourseAttempt,
   useStudyPlanDetail,
-  useStudyPlans,
   useStudentCourseStatuses,
 } from "@/lib/hooks/use-queries";
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
 import { saveLocalCourseStatus } from "@/lib/utils/local-storage-utils";
 
 export function CourseDetailPage() {
-  const params = useParams({ from: "/curriculum/$courseId" });
-  const search = useSearch({ from: "/curriculum/$courseId" });
-  const navigate = useNavigate({ from: "/curriculum/$courseId" });
+  const params = useParams({ from: "/curriculum/$planId/$courseId" });
+  const search = useSearch({ from: "/curriculum/$planId/$courseId" });
+  const navigate = useNavigate({ from: "/curriculum/$planId/$courseId" });
+  const router = useRouter();
   const queryClient = useQueryClient();
 
-  const selectedAcademicUnitId = search.career ?? null;
-  const selectedPlanId = search.plan ?? null;
+  const selectedPlanId = Number(params.planId);
 
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
-  const plansQuery = useStudyPlans(selectedAcademicUnitId);
-  const selectedPlanData = plansQuery.data?.find(
-    (plan: CatalogStudyPlan) => plan.id === selectedPlanId,
-  );
-  const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
+  const planDetailQuery = useStudyPlanDetail(selectedPlanId, undefined);
   const { data: statusMap } = useStudentCourseStatuses(authUser?.id ?? null, selectedPlanId);
   const createCourseAttempt = useCreateCourseAttempt();
 
   const { courseById } = useCurriculumViewModel(planDetailQuery.data ?? null, statusMap);
   const selectedCourse = courseById.get(params.courseId);
 
+  const canGoBack = useCanGoBack();
+
   const handleBack = useCallback(() => {
-    void navigate({
-      to: "/curriculum",
-      search: { ...search, action: undefined },
-      viewTransition: {
-        types: ["course-close"],
-      },
-    });
-  }, [navigate, search]);
+    // Navigate back to the curriculum page using history to preserve search filters if possible
+    if (canGoBack) {
+      router.history.back();
+    } else {
+      void navigate({
+        to: "/curriculum",
+        search: { p: selectedPlanId } as never,
+        viewTransition: {
+          types: ["course-close"],
+        },
+      });
+    }
+  }, [router.history, canGoBack, navigate, selectedPlanId]);
 
   const handleCreateAttempt = useCallback(
     async (

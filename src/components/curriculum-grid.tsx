@@ -1,8 +1,8 @@
 "use client";
 
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { Lock, Unlock, Link } from "lucide-react";
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { flushSync } from "react-dom";
 
 import type { StudyPlanDetail, CourseEffectiveStatus } from "@/lib/types";
@@ -13,7 +13,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useStudentCourseStatuses } from "@/lib/hooks/use-queries";
 import { useCurriculumViewModel } from "@/lib/hooks/useCurriculumViewModel";
 import { cn } from "@/lib/utils";
@@ -41,29 +41,11 @@ function CurriculumGrid({
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [quickRegisterCourseId, setQuickRegisterCourseId] = useState<string | null>(null);
-  const [contentHeight, setContentHeight] = useState<number | null>(null);
-  const [contentWidth, setContentWidth] = useState<number | null>(null);
-  const scaledContentRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const search = useSearch({ strict: false });
 
   const { data: fetchedStatusMap } = useStudentCourseStatuses(userId ?? null, studyPlanId ?? null);
   const statusMap = mockStatusMap ?? fetchedStatusMap;
   const { semesters, courseById } = useCurriculumViewModel(planDetail, statusMap);
-
-  useEffect(() => {
-    const el = scaledContentRef.current;
-    if (!el) return;
-
-    const updateSize = () => {
-      setContentHeight(el.scrollHeight);
-      setContentWidth(el.scrollWidth);
-    };
-
-    const ro = new ResizeObserver(updateSize);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [zoom, semesters]);
 
   const getRelationType = useCallback(
     (targetId: string, courseId: string): RelationType => {
@@ -87,15 +69,15 @@ function CurriculumGrid({
       });
 
       void navigate({
-        to: "/curriculum/$courseId",
-        params: { courseId },
-        search,
+        to: "/curriculum/$planId/$courseId",
+        params: { planId: String(studyPlanId ?? planDetail.plan.id), courseId },
+        search: (prev) => ({ action: prev.action, filters: prev.filters }), // keep only action and filters if any
         viewTransition: {
           types: ["course-open"],
         },
       });
     },
-    [navigate, search],
+    [navigate, studyPlanId, planDetail.plan.id],
   );
 
   const handleRegisterProgressClick = useCallback((courseId: string) => {
@@ -110,45 +92,32 @@ function CurriculumGrid({
           readOnly ? "overflow-hidden" : "overflow-x-auto overflow-y-auto",
         )}
       >
-        <div
-          className="origin-top-left px-4"
-          style={{
-            transform: `scale(${zoom})`,
-            width:
-              contentHeight && contentWidth ? `${(contentWidth + 32) * zoom}px` : `${100 / zoom}%`,
-            height: contentHeight ? `${contentHeight * zoom}px` : undefined,
-          }}
-        >
-          <div ref={scaledContentRef} className="flex gap-4 py-4">
+        <div className="px-4" style={{ zoom }}>
+          <div className="flex gap-4 py-4">
             {semesters.map((semester) => (
               <div key={semester.levelNumber} className="w-48 flex-shrink-0">
                 <div className="border-border mb-4 border-b pb-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <h2 className="text-foreground decoration-foreground/70 inline-block cursor-pointer text-lg font-semibold underline-offset-4 transition hover:underline">
-                          {semester.levelLabel}
-                        </h2>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" align="start">
-                        <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                          <span className="font-semibold">Cursos</span>
-                          <span className="text-right">{semester.courses.length}</span>
-                          <span className="font-semibold">Creditos</span>
-                          <span className="text-right">
-                            {semester.courses.reduce(
-                              (acc, course) => acc + (course.credits ?? 0),
-                              0,
-                            )}
-                          </span>
-                          <span className="font-semibold">Horas</span>
-                          <span className="text-right">
-                            {semester.courses.reduce((acc, course) => acc + (course.hours ?? 0), 0)}
-                          </span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <h2 className="text-foreground decoration-foreground/70 inline-block cursor-pointer text-lg font-semibold underline-offset-4 transition hover:underline">
+                        {semester.levelLabel}
+                      </h2>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="start">
+                      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                        <span className="font-semibold">Cursos</span>
+                        <span className="text-right">{semester.courses.length}</span>
+                        <span className="font-semibold">Creditos</span>
+                        <span className="text-right">
+                          {semester.courses.reduce((acc, course) => acc + (course.credits ?? 0), 0)}
+                        </span>
+                        <span className="font-semibold">Horas</span>
+                        <span className="text-right">
+                          {semester.courses.reduce((acc, course) => acc + (course.hours ?? 0), 0)}
+                        </span>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <div className="space-y-4">
                   {semester.courses.map((course) => (

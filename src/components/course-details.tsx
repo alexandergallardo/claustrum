@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -83,7 +82,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   formatClosedTermLabel,
@@ -124,6 +123,29 @@ interface CourseDetailsProps {
   ) => Promise<"success" | "local">;
   onBack?: () => void;
   initialOpenProgressSheet?: boolean;
+}
+
+function getOrdinalSuffix(num: number): string {
+  switch (num) {
+    case 1:
+    case 3:
+      return "er";
+    case 2:
+      return "do";
+    case 4:
+    case 5:
+    case 6:
+      return "to";
+    case 7:
+    case 10:
+      return "mo";
+    case 8:
+      return "vo";
+    case 9:
+      return "no";
+    default:
+      return "º";
+  }
 }
 
 const statusLabels: Record<CourseStatus, string> = {
@@ -393,19 +415,17 @@ function ScheduleGroupCard({
         </div>
 
         {group.campusName && (
-          <TooltipProvider>
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className="bg-muted text-muted-foreground h-5 cursor-help px-1.5 text-[10px]"
-                >
-                  {getCampusCodeFromName(group.campusName) || group.campusName}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>{group.campusName}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className="bg-muted text-muted-foreground h-5 cursor-help px-1.5 text-[10px]"
+              >
+                {getCampusCodeFromName(group.campusName) || group.campusName}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>{group.campusName}</TooltipContent>
+          </Tooltip>
         )}
       </div>
 
@@ -1177,35 +1197,23 @@ export function CourseDetails({
         </div>
 
         {/* Stats strip */}
-        <div className="border-border flex items-center gap-6 border-y py-3">
-          <div className="flex items-center gap-2">
-            <BookOpen className="text-muted-foreground size-4" />
-            <div>
-              <p className="text-lg leading-none font-bold">{course.credits}</p>
-              <p className="text-muted-foreground mt-0.5 text-[10px] tracking-wider uppercase">
-                Créditos
-              </p>
-            </div>
+        <div className="border-border text-muted-foreground flex flex-wrap items-center justify-center gap-3 border-y py-3 text-base sm:justify-start">
+          <div>
+            <span className="text-foreground text-lg font-semibold">{course.credits}</span>{" "}
+            {course.credits === 1 ? "crédito" : "créditos"}
           </div>
-          <Separator orientation="vertical" className="h-8" />
-          <div className="flex items-center gap-2">
-            <Clock className="text-muted-foreground size-4" />
-            <div>
-              <p className="text-lg leading-none font-bold">{course.hours}</p>
-              <p className="text-muted-foreground mt-0.5 text-[10px] tracking-wider uppercase">
-                Horas
-              </p>
-            </div>
+          <span className="text-border">|</span>
+          <div>
+            <span className="text-foreground text-lg font-semibold">{course.hours}</span>{" "}
+            {course.hours === 1 ? "hora" : "horas"}
           </div>
-          <Separator orientation="vertical" className="h-8" />
-          <div className="flex items-center gap-2">
-            <GraduationCap className="text-muted-foreground size-4" />
-            <div>
-              <p className="text-lg leading-none font-bold">{course.semester}</p>
-              <p className="text-muted-foreground mt-0.5 text-[10px] tracking-wider uppercase">
-                {modalityName || "Nivel"}
-              </p>
-            </div>
+          <span className="text-border">|</span>
+          <div>
+            <span className="text-foreground text-lg font-semibold">
+              {course.semester}
+              <sup className="text-xs">{getOrdinalSuffix(course.semester)}</sup>
+            </span>{" "}
+            {modalityName?.toLowerCase() || "nivel"}
           </div>
         </div>
       </div>

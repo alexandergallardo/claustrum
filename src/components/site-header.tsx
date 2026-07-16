@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import type { CatalogStudyPlan } from "@/lib/types";
-
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,12 +32,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useModerationCounts } from "@/lib/hooks/use-moderation";
 import { useIsAdmin, useProfessorById } from "@/lib/hooks/use-professor-reviews";
-import {
-  useAuthUser,
-  useStudyPlanDetail,
-  useStudyPlans,
-  useCoursesByIds,
-} from "@/lib/hooks/use-queries";
+import { useAuthUser, useStudyPlanDetail, useCoursesByIds } from "@/lib/hooks/use-queries";
 
 type BreadcrumbItem = {
   label: string;
@@ -76,16 +69,9 @@ function getNumericPathSegment(pathname: string, prefix: string) {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
-function getSearchNumber(search: string, key: string) {
-  const value = new URLSearchParams(search).get(key);
-  if (!value) return null;
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
-}
-
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
-  const { pathname, searchStr } = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -113,18 +99,15 @@ export function SiteHeader() {
     : null;
   const professorName = professorQuery.data?.full_name ?? cachedProfessor?.full_name ?? null;
 
-  const courseId = getNumericPathSegment(pathname, "/curriculum/");
-  const isCourseDetail = courseId !== null;
+  const curriculumMatch = pathname.match(/^\/curriculum\/(\d+)\/(\d+)/);
+  const isCourseDetail = curriculumMatch !== null;
+  const selectedPlanId = curriculumMatch ? Number(curriculumMatch[1]) : null;
+  const courseId = curriculumMatch ? Number(curriculumMatch[2]) : null;
+
   const courseIdArr = useMemo(() => (courseId !== null ? [courseId] : null), [courseId]);
   const coursesQuery = useCoursesByIds(courseIdArr);
 
-  const selectedCareerId = isCourseDetail ? getSearchNumber(searchStr, "career") : null;
-  const selectedPlanId = isCourseDetail ? getSearchNumber(searchStr, "plan") : null;
-  const plansQuery = useStudyPlans(selectedCareerId);
-  const selectedPlanData = plansQuery.data?.find(
-    (plan: CatalogStudyPlan) => plan.id === selectedPlanId,
-  );
-  const planDetailQuery = useStudyPlanDetail(selectedPlanId, selectedPlanData);
+  const planDetailQuery = useStudyPlanDetail(selectedPlanId, undefined);
   const courseLabel = useMemo(() => {
     if (!courseId) return null;
 

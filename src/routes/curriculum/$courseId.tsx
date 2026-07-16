@@ -1,38 +1,23 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
-
-import {
-  CURRICULUM_DEFAULT_UNIVERSITY_ID,
-  hasLegacyCurriculumSearchParams,
-  parseCurriculumSearch,
-  toCurriculumUrlSearch,
-} from "./-curriculum-search";
+import { parseCurriculumSearch } from "./-curriculum-search";
 
 export const Route = createFileRoute("/curriculum/$courseId")({
-  head: () =>
-    buildSeoMeta({
-      title: "Detalles del Curso | Claustrum",
-      robots: NOINDEX_ROBOTS,
-    }),
   validateSearch: parseCurriculumSearch,
-  search: {
-    middlewares: [
-      ({ search, next }) => toCurriculumUrlSearch(next(search)) as unknown as typeof search,
-    ],
-  },
-  beforeLoad: ({ search, location, params }) => {
-    if (
-      hasLegacyCurriculumSearchParams(location.searchStr) ||
-      (search.university !== undefined && search.university !== CURRICULUM_DEFAULT_UNIVERSITY_ID)
-    ) {
+  beforeLoad: ({ search, params }) => {
+    if (search.plan) {
       throw redirect({
-        to: "/curriculum/$courseId",
-        params,
-        search: toCurriculumUrlSearch({
-          ...search,
-          university: undefined,
-        }) as unknown as typeof search,
+        to: "/curriculum/$planId/$courseId",
+        params: {
+          planId: search.plan.toString(),
+          courseId: params.courseId,
+        },
+        replace: true,
+      });
+    } else {
+      // If no plan is specified in the old URL, fallback to curriculum home
+      throw redirect({
+        to: "/curriculum",
         replace: true,
       });
     }

@@ -36,6 +36,7 @@ import { Route as ModerationEvaluationsRouteImport } from './routes/moderation/e
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as CurriculumCourseIdRouteImport } from './routes/curriculum/$courseId'
 import { Route as EvaluationsViewEvaluationSlugRouteImport } from './routes/evaluations/view/$evaluationSlug'
+import { Route as CurriculumPlanIdCourseIdRouteImport } from './routes/curriculum/$planId/$courseId'
 
 const SettingsSecurityLazyRouteImport = createFileRoute('/settings/security')()
 const SettingsProfileLazyRouteImport = createFileRoute('/settings/profile')()
@@ -216,9 +217,7 @@ const CurriculumCourseIdRoute = CurriculumCourseIdRouteImport.update({
   id: '/curriculum/$courseId',
   path: '/curriculum/$courseId',
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() =>
-  import('./routes/curriculum/$courseId.lazy').then((d) => d.Route),
-)
+} as any)
 const AuthVerifyEmailIndexLazyRoute =
   AuthVerifyEmailIndexLazyRouteImport.update({
     id: '/verify-email/',
@@ -273,6 +272,14 @@ const EvaluationsViewEvaluationSlugRoute =
       (d) => d.Route,
     ),
   )
+const CurriculumPlanIdCourseIdRoute =
+  CurriculumPlanIdCourseIdRouteImport.update({
+    id: '/curriculum/$planId/$courseId',
+    path: '/curriculum/$planId/$courseId',
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import('./routes/curriculum/$planId/$courseId.lazy').then((d) => d.Route),
+  )
 
 export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteRouteWithChildren
@@ -302,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/curriculum/$planId/$courseId': typeof CurriculumPlanIdCourseIdRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa/': typeof Auth2faIndexLazyRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
@@ -336,6 +344,7 @@ export interface FileRoutesByTo {
   '/professors': typeof ProfessorsIndexRoute
   '/schedule': typeof ScheduleIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/curriculum/$planId/$courseId': typeof CurriculumPlanIdCourseIdRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa': typeof Auth2faIndexLazyRoute
   '/auth/magic-link': typeof AuthMagicLinkIndexLazyRoute
@@ -373,6 +382,7 @@ export interface FileRoutesById {
   '/professors/': typeof ProfessorsIndexRoute
   '/schedule/': typeof ScheduleIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/curriculum/$planId/$courseId': typeof CurriculumPlanIdCourseIdRoute
   '/evaluations/view/$evaluationSlug': typeof EvaluationsViewEvaluationSlugRoute
   '/auth/2fa/': typeof Auth2faIndexLazyRoute
   '/auth/magic-link/': typeof AuthMagicLinkIndexLazyRoute
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/curriculum/$planId/$courseId'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -445,6 +456,7 @@ export interface FileRouteTypes {
     | '/professors'
     | '/schedule'
     | '/settings'
+    | '/curriculum/$planId/$courseId'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa'
     | '/auth/magic-link'
@@ -481,6 +493,7 @@ export interface FileRouteTypes {
     | '/professors/'
     | '/schedule/'
     | '/settings/'
+    | '/curriculum/$planId/$courseId'
     | '/evaluations/view/$evaluationSlug'
     | '/auth/2fa/'
     | '/auth/magic-link/'
@@ -509,6 +522,7 @@ export interface RootRouteChildren {
   PoliciesIndexRoute: typeof PoliciesIndexRoute
   ProfessorsIndexRoute: typeof ProfessorsIndexRoute
   ScheduleIndexRoute: typeof ScheduleIndexRoute
+  CurriculumPlanIdCourseIdRoute: typeof CurriculumPlanIdCourseIdRoute
   EvaluationsViewEvaluationSlugRoute: typeof EvaluationsViewEvaluationSlugRoute
 }
 
@@ -752,6 +766,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EvaluationsViewEvaluationSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/curriculum/$planId/$courseId': {
+      id: '/curriculum/$planId/$courseId'
+      path: '/curriculum/$planId/$courseId'
+      fullPath: '/curriculum/$planId/$courseId'
+      preLoaderRoute: typeof CurriculumPlanIdCourseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -834,6 +855,7 @@ const rootRouteChildren: RootRouteChildren = {
   PoliciesIndexRoute: PoliciesIndexRoute,
   ProfessorsIndexRoute: ProfessorsIndexRoute,
   ScheduleIndexRoute: ScheduleIndexRoute,
+  CurriculumPlanIdCourseIdRoute: CurriculumPlanIdCourseIdRoute,
   EvaluationsViewEvaluationSlugRoute: EvaluationsViewEvaluationSlugRoute,
 }
 export const routeTree = rootRouteImport
