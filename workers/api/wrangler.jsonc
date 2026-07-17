@@ -15,6 +15,9 @@
       "binding": "HYPERDRIVE",
       "id": "62aa539cbf034fb6b152b78311dc2084",
       "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+      "caching": {
+        "disabled": true
+      }
     },
   ],
   "routes": [
