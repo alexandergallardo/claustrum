@@ -17,7 +17,7 @@ export default function CalendarBodyWeek() {
   const totalHours = END_HOUR - START_HOUR + 1;
   const contentHeight = totalHours * hourHeight + HEADER_HEIGHT;
 
-  const weekMinWidth = dayWidth * weekDays.length + 48;
+  const weekMinWidth = dayWidth * weekDays.length + 48 + (weekDays.length - 1);
 
   return (
     <div className="min-w-0 flex-1 overflow-x-auto">
