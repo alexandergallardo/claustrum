@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/combobox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { authClient } from "@/lib/auth/client";
 import {
   useAcademicUnits,
   useAuthUser,
@@ -24,7 +26,6 @@ import {
   useStudyPlans,
   useUniversities,
 } from "@/lib/hooks/use-queries";
-import { dismissOnboardingServerFn, submitOnboardingServerFn } from "@/lib/server-fns";
 import { cn } from "@/lib/utils";
 
 const TOTAL_STEPS = 4;
@@ -60,7 +61,7 @@ export function InsetOnboardingPage() {
   const skipForNow = () => {
     void (async () => {
       if (!authUser) return;
-      await dismissOnboardingServerFn({ data: authUser.id });
+      await authClient.$fetch("/onboarding/dismiss", { method: "POST" });
       await queryClient.invalidateQueries({ queryKey: ["appState"] });
       void navigate({ to: "/overview" });
     })();
@@ -97,9 +98,9 @@ export function InsetOnboardingPage() {
       const parsedStudyPlanId = Number(studyPlanId);
       const entryYear = carnet ? parseInt(carnet.substring(0, 4), 10) : null;
 
-      await submitOnboardingServerFn({
-        data: {
-          userId: authUser.id,
+      const response = await authClient.$fetch("/onboarding/submit", {
+        method: "POST",
+        body: {
           campusId: parsedCampusId,
           academicUnitId: Number(academicUnitId),
           studyPlanId: parsedStudyPlanId,
@@ -107,6 +108,10 @@ export function InsetOnboardingPage() {
           carnet,
         },
       });
+
+      if (response.error) {
+        throw new Error(response.error.message || "No se pudo guardar el onboarding.");
+      }
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["appState"] }),
@@ -157,12 +162,14 @@ export function InsetOnboardingPage() {
                 Paso {step} de {TOTAL_STEPS}
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={skipForNow}>
-                  Saltar
-                </Button>
-                <Button variant="ghost" size="sm" onClick={skipForNow}>
-                  Configurar más tarde
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={skipForNow}>
+                      Configurar más tarde
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Se te volverá a preguntar en 24 horas</TooltipContent>
+                </Tooltip>
               </div>
             </div>
 

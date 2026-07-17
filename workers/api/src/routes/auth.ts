@@ -46,6 +46,102 @@ authRoutes.get("/me", async (c) => {
   }
 });
 
+authRoutes.post("/onboarding/dismiss", async (c) => {
+  const pool = getDbPool(c.env);
+  const auth = getAuth(c.env, pool);
+
+  try {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session || !session.user) return c.json({ error: "Unauthorized" }, 401);
+
+    await pool.query('UPDATE public."user" SET onboarding_dismissed_at = NOW() WHERE id = $1', [
+      session.user.id,
+    ]);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Error in /onboarding/dismiss:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  } finally {
+    c.executionCtx.waitUntil(pool.end());
+  }
+});
+
+import { z } from "zod";
+
+const submitOnboardingSchema = z.object({
+  campusId: z.number().int().positive(),
+  academicUnitId: z.number().int().positive(),
+  studyPlanId: z.number().int().positive(),
+  entryYear: z.number().int().positive().nullable(),
+  carnet: z.string().trim().nullable(),
+});
+
+authRoutes.post("/onboarding/submit", async (c) => {
+  const pool = getDbPool(c.env);
+  const auth = getAuth(c.env, pool);
+
+  try {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session || !session.user) return c.json({ error: "Unauthorized" }, 401);
+
+    const body = await c.req.json();
+    const parsed = submitOnboardingSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: "Invalid payload", details: parsed.error.issues }, 400);
+    }
+    const data = parsed.data;
+
+    await pool.query("BEGIN");
+
+    if (data.carnet) {
+      await pool.query('UPDATE public."user" SET carnet = $1 WHERE id = $2', [
+        data.carnet,
+        session.user.id,
+      ]);
+    }
+
+    const activePlanRes = await pool.query(
+      "SELECT id FROM public.user_study_plan WHERE user_id = $1 AND is_active = true",
+      [session.user.id],
+    );
+
+    if (activePlanRes.rows.length > 0) {
+      await pool.query(
+        `UPDATE public.user_study_plan
+         SET study_plan_id = $1, campus_id = $2, entry_year = COALESCE($3, entry_year)
+         WHERE id = $4`,
+        [data.studyPlanId, data.campusId, data.entryYear, activePlanRes.rows[0].id],
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO public.user_study_plan (user_id, study_plan_id, campus_id, entry_year)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          session.user.id,
+          data.studyPlanId,
+          data.campusId,
+          data.entryYear || new Date().getFullYear(),
+        ],
+      );
+    }
+
+    await pool.query('UPDATE public."user" SET onboarding_completed_at = NOW() WHERE id = $1', [
+      session.user.id,
+    ]);
+
+    await pool.query("COMMIT");
+
+    return c.json({ success: true });
+  } catch (error) {
+    await pool.query("ROLLBACK").catch(() => {});
+    console.error("Error in /onboarding/submit:", error);
+    return c.json({ error: "Internal server error" }, 500);
+  } finally {
+    c.executionCtx.waitUntil(pool.end());
+  }
+});
+
 authRoutes.on(["GET", "POST"], "/*", async (c) => {
   const pool = getDbPool(c.env);
   const auth = getAuth(c.env, pool);
