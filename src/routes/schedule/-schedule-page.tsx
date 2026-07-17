@@ -44,22 +44,9 @@ import {
   SCHEDULE_DEFAULT_HOUR_HEIGHT,
 } from "@/components/schedule/schedule-zoom-controls";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -260,7 +247,7 @@ export function SchedulePage() {
   const calendarRef = useRef<HTMLDivElement>(null);
   const exportCalendarRef = useRef<HTMLDivElement>(null);
 
-  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [schedulesPopoverOpen, setSchedulesPopoverOpen] = useState(false);
   const [scheduleName, setScheduleName] = useState("");
   const { data: authUser, isLoading: isAuthLoading } = useAuthUser();
 
@@ -1073,7 +1060,7 @@ export function SchedulePage() {
       {
         onSuccess: () => {
           toast.success("Horario guardado correctamente");
-          setSaveDialogOpen(false);
+          setSchedulesPopoverOpen(false);
           setScheduleName("");
         },
         onError: (error) => {
@@ -1486,97 +1473,100 @@ export function SchedulePage() {
                             </Button>
                             {isAuthenticated && (
                               <>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      title="Mis horarios guardados"
-                                    >
+                                <Popover
+                                  open={schedulesPopoverOpen}
+                                  onOpenChange={setSchedulesPopoverOpen}
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="icon" title="Mis horarios">
                                       <Bookmark className="size-4" />
                                     </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="w-56">
-                                    {!savedSchedules?.length ? (
-                                      <DropdownMenuItem disabled>
-                                        Sin horarios guardados
-                                      </DropdownMenuItem>
-                                    ) : (
-                                      savedSchedules.map((s) => (
-                                        <DropdownMenuItem
-                                          key={s.id}
-                                          onClick={() => handleLoadSchedule(s)}
-                                        >
-                                          <div className="flex w-full items-center justify-between">
-                                            <span>{s.name}</span>
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteSchedule(s.id);
-                                              }}
-                                              className="text-muted-foreground hover:text-destructive ml-2 inline-flex cursor-pointer items-center"
-                                              onKeyDown={(e) => {
-                                                if (e.key === "Enter") {
-                                                  e.stopPropagation();
-                                                  handleDeleteSchedule(s.id);
-                                                }
-                                              }}
-                                            >
-                                              <Trash2 className="size-3.5" />
-                                            </button>
-                                          </div>
-                                        </DropdownMenuItem>
-                                      ))
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                                <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-                                  <DialogTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      disabled={!selectedGroups.size}
-                                      title="Guardar horario actual"
-                                    >
-                                      <Save className="size-4" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent>
-                                    <DialogHeader>
-                                      <DialogTitle>Guardar horario</DialogTitle>
-                                      <DialogDescription className="sr-only">
-                                        Guarda los grupos seleccionados como un horario con nombre
-                                        personalizado.
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-4 pt-4">
+                                  </PopoverTrigger>
+                                  <PopoverContent align="end" className="w-80">
+                                    <div className="space-y-4">
                                       <div className="space-y-2">
-                                        <Label htmlFor="schedule-name-mobile">
-                                          Nombre del horario
-                                        </Label>
-                                        <Input
-                                          id="schedule-name-mobile"
-                                          value={scheduleName}
-                                          onChange={(e) => setScheduleName(e.target.value)}
-                                          placeholder="Ej: IS-2026-1"
-                                        />
+                                        <h4 className="leading-none font-medium">
+                                          Guardar horario
+                                        </h4>
+                                        <div className="flex items-center gap-2">
+                                          <Input
+                                            id="schedule-name-mobile"
+                                            value={scheduleName}
+                                            onChange={(e) => setScheduleName(e.target.value)}
+                                            placeholder="Nombre (ej: IS-2026-1)"
+                                            className="h-8"
+                                          />
+                                          <Button
+                                            size="icon"
+                                            onClick={handleSaveSchedule}
+                                            disabled={
+                                              !scheduleName.trim() ||
+                                              !selectedGroups.size ||
+                                              saveScheduleMutation.isPending
+                                            }
+                                            className="h-8 w-8 shrink-0"
+                                            title="Guardar horario"
+                                          >
+                                            {saveScheduleMutation.isPending ? (
+                                              <Loader2 className="size-4 animate-spin" />
+                                            ) : (
+                                              <Save className="size-4" />
+                                            )}
+                                            <span className="sr-only">Guardar</span>
+                                          </Button>
+                                        </div>
                                       </div>
-                                      <Button
-                                        onClick={handleSaveSchedule}
-                                        disabled={
-                                          !scheduleName.trim() || saveScheduleMutation.isPending
-                                        }
-                                        className="w-full"
-                                      >
-                                        {saveScheduleMutation.isPending && (
-                                          <Loader2 className="mr-2 size-4 animate-spin" />
-                                        )}
-                                        Guardar
-                                      </Button>
+                                      <div className="space-y-2">
+                                        <h4 className="leading-none font-medium">Mis horarios</h4>
+                                        <div className="grid gap-2">
+                                          {!savedSchedules?.length ? (
+                                            <div className="text-muted-foreground text-sm">
+                                              Sin horarios guardados
+                                            </div>
+                                          ) : (
+                                            savedSchedules.map((s) => (
+                                              <div
+                                                key={s.id}
+                                                role="button"
+                                                tabIndex={0}
+                                                className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground flex w-full cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm transition-colors outline-none"
+                                                onClick={() => {
+                                                  handleLoadSchedule(s);
+                                                  setSchedulesPopoverOpen(false);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter" || e.key === " ") {
+                                                    e.preventDefault();
+                                                    handleLoadSchedule(s);
+                                                    setSchedulesPopoverOpen(false);
+                                                  }
+                                                }}
+                                              >
+                                                <span className="truncate pr-2">{s.name}</span>
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteSchedule(s.id);
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                      e.stopPropagation();
+                                                      handleDeleteSchedule(s.id);
+                                                    }
+                                                  }}
+                                                  className="text-muted-foreground hover:text-destructive inline-flex shrink-0 cursor-pointer items-center"
+                                                >
+                                                  <Trash2 className="size-3.5" />
+                                                </button>
+                                              </div>
+                                            ))
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
-                                  </DialogContent>
-                                </Dialog>
+                                  </PopoverContent>
+                                </Popover>
                               </>
                             )}
                             <ScheduleExportDialog onExport={handleExport} />
@@ -1714,97 +1704,100 @@ export function SchedulePage() {
                               </Button>
                               {isAuthenticated && (
                                 <>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        title="Mis horarios guardados"
-                                      >
+                                  <Popover
+                                    open={schedulesPopoverOpen}
+                                    onOpenChange={setSchedulesPopoverOpen}
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" size="icon" title="Mis horarios">
                                         <Bookmark className="size-4" />
                                       </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-56">
-                                      {!savedSchedules?.length ? (
-                                        <DropdownMenuItem disabled>
-                                          Sin horarios guardados
-                                        </DropdownMenuItem>
-                                      ) : (
-                                        savedSchedules.map((s) => (
-                                          <DropdownMenuItem
-                                            key={s.id}
-                                            onClick={() => handleLoadSchedule(s)}
-                                          >
-                                            <div className="flex w-full items-center justify-between">
-                                              <span>{s.name}</span>
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDeleteSchedule(s.id);
-                                                }}
-                                                className="text-muted-foreground hover:text-destructive ml-2 inline-flex cursor-pointer items-center"
-                                                onKeyDown={(e) => {
-                                                  if (e.key === "Enter") {
-                                                    e.stopPropagation();
-                                                    handleDeleteSchedule(s.id);
-                                                  }
-                                                }}
-                                              >
-                                                <Trash2 className="size-3.5" />
-                                              </button>
-                                            </div>
-                                          </DropdownMenuItem>
-                                        ))
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                  <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-                                    <DialogTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        disabled={!selectedGroups.size}
-                                        title="Guardar horario actual"
-                                      >
-                                        <Save className="size-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>Guardar horario</DialogTitle>
-                                        <DialogDescription className="sr-only">
-                                          Guarda los grupos seleccionados como un horario con nombre
-                                          personalizado.
-                                        </DialogDescription>
-                                      </DialogHeader>
-                                      <div className="space-y-4 pt-4">
+                                    </PopoverTrigger>
+                                    <PopoverContent align="end" className="w-80">
+                                      <div className="space-y-4">
                                         <div className="space-y-2">
-                                          <Label htmlFor="schedule-name-desktop">
-                                            Nombre del horario
-                                          </Label>
-                                          <Input
-                                            id="schedule-name-desktop"
-                                            value={scheduleName}
-                                            onChange={(e) => setScheduleName(e.target.value)}
-                                            placeholder="Ej: IS-2026-1"
-                                          />
+                                          <h4 className="leading-none font-medium">
+                                            Guardar horario
+                                          </h4>
+                                          <div className="flex items-center gap-2">
+                                            <Input
+                                              id="schedule-name-desktop"
+                                              value={scheduleName}
+                                              onChange={(e) => setScheduleName(e.target.value)}
+                                              placeholder="Nombre (ej: IS-2026-1)"
+                                              className="h-8"
+                                            />
+                                            <Button
+                                              size="icon"
+                                              onClick={handleSaveSchedule}
+                                              disabled={
+                                                !scheduleName.trim() ||
+                                                !selectedGroups.size ||
+                                                saveScheduleMutation.isPending
+                                              }
+                                              className="h-8 w-8 shrink-0"
+                                              title="Guardar horario"
+                                            >
+                                              {saveScheduleMutation.isPending ? (
+                                                <Loader2 className="size-4 animate-spin" />
+                                              ) : (
+                                                <Save className="size-4" />
+                                              )}
+                                              <span className="sr-only">Guardar</span>
+                                            </Button>
+                                          </div>
                                         </div>
-                                        <Button
-                                          onClick={handleSaveSchedule}
-                                          disabled={
-                                            !scheduleName.trim() || saveScheduleMutation.isPending
-                                          }
-                                          className="w-full"
-                                        >
-                                          {saveScheduleMutation.isPending && (
-                                            <Loader2 className="mr-2 size-4 animate-spin" />
-                                          )}
-                                          Guardar
-                                        </Button>
+                                        <div className="space-y-2">
+                                          <h4 className="leading-none font-medium">Mis horarios</h4>
+                                          <div className="grid gap-2">
+                                            {!savedSchedules?.length ? (
+                                              <div className="text-muted-foreground text-sm">
+                                                Sin horarios guardados
+                                              </div>
+                                            ) : (
+                                              savedSchedules.map((s) => (
+                                                <div
+                                                  key={s.id}
+                                                  role="button"
+                                                  tabIndex={0}
+                                                  className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground flex w-full cursor-pointer items-center justify-between rounded-sm px-2 py-1.5 text-sm transition-colors outline-none"
+                                                  onClick={() => {
+                                                    handleLoadSchedule(s);
+                                                    setSchedulesPopoverOpen(false);
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                      e.preventDefault();
+                                                      handleLoadSchedule(s);
+                                                      setSchedulesPopoverOpen(false);
+                                                    }
+                                                  }}
+                                                >
+                                                  <span className="truncate pr-2">{s.name}</span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDeleteSchedule(s.id);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                      if (e.key === "Enter") {
+                                                        e.stopPropagation();
+                                                        handleDeleteSchedule(s.id);
+                                                      }
+                                                    }}
+                                                    className="text-muted-foreground hover:text-destructive inline-flex shrink-0 cursor-pointer items-center"
+                                                  >
+                                                    <Trash2 className="size-3.5" />
+                                                  </button>
+                                                </div>
+                                              ))
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
-                                    </DialogContent>
-                                  </Dialog>
+                                    </PopoverContent>
+                                  </Popover>
                                 </>
                               )}
                               <ScheduleExportDialog onExport={handleExport} />
