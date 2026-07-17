@@ -35,9 +35,13 @@ This document provides guidelines for AI agents operating in this repository.
 - Run migrations: `pnpm run supabase:migrate`
 - Seed database: `pnpm run supabase:seed`
 - Full setup: `pnpm run supabase:setup`
-- **NEVER reset the database** (`supabase:reset`, `supabase db reset`, or any equivalent).
-  Resets wipe all data irreversibly. If a migration needs to be applied, use
-  `supabase:migrate` which only runs pending migrations without deleting data.
+- **NEVER run destructive database commands**. This includes:
+  - Any form of database reset (`supabase:reset`, `supabase db reset`, or equivalent).
+  - Any commands that roll back migrations (e.g., `supabase migration down`, `supabase db down`).
+  - Any raw Supabase CLI commands like `supabase migration up`, `supabase db push`.
+  - Scripts like `pnpm run supabase:migrate-dev` or `pnpm run supabase:migrate-prod`.
+  - Any manual `DELETE` or `UPDATE` queries on tables without explicit and repeated user confirmation.
+  These commands irreversibly wipe all local data because Supabase locally resets the database when rolling back or modifying states manually. If a migration needs to be applied, use exactly `pnpm run supabase:migrate` which only runs pending migrations without deleting data.
 - Do NOT use `pnpm run supabase:stop` or any destructive operation on production databases
 
 ## Code Style Guidelines

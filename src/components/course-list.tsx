@@ -550,7 +550,7 @@ const CourseCard = memo(function CourseCard({
                       type="button"
                       disabled={disabled}
                       className={cn(
-                        "relative flex min-w-[256px] cursor-pointer snap-start flex-col rounded-lg border-2 p-3 text-left transition-all duration-200",
+                        "relative flex w-64 shrink-0 cursor-pointer snap-start flex-col rounded-lg border-2 p-3 text-left transition-all duration-200",
                         "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm",
                         disabled &&
                           "cursor-not-allowed opacity-50 hover:translate-y-0 hover:shadow-none",
@@ -630,7 +630,7 @@ const CourseCard = memo(function CourseCard({
                               <span
                                 key={`${professor.id}-${i}`}
                                 className={cn(
-                                  "text-foreground text-xs whitespace-nowrap",
+                                  "text-foreground text-xs leading-tight",
                                   isSelected && "opacity-80",
                                 )}
                               >

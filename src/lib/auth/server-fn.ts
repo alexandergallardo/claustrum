@@ -25,7 +25,12 @@ export const appStateServerFn = createServerFn({ method: "GET" }).handler(async 
   let response;
   if (env?.API) {
     const fetchReq = new Request(apiUrl, { headers: fetchHeaders });
-    response = await env.API.fetch(fetchReq);
+    const incomingUrl = new URL(req.url);
+    const url = new URL(fetchReq.url);
+    url.protocol = incomingUrl.protocol;
+    url.hostname = incomingUrl.hostname;
+    url.port = incomingUrl.port;
+    response = await env.API.fetch(new Request(url, fetchReq));
   } else {
     response = await fetch(apiUrl, { headers: fetchHeaders });
   }

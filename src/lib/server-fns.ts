@@ -13,11 +13,16 @@ export const getProfileContextServerFn = createServerFn({ method: "GET" })
     if (!userId) return null;
     const req = getRequest();
     if (!req) return null;
+    const incomingUrl = new URL(req.url);
 
     const customFetch = env?.API
       ? (input: string | URL | Request, init?: RequestInit) => {
-          const req = new Request(input instanceof Request ? input : input.toString(), init);
-          return env.API.fetch(req);
+          const fetchReq = new Request(input instanceof Request ? input : input.toString(), init);
+          const url = new URL(fetchReq.url);
+          url.protocol = incomingUrl.protocol;
+          url.hostname = incomingUrl.hostname;
+          url.port = incomingUrl.port;
+          return env.API.fetch(new Request(url, fetchReq));
         }
       : undefined;
 
@@ -36,11 +41,16 @@ export const getOnboardingStatusServerFn = createServerFn({ method: "GET" })
     if (!userId) return null;
     const req = getRequest();
     if (!req) return null;
+    const incomingUrl = new URL(req.url);
 
     const customFetch = env?.API
       ? (input: string | URL | Request, init?: RequestInit) => {
-          const req = new Request(input instanceof Request ? input : input.toString(), init);
-          return env.API.fetch(req);
+          const fetchReq = new Request(input instanceof Request ? input : input.toString(), init);
+          const url = new URL(fetchReq.url);
+          url.protocol = incomingUrl.protocol;
+          url.hostname = incomingUrl.hostname;
+          url.port = incomingUrl.port;
+          return env.API.fetch(new Request(url, fetchReq));
         }
       : undefined;
 
@@ -83,21 +93,28 @@ export const dismissOnboardingServerFn = createServerFn({ method: "POST" })
     if (!userId) throw new Error("Missing user id");
     const req = getRequest();
     if (!req) throw new Error("Missing request");
+    const incomingUrl = new URL(req.url);
 
     const customFetch = env?.API
       ? (input: string | URL | Request, init?: RequestInit) => {
-          const req = new Request(input instanceof Request ? input : input.toString(), init);
-          return env.API.fetch(req);
+          const fetchReq = new Request(input instanceof Request ? input : input.toString(), init);
+          const url = new URL(fetchReq.url);
+          url.protocol = incomingUrl.protocol;
+          url.hostname = incomingUrl.hostname;
+          url.port = incomingUrl.port;
+          return env.API.fetch(new Request(url, fetchReq));
         }
       : undefined;
 
     const sb = await getSupabaseServerClient(req.headers, customFetch);
-    const { error } = await sb
+    const { error, count } = await sb
       .from("user")
-      .update({ onboarding_dismissed_at: new Date().toISOString() })
+      .update({ onboarding_dismissed_at: new Date().toISOString() }, { count: "exact" })
       .eq("id", userId);
 
     if (error) throw error;
+    if (count === 0) throw new Error("No rows updated. RLS or missing user profile issue.");
+
     return true;
   });
 
@@ -117,11 +134,16 @@ export const submitOnboardingServerFn = createServerFn({ method: "POST" })
     if (!userId) throw new Error("Missing user id");
     const req = getRequest();
     if (!req) throw new Error("Missing request");
+    const incomingUrl = new URL(req.url);
 
     const customFetch = env?.API
       ? (input: string | URL | Request, init?: RequestInit) => {
-          const req = new Request(input instanceof Request ? input : input.toString(), init);
-          return env.API.fetch(req);
+          const fetchReq = new Request(input instanceof Request ? input : input.toString(), init);
+          const url = new URL(fetchReq.url);
+          url.protocol = incomingUrl.protocol;
+          url.hostname = incomingUrl.hostname;
+          url.port = incomingUrl.port;
+          return env.API.fetch(new Request(url, fetchReq));
         }
       : undefined;
 
@@ -161,12 +183,14 @@ export const submitOnboardingServerFn = createServerFn({ method: "POST" })
       if (insertError) throw insertError;
     }
 
-    const { error: completionError } = await sb
+    const { error: completionError, count: completionCount } = await sb
       .from("user")
-      .update({ onboarding_completed_at: new Date().toISOString() })
+      .update({ onboarding_completed_at: new Date().toISOString() }, { count: "exact" })
       .eq("id", userId);
 
     if (completionError) throw completionError;
+    if (completionCount === 0)
+      throw new Error("No rows updated. RLS or missing user profile issue.");
 
     return true;
   });
