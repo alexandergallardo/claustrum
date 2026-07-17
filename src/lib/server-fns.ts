@@ -113,7 +113,7 @@ export const submitOnboardingServerFn = createServerFn({ method: "POST" })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const { userId, campusId, academicUnitId, studyPlanId, entryYear, carnet } = data;
+    const { userId, campusId, studyPlanId, entryYear, carnet } = data;
     if (!userId) throw new Error("Missing user id");
     const req = getRequest();
     if (!req) throw new Error("Missing request");
