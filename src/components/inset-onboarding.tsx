@@ -24,7 +24,7 @@ import {
   useStudyPlans,
   useUniversities,
 } from "@/lib/hooks/use-queries";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { dismissOnboardingServerFn, submitOnboardingServerFn } from "@/lib/server-fns";
 import { cn } from "@/lib/utils";
 
 const TOTAL_STEPS = 4;
@@ -60,10 +60,7 @@ export function InsetOnboardingPage() {
   const skipForNow = () => {
     void (async () => {
       if (!authUser) return;
-      const supabase = getSupabaseBrowserClient();
-      await supabase
-        .from("user")
-        .upsert({ id: authUser.id, onboarding_dismissed_at: new Date().toISOString() });
+      await dismissOnboardingServerFn({ data: authUser.id });
       await queryClient.invalidateQueries({ queryKey: ["appState"] });
       void navigate({ to: "/overview" });
     })();
@@ -96,49 +93,20 @@ export function InsetOnboardingPage() {
     setSubmitError(null);
 
     try {
-      const supabase = getSupabaseBrowserClient();
       const parsedCampusId = Number(campusId);
       const parsedStudyPlanId = Number(studyPlanId);
       const entryYear = carnet ? parseInt(carnet.substring(0, 4), 10) : null;
 
-      if (carnet) {
-        const { error: userError } = await supabase
-          .from("user")
-          .upsert({ id: authUser.id, carnet });
-        if (userError) throw userError;
-      }
-
-      const { data: activePlan, error: activePlanError } = await supabase
-        .from("user_study_plan")
-        .select("id")
-        .eq("user_id", authUser.id)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (activePlanError) throw activePlanError;
-
-      if (activePlan) {
-        const { error: updateError } = await supabase
-          .from("user_study_plan")
-          .update({
-            study_plan_id: parsedStudyPlanId,
-            campus_id: parsedCampusId,
-            ...(entryYear ? { entry_year: entryYear } : {}),
-          })
-          .eq("id", activePlan.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from("user_study_plan").insert({
-          user_id: authUser.id,
-          study_plan_id: parsedStudyPlanId,
-          campus_id: parsedCampusId,
-          entry_year: entryYear || new Date().getFullYear(),
-        });
-        if (insertError) throw insertError;
-      }
-
-      await supabase
-        .from("user")
-        .upsert({ id: authUser.id, onboarding_completed_at: new Date().toISOString() });
+      await submitOnboardingServerFn({
+        data: {
+          userId: authUser.id,
+          campusId: parsedCampusId,
+          academicUnitId: Number(academicUnitId),
+          studyPlanId: parsedStudyPlanId,
+          entryYear,
+          carnet,
+        },
+      });
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["appState"] }),

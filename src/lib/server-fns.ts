@@ -76,3 +76,97 @@ export const getDeviceHintServerFn = createServerFn({ method: "GET" }).handler(a
 
   return { isMobile };
 });
+
+export const dismissOnboardingServerFn = createServerFn({ method: "POST" })
+  .validator((userId: string) => userId)
+  .handler(async ({ data: userId }) => {
+    if (!userId) throw new Error("Missing user id");
+    const req = getRequest();
+    if (!req) throw new Error("Missing request");
+
+    const customFetch = env?.API
+      ? (input: string | URL | Request, init?: RequestInit) => {
+          const req = new Request(input instanceof Request ? input : input.toString(), init);
+          return env.API.fetch(req);
+        }
+      : undefined;
+
+    const sb = await getSupabaseServerClient(req.headers, customFetch);
+    const { error } = await sb
+      .from("user")
+      .update({ onboarding_dismissed_at: new Date().toISOString() })
+      .eq("id", userId);
+
+    if (error) throw error;
+    return true;
+  });
+
+export const submitOnboardingServerFn = createServerFn({ method: "POST" })
+  .validator(
+    (data: {
+      userId: string;
+      campusId: number;
+      academicUnitId: number;
+      studyPlanId: number;
+      entryYear: number | null;
+      carnet: string;
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const { userId, campusId, academicUnitId, studyPlanId, entryYear, carnet } = data;
+    if (!userId) throw new Error("Missing user id");
+    const req = getRequest();
+    if (!req) throw new Error("Missing request");
+
+    const customFetch = env?.API
+      ? (input: string | URL | Request, init?: RequestInit) => {
+          const req = new Request(input instanceof Request ? input : input.toString(), init);
+          return env.API.fetch(req);
+        }
+      : undefined;
+
+    const sb = await getSupabaseServerClient(req.headers, customFetch);
+
+    if (carnet) {
+      const { error: userError } = await sb.from("user").update({ carnet }).eq("id", userId);
+      if (userError) throw userError;
+    }
+
+    const { data: activePlan, error: activePlanError } = await sb
+      .from("user_study_plan")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (activePlanError) throw activePlanError;
+
+    if (activePlan) {
+      const { error: updateError } = await sb
+        .from("user_study_plan")
+        .update({
+          study_plan_id: studyPlanId,
+          campus_id: campusId,
+          ...(entryYear ? { entry_year: entryYear } : {}),
+        })
+        .eq("id", activePlan.id);
+      if (updateError) throw updateError;
+    } else {
+      const { error: insertError } = await sb.from("user_study_plan").insert({
+        user_id: userId,
+        study_plan_id: studyPlanId,
+        campus_id: campusId,
+        entry_year: entryYear || new Date().getFullYear(),
+      });
+      if (insertError) throw insertError;
+    }
+
+    const { error: completionError } = await sb
+      .from("user")
+      .update({ onboarding_completed_at: new Date().toISOString() })
+      .eq("id", userId);
+
+    if (completionError) throw completionError;
+
+    return true;
+  });
