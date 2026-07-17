@@ -139,19 +139,6 @@ export function createAuth(env: AuthEnv, pool: Pool): ReturnType<typeof betterAu
         generateId: "uuid",
       },
     },
-
-    databaseHooks: {
-      user: {
-        create: {
-          after: async (user) => {
-            await pool.query(
-              'INSERT INTO public."user" (id) VALUES ($1) ON CONFLICT (id) DO NOTHING',
-              [user.id],
-            );
-          },
-        },
-      },
-    },
     plugins: [
       openAPI(),
       lastLoginMethod(),
