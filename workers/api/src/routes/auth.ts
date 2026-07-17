@@ -21,12 +21,13 @@ authRoutes.get("/me", async (c) => {
 
     const userId = session.user.id;
 
+    const cacheBuster = `/* bypass-cache-${Date.now()} */`;
     const [onboardingResult, profileResult] = await Promise.all([
       pool.query(
-        'SELECT onboarding_dismissed_at, onboarding_completed_at FROM public."user" WHERE id = $1',
+        `SELECT onboarding_dismissed_at, onboarding_completed_at ${cacheBuster} FROM public."user" WHERE id = $1`,
         [userId],
       ),
-      pool.query("SELECT * FROM public.get_user_profile_with_context($1)", [userId]),
+      pool.query(`SELECT * FROM public.get_user_profile_with_context($1) ${cacheBuster}`, [userId]),
     ]);
 
     const onboardingStatus = onboardingResult.rows[0] || null;
@@ -54,9 +55,15 @@ authRoutes.post("/onboarding/dismiss", async (c) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session || !session.user) return c.json({ error: "Unauthorized" }, 401);
 
-    await pool.query('UPDATE public."user" SET onboarding_dismissed_at = NOW() WHERE id = $1', [
-      session.user.id,
-    ]);
+    const updateResult = await pool.query(
+      'UPDATE public."user" SET onboarding_dismissed_at = NOW() WHERE id = $1',
+      [session.user.id],
+    );
+
+    if (updateResult.rowCount === 0) {
+      console.warn("No rows updated for user", session.user.id);
+      return c.json({ error: "User profile not found" }, 404);
+    }
 
     return c.json({ success: true });
   } catch (error) {
