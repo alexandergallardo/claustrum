@@ -5,6 +5,7 @@ import {
   submitFeedback,
   getFeedbackList,
   markFeedbackAsReviewed,
+  replyToFeedback,
   type SubmitFeedbackPayload,
 } from "./api";
 
@@ -33,6 +34,30 @@ export function useMarkFeedbackAsReviewed() {
     },
     onError: () => {
       toast.error("Error al marcar como revisado");
+    },
+  });
+}
+
+export function useReplyToFeedback() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      adminNotes,
+      replyMessage,
+    }: {
+      id: number;
+      adminNotes: string;
+      replyMessage: string;
+    }) => replyToFeedback(id, adminNotes, replyMessage),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["feedback"] });
+      void queryClient.invalidateQueries({ queryKey: ["moderationCounts"] });
+      toast.success("Feedback actualizado y resuelto");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Error al procesar el feedback");
     },
   });
 }

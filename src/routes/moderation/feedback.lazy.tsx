@@ -1,11 +1,17 @@
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
-import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { Check, ChevronLeft, ChevronRight, Loader2, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { FeedbackRow } from "@/lib/feedback/api";
 
 import { Button } from "@/components/ui/button";
-import { useFeedbackList, useMarkFeedbackAsReviewed } from "@/lib/feedback/hooks";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useFeedbackList,
+  useMarkFeedbackAsReviewed,
+  useReplyToFeedback,
+} from "@/lib/feedback/hooks";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -23,6 +29,10 @@ function FeedbackModerationPage() {
 
   const feedbackQuery = useFeedbackList(PAGE_SIZE, queryPage * PAGE_SIZE);
   const markAsReviewed = useMarkFeedbackAsReviewed();
+  const replyToFeedback = useReplyToFeedback();
+
+  const [adminNotes, setAdminNotes] = useState<Record<number, string>>({});
+  const [replyMessage, setReplyMessage] = useState<Record<number, string>>({});
 
   const feedbackRows = useMemo(
     () => (feedbackQuery.data ?? []) as FeedbackRow[],
@@ -184,17 +194,23 @@ function FeedbackModerationPage() {
           </div>
 
           <div className="bg-card text-card-foreground flex flex-col overflow-hidden rounded-xl border shadow-xs">
-            <div className="flex flex-col gap-3 p-5 md:p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <h3
-                    className={cn(
-                      "text-xl leading-none font-semibold tracking-tight",
-                      getTypeColor(selectedFeedback.type),
-                    )}
-                  >
-                    {getTypeLabel(selectedFeedback.type)}
-                  </h3>
+            <div className="flex flex-col gap-6 p-5 md:p-6">
+              {/* Header */}
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h3
+                      className={cn(
+                        "text-xl leading-none font-semibold tracking-tight",
+                        getTypeColor(selectedFeedback.type),
+                      )}
+                    >
+                      {getTypeLabel(selectedFeedback.type)}
+                    </h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    {new Date(selectedFeedback.created_at).toLocaleString()}
+                  </p>
                 </div>
 
                 {!selectedFeedback.is_reviewed && (
@@ -210,27 +226,97 @@ function FeedbackModerationPage() {
                 )}
               </div>
 
+              {/* Original Content */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Comentario original</h4>
+                <div className="bg-muted/30 rounded-lg border p-4 text-sm leading-relaxed whitespace-pre-wrap">
+                  {selectedFeedback.content}
+                </div>
+              </div>
+
               <div className="relative mt-2">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
                   <div className="border-border/50 w-full border-t" />
                 </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-card text-muted-foreground px-2 text-[10px] tracking-widest uppercase">
+                    Resolución
+                  </span>
+                </div>
               </div>
 
-              <div className="text-muted-foreground flex flex-col gap-1.5 text-xs">
-                <span>
-                  <strong>Enviado el:</strong>{" "}
-                  {new Date(selectedFeedback.created_at).toLocaleString()}
-                </span>
-                <span>
-                  <strong>Estado:</strong>{" "}
-                  {selectedFeedback.is_reviewed ? "Revisado" : "Pendiente de revisión"}
-                </span>
-              </div>
+              {/* Resolution Form */}
+              <div className="flex flex-col gap-5">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-notes">Notas internas</Label>
+                  <Textarea
+                    id="admin-notes"
+                    placeholder="Escribe notas sobre cómo se resolvió este caso..."
+                    value={adminNotes[selectedFeedback.id] ?? selectedFeedback.admin_notes ?? ""}
+                    onChange={(e) =>
+                      setAdminNotes({ ...adminNotes, [selectedFeedback.id]: e.target.value })
+                    }
+                    className="bg-background min-h-[80px]"
+                  />
+                </div>
 
-              <div className="mt-2 space-y-1.5">
-                <h4 className="text-sm font-medium">Contenido</h4>
-                <div className="bg-muted/50 rounded-md border p-3 text-sm leading-relaxed whitespace-pre-wrap">
-                  {selectedFeedback.content}
+                <div className="space-y-2">
+                  <Label htmlFor="reply-message">Respuesta al usuario</Label>
+                  <Textarea
+                    id="reply-message"
+                    placeholder={
+                      selectedFeedback.user_id
+                        ? "Escribe un mensaje para enviarle al usuario..."
+                        : "El usuario envió esto de forma anónima o no había iniciado sesión."
+                    }
+                    value={replyMessage[selectedFeedback.id] ?? ""}
+                    onChange={(e) =>
+                      setReplyMessage({ ...replyMessage, [selectedFeedback.id]: e.target.value })
+                    }
+                    disabled={!selectedFeedback.user_id}
+                    className="bg-background min-h-[80px]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      replyToFeedback.mutate({
+                        id: selectedFeedback.id,
+                        adminNotes:
+                          adminNotes[selectedFeedback.id] ?? selectedFeedback.admin_notes ?? "",
+                        replyMessage: "",
+                      });
+                    }}
+                    disabled={replyToFeedback.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    {replyToFeedback.isPending ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 size-4" />
+                    )}
+                    Guardar
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      replyToFeedback.mutate({
+                        id: selectedFeedback.id,
+                        adminNotes:
+                          adminNotes[selectedFeedback.id] ?? selectedFeedback.admin_notes ?? "",
+                        replyMessage: replyMessage[selectedFeedback.id] ?? "",
+                      });
+                    }}
+                    disabled={replyToFeedback.isPending || !selectedFeedback.user_id}
+                    className="w-full sm:w-auto"
+                  >
+                    {replyToFeedback.isPending ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : null}
+                    Enviar respuesta al usuario
+                  </Button>
                 </div>
               </div>
             </div>
