@@ -1004,10 +1004,39 @@ export function SchedulePage() {
             ? await toJpeg(calendarElement, captureOptions)
             : await toPng(calendarElement, captureOptions);
 
+        const fileName = `horario-${dateStamp}.${extension}`;
+
+        // Convert base64 data URL to Blob for better mobile/Safari support
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], fileName, { type: blob.type });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: "Mi Horario",
+              });
+              toast.success("Horario compartido correctamente");
+              return;
+            } catch (error) {
+              // Si el usuario cancela el diálogo nativo, no hacemos nada
+              if (error instanceof Error && error.name === "AbortError") {
+                return;
+              }
+              // Si hay otro error, continuamos con el método de descarga tradicional
+            }
+          }
+        }
+
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.download = `horario-${dateStamp}.${extension}`;
-        link.href = dataUrl;
+        link.download = fileName;
+        link.href = blobUrl;
         link.click();
+
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 
         toast.success("Horario exportado correctamente");
       } catch {
