@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { useStore } from "@tanstack/react-store";
+import { useMemo } from "react";
 
 import { CURRICULUM_DEFAULT_UNIVERSITY_ID } from "@/routes/curriculum/-curriculum-search";
 

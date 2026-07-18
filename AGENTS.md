@@ -41,7 +41,7 @@ This document provides guidelines for AI agents operating in this repository.
   - Any raw Supabase CLI commands like `supabase migration up`, `supabase db push`.
   - Scripts like `pnpm run supabase:migrate-dev` or `pnpm run supabase:migrate-prod`.
   - Any manual `DELETE` or `UPDATE` queries on tables without explicit and repeated user confirmation.
-  These commands irreversibly wipe all local data because Supabase locally resets the database when rolling back or modifying states manually. If a migration needs to be applied, use exactly `pnpm run supabase:migrate` which only runs pending migrations without deleting data.
+    These commands irreversibly wipe all local data because Supabase locally resets the database when rolling back or modifying states manually. If a migration needs to be applied, use exactly `pnpm run supabase:migrate` which only runs pending migrations without deleting data.
 - Do NOT use `pnpm run supabase:stop` or any destructive operation on production databases
 
 ## Code Style Guidelines
