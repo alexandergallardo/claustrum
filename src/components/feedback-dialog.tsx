@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getTurnstileSiteKey } from "@/lib/env/public";
 import { useSubmitFeedback } from "@/lib/feedback/hooks";
+import { useAuthUser } from "@/lib/hooks/use-queries";
 
 const Turnstile = lazy(() =>
   import("@marsidev/react-turnstile").then((module) => ({ default: module.Turnstile })),
@@ -43,6 +45,8 @@ export function FeedbackDialog({
   const turnstileSiteKey = getTurnstileSiteKey();
   const submitMutation = useSubmitFeedback();
 
+  const { data: authUser } = useAuthUser();
+
   const onCloseReset = () => {
     setTurnstileToken(null);
   };
@@ -51,6 +55,7 @@ export function FeedbackDialog({
     defaultValues: {
       type: "" as "bug" | "feature" | "other" | "",
       content: "",
+      isAnonymous: !authUser,
     },
     onSubmit: async ({ value }) => {
       if (turnstileSiteKey && !turnstileToken) {
@@ -65,6 +70,7 @@ export function FeedbackDialog({
           type: value.type as "bug" | "feature" | "other",
           content: value.content,
           turnstileToken: turnstileToken ?? "",
+          isAnonymous: authUser ? value.isAnonymous : true,
         });
         toast.success("Comentario enviado", {
           description: "¡Gracias por tomarte el tiempo para ayudarnos a mejorar!",
@@ -89,7 +95,7 @@ export function FeedbackDialog({
         e.stopPropagation();
         void form.handleSubmit();
       }}
-      className="flex flex-col gap-6 px-6 pt-2 pb-6"
+      className="flex flex-col gap-4 px-6 pb-6"
     >
       <form.Field
         name="type"
@@ -158,6 +164,32 @@ export function FeedbackDialog({
         )}
       </form.Field>
 
+      {authUser && (
+        <form.Field name="isAnonymous">
+          {(field) => (
+            <div className="flex flex-col gap-2 rounded-md border p-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={field.name}
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked === true)}
+                />
+                <Label
+                  htmlFor={field.name}
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Enviar de forma anónima
+                </Label>
+              </div>
+              <p className="text-muted-foreground text-[0.8rem]">
+                En caso de enviarse de forma anónima, no se podrá notificar ni informar de una
+                respuesta.
+              </p>
+            </div>
+          )}
+        </form.Field>
+      )}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           {turnstileSiteKey ? (
@@ -201,8 +233,8 @@ export function FeedbackDialog({
     <>
       <SheetTitle>Retroalimentación</SheetTitle>
       <SheetDescription>
-        Ayúdanos a mejorar Claustrum enviando tus sugerencias o reportes de errores de forma
-        completamente anónima.
+        Ayúdanos a mejorar Claustrum enviando tus sugerencias o reportes de errores. Si lo deseas,
+        puedes hacerlo de forma anónima.
       </SheetDescription>
     </>
   );

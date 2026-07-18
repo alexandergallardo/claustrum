@@ -29,10 +29,13 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useModerationCounts } from "@/lib/hooks/use-moderation";
+import { useNotifications, useMarkNotificationAsRead } from "@/lib/hooks/use-notifications";
 import { useIsAdmin, useProfessorById } from "@/lib/hooks/use-professor-reviews";
 import { useAuthUser, useStudyPlanDetail, useCoursesByIds } from "@/lib/hooks/use-queries";
+import { cn } from "@/lib/utils";
 
 type BreadcrumbItem = {
   label: string;
@@ -84,6 +87,10 @@ export function SiteHeader() {
       (moderationCounts?.pendingReviewReports ?? 0) +
       (moderationCounts?.pendingFeedback ?? 0)
     : 0;
+
+  const notificationsQuery = useNotifications(authUser?.id ?? null);
+  const markAsRead = useMarkNotificationAsRead();
+  const unreadCount = notificationsQuery.data?.filter((n) => !n.is_read).length ?? 0;
 
   const professorId = getNumericPathSegment(pathname, "/professors/");
   const isProfessorDetail = professorId !== null;
@@ -240,16 +247,65 @@ export function SiteHeader() {
               </Link>
             </Button>
           ) : null}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notificaciones"
-            title="Notificaciones"
-            disabled
-            className="rounded-full"
-          >
-            <Bell className="size-[1.2rem]" />
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Notificaciones"
+                title="Notificaciones"
+                className="relative rounded-full"
+              >
+                <Bell className="size-[1.2rem]" />
+                {unreadCount > 0 && (
+                  <span className="bg-destructive ring-background absolute top-1 right-1 flex size-2 rounded-full ring-2" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-0">
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <h4 className="text-sm font-semibold">Notificaciones</h4>
+                {unreadCount > 0 && (
+                  <span className="text-muted-foreground text-xs">{unreadCount} sin leer</span>
+                )}
+              </div>
+              <ScrollArea className="max-h-[300px]">
+                {notificationsQuery.isLoading ? (
+                  <div className="text-muted-foreground p-4 text-center text-sm">Cargando...</div>
+                ) : notificationsQuery.data?.length === 0 ? (
+                  <div className="text-muted-foreground p-4 text-center text-sm">
+                    No tienes notificaciones.
+                  </div>
+                ) : (
+                  <div className="flex flex-col">
+                    {notificationsQuery.data?.map((n) => (
+                      <div
+                        key={n.id}
+                        className={cn(
+                          "hover:bg-muted/50 flex cursor-pointer flex-col gap-1 border-b px-4 py-3 text-sm transition-colors",
+                          !n.is_read && "bg-muted/30",
+                        )}
+                        onClick={() => {
+                          if (!n.is_read) markAsRead.mutate(n.id);
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-medium">{n.title}</span>
+                          {!n.is_read && (
+                            <span className="mt-1 flex size-2 shrink-0 rounded-full bg-blue-500" />
+                          )}
+                        </div>
+                        <span className="text-muted-foreground text-xs">{n.message}</span>
+                        <span className="text-muted-foreground text-[10px]">
+                          {new Date(n.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
           <Button
             variant="ghost"
             size="icon"
