@@ -4,13 +4,14 @@ import { z } from "zod";
 import type { Env } from "../types";
 
 import { fail, ok } from "../lib/http";
-import { verifyTurnstileToken } from "../lib/security";
+import { verifyAuth, verifyTurnstileToken } from "../lib/security";
 import { getSupabaseAdmin } from "../lib/supabase";
 
 const feedbackSchema = z.object({
   type: z.enum(["bug", "feature", "other"]),
   content: z.string().trim().min(5).max(2000),
   turnstileToken: z.string().min(1),
+  isAnonymous: z.boolean().default(true),
 });
 
 const app = new Hono<{ Bindings: Env }>();
@@ -28,7 +29,7 @@ app.post("/", async (c) => {
     return fail(400, "Datos de retroalimentación inválidos", c.req.raw, c.env);
   }
 
-  const { type, content, turnstileToken } = parsed.data;
+  const { type, content, turnstileToken, isAnonymous } = parsed.data;
 
   const isValidTurnstile = await verifyTurnstileToken(
     turnstileToken,
@@ -44,11 +45,20 @@ app.post("/", async (c) => {
     );
   }
 
+  let userId: string | null = null;
+  if (!isAnonymous) {
+    const auth = await verifyAuth(c.req.raw, c.env);
+    if (auth) {
+      userId = auth.userId;
+    }
+  }
+
   const supabase = getSupabaseAdmin(c.env);
 
   const { error } = await supabase.from("user_feedback").insert({
     type,
     content,
+    user_id: userId,
   });
 
   if (error) {

@@ -1,9 +1,11 @@
+import { authClient } from "@/lib/auth/client";
 import { getApiBaseUrl } from "@/lib/env/public";
 
 export interface SubmitFeedbackPayload {
   type: "bug" | "feature" | "other";
   content: string;
   turnstileToken: string;
+  isAnonymous?: boolean;
 }
 
 export async function submitFeedback(payload: SubmitFeedbackPayload): Promise<void> {
@@ -12,11 +14,18 @@ export async function submitFeedback(payload: SubmitFeedbackPayload): Promise<vo
     throw new Error("API Worker URL no configurado");
   }
 
+  const { data: tokenData } = await authClient.token();
+  const accessToken = tokenData?.token;
+
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
   const response = await fetch(`${apiBaseUrl}/feedback`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -32,6 +41,8 @@ export interface FeedbackRow {
   content: string;
   is_reviewed: boolean;
   created_at: string;
+  user_id?: string | null;
+  admin_notes?: string | null;
 }
 
 export async function getFeedbackList(limit: number, offset: number): Promise<FeedbackRow[]> {
@@ -68,6 +79,23 @@ export async function markFeedbackAsReviewed(id: number): Promise<void> {
   const supabase = getSupabaseBrowserClient();
 
   const { error } = await supabase.from("user_feedback").update({ is_reviewed: true }).eq("id", id);
+
+  if (error) throw error;
+}
+
+export async function replyToFeedback(
+  feedbackId: number,
+  adminNotes: string,
+  replyMessage: string,
+): Promise<void> {
+  const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.rpc("reply_to_feedback", {
+    p_feedback_id: feedbackId,
+    p_admin_notes: adminNotes,
+    p_reply_message: replyMessage,
+  });
 
   if (error) throw error;
 }
