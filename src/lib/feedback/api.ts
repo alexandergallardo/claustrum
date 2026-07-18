@@ -48,3 +48,26 @@ export async function getFeedbackList(limit: number, offset: number): Promise<Fe
 
   return data as FeedbackRow[];
 }
+
+export async function getUnreviewedFeedbackCount(): Promise<{ total_count: number }[]> {
+  const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+  const supabase = getSupabaseBrowserClient();
+
+  const { count, error } = await supabase
+    .from("user_feedback")
+    .select("*", { count: "exact", head: true })
+    .eq("is_reviewed", false);
+
+  if (error) throw error;
+
+  return [{ total_count: count ?? 0 }];
+}
+
+export async function markFeedbackAsReviewed(id: number): Promise<void> {
+  const { getSupabaseBrowserClient } = await import("@/lib/supabase/browser-client");
+  const supabase = getSupabaseBrowserClient();
+
+  const { error } = await supabase.from("user_feedback").update({ is_reviewed: true }).eq("id", id);
+
+  if (error) throw error;
+}

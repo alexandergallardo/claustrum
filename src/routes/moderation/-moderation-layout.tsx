@@ -41,9 +41,11 @@ export function ModerationLayout() {
   const evaluationPending = countsQuery.data?.pendingEvaluations ?? 0;
   const reviewReportsPending = countsQuery.data?.pendingReviewReports ?? 0;
 
+  const feedbackPending = countsQuery.data?.pendingFeedback ?? 0;
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-      <div className="flex shrink-0 items-center gap-1 rounded-lg border p-1 text-sm">
+      <div className="flex shrink-0 scrollbar-none items-center gap-1 overflow-x-auto rounded-lg border p-1 text-sm">
         <Link
           to="/moderation/reviews"
           className="relative flex flex-1 items-center justify-center px-3 py-2 text-sm font-medium transition-colors sm:flex-initial"
@@ -105,6 +107,11 @@ export function ModerationLayout() {
           {({ isActive }) => (
             <>
               Retroalimentación
+              {feedbackPending > 0 && (
+                <span className="bg-foreground text-background ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold">
+                  {feedbackPending > 99 ? "99+" : feedbackPending}
+                </span>
+              )}
               {isActive && (
                 <span className="bg-foreground absolute right-2 bottom-0 left-2 h-0.5 rounded-full" />
               )}

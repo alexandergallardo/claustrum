@@ -1,11 +1,11 @@
 import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
 
 import type { FeedbackRow } from "@/lib/feedback/api";
 
 import { Button } from "@/components/ui/button";
-import { useFeedbackList } from "@/lib/feedback/hooks";
+import { useFeedbackList, useMarkFeedbackAsReviewed } from "@/lib/feedback/hooks";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -22,6 +22,7 @@ function FeedbackModerationPage() {
   const selectedFeedbackId = search.feedbackId ?? null;
 
   const feedbackQuery = useFeedbackList(PAGE_SIZE, queryPage * PAGE_SIZE);
+  const markAsReviewed = useMarkFeedbackAsReviewed();
 
   const feedbackRows = useMemo(
     () => (feedbackQuery.data ?? []) as FeedbackRow[],
@@ -135,13 +136,17 @@ function FeedbackModerationPage() {
                   });
                 }}
                 className={cn(
-                  "flex w-full flex-col rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                  "relative flex w-full flex-col rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
                   selectedFeedbackId === fb.id
                     ? "border-foreground/30 bg-accent"
                     : "hover:bg-muted border-transparent",
+                  !fb.is_reviewed && selectedFeedbackId !== fb.id && "bg-muted/30",
                 )}
               >
-                <div className="flex w-full items-center justify-between gap-2">
+                {!fb.is_reviewed && (
+                  <span className="absolute top-3 right-3 size-2 rounded-full bg-blue-500" />
+                )}
+                <div className="flex w-full items-center justify-between gap-2 pr-4">
                   <span className={cn("truncate font-medium", getTypeColor(fb.type))}>
                     {getTypeLabel(fb.type)}
                   </span>
@@ -149,7 +154,7 @@ function FeedbackModerationPage() {
                     {new Date(fb.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <span className="text-muted-foreground mt-0.5 line-clamp-2 text-xs">
+                <span className="text-muted-foreground mt-0.5 line-clamp-2 pr-4 text-xs">
                   {fb.content}
                 </span>
               </button>
@@ -180,15 +185,29 @@ function FeedbackModerationPage() {
 
           <div className="bg-card text-card-foreground flex flex-col overflow-hidden rounded-xl border shadow-xs">
             <div className="flex flex-col gap-3 p-5 md:p-6">
-              <div className="space-y-1">
-                <h3
-                  className={cn(
-                    "text-xl leading-none font-semibold tracking-tight",
-                    getTypeColor(selectedFeedback.type),
-                  )}
-                >
-                  {getTypeLabel(selectedFeedback.type)}
-                </h3>
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <h3
+                    className={cn(
+                      "text-xl leading-none font-semibold tracking-tight",
+                      getTypeColor(selectedFeedback.type),
+                    )}
+                  >
+                    {getTypeLabel(selectedFeedback.type)}
+                  </h3>
+                </div>
+
+                {!selectedFeedback.is_reviewed && (
+                  <Button
+                    size="sm"
+                    onClick={() => markAsReviewed.mutate(selectedFeedback.id)}
+                    disabled={markAsReviewed.isPending}
+                    className="shrink-0"
+                  >
+                    <Check className="mr-2 size-4" />
+                    Marcar como revisado
+                  </Button>
+                )}
               </div>
 
               <div className="relative mt-2">
@@ -201,6 +220,10 @@ function FeedbackModerationPage() {
                 <span>
                   <strong>Enviado el:</strong>{" "}
                   {new Date(selectedFeedback.created_at).toLocaleString()}
+                </span>
+                <span>
+                  <strong>Estado:</strong>{" "}
+                  {selectedFeedback.is_reviewed ? "Revisado" : "Pendiente de revisión"}
                 </span>
               </div>
 
