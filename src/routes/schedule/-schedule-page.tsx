@@ -1511,7 +1511,11 @@ export function SchedulePage() {
                                       <Bookmark className="size-4" />
                                     </Button>
                                   </PopoverTrigger>
-                                  <PopoverContent align="end" className="w-80">
+                                  <PopoverContent
+                                    align="end"
+                                    className="w-80"
+                                    onOpenAutoFocus={(e) => e.preventDefault()}
+                                  >
                                     <div className="space-y-4">
                                       <div className="space-y-2">
                                         <h4 className="leading-none font-medium">
@@ -1742,7 +1746,11 @@ export function SchedulePage() {
                                         <Bookmark className="size-4" />
                                       </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent align="end" className="w-80">
+                                    <PopoverContent
+                                      align="end"
+                                      className="w-80"
+                                      onOpenAutoFocus={(e) => e.preventDefault()}
+                                    >
                                       <div className="space-y-4">
                                         <div className="space-y-2">
                                           <h4 className="leading-none font-medium">
