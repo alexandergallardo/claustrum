@@ -12,6 +12,7 @@ import {
   Loader2,
   LayoutGrid,
   List,
+  GraduationCap,
 } from "lucide-react";
 import {
   useState,
@@ -234,7 +235,18 @@ export function SchedulePage() {
     setStoredViewMode(search.view);
   }, [search.view]);
 
-  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
+  const serializedGroups = useMemo(() => {
+    if (!search.groups) return [];
+    return search.groups.split(",").reduce<string[]>((acc, value) => {
+      const trimmed = value.trim();
+      if (trimmed) acc.push(trimmed);
+      return acc;
+    }, []);
+  }, [search.groups]);
+
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(
+    () => new Set(serializedGroups),
+  );
   const mode: Mode = "week";
   const [date] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [isCourseListOpen, setIsCourseListOpen] = useState(true);
@@ -254,15 +266,6 @@ export function SchedulePage() {
   const { data: savedSchedules } = useSavedSchedules(authUser?.id ?? null);
   const saveScheduleMutation = useSaveSchedule();
   const deleteScheduleMutation = useDeleteSchedule();
-
-  const serializedGroups = useMemo(() => {
-    if (!search.groups) return [];
-    return search.groups.split(",").reduce<string[]>((acc, value) => {
-      const trimmed = value.trim();
-      if (trimmed) acc.push(trimmed);
-      return acc;
-    }, []);
-  }, [search.groups]);
 
   const { data: universities, isLoading: isLoadingUniversities } = useUniversities();
   const campusesQuery = useCampuses(selectedUniversityId);
@@ -913,6 +916,7 @@ export function SchedulePage() {
             campusName,
             color,
             weekStart,
+            credits: course.credits,
           });
           events.push(event);
         } catch {
@@ -923,6 +927,21 @@ export function SchedulePage() {
 
     return events;
   }, [selectedGroups, courseColors, weekStart, campusById, groupById, orderedCourses]);
+
+  const { totalCredits, totalCoursesSelected } = useMemo(() => {
+    let creditsSum = 0;
+    const processedCourses = new Set<string>();
+    selectedGroups.forEach((groupId) => {
+      const data = groupById.get(groupId);
+      if (data) {
+        if (!processedCourses.has(data.course.course_code)) {
+          processedCourses.add(data.course.course_code);
+          creditsSum += data.course.credits;
+        }
+      }
+    });
+    return { totalCredits: creditsSum, totalCoursesSelected: processedCourses.size };
+  }, [selectedGroups, groupById]);
 
   const handleExport = useCallback(
     async (options: ScheduleExportOptions) => {
@@ -1444,6 +1463,8 @@ export function SchedulePage() {
                                   replace: true,
                                 })
                               }
+                              totalCoursesSelected={totalCoursesSelected}
+                              totalCredits={totalCredits}
                             />
                             <div className="flex-1 overflow-hidden">
                               {(coursesQuery.isLoading ||
@@ -1674,6 +1695,8 @@ export function SchedulePage() {
                                     replace: true,
                                   })
                                 }
+                                totalCoursesSelected={totalCoursesSelected}
+                                totalCredits={totalCredits}
                               />
                               <div className="flex-1 overflow-hidden">
                                 {(coursesQuery.isLoading ||

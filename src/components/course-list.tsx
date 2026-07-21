@@ -432,43 +432,23 @@ export default function CourseList({
         <ScrollArea className="h-full w-full [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!w-full">
           <div className={cn("w-full", viewMode === "card" ? "space-y-4 p-4" : "")}>
             {viewMode === "table" ? (
-              <Table>
-                <TableHeader className="bg-muted/30 sticky top-0 z-10 shadow-sm">
-                  <TableRow>
-                    <TableHead className="w-[1%] pl-4 text-center whitespace-nowrap">
-                      Grupo
-                    </TableHead>
-                    <TableHead className="w-[1%] whitespace-nowrap">Tipo</TableHead>
-                    {showCampus && (
-                      <TableHead className="w-[1%] text-center whitespace-nowrap">Sede</TableHead>
-                    )}
-                    <TableHead className="w-auto min-w-[120px]">Profesor</TableHead>
-                    <TableHead className="w-[1%] whitespace-nowrap">Horario</TableHead>
-                    <TableHead className="w-[1%] text-center whitespace-nowrap">Aula</TableHead>
-                    <TableHead className="w-[1%] pr-4 text-center whitespace-nowrap">
-                      Cupos
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredViewData.map((courseData) => (
-                    <CourseTableItem
-                      key={courseData.course.offering_id}
-                      course={courseData.course}
-                      groupViews={courseData.groupViews}
-                      colorStyles={
-                        courseColorStyles.get(courseData.course.course_code) ??
-                        getColorStyles("blue")
-                      }
-                      selectedGroupIds={selectedGroups}
-                      disabledGroupIdSet={disabledSet}
-                      conflictReasonsByGroupId={conflictReasons}
-                      onGroupToggle={handleGroupToggle}
-                      showCampus={showCampus}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="flex flex-col rounded-md border">
+                {filteredViewData.map((courseData) => (
+                  <CourseTableItem
+                    key={courseData.course.offering_id}
+                    course={courseData.course}
+                    groupViews={courseData.groupViews}
+                    colorStyles={
+                      courseColorStyles.get(courseData.course.course_code) ?? getColorStyles("blue")
+                    }
+                    selectedGroupIds={selectedGroups}
+                    disabledGroupIdSet={disabledSet}
+                    conflictReasonsByGroupId={conflictReasons}
+                    onGroupToggle={handleGroupToggle}
+                    showCampus={showCampus}
+                  />
+                ))}
+              </div>
             ) : (
               filteredViewData.map((courseData) => {
                 const course = courseData.course;

@@ -299,4 +299,5 @@ export interface CalendarEvent {
   end: Date;
   courseId: string;
   group: number;
+  credits: number;
 }

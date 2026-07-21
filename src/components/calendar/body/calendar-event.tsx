@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Building2, Clock, Layers, MapPin, User, Users, X } from "lucide-react";
+import { Building2, Clock, Layers, MapPin, User, Users, X, GraduationCap } from "lucide-react";
 import { memo } from "react";
 
 import type { CalendarEvent as CalendarEventType } from "@/lib/types";
@@ -72,8 +72,8 @@ const CalendarEvent = memo(function CalendarEvent({
             <button
               type="button"
               className={cn(
-                "absolute top-1 right-1 cursor-pointer rounded-sm p-0.5 text-white/80 hover:text-white",
-                "opacity-0 transition-opacity group-hover:opacity-100",
+                "absolute top-1 right-1 z-10 flex cursor-pointer items-center justify-center rounded-sm p-0.5 opacity-0 transition-all group-hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10",
+                colorClasses.text,
               )}
               onClick={(eventClick) => {
                 eventClick.stopPropagation();
@@ -88,12 +88,13 @@ const CalendarEvent = memo(function CalendarEvent({
           <div className={cn("flex w-full flex-col gap-0.5", colorClasses.text)}>
             <p
               className={cn(
-                "line-clamp-2 text-[11px] leading-tight font-semibold sm:text-[13px]",
+                "line-clamp-2 pr-5 text-[11px] leading-tight font-semibold sm:text-[13px]",
                 isCompact && "text-[9px] sm:text-[10px]",
               )}
             >
               {event.courseName}
             </p>
+
             {!isCompact && showClassroom && (
               <div className="flex items-center gap-2 text-[10px] opacity-90 sm:text-xs">
                 <span className="flex size-3 shrink-0 items-center justify-center sm:size-4">
@@ -159,6 +160,14 @@ const CalendarEvent = memo(function CalendarEvent({
               <Users className="size-4" />
             </span>
             <span>GRUPO {event.groupCode}</span>
+          </p>
+          <p className="flex items-center gap-2 text-sm">
+            <span className="flex size-4 shrink-0 items-center justify-center">
+              <GraduationCap className="size-4" />
+            </span>
+            <span>
+              {event.credits} {event.credits === 1 ? "CRÉDITO" : "CRÉDITOS"}
+            </span>
           </p>
           <p className="flex items-center gap-2 text-sm">
             <span className="flex size-4 shrink-0 items-center justify-center">

@@ -46,6 +46,7 @@ export function sessionToEvent({
   campusName,
   color,
   weekStart,
+  credits,
 }: {
   session: ScheduleSession;
   courseId: string;
@@ -59,6 +60,7 @@ export function sessionToEvent({
   campusName: string | null;
   color: string;
   weekStart: Date;
+  credits: number;
 }): CalendarEvent {
   const normalizedDay = normalizeDayName(String(session.weekday));
   const dayOfWeek = DAY_MAP[normalizedDay];
@@ -87,6 +89,7 @@ export function sessionToEvent({
     end,
     courseId,
     group: groupNumber,
+    credits,
   };
 }
 
