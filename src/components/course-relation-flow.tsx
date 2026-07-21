@@ -362,6 +362,11 @@ const STATUS_LEGEND = [
     className: "border-blue-500/30 bg-blue-500/20",
   },
   {
+    status: "available",
+    label: "Disponible",
+    className: "border-purple-500/30 bg-purple-500/20",
+  },
+  {
     status: "not_taken",
     label: "No cursado",
     className: "border-border bg-muted",
@@ -376,11 +381,7 @@ const STATUS_LEGEND = [
     label: "Retirado",
     className: "border-amber-500/30 bg-amber-500/20",
   },
-] satisfies Array<{
-  status: CourseStatus;
-  label: string;
-  className: string;
-}>;
+] as const;
 
 const edgeTypes = {
   relation: RelationEdge,

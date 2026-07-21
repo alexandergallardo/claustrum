@@ -174,6 +174,10 @@ function CurriculumGrid({
                   <span className="text-muted-foreground text-sm">En curso</span>
                 </div>
                 <div className="flex items-center gap-2">
+                  <div className="size-6 rounded border-2 border-purple-500/30 bg-purple-500/20" />
+                  <span className="text-muted-foreground text-sm">Disponible</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <div className="bg-muted border-border size-6 rounded border-2" />
                   <span className="text-muted-foreground text-sm">No cursado</span>
                 </div>

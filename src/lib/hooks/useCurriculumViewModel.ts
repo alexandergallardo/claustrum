@@ -17,6 +17,35 @@ export function useCurriculumViewModel(
   const semesters = useMemo(() => {
     if (!planDetail) return [];
 
+    const checkEligibility = (courseId: number, visited: Set<number> = new Set()): boolean => {
+      if (visited.has(courseId)) return true;
+      visited.add(courseId);
+
+      const status = statusMap?.get(courseId)?.status || "not_taken";
+      if (status === "approved" || status === "in_progress") {
+        return true;
+      }
+
+      const relations = planDetail.courseRelations.get(courseId) as CourseRelations | undefined;
+      if (!relations) return true;
+
+      if (relations.prerequisites && relations.prerequisites.length > 0) {
+        const prereqsMet = relations.prerequisites.every((prereqId) => {
+          return statusMap?.get(prereqId)?.status === "approved";
+        });
+        if (!prereqsMet) return false;
+      }
+
+      if (relations.corequisites && relations.corequisites.length > 0) {
+        const coreqsMet = relations.corequisites.every((coreqId) => {
+          return checkEligibility(coreqId, visited);
+        });
+        if (!coreqsMet) return false;
+      }
+
+      return true;
+    };
+
     return planDetail.periods.map((period: StudyPeriod) => {
       const courses = period.courses.map((course) => {
         const courseIdStr = String(course.courseId);
@@ -25,6 +54,9 @@ export function useCurriculumViewModel(
         ) as CourseRelations) || { prerequisites: [], corequisites: [] };
         const effectiveStatus = statusMap?.get(course.courseId);
         const status = effectiveStatus?.status || "not_taken";
+
+        const isAvailable =
+          status !== "approved" && status !== "in_progress" && checkEligibility(course.courseId);
 
         return {
           id: courseIdStr,
@@ -48,6 +80,7 @@ export function useCurriculumViewModel(
           statusOriginRecordedAt: effectiveStatus?.originRecordedAt ?? null,
           statusOriginAcademicTermId: effectiveStatus?.originAcademicTermId ?? null,
           statusOriginAcademicTermName: effectiveStatus?.originAcademicTermName ?? null,
+          isAvailable,
         } satisfies Course;
       });
 

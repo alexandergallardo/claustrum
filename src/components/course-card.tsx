@@ -86,7 +86,9 @@ export function CourseCard({
       id={id}
       className={cn(
         "relative cursor-pointer overflow-hidden rounded-lg border-2 shadow-sm transition-all duration-200",
-        config.borderClassName,
+        course.isAvailable
+          ? "border-purple-500/30 hover:border-purple-500/50"
+          : config.borderClassName,
         isHovered && "ring-primary z-10 scale-105 shadow-lg ring-2",
         relation?.ringClass,
         !isHovered && !relationType && "hover:border-primary/50",
@@ -109,7 +111,13 @@ export function CourseCard({
       <div
         className={cn(
           "relative flex min-h-16 items-center justify-center px-3 py-2 text-center",
-          solidStatusBackground ? config.solidBgClassName : config.bgClassName,
+          solidStatusBackground
+            ? course.isAvailable
+              ? "bg-purple-50 dark:bg-purple-950"
+              : config.solidBgClassName
+            : course.isAvailable
+              ? "bg-purple-500/20"
+              : config.bgClassName,
         )}
       >
         <h3

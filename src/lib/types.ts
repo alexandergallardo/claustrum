@@ -75,6 +75,7 @@ export interface Course {
   statusOriginRecordedAt?: string | null;
   statusOriginAcademicTermId?: number | null;
   statusOriginAcademicTermName?: string | null;
+  isAvailable?: boolean;
 }
 
 export type CourseStatus = "approved" | "failed" | "not_taken" | "withdrawn" | "in_progress";
