@@ -1484,7 +1484,7 @@ export function SchedulePage() {
                           </div>
                         </div>
 
-                        <div className="relative min-h-[65vh]">
+                        <div className="relative flex min-h-[65vh] flex-1 flex-col">
                           <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
                             <ScheduleZoomControls
                               hourHeight={hourHeight}
@@ -1600,7 +1600,7 @@ export function SchedulePage() {
                             )}
                             <ScheduleExportDialog onExport={handleExport} />
                           </div>
-                          <div ref={calendarRef} className="relative overflow-hidden p-0">
+                          <div ref={calendarRef} className="relative flex-1 overflow-hidden p-0">
                             {(coursesQuery.isLoading ||
                               isPendingFilters ||
                               isPendingLocalStorage) &&
