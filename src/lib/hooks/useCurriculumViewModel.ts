@@ -56,7 +56,10 @@ export function useCurriculumViewModel(
         const status = effectiveStatus?.status || "not_taken";
 
         const isAvailable =
-          status !== "approved" && status !== "in_progress" && checkEligibility(course.courseId);
+          !!statusMap &&
+          status !== "approved" &&
+          status !== "in_progress" &&
+          checkEligibility(course.courseId);
 
         return {
           id: courseIdStr,
