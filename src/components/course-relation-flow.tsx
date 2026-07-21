@@ -17,7 +17,7 @@ import { Link, Lock, Unlock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
-import type { Course, CourseStatus } from "@/lib/types";
+import type { Course } from "@/lib/types";
 
 import { CourseCard } from "@/components/course-card";
 import { cn } from "@/lib/utils";

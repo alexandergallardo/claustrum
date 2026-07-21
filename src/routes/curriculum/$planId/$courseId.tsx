@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { studyPlanDetailQueryOptions } from "@/lib/hooks/use-queries";
 import { buildSeoMeta, NOINDEX_ROBOTS } from "@/lib/seo";
 
 // This route uses standard path parameters, no need for complex search parsing.
@@ -20,4 +21,8 @@ export const Route = createFileRoute("/curriculum/$planId/$courseId")({
       filters: search.filters === true || search.filters === "true" ? true : undefined,
     };
   },
+  loader: async ({ context: { queryClient }, params }) => {
+    await queryClient.ensureQueryData(studyPlanDetailQueryOptions(Number(params.planId)));
+  },
+  pendingComponent: () => <div className="bg-background flex-1" />,
 });
