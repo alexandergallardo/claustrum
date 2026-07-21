@@ -91,7 +91,7 @@ export function FilterCombobox({
             <Button
               variant="outline"
               className={cn(
-                "h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[180px]",
+                "h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]",
                 triggerClassName,
               )}
             />
