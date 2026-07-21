@@ -42,10 +42,10 @@ export const Route = createFileRoute("/sitemap.xml")({
         // Static routes
         const urls = [
           { loc: `${baseUrl}/`, priority: 1.0, changefreq: "weekly" },
-          { loc: `${baseUrl}/schedule/`, priority: 0.9, changefreq: "weekly" },
-          { loc: `${baseUrl}/curriculum/`, priority: 0.9, changefreq: "weekly" },
-          { loc: `${baseUrl}/professors/`, priority: 0.9, changefreq: "weekly" },
-          { loc: `${baseUrl}/policies/`, priority: 0.6, changefreq: "monthly" },
+          { loc: `${baseUrl}/schedule`, priority: 0.9, changefreq: "weekly" },
+          { loc: `${baseUrl}/curriculum`, priority: 0.9, changefreq: "weekly" },
+          { loc: `${baseUrl}/professors`, priority: 0.9, changefreq: "weekly" },
+          { loc: `${baseUrl}/policies`, priority: 0.6, changefreq: "monthly" },
         ];
 
         if (allProfessors.length > 0) {
