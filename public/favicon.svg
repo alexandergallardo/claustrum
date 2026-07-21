@@ -1,8 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Claustrum logo">
+  <style>
+    .dynamic-c {
+      stroke: #EA580C;
+    }
+    @media (prefers-color-scheme: dark) {
+      .dynamic-c {
+        stroke: #FB923C;
+      }
+    }
+  </style>
   <path
+    class="dynamic-c"
     d="M190 48H78C61.431 48 48 61.431 48 78v100c0 16.569 13.431 30 30 30h112"
     fill="none"
-    stroke="#0F172A"
     stroke-width="20"
     stroke-linecap="round"
     stroke-linejoin="round"

@@ -165,7 +165,7 @@ function RootComponent() {
         <link rel="preconnect" href="https://api.github.com" />
         <link rel="dns-prefetch" href="https://api.github.com" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
-        <link id="app-favicon" rel="icon" type="image/svg+xml" href="/favicon-light.svg" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/logo192.png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/logo512.png" sizes="512x512" />
         <link rel="manifest" href="/manifest.json" />
@@ -192,10 +192,6 @@ function RootComponent() {
               html.classList.remove("light", "dark");
               html.classList.add(resolvedTheme);
               html.style.colorScheme = resolvedTheme;
-              const faviconBase = resolvedTheme === "dark" ? "/favicon-dark.svg" : "/favicon-light.svg";
-              const faviconHref = faviconBase + "?theme=" + resolvedTheme;
-              const svgIcon = document.getElementById("app-favicon");
-              if (svgIcon && svgIcon instanceof HTMLLinkElement) { svgIcon.href = faviconHref; }
               const backgroundColor = resolvedTheme === "dark" ? "oklch(0.145 0 0)" : "oklch(1 0 0)";
               const fallbackThemeColor = resolvedTheme === "dark" ? "#0a0a0a" : "#ffffff";
               html.style.backgroundColor = backgroundColor;
