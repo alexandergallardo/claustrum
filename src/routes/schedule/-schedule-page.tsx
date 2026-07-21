@@ -12,7 +12,6 @@ import {
   Loader2,
   LayoutGrid,
   List,
-  GraduationCap,
 } from "lucide-react";
 import {
   useState,

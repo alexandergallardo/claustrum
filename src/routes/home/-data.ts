@@ -31,6 +31,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(2, "11:20"),
     courseId: "MA1403",
     group: 2,
+    credits: 3,
   },
   {
     id: "IC1802-05-20260506T073000",
@@ -48,6 +49,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(3, "09:20"),
     courseId: "IC1802",
     group: 5,
+    credits: 3,
   },
   {
     id: "IC1803-05-20260506T093000",
@@ -65,6 +67,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(3, "11:20"),
     courseId: "IC1803",
     group: 5,
+    credits: 3,
   },
   {
     id: "CI1106-23-20260507T130000",
@@ -82,6 +85,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(4, "15:50"),
     courseId: "CI1106",
     group: 23,
+    credits: 3,
   },
   {
     id: "MA1403-02-20260507T093000",
@@ -99,6 +103,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(4, "11:20"),
     courseId: "MA1403",
     group: 2,
+    credits: 3,
   },
   {
     id: "IC1802-05-20260508T073000",
@@ -116,6 +121,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(5, "09:20"),
     courseId: "IC1802",
     group: 5,
+    credits: 3,
   },
   {
     id: "IC1803-05-20260508T093000",
@@ -133,6 +139,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(5, "11:20"),
     courseId: "IC1803",
     group: 5,
+    credits: 3,
   },
   {
     id: "CI1230-11-20260508T130000",
@@ -150,6 +157,7 @@ export const demoCalendarEvents: CalendarEvent[] = [
     end: eventDate(5, "15:50"),
     courseId: "CI1230",
     group: 11,
+    credits: 3,
   },
 ];
 
