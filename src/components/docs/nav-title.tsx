@@ -6,7 +6,7 @@ function ClaustrumLogo({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 256 256"
       aria-label="Claustrum logo"
-      className={cn("text-[#0F172A] dark:text-[#F8FAFC]", className)}
+      className={cn("text-orange-600 dark:text-orange-400", className)}
     >
       <path
         d="M190 48H78C61.431 48 48 61.431 48 78v100c0 16.569 13.431 30 30 30h112"
