@@ -150,7 +150,7 @@ export function ScheduleFilters({
   const selectedTerm = terms.find((term) => term.id === selectedTermId) ?? null;
 
   const showAllControl = (
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2">
       <Switch
         id="showAll"
         checked={showAll ?? true}
@@ -227,7 +227,7 @@ export function ScheduleFilters({
       {showTermFilter && (
         <div
           className={cn(
-            "min-w-0",
+            "min-w-0 shrink-0",
             !skipGroupsAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
           )}
         >
@@ -290,7 +290,7 @@ export function ScheduleFilters({
         (onShowAllChange !== undefined || onShowOtherCampusesChange !== undefined) && (
           <div
             className={cn(
-              "flex flex-wrap items-center gap-x-4 gap-y-2",
+              "flex shrink-0 flex-nowrap items-center gap-x-4 gap-y-2",
               !skipSwitchesAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
             )}
           >
@@ -309,7 +309,7 @@ export function ScheduleFilters({
               ))}
 
             {onShowOtherCampusesChange !== undefined && (
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <Switch
                   id="otherCampuses"
                   checked={showOtherCampuses ?? false}

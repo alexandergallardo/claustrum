@@ -75,7 +75,7 @@ export function FilterCombobox({
   return (
     <div
       className={cn(
-        "min-w-0",
+        "min-w-0 shrink-0",
         !skipAnimation && "animate-in fade-in-0 slide-in-from-left-2 duration-300",
       )}
     >
@@ -91,7 +91,7 @@ export function FilterCombobox({
             <Button
               variant="outline"
               className={cn(
-                "h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[240px]",
+                "h-8 w-full min-w-0 justify-between text-xs font-normal sm:max-w-[360px] sm:min-w-[180px]",
                 triggerClassName,
               )}
             />
