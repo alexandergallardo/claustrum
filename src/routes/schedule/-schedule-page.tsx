@@ -1404,18 +1404,23 @@ export function SchedulePage() {
                     {isMobile ? (
                       <div className="flex flex-col">
                         <div className={cn("flex flex-col", isCourseListOpen && "border-b")}>
-                          <div className="bg-muted/30 border-border flex h-10 shrink-0 items-center border-b px-3">
-                            <div className="flex w-full items-center justify-between gap-2">
-                              <h2 className="text-base leading-none font-semibold">
-                                {orderedCourses.length} curso
-                                {orderedCourses.length !== 1 ? "s" : ""} disponible
-                                {orderedCourses.length !== 1 ? "s" : ""}
-                              </h2>
-                              <div className="flex items-center">
+                          <CourseSearchInput
+                            initialQuery={search.q ?? ""}
+                            onSearchChange={(q) =>
+                              void navigate({
+                                search: (prev) => ({ ...prev, q: q || undefined }),
+                                replace: true,
+                              })
+                            }
+                            totalCoursesSelected={totalCoursesSelected}
+                            totalCredits={totalCredits}
+                            availableCoursesCount={orderedCourses.length}
+                            actionButtons={
+                              <>
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="h-10 w-10 rounded-none"
+                                  className="h-9 w-9 rounded-md"
                                   onClick={() =>
                                     handleViewModeChange(viewMode === "card" ? "table" : "card")
                                   }
@@ -1430,7 +1435,7 @@ export function SchedulePage() {
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="-mr-3 h-10 w-10 rounded-none"
+                                  className="h-9 w-9 rounded-md"
                                   aria-label={
                                     isCourseListOpen
                                       ? "Contraer cursos disponibles"
@@ -1445,26 +1450,15 @@ export function SchedulePage() {
                                     )}
                                   />
                                 </Button>
-                              </div>
-                            </div>
-                          </div>
+                              </>
+                            }
+                          />
                           <div
                             className={cn(
                               "flex h-[50vh] flex-col overflow-hidden",
                               !isCourseListOpen && "hidden",
                             )}
                           >
-                            <CourseSearchInput
-                              initialQuery={search.q ?? ""}
-                              onSearchChange={(q) =>
-                                void navigate({
-                                  search: (prev) => ({ ...prev, q: q || undefined }),
-                                  replace: true,
-                                })
-                              }
-                              totalCoursesSelected={totalCoursesSelected}
-                              totalCredits={totalCredits}
-                            />
                             <div className="flex-1 overflow-hidden">
                               {(coursesQuery.isLoading ||
                                 isPendingFilters ||
@@ -1661,17 +1655,22 @@ export function SchedulePage() {
                           className="min-w-0 overflow-hidden"
                         >
                           <div className="flex h-full flex-col">
-                            <div className="bg-muted/30 border-border flex h-[33px] shrink-0 items-center border-b px-4">
-                              <div className="flex w-full items-center justify-between gap-2">
-                                <h2 className="text-base leading-none font-semibold">
-                                  {orderedCourses.length} curso
-                                  {orderedCourses.length !== 1 ? "s" : ""} disponible
-                                  {orderedCourses.length !== 1 ? "s" : ""}
-                                </h2>
+                            <CourseSearchInput
+                              initialQuery={search.q ?? ""}
+                              onSearchChange={(q) =>
+                                void navigate({
+                                  search: (prev) => ({ ...prev, q: q || undefined }),
+                                  replace: true,
+                                })
+                              }
+                              totalCoursesSelected={totalCoursesSelected}
+                              totalCredits={totalCredits}
+                              availableCoursesCount={orderedCourses.length}
+                              actionButtons={
                                 <Button
                                   type="button"
                                   variant="ghost"
-                                  className="-mr-4 h-[33px] w-[33px] rounded-none"
+                                  className="h-9 w-9 rounded-md"
                                   onClick={() =>
                                     handleViewModeChange(viewMode === "card" ? "table" : "card")
                                   }
@@ -1683,20 +1682,9 @@ export function SchedulePage() {
                                     <LayoutGrid className="size-4" />
                                   )}
                                 </Button>
-                              </div>
-                            </div>
+                              }
+                            />
                             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                              <CourseSearchInput
-                                initialQuery={search.q ?? ""}
-                                onSearchChange={(q) =>
-                                  void navigate({
-                                    search: (prev) => ({ ...prev, q: q || undefined }),
-                                    replace: true,
-                                  })
-                                }
-                                totalCoursesSelected={totalCoursesSelected}
-                                totalCredits={totalCredits}
-                              />
                               <div className="flex-1 overflow-hidden">
                                 {(coursesQuery.isLoading ||
                                   isPendingFilters ||
