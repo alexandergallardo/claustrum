@@ -26,10 +26,15 @@ export const Route = createFileRoute("/professors/$professorId")({
   },
   head: (ctx) => {
     const professor = ctx.loaderData;
-    const name = professor?.full_name ?? "Profesor";
+    const rawName = professor?.full_name ?? "Profesor";
+    const name = rawName.replace(
+      /\w\S*/g,
+      (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase(),
+    );
+
     return buildSeoMeta({
-      title: `Reseñas de ${name} | Claustrum`,
-      description: `Explora las reseñas y evaluaciones de ${name} escritas por estudiantes del Tecnológico de Costa Rica.`,
+      title: `Reseñas y calificaciones de ${name} - TEC | Claustrum`,
+      description: `Lee opiniones y evaluaciones sobre ${name}, docente del Tecnológico de Costa Rica (ITCR). Descubre las experiencias de otros estudiantes con sus cursos.`,
       breadcrumbName: name,
       urlPath: `/professors/${ctx.params.professorId}`,
       image: "/og/og-professors.png",

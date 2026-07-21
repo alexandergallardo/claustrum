@@ -21,9 +21,9 @@ import {
 export const Route = createFileRoute("/schedule/")({
   head: () =>
     buildSeoMeta({
-      title: "Generador de horarios para estudiantes | Claustrum",
+      title: "Generador de horarios para el TEC | Claustrum",
       description:
-        "Arma y organiza tu horario semestral, evalúa cursos y gestiona tu avance académico de forma sencilla.",
+        "Creador de horarios interactivo para estudiantes del Tecnológico de Costa Rica (ITCR). Arma tu semestre, compara opciones de cursos y planifica tu matrícula.",
       breadcrumbName: "Horarios",
       urlPath: "/schedule",
       image: "/og/og-schedule.png",

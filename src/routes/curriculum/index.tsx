@@ -19,9 +19,9 @@ import {
 export const Route = createFileRoute("/curriculum/")({
   head: () =>
     buildSeoMeta({
-      title: "Explorador de planes de estudio | Claustrum",
+      title: "Mallas curriculares y planes de estudio del TEC | Claustrum",
       description:
-        "Explora los planes de estudio interactivos. Revisa cursos, requisitos y la malla curricular de tu carrera.",
+        "Explora de forma interactiva la malla curricular de tu carrera. Revisa los requisitos, créditos y cursos de los planes de estudio del ITCR.",
       breadcrumbName: "Planes de Estudio",
       urlPath: "/curriculum",
       image: "/og/og-curriculum.png",
