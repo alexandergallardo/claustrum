@@ -36,6 +36,9 @@ export function CourseSearchInput({
     return () => clearTimeout(timer);
   }, [query, onSearchChange]);
 
+  const selectedCount = totalCoursesSelected || 0;
+  const creditsCount = totalCredits || 0;
+
   return (
     <div className="bg-background border-border sticky top-0 z-10 flex shrink-0 flex-col gap-3 border-b p-3">
       <div className="flex w-full items-center gap-2">
@@ -51,22 +54,16 @@ export function CourseSearchInput({
         {actionButtons && <div className="flex shrink-0 items-center">{actionButtons}</div>}
       </div>
       <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-muted-foreground">
-            <span className="tabular-nums">{String(availableCoursesCount).padStart(2, "0")}</span>{" "}
-            disponible{availableCoursesCount !== 1 ? "s" : ""}
-          </Badge>
-          <Badge variant="secondary" className="text-muted-foreground">
-            <span className="tabular-nums">{totalCoursesSelected || 0}</span> seleccionado
-            {totalCoursesSelected !== 1 ? "s" : ""}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-muted-foreground">
-            <span className="tabular-nums">{String(totalCredits || 0).padStart(2, "0")}</span>{" "}
-            crédito{totalCredits !== 1 ? "s" : ""}
-          </Badge>
-        </div>
+        <Badge variant="secondary" className="text-muted-foreground font-normal">
+          <span className="font-semibold tabular-nums">
+            {selectedCount} / {availableCoursesCount}
+          </span>{" "}
+          seleccionado{selectedCount !== 1 ? "s" : ""}
+        </Badge>
+        <Badge variant="secondary" className="text-muted-foreground font-normal">
+          <span className="font-semibold tabular-nums">{creditsCount}</span> crédito
+          {creditsCount !== 1 ? "s" : ""}
+        </Badge>
       </div>
     </div>
   );
