@@ -167,24 +167,24 @@ export function FeedbackDialog({
       {authUser && (
         <form.Field name="isAnonymous">
           {(field) => (
-            <div className="flex flex-col gap-2 rounded-md border p-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={field.name}
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked === true)}
-                />
+            <div className="flex items-center gap-3 rounded-md border p-4">
+              <Checkbox
+                id={field.name}
+                checked={field.state.value}
+                onCheckedChange={(checked) => field.handleChange(checked === true)}
+              />
+              <div className="space-y-1">
                 <Label
                   htmlFor={field.name}
                   className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Enviar de forma anónima
                 </Label>
+                <p className="text-muted-foreground text-[0.8rem]">
+                  En caso de enviarse de forma anónima, no se podrá notificar ni informar de una
+                  respuesta.
+                </p>
               </div>
-              <p className="text-muted-foreground text-[0.8rem]">
-                En caso de enviarse de forma anónima, no se podrá notificar ni informar de una
-                respuesta.
-              </p>
             </div>
           )}
         </form.Field>
