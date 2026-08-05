@@ -2,7 +2,10 @@ import { createLazyFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { ProfessorReviewModerationRow } from "@/lib/professor-reviews/types";
+import type {
+  ProfessorReviewModerationRow,
+  ProfessorReviewStatusFilter,
+} from "@/lib/professor-reviews/types";
 
 import { useModerateProfessorReview, useModerationQueue } from "@/lib/hooks/use-professor-reviews";
 
@@ -20,10 +23,12 @@ function ReviewsPage() {
   const page = search.page ?? 1;
   const queryPage = Math.max(page - 1, 0);
   const selectedReviewId = search.reviewId ?? null;
+  const statusFilter: ProfessorReviewStatusFilter =
+    (search.status as ProfessorReviewStatusFilter) ?? "all";
 
   const [moderationNote, setModerationNote] = useState<Record<number, string>>({});
 
-  const reviewsQuery = useModerationQueue("pending", queryPage, PAGE_SIZE, true);
+  const reviewsQuery = useModerationQueue(statusFilter, queryPage, PAGE_SIZE, true);
   const moderateReviewMutation = useModerateProfessorReview();
 
   const reviewRows = useMemo(
@@ -56,6 +61,18 @@ function ReviewsPage() {
       search: (prev) => ({
         ...prev,
         page: newPage === 0 ? undefined : newPage + 1,
+        reviewId: undefined,
+      }),
+    });
+  };
+
+  const handleStatusChange = (newStatus: ProfessorReviewStatusFilter) => {
+    void navigate({
+      from: "/moderation/reviews",
+      search: (prev) => ({
+        ...prev,
+        status: newStatus === "all" ? undefined : newStatus,
+        page: undefined,
         reviewId: undefined,
       }),
     });
@@ -106,6 +123,8 @@ function ReviewsPage() {
       isLoading={reviewsQuery.isLoading}
       isFetching={reviewsQuery.isFetching}
       onPageChange={handlePageChange}
+      statusFilter={statusFilter}
+      onStatusChange={handleStatusChange}
       moderationNote={moderationNote}
       onNoteChange={(id, value) => setModerationNote((prev) => ({ ...prev, [id]: value }))}
       onApprove={handleApproveReview}

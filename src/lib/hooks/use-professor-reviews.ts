@@ -4,7 +4,7 @@ import type {
   ProfessorReviewReportStatus,
   ProfessorReviewPublicRow,
   ProfessorReviewReaction,
-  ProfessorReviewStatus,
+  ProfessorReviewStatusFilter,
   SearchProfessorReviewStatsParams,
   SubmitProfessorReviewPayload,
   SubmitProfessorReviewReportPayload,
@@ -172,7 +172,7 @@ export function useIsAdmin(userId: string | null) {
 }
 
 export function useModerationQueue(
-  status: ProfessorReviewStatus,
+  status: ProfessorReviewStatusFilter,
   page: number,
   pageSize: number,
   enabled = true,

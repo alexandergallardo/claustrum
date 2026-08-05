@@ -27,6 +27,7 @@ export const REVIEW_TAG_OPTIONS = [
 export type ReviewTag = (typeof REVIEW_TAG_OPTIONS)[number];
 
 export type ProfessorReviewStatus = "pending" | "approved" | "rejected";
+export type ProfessorReviewStatusFilter = ProfessorReviewStatus | "all";
 
 export type ProfessorReviewReportStatus = "pending" | "resolved" | "dismissed";
 

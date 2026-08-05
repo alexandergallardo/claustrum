@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { Calendar, Check, ChevronLeft, ChevronRight, Clock, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { lazy, Suspense } from "react";
 
@@ -6,6 +6,7 @@ import type { EvaluationModerationRow } from "@/lib/evaluations/types";
 import type {
   ProfessorReviewModerationRow,
   ProfessorReviewReportModerationRow,
+  ProfessorReviewStatusFilter,
 } from "@/lib/professor-reviews/types";
 
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,16 @@ function formatFileSize(bytes: number): string {
 
 function formatScore(value: number | null): string {
   return value === null ? "-" : value.toFixed(1);
+}
+
+function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString) return "—";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function ReviewCourses({ review }: { review: ProfessorReviewModerationRow }) {
@@ -285,6 +296,8 @@ export function ReviewSection({
   isLoading,
   isFetching,
   onPageChange,
+  statusFilter = "all",
+  onStatusChange,
   moderationNote,
   onNoteChange,
   onApprove,
@@ -299,12 +312,44 @@ export function ReviewSection({
   isLoading: boolean;
   isFetching: boolean;
   onPageChange: (page: number) => void;
+  statusFilter?: ProfessorReviewStatusFilter;
+  onStatusChange?: (status: ProfessorReviewStatusFilter) => void;
   moderationNote: Record<number, string>;
   onNoteChange: (id: number, value: string) => void;
   onApprove: (id: number) => Promise<void>;
   onReject: (id: number) => Promise<void>;
   isPending: boolean;
 }) {
+  const getStatusBadge = (status: "pending" | "approved" | "rejected") => {
+    switch (status) {
+      case "approved":
+        return (
+          <Badge
+            variant="outline"
+            className="shrink-0 border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0 text-[10px] font-medium text-emerald-700 dark:text-emerald-400"
+          >
+            Aprobada
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge variant="destructive" className="shrink-0 px-1.5 py-0 text-[10px] font-medium">
+            Rechazada
+          </Badge>
+        );
+      case "pending":
+      default:
+        return (
+          <Badge
+            variant="secondary"
+            className="shrink-0 border-amber-500/50 bg-amber-500/10 px-1.5 py-0 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+          >
+            Pendiente
+          </Badge>
+        );
+    }
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
       <div
@@ -313,28 +358,55 @@ export function ReviewSection({
           selectedReview && "hidden lg:flex",
         )}
       >
-        <div className="flex items-center justify-between border-b p-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            disabled={page === 0 || isFetching}
-            onClick={() => onPageChange(Math.max(page - 1, 0))}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <span className="text-sm font-medium">
-            Página {(page + 1).toString().padStart(2, "0")}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            disabled={!hasMore || isFetching}
-            onClick={() => onPageChange(page + 1)}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
+        <div className="flex flex-col border-b">
+          <div className="flex items-center justify-between p-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              disabled={page === 0 || isFetching}
+              onClick={() => onPageChange(Math.max(page - 1, 0))}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="text-sm font-medium">
+              Página {(page + 1).toString().padStart(2, "0")}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              disabled={!hasMore || isFetching}
+              onClick={() => onPageChange(page + 1)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+
+          {onStatusChange && (
+            <div className="bg-muted/20 flex items-center justify-between gap-1 overflow-x-auto border-t p-1 text-xs">
+              {[
+                { value: "all", label: "Todas" },
+                { value: "pending", label: "Pendientes" },
+                { value: "approved", label: "Aprobadas" },
+                { value: "rejected", label: "Rechazadas" },
+              ].map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => onStatusChange(tab.value as ProfessorReviewStatusFilter)}
+                  className={cn(
+                    "flex-1 rounded-md px-2 py-1 text-center text-xs font-medium whitespace-nowrap transition-colors",
+                    statusFilter === tab.value
+                      ? "bg-background text-foreground border shadow-xs"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
@@ -342,7 +414,13 @@ export function ReviewSection({
             <p className="text-muted-foreground p-3 text-center text-sm">Cargando reseñas…</p>
           ) : rows.length === 0 ? (
             <p className="text-muted-foreground p-3 text-center text-sm">
-              No hay reseñas pendientes.
+              {statusFilter === "pending"
+                ? "No hay reseñas pendientes."
+                : statusFilter === "approved"
+                  ? "No hay reseñas aprobadas."
+                  : statusFilter === "rejected"
+                    ? "No hay reseñas rechazadas."
+                    : "No hay reseñas en el historial."}
             </p>
           ) : (
             <div className="flex flex-col gap-1">
@@ -358,7 +436,10 @@ export function ReviewSection({
                       : "hover:bg-muted border-transparent",
                   )}
                 >
-                  <span className="truncate font-medium">{review.professor_name}</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{review.professor_name}</span>
+                    {getStatusBadge(review.status)}
+                  </div>
                   <div className="text-muted-foreground mt-1 flex flex-col text-sm">
                     {review.courses.map((course) => (
                       <span key={course.id} className="truncate">
@@ -387,16 +468,43 @@ export function ReviewSection({
 
           <div className="bg-card text-card-foreground flex flex-col overflow-hidden rounded-xl border shadow-xs">
             <div className="flex flex-col gap-3 p-5 md:p-6">
-              <div className="space-y-1">
-                <h3 className="text-xl leading-none font-semibold tracking-tight">
-                  {selectedReview.professor_name}
-                </h3>
-                <div className="pt-2">
-                  <ReviewCourses review={selectedReview} />
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <h3 className="text-xl leading-none font-semibold tracking-tight">
+                    {selectedReview.professor_name}
+                  </h3>
+                  <div className="pt-2">
+                    <ReviewCourses review={selectedReview} />
+                  </div>
                 </div>
+                {getStatusBadge(selectedReview.status)}
               </div>
 
-              <div className="relative mt-2">
+              {/* Date and time details adapted to user's browser timezone */}
+              <div className="bg-muted/40 border-border/60 text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border px-3 py-2 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="size-3.5" />
+                  <span>
+                    Enviada:{" "}
+                    <strong className="text-foreground font-medium">
+                      {formatDateTime(selectedReview.created_at)}
+                    </strong>
+                  </span>
+                </div>
+                {selectedReview.reviewed_at && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="size-3.5" />
+                    <span>
+                      Moderada:{" "}
+                      <strong className="text-foreground font-medium">
+                        {formatDateTime(selectedReview.reviewed_at)}
+                      </strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative mt-1">
                 <div className="absolute inset-0 flex items-center" aria-hidden="true">
                   <div className="border-border/50 w-full border-t" />
                 </div>
@@ -417,6 +525,13 @@ export function ReviewSection({
                   ))}
                 </div>
               )}
+
+              {selectedReview.moderation_note && (
+                <div className="text-muted-foreground bg-muted/60 mt-2 rounded-md border p-2.5 text-xs">
+                  <strong className="text-foreground">Nota previa:</strong>{" "}
+                  {selectedReview.moderation_note}
+                </div>
+              )}
             </div>
 
             <div className="bg-muted/30 flex flex-col gap-3 border-t p-4 md:p-5">
@@ -432,7 +547,7 @@ export function ReviewSection({
                   value={moderationNote[selectedReview.review_id] ?? ""}
                   onChange={(e) => onNoteChange(selectedReview.review_id, e.target.value)}
                   className="bg-background h-20 min-h-0 resize-none text-sm shadow-none"
-                  placeholder="Escribe una nota opcional para explicar el motivo del rechazo"
+                  placeholder="Escribe una nota opcional para explicar el motivo del rechazo o aprobación"
                 />
               </div>
 

@@ -9,7 +9,7 @@ import type {
   ProfessorReviewSummary,
   ProfessorReviewTagCount,
   ProfessorReviewStatsRow,
-  ProfessorReviewStatus,
+  ProfessorReviewStatusFilter,
   SearchProfessorReviewStatsParams,
   SubmitProfessorReviewPayload,
   SubmitProfessorReviewReportPayload,
@@ -266,13 +266,13 @@ export async function submitProfessorReviewReport(
 }
 
 export async function getProfessorReviewsForModeration(
-  status: ProfessorReviewStatus,
+  status: ProfessorReviewStatusFilter,
   limit: number,
   offset: number,
 ): Promise<ProfessorReviewModerationRow[]> {
   const supabase = getSupabaseBrowserClient();
   const { data, error } = await supabase.rpc("get_professor_reviews_for_moderation", {
-    p_status: status,
+    p_status: status === "all" ? null : status,
     p_limit: limit,
     p_offset: offset,
   });
